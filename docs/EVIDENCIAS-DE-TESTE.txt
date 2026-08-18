@@ -1,0 +1,117 @@
+
+Percurso — testes do fluxo principal
+Alvo: http://localhost:3000
+
+
+0 · Sessão e controle de acesso
+  ✓ sem sessão, /api/hoje responde 401
+  ✓ educadora entra (Maria Silvia)
+  ✓ coordenação entra (Rita)
+  ✓ educadora NÃO acessa o painel da coordenação (403)
+  ✓ login com usuário inexistente responde 404
+
+1 · Modelo de dados — criança ≠ matrícula (F1)
+  ✓ crianças únicas < matrículas ativas
+  ✓ a diferença é exatamente o nº de crianças em 2 programas
+  ✓ a vivência terapêutica está fora de escopo (bloco 6)
+
+2 · Chamada em um toque (F2)
+  ✓ educadora tem turma atribuída
+  ✓ há datas de chamada em aberto (nada expira)
+  ✓ estado de retomada detecta o lapso sem culpar
+  ✓ chamada da data em aberto vem não registrada
+  ✓ chamada incompleta é recusada com 422 e mensagem clara
+  ✓ status de presença inválido é recusado (422)
+  ✓ chamada em data futura é recusada
+  ✓ chamada completa é salva
+  ✓ a data salva sai da lista de pendentes
+  ✓ releitura confirma persistência no banco
+
+3 · Agenda do ciclo e protocolo de aplicação (F4/M6)
+  ✓ agenda separa observáveis de bloqueadas
+  ✓ há criança bloqueada por falta de consentimento
+  ✓ há criança bloqueada pela janela mínima de convívio
+  ✓ cobertura considera apenas as observáveis
+
+4 · Observação, consentimento e filtro de perímetro (F3 + bloco 6)
+  ✓ a tela de observação declara o bloqueio e o motivo
+  ✓ gravar sem consentimento é recusado com 403
+  ✓ gravar sem janela de convívio é recusado com 403
+  ✓ concluir com dimensões faltando é recusado, oferecendo rascunho
+  ✓ nível fora da escala 1–4 é recusado
+  ✓ rascunho parcial é aceito (anti-abandono)
+  ✓ o rascunho volta preenchido ao reabrir
+  ✓ o filtro de perímetro barra o trecho clínico (409)
+  ✓ o filtro devolve o trecho e a categoria para a tela explicar
+  ✓ o filtro preserva as marcações já feitas
+  ✓ com limpeza confirmada, a observação é concluída
+  ✓ exatamente 1 trecho foi descartado
+  ✓ o conteúdo clínico NÃO chegou ao banco
+  ✓ o restante da anotação foi preservado
+
+5 · Fechar o ciclo da turma (F5) — o momento da persona
+  ✓ observação concluída para Kelly T.
+  ✓ a última conclusão zera as pendências da turma
+  ✓ cobertura da turma chega a 100%
+  ✓ as bloqueadas continuam bloqueadas (não foram forçadas)
+  ✓ o painel da turma tem dois ciclos comparáveis
+  ✓ todas as dimensões têm média nos dois ciclos
+  ✓ a leitura do ciclo aponta forças e atenção
+
+5b · Cronômetro, plano da semana, supressão e reconciliação
+  ✓ o custo de tempo do registro é medido e devolvido
+  ✓ a duração enviada na chamada foi persistida (média plausível)
+  ✓ a meta do experimento é 120 segundos
+  ✓ o plano da semana traz o foco pedagógico com justificativa
+  ✓ o foco aponta a menor média da turma
+  ✓ a atividade sugerida vem do banco fixo por dimensão
+  ✓ o plano declara a doutrina: nenhum item nasce de modelo
+  ✓ ganchos de aspiração agregados por área, sem expor além da equipe
+  ✓ nenhuma média agregada circula com menos de 5 crianças (supressão)
+  ✓ o painel da coordenação traz a reconciliação com 3 fontes
+  ✓ a promessa de tempo aparece para a coordenação
+  ✓ há criança com aspiração declarada na ficha (Lab. de Sonhos)
+  ✓ a aspiração declara base legal na tabela de governança
+
+6 · Alerta de ausência e safras (F6)
+  ✓ há alerta de ausência aberto
+  ✓ status de alerta inválido é recusado
+  ✓ alerta passa a em_acompanhamento com tratativa registrada
+  ✓ há curvas de permanência por safra
+  ✓ a permanência nunca sobe ao longo do tempo dentro de uma safra
+  ✓ evasão por programa é calculada
+
+7 · Fecho do ciclo: síntese, revisor e aprovação (F7)
+  ✓ a prévia traz os números do ciclo antes de gerar
+  ✓ síntese é gerada como rascunho
+  ✓ o revisor de sobre-alegação aprovou o texto
+  ✓ o texto NÃO usa verbo causal forte
+  ✓ o texto traz a ressalva metodológica
+  ✓ os números do texto batem com a consulta
+  ✓ educadora não aprova síntese (403)
+  ✓ coordenação aprova e libera
+  ✓ síntese aprovada não é sobrescrita por acidente
+
+8 · Consentimento desbloqueia o campo (F1 · LGPD Art. 14)
+  ✓ painel de consentimentos separa ativos de pendentes
+  ✓ a tabela de governança declara os 4 atributos de cada campo
+  ✓ ativar consentimento sem nomear o responsável é recusado
+  ✓ consentimento registrado com responsável
+  ✓ a criança antes bloqueada agora é observável
+  ✓ consentimento pode ser revogado
+  ✓ revogação volta a bloquear o campo
+
+9 · Ficha viva da criança (F1)
+  ✓ busca por nome devolve resultados
+  ✓ ficha traz matrículas, presença, trajetória e governança
+  ✓ ficha de criança inexistente responde 404
+  ✓ parâmetro inválido responde 422
+
+10 · Robustez
+  ✓ rota inexistente responde 404 em JSON
+  ✓ JSON malformado responde 400
+  ✓ não serve arquivo fora de public/
+  ✓ painel da coordenação monta com todos os blocos
+
+86 passaram · 0 falharam
+

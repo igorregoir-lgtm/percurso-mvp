@@ -1,0 +1,13 @@
+{
+  "name": "percurso-mvp",
+  "version": "1.0.0",
+  "description": "Percurso — MVP funcional de monitoramento de impacto socioemocional do Instituto Ebenezer (Desafio B). Zero dependencias externas.",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=22.5.0" },
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node scripts/reset.mjs",
+    "test": "node scripts/smoke-test.mjs"
+  }
+}
