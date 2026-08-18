@@ -44,6 +44,8 @@ PORT=8080 node server.js
 
 ## Demo hospedada (Vercel)
 
+**Demo no ar: https://percurso-mvp-l551.vercel.app** — deploy automático a cada push na `main`.
+
 O repositório inclui `vercel.json` para uma demo pública. Atenção: no Vercel o banco vive em
 `/tmp` de uma função serverless — **os dados são efêmeros por instância** (cada arranque a frio
 recomeça dos dados sintéticos, o que serve bem a uma demo e mal a uma operação). A operação real
