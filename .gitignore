@@ -1,7 +1,16 @@
+data/*.db
+data/*.db-journal
 node_modules/
 .DS_Store
 *.log
-data/percurso.db-wal
-data/percurso.db-shm
 .env
 .vercel
+
+# Intermediários do vídeo (o .mp4 final fica versionado)
+video/quadros/
+video/molduras/
+data/*.db-wal
+data/*.db-shm
+
+# Protótipo de referência Bússola — material comparativo, não é o produto (ver README)
+remix-bússola-—-instituto-ebenézer/
