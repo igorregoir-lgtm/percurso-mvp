@@ -1,10 +1,7 @@
-data/*.db
-data/*.db-journal
 node_modules/
 .DS_Store
-
-# Intermediários do vídeo (o .mp4 final fica versionado)
-video/quadros/
-video/molduras/
-data/*.db-wal
-data/*.db-shm
+*.log
+data/percurso.db-wal
+data/percurso.db-shm
+.env
+.vercel
