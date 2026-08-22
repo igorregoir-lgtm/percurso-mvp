@@ -34,6 +34,15 @@ Para rodar a bateria de testes do fluxo principal (com o servidor no ar, em outr
 node scripts/smoke-test.mjs
 ```
 
+Para rodar os testes unitários das regras críticas (não precisa de servidor; usa um banco
+temporário e nunca toca `data/percurso.db`):
+
+```bash
+node scripts/unit-test.mjs
+```
+
+As duas baterias também rodam automaticamente a cada push (`.github/workflows/ci.yml`).
+
 Para usar outra porta:
 
 ```bash
@@ -108,17 +117,21 @@ src/seed.js               geração dos dados sintéticos
 src/api.js                rotas HTTP/JSON
 public/                   interface (HTML + CSS + JS, sem build)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    73 testes do fluxo principal
+scripts/smoke-test.mjs    86 testes do fluxo principal (contra o servidor no ar)
+scripts/unit-test.mjs     20 testes unitários das regras críticas (banco temporário)
 data/percurso.db          o banco (um arquivo — copie para fazer backup)
 docs/                     modelo de dados, decisões técnicas, testes, roteiro do vídeo
 ```
 
-**Backup:** copiar `data/percurso.db` é o backup completo. Restaurar é copiar de volta.
+**Backup:** com o servidor **parado**, copiar `data/percurso.db` é o backup completo — restaurar
+é copiar de volta. Com o servidor **no ar**, o modo WAL mantém escrita recente em
+`percurso.db-wal`; nesse caso copie os três arquivos (`percurso.db`, `-wal`, `-shm`) juntos.
 
 ---
 
 ## Documentação de handover
 
+- [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) — **plano de arquitetura**: restrições do dossiê → respostas de desenho, arquitetura atual, invariantes e os três horizontes de evolução (entrega 09/10 → piloto real → módulos condicionados)
 - [`docs/LEAN-INCEPTION.md`](docs/LEAN-INCEPTION.md) — a análise que originou o escopo
 - [`docs/ANALISE-BUSSOLA.md`](docs/ANALISE-BUSSOLA.md) — análise comparativa com o app Bússola: o que foi adotado (cronômetro de registro, reconciliação, plano da semana, supressão n<5, aspiração, impressão) e o que foi rejeitado, com justificativa
 - [`docs/MODELO-DE-DADOS.md`](docs/MODELO-DE-DADOS.md) — entidades, relações e atributos
@@ -127,3 +140,15 @@ docs/                     modelo de dados, decisões técnicas, testes, roteiro 
 - [`docs/EVIDENCIAS-DE-TESTE.txt`](docs/EVIDENCIAS-DE-TESTE.txt) — saída da última execução
 - [`docs/ROTEIRO-DO-VIDEO.md`](docs/ROTEIRO-DO-VIDEO.md) — o roteiro do vídeo
 - [`video/percurso-demonstracao.mp4`](video/percurso-demonstracao.mp4) — **vídeo demonstrativo**, 6m14s, 1080p, legendado e sem áudio ([como foi gerado](video/README.md))
+- [`docs/revisao/`](docs/revisao/) — revisão arquitetural completa (22/08/2026): baseline de requisitos, matriz de rastreabilidade arquitetura → implementação → teste, e relatório de achados priorizados
+
+---
+
+## Sobre a pasta `remix-bússola-—-instituto-ebenézer/`
+
+É o **protótipo de referência Bússola** (Google AI Studio / React / Gemini), analisado em
+[`docs/ANALISE-BUSSOLA.md`](docs/ANALISE-BUSSOLA.md). **Não é o produto entregue e não roda em
+produção**: depende de LLM na nuvem e de `localStorage`, duas escolhas rejeitadas com
+justificativa escrita. As sete ideias adotadas dele foram reimplementadas de forma
+determinística no Percurso. A pasta permanece apenas como material comparativo e não é
+rastreada no git.

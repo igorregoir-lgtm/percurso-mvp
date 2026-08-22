@@ -16,6 +16,16 @@ node scripts/smoke-test.mjs
 
 Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **86 passaram, 0 falharam**.
 
+Há também uma bateria de **20 testes unitários** das regras críticas de domínio (filtro de
+perímetro, revisor de sobre-alegação, consentimento, supressão n<5, imutabilidade da síntese),
+que roda sem servidor, contra um banco temporário descartável:
+
+```bash
+node scripts/unit-test.mjs
+```
+
+As duas baterias rodam a cada push via [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
+
 Os testes **alteram o banco** (concluem observações, aprovam a síntese, revogam consentimento).
 Para voltar ao estado de demonstração — pode rodar com o servidor no ar, é só recarregar a página:
 

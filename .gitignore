@@ -8,3 +8,6 @@ video/quadros/
 video/molduras/
 data/*.db-wal
 data/*.db-shm
+
+# Protótipo de referência Bússola — material comparativo, não é o produto (ver README)
+remix-bússola-—-instituto-ebenézer/

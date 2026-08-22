@@ -1,0 +1,33 @@
+# Percurso — validação contínua mínima.
+# A cada push/PR: testes unitários de domínio + bateria smoke contra o servidor no ar.
+# Sem npm install: o projeto não tem dependência externa (decisão técnica nº 1).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Testes unitários de domínio (banco temporário)
+        run: node scripts/unit-test.mjs
+
+      - name: Subir servidor com dados sintéticos
+        run: |
+          node server.js &
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:3000/api/sessao > /dev/null && break
+            sleep 0.5
+          done
+
+      - name: Smoke tests do fluxo principal
+        run: node scripts/smoke-test.mjs

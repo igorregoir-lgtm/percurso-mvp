@@ -8,6 +8,7 @@
   "scripts": {
     "start": "node server.js",
     "seed": "node scripts/reset.mjs",
-    "test": "node scripts/smoke-test.mjs"
+    "test": "node scripts/smoke-test.mjs",
+    "test:unit": "node scripts/unit-test.mjs"
   }
 }
