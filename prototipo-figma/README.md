@@ -4,13 +4,14 @@ Protótipo interativo mobile (390px) fiel ao design no Figma do Instituto Social
 
 ## Como abrir
 
-Abra `index.html` no navegador, ou:
+Abra `completo.html` ou `percurso-prototipo.html` no navegador (duplo clique),
+ou:
 
 ```bash
 python3 -m http.server 8765
 ```
 
-Depois acesse http://localhost:8765
+Acesse http://localhost:8765
 
 ## Telas
 
@@ -21,11 +22,5 @@ Depois acesse http://localhost:8765
 - Olhar
 - Turma
 - Painel da coordenação
-
-## Fluxo
-
-1. Escolha Maria → Hoje → Chamada → Folha do dia
-2. Registrar um olhar
-3. Escolha Rita → Painel
 
 Instituto Social Ebenézer · Trilha B · Monitoramento de impacto
