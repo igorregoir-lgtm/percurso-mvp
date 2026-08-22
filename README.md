@@ -42,18 +42,6 @@ PORT=8080 node server.js
 
 ---
 
-## Demo hospedada (Vercel)
-
-**Demo no ar: https://percurso-mvp-l551.vercel.app** — deploy automático a cada push na `main`.
-
-O repositório inclui `vercel.json` para uma demo pública. Atenção: no Vercel o banco vive em
-`/tmp` de uma função serverless — **os dados são efêmeros por instância** (cada arranque a frio
-recomeça dos dados sintéticos, o que serve bem a uma demo e mal a uma operação). A operação real
-do Instituto roda como descrito acima: `node server.js` numa máquina própria, banco em arquivo
-local com backup por cópia.
-
----
-
 ## Quem entra e o que vê
 
 O MVP não guarda senha — o controle de acesso real é uma decisão da coordenação, registrada em
@@ -110,20 +98,28 @@ public/                   interface (HTML + CSS + JS, sem build)
 scripts/reset.mjs         recria o banco do zero
 scripts/smoke-test.mjs    73 testes do fluxo principal
 data/percurso.db          o banco (um arquivo — copie para fazer backup)
-docs/                     modelo de dados, decisões técnicas, testes, roteiro do vídeo
+docs/                     Lean Inception, modelo de dados, decisões técnicas
+prototipo-figma/          protótipo mobile fiel ao Figma (standalone)
 ```
-
-**Backup:** copiar `data/percurso.db` é o backup completo. Restaurar é copiar de volta.
 
 ---
 
-## Documentação de handover
+## Protótipo Figma (mobile)
 
-- [`docs/LEAN-INCEPTION.md`](docs/LEAN-INCEPTION.md) — a análise que originou o escopo
-- [`docs/ANALISE-BUSSOLA.md`](docs/ANALISE-BUSSOLA.md) — análise comparativa com o app Bússola: o que foi adotado (cronômetro de registro, reconciliação, plano da semana, supressão n<5, aspiração, impressão) e o que foi rejeitado, com justificativa
-- [`docs/MODELO-DE-DADOS.md`](docs/MODELO-DE-DADOS.md) — entidades, relações e atributos
-- [`docs/DECISOES-TECNICAS.md`](docs/DECISOES-TECNICAS.md) — o que foi decidido e por quê
-- [`docs/TESTES.md`](docs/TESTES.md) — o que foi testado, como reproduzir
-- [`docs/EVIDENCIAS-DE-TESTE.txt`](docs/EVIDENCIAS-DE-TESTE.txt) — saída da última execução
-- [`docs/ROTEIRO-DO-VIDEO.md`](docs/ROTEIRO-DO-VIDEO.md) — o roteiro do vídeo
-- [`video/percurso-demonstracao.mp4`](video/percurso-demonstracao.mp4) — **vídeo demonstrativo**, 6m14s, 1080p, legendado e sem áudio ([como foi gerado](video/README.md))
+Dentro de `prototipo-figma/` há o protótipo interativo fiel ao design do Figma:
+
+- `completo.html` ou `percurso-prototipo.html` — abre direto no navegador (standalone)
+- `index.html` + `styles.css` + `app.js` — versão modular
+
+Telas: Entrada · Hoje · Chamada · Folha do dia · Olhar · Turma · Painel da coordenação
+
+```bash
+# opcional: servir localmente
+cd prototipo-figma && python3 -m http.server 8765
+```
+
+---
+
+## Atualização
+
+Última sincronização deste repositório: **22 de agosto de 2026**.
