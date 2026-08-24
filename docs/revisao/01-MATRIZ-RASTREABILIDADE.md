@@ -6,6 +6,14 @@ teste que o protege. Status: **✅ conforme** · **🟡 parcial** · **⛔ ausen
 
 Referências de linha são da revisão de 22/08/2026 (commit `9b7d32b` + mudanças desta revisão).
 
+> **Esta matriz é um retrato datado, anterior à incorporação do `percurso-v2-pack`.** Ela é
+> preservada como está para que a trilha de auditoria não se apague. Três linhas mudaram de estado
+> depois dela, no mesmo dia: **RNF-13** (retenção do campo livre) passou a ✅ — o campo saiu do
+> produto e `fecharCiclo` apaga valores legados; **F6** dispara com **2** faltas consecutivas, não 3;
+> e o escopo cresceu de F1–F7 para F1–F7 + F1–F15 do pack v2. O estado corrente está em
+> [`02-RELATORIO-REVISAO.md`](02-RELATORIO-REVISAO.md) (§9),
+> [`03-AUDITORIA-V2.md`](03-AUDITORIA-V2.md) e [`../O-QUE-VEIO-DA-V2.md`](../O-QUE-VEIO-DA-V2.md).
+
 ---
 
 ## Módulos

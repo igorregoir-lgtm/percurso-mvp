@@ -131,9 +131,11 @@ automatizado.
 
 ## 5. Persistência, deploy e operação
 
-- **Local (operação real)**: banco em arquivo, WAL, auto-seed no primeiro boot. Correto.
-- **Vercel (demo)**: `/tmp` efêmero, declarado no README como demo — correto; **não é** e
-  não deve virar o ambiente de operação. Cold start re-semeia sozinho (verificado no boot).
+- **Local**: banco em arquivo, WAL, auto-seed no primeiro boot. Correto.
+- **Render (deploy canônico)**: `render.yaml` monta disco persistente em `/var/data` e define
+  `PERCURSO_DB=/var/data/percurso.db`. O serviço deve permanecer com uma instância enquanto usar
+  SQLite; o plano gratuito sem disco é inadequado para persistência. Esta configuração substitui
+  a antiga demo efêmera no Vercel.
 - **Sem migrations**: o esquema é `CREATE TABLE IF NOT EXISTS`. Suficiente enquanto o
   esquema for estável; a primeira alteração de coluna vai exigir script manual. Registrar
   como limite conhecido — não vale a pena um framework de migração para este porte.
@@ -189,3 +191,31 @@ registradas, não por omissão. O que separa a demo do piloto real é pequeno e 
 fecho de ciclo com descarte (A-05), escopo no RBAC (A-07) e o pacote de operação já
 declarado como dívida. Nenhuma alegação de "pronto para dado real" deve ser feita antes
 desses itens — e o repositório, corretamente, não a faz.
+
+---
+
+## 9. Situação dos achados após a incorporação da v2 (22/08/2026, mesma data)
+
+A rodada que incorporou o `percurso-v2-pack` mexeu em partes do código que esta revisão havia
+apontado. O estado de cada achado, verificado por teste:
+
+| ID | Sev. original | Estado agora | Onde |
+|---|---|---|---|
+| **A-05** | P1 | **RESOLVIDO** — o campo livre saiu do produto (decisão 15) e `fecharCiclo` apaga qualquer valor legado; a coordenação fecha o ciclo e o próximo abre | `src/domain.js` (`fecharCiclo`), unit *"executa a retenção declarada e apaga texto legado"*, smoke §18 |
+| **A-09** | P3 | **RESOLVIDO** — o revisor passou a usar borda de palavra em vez de substring, e a lista ganhou "graças", "por causa", "o impacto foi", "transformou". Deixou de ser oportunista: o revisor agora guarda também o relatório que **sai** da organização | `src/domain.js` (`REGEX_PROIBIDOS`), unit *"borda de palavra, não substring (achado A-09)"* |
+| **A-12** | P3 | **RESOLVIDO** — Esc fecha o véu e, se não houver véu, a tela de celebração | `public/app.js` (listener de `keydown`) |
+| **A-07** | P1 | **PARCIAL** — o perfil da diretoria foi fechado para todo registro individual (decisão 16, smoke §16). O escopo **entre educadoras** continua aberto e permanece como item 1.2 do horizonte 1 | `src/api.js` (`semAcessoIndividual`) |
+| A-06, A-08, A-10, A-11, A-13 | P2/P3 | **em aberto**, sem mudança |
+| A-01 a A-04 | operação | **em aberto**, como declarado; nenhum deles foi tocado pela v2 |
+
+**Achados novos, encontrados e corrigidos na própria rodada da v2** (registrados aqui para que a
+próxima revisão saiba que existiram):
+
+| O quê | Como apareceu | Correção |
+|---|---|---|
+| `PRAGMA user_version` carimbado sem que o esquema fosse recriado, deixando banco velho marcado como novo | primeira execução da migração | a versão passou a ser a assinatura do próprio DDL (decisão 14) |
+| A confiança do extrator podia ser reescrita pelo corpo da requisição ao editar a folha à mão, sujando a métrica que mede o agente | leitura do fluxo de edição | a confiança passa a vir só da sugestão do agente; editar à mão marca `origem = manual` (smoke §11) |
+| Folha fechada sem caminho de reabertura — beco sem saída num sistema que a organização opera sozinha | leitura do fluxo de fecho | `reabrirFolha`, restrita à coordenação e registrada no lastro de atividade (smoke §11) |
+| Score de evasão saturando em 100 para toda criança em risco, tornando a coluna inútil para priorizar | observação da tela `#/scores` | pesos recalibrados com teto por componente (decisão 18), com teste que reprova saturação |
+| `revisarSobreAlegacao` endurecido reprovando o próprio disclaimer do relatório ("não estabelece causa") | regressão detectada pelo teste novo | o disclaimer passou a usar "relação causal"; teste cobre o caso |
+| Cartão "Chamada de hoje" convidando a registrar encontro em dia sem aula (sábado numa turma de semana) | observação da tela `#/hoje` | `/api/hoje` devolve `dia_letivo` e o cartão aponta a data em aberto |

@@ -42,3 +42,18 @@ O Bússola é forte em **loop de reciprocidade** (registro → pauta de volta) e
 custo** (cronômetro) — as duas coisas entraram. É frágil onde terceiriza julgamento a um LLM na
 nuvem e onde aposta em cadência diária sem âncora metodológica — nessas, o Percurso mantém a
 posição documentada, agora com a rejeição registrada e justificada.
+
+## Revisitado na v2 (22/08/2026)
+
+A incorporação do `percurso-v2-pack` reabriu três linhas desta tabela. O registro fica aqui para
+que a decisão anterior não pareça ter sido apagada — ela foi **revista, com fato novo**.
+
+| Linha desta análise | O que mudou | Onde |
+|---|---|---|
+| *"Fluxo aceitar/dispensar da pauta com histórico"* — rejeitado como fase 2 | **Adotado.** O pack o coloca como F11 e mostra por quê: o **descarte** é a métrica que diz se a sugestão está genérica. Sem ele, não há como saber se a pauta está sendo lida. | tabela `pauta`, `#/pauta`, `taxaDeDescarte` |
+| *"Offline-first com flag `synced`"* — rejeitado por custo de service worker | **Adotado em versão menor.** Não há service worker nem cache de aplicação: só uma fila em `localStorage` para `POST` que falhou **por rede**, drenada no evento `online`. Custo baixo, e a restrição real (a rede cai dentro da sala) continua de pé. | `postComFila`, decisão técnica nº 17 |
+| *"Resumo falado transcrito por LLM na nuvem"* — rejeitado por sair da organização | **A rejeição continua de pé, e a alternativa cresceu.** A dica de ditado pelo teclado virou uma tela de captura de 40 segundos com `SpeechRecognition` do próprio navegador: o áudio continua não saindo do aparelho, e agora existe o agente extrator determinístico do lado do servidor. | `#/voz`, `src/voz.js`, decisão técnica nº 13 |
+
+Também mudou o item 5 dos adotados: a aspiração deixou de ser a coluna `crianca.aspiracao` e virou
+a tabela `aspiracao`, com data de declaração — como o `05-MODELO-DE-DADOS.md` do pack pede. Ela
+agora alimenta o **score de exposição**, que não existia quando esta análise foi escrita.

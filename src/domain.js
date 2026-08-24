@@ -9,8 +9,10 @@ export const PARAMS = {
   // Janela minima de convivio: quantos encontros a educadora precisa ter tido
   // com a crianca antes de poder responder a rubrica sobre ela.
   JANELA_MINIMA_CONVIVIO: 4,
-  // Ausencias consecutivas que disparam alerta operacional (F6).
-  AUSENCIAS_ALERTA: 3,
+  // Ausencias consecutivas que disparam alerta operacional (F6/F8).
+  // v2: duas faltas seguidas ja colocam a crianca na lista — e' o aceite da
+  // US4 e do 02-FEATURES ("aparece no dia seguinte a segunda falta").
+  AUSENCIAS_ALERTA: 2,
   // Escala da rubrica.
   NIVEL_MIN: 1,
   NIVEL_MAX: 4,
@@ -22,6 +24,18 @@ export const PARAMS = {
   // Supressao de celula pequena: agregado com menos de N criancas nao sai
   // (logica populacional do EDI — protege contra reidentificacao).
   MINIMO_CELULA: 5,
+  // --- v2 -----------------------------------------------------------------
+  // Janela maxima da captura por voz, em segundos.
+  VOZ_SEGUNDOS: 40,
+  // Abaixo disto o extrator nao pre-marca nada: falhar em branco e' melhor que
+  // falhar preenchido (06-AGENTES-IA).
+  CONFIANCA_MINIMA: 0.6,
+  // Score de evasao a partir do qual a matricula entra na pauta e no painel.
+  RISCO_ACAO: 60,
+  // Cobertura de registro abaixo disto acende sinal para a coordenacao.
+  COBERTURA_ALERTA: 70,
+  // Taxa de descarte da pauta acima disto significa agente generico.
+  DESCARTE_ALERTA: 30,
 };
 
 export const hoje = () => {
@@ -89,6 +103,16 @@ export function criancasDaTurma(turmaId) {
 
 export function encontroDe(turmaId, data) {
   return get(`SELECT * FROM encontro WHERE turma_id = ? AND data = ?`, turmaId, data);
+}
+
+// A folha e' do ENCONTRO, nao do calendario. Se hoje nao houve encontro (sabado
+// numa turma de semana, feriado, recesso), a folha que a educadora quer abrir e'
+// a do ultimo encontro registrado — e a tela mostra a data por extenso para nao
+// haver duvida sobre qual dia ela esta descrevendo.
+export function dataDaFolha(turmaId, ref = hoje()) {
+  if (encontroDe(turmaId, ref)) return ref;
+  return get(`SELECT data FROM encontro WHERE turma_id = ? AND data <= ? ORDER BY data DESC LIMIT 1`,
+             turmaId, ref)?.data ?? ref;
 }
 
 export function chamada(turmaId, data) {
@@ -168,7 +192,7 @@ export function chamadasEmAberto(turmaId, limite = 10) {
   return abertas.slice(-limite);
 }
 
-function diaLetivo(turno, iso) {
+export function diaLetivo(turno, iso) {
   const dow = new Date(iso + 'T12:00:00Z').getUTCDay(); // 0=dom
   return turno === 'sabado' ? dow === 6 : dow >= 1 && dow <= 5;
 }
@@ -332,22 +356,56 @@ export function agendaDoCiclo(turmaId, cicloId) {
 // Deterministico, local, auditavel: sem modelo, sem chamada externa.
 // --------------------------------------------------------------------------
 const PERIMETRO = [
-  { rotulo: 'saúde mental / diagnóstico', termos: ['depress', 'depressiv', 'ansiedad', 'transtorno', 'autis', 'tdah', 'bipolar', 'psiquiatr', 'psicolog', 'terapia', 'diagnostic', 'diagnóstic', 'laudo', 'suicid', 'automutil', 'medicad', 'medicament', 'remedio', 'remédio', 'ritalina', 'fluoxetina'] },
-  { rotulo: 'violência / proteção', termos: ['abuso', 'abusad', 'violen', 'estupr', 'agress', 'apanh', 'espanc', 'conselho tutelar', 'assedi', 'assédi'] },
-  { rotulo: 'vida íntima e familiar', termos: ['pai bebe', 'pai bêbado', 'mae bebe', 'mãe bêbada', 'alcool', 'álcool', 'droga', 'trafic', 'preso', 'cadeia', 'presidio', 'presídio', 'separac', 'separaç', 'divorci', 'divórci', 'despej', 'em casa nao tem', 'em casa não tem', 'passa fome', 'briga em casa', 'apanha em casa'] },
-  { rotulo: 'saúde física / corpo', termos: ['doenca', 'doença', 'hospital', 'internad', 'cirurgi', 'convuls', 'epilep', 'hiv', 'gravid'] },
+  { rotulo: 'saúde mental / diagnóstico', termos: ['depress', 'depressiv', 'deprimid', 'ansiedad', 'ansios', 'transtorno', 'autis', 'tdah', 'bipolar', 'psiquiatr', 'psicolog', 'psicólog', 'terapia', 'terapeut', 'diagnostic', 'diagnóstic', 'laudo', 'suicid', 'automutil', 'medicad', 'medicament', 'remedio', 'remédio', 'ritalina', 'fluoxetina', 'traumatiz', 'trauma', 'atendimento individual'] },
+  { rotulo: 'violência / proteção', termos: ['abuso', 'abusad', 'violen', 'estupr', 'agress', 'apanh', 'espanc', 'conselho tutelar', 'conselhos tutelares', 'assedi', 'assédi', 'denuncia', 'denúncia', 'maus tratos', 'maus-tratos'] },
+  { rotulo: 'vida íntima e familiar', termos: ['pai bebe', 'pai bêbado', 'mae bebe', 'mãe bêbada', 'alcool', 'álcool', 'droga', 'trafic', 'preso', 'cadeia', 'presidio', 'presídio', 'prisao', 'prisão', 'prisoes', 'prisões', 'separac', 'separaç', 'divorci', 'divórci', 'despej', 'em casa nao tem', 'em casa não tem', 'passa fome', 'briga em casa', 'apanha em casa', 'luto', 'morreu', 'faleceu', 'velório', 'velorio', 'sem casa', 'na rua', 'situacao familiar', 'situação familiar', 'situacao em casa', 'situação em casa', 'situacao de vulnerabilidade', 'situação de vulnerabilidade'] },
+  // "saude" NAO entra solto de proposito: "roda de conversa sobre saude" e' uma
+  // area tematica legitima da folha, e bloquear isso quebraria o score de
+  // exposicao. O que o bloco 6 barra e' a saude DE UMA CRIANCA — por isso os
+  // termos aqui sao contextualizados.
+  { rotulo: 'saúde física / corpo', termos: ['doenca', 'doença', 'hospital', 'internad', 'cirurgi', 'convuls', 'epilep', 'hiv', 'gravid', 'sintoma', 'febre', 'desnutri', 'nao come', 'não come', 'sem comer', 'saude dela', 'saúde dela', 'saude dele', 'saúde dele', 'problema de saude', 'problema de saúde', 'de saude nao', 'de saúde não'] },
 ];
 
-export function filtrarPerimetro(texto) {
+// Categoria 5 do 06-AGENTES-IA: "qualquer afirmacao sobre o estado psiquico ou
+// emocional interno de uma CRIANCA NOMEADA". Nao da para resolver com lista de
+// palavras solta — "a turma ficou triste" e' observacao de grupo e passaria a
+// disparar o aviso a toa, treinando a educadora a ignora-lo. A regra exige as
+// DUAS coisas na mesma frase: um nome da turma e uma afirmacao de estado interno.
+const ESTADO_INTERNO = [
+  'trist', 'deprimid', 'abatid', 'apatic', 'apátic', 'angusti', 'ansios',
+  'sofrend', 'sofre muito', 'traumatiz', 'chorou', 'chorando', 'nao fala com ninguem',
+  'não fala com ninguém', 'se isolou', 'isolad', 'sem vontade', 'carente', 'revoltad',
+];
+
+// Comparacao SEM ACENTO nos dois lados. Sem isto, 'violen' nao casava com
+// "violência" — a palavra que da nome a propria categoria passava batido, e a
+// lista precisava de duplicatas acentuadas para cada termo.
+const semAcento = (t) => String(t ?? '').toLowerCase()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+/**
+ * @param {string} texto
+ * @param {string[]} [nomes]  nomes da turma; habilita a categoria 5 (estado
+ *                            psiquico de crianca NOMEADA)
+ */
+export function filtrarPerimetro(texto, nomes = []) {
   const bruto = (texto || '').trim();
   if (!bruto) return { limpo: '', bloqueado: false, trechos: [] };
+  const primeiros = [...new Set(nomes.map(n => semAcento(n).split(' ')[0]).filter(n => n.length >= 3))];
   const frases = bruto.split(/(?<=[.!?;\n])\s*/).filter(f => f.trim());
   const trechos = [];
   const mantidas = [];
   for (const f of frases) {
-    const norm = f.toLowerCase();
-    const hit = PERIMETRO.find(cat => cat.termos.some(t => norm.includes(t)));
-    if (hit) trechos.push({ trecho: f.trim(), categoria: hit.rotulo });
+    const norm = semAcento(f);
+    // O trecho devolvido é o ORIGINAL, com acento: a normalização serve só para
+    // comparar. Quem lê o encaminhamento tem que ver o que de fato foi dito.
+    let hit = PERIMETRO.find(cat => cat.termos.some(t => norm.includes(semAcento(t))))?.rotulo;
+    if (!hit
+        && primeiros.some(n => new RegExp('(^|[^a-z])' + n + '($|[^a-z])').test(norm))
+        && ESTADO_INTERNO.some(t => norm.includes(semAcento(t)))) {
+      hit = 'estado psíquico de criança nomeada';
+    }
+    if (hit) trechos.push({ trecho: f.trim(), categoria: hit });
     else mantidas.push(f.trim());
   }
   return { limpo: mantidas.join(' ').trim(), bloqueado: trechos.length > 0, trechos };
@@ -369,7 +427,11 @@ export function observacaoDe(cicloId, criancaId) {
   return o;
 }
 
-export function salvarObservacao({ cicloId, criancaId, educadorId, itens, notaLivre, concluir, forcarLimpeza }) {
+// v2: o olhar nao tem mais campo de texto livre. Texto narrativo sobre crianca
+// nomeada e' a coluna clinica do bloco 6 — a decisao esta em 01-VISAO-E-MUDANCAS
+// do pack v2 e em DECISOES-TECNICAS n. 15. `notaLivre` continua no contrato da
+// funcao apenas para RECUSAR explicitamente quem tentar gravar por ela.
+export function salvarObservacao({ cicloId, criancaId, educadorId, itens, notaLivre, concluir }) {
   const ciclo = get(`SELECT * FROM ciclo WHERE id = ?`, cicloId);
   if (!ciclo) throw erro(404, 'Ciclo não encontrado.');
   if (ciclo.status !== 'aberto') throw erro(422, 'Este ciclo já foi fechado — não aceita nova observação.');
@@ -390,22 +452,13 @@ export function salvarObservacao({ cicloId, criancaId, educadorId, itens, notaLi
                { recuperavel: true });
   }
 
-  // O campo livre tem base legal propria: sem consentimento, nem existe.
+  // O olhar nao aceita texto sobre a crianca. Quem tentar gravar recebe 422 com
+  // o encaminhamento humano — a mesma porta que a voz usa.
   if ((notaLivre || '').trim()) {
-    const consNota = consentimentoDe(criancaId, 'campo_livre');
-    if (consNota.status !== 'ativo') {
-      throw erro(403, 'O campo livre desta criança está bloqueado — falta o consentimento específico do responsável para esse campo.',
-                 { motivo: 'consentimento_campo_livre' });
-    }
+    throw erro(422,
+      'O olhar não guarda texto sobre a criança. Se for algo que precisa de encaminhamento, fale com a coordenação — esse caminho é fora daqui.',
+      { motivo: 'campo_livre_removido' });
   }
-
-  // Filtro de perimetro antes de gravar. Nada bloqueado chega ao banco.
-  const f = filtrarPerimetro(notaLivre);
-  if (f.bloqueado && !forcarLimpeza) {
-    throw erro(409, 'Um trecho da anotação fala de assunto que o Percurso não guarda.',
-               { filtro: f, marcacoes_preservadas: [...marcados].map(([d, n]) => ({ dimensao_id: d, nivel: n })) });
-  }
-  const notaFinal = f.limpo || null;
 
   return tx(() => {
     let obs = get(`SELECT * FROM observacao WHERE ciclo_id = ? AND crianca_id = ?`, cicloId, criancaId);
@@ -413,20 +466,20 @@ export function salvarObservacao({ cicloId, criancaId, educadorId, itens, notaLi
     if (!obs) {
       run(`INSERT INTO observacao (ciclo_id, crianca_id, educador_id, status, nota_livre, atualizado_em, concluido_em)
            VALUES (?,?,?,?,?,?,?)`,
-          cicloId, criancaId, educadorId, status, notaFinal, agora(), concluir ? agora() : null);
+          cicloId, criancaId, educadorId, status, null, agora(), concluir ? agora() : null);
       obs = get(`SELECT * FROM observacao WHERE ciclo_id = ? AND crianca_id = ?`, cicloId, criancaId);
     } else {
       if (obs.status === 'concluida' && !concluir) throw erro(422, 'Observação já concluída não volta para rascunho.');
       run(`UPDATE observacao SET status=?, nota_livre=?, educador_id=?, atualizado_em=?,
              concluido_em = COALESCE(concluido_em, ?) WHERE id = ?`,
-          status, notaFinal, educadorId, agora(), concluir ? agora() : null, obs.id);
+          status, null, educadorId, agora(), concluir ? agora() : null, obs.id);
     }
     run(`DELETE FROM observacao_item WHERE observacao_id = ?`, obs.id);
     for (const [dim, nivel] of marcados) {
       run(`INSERT INTO observacao_item (observacao_id, dimensao_id, nivel) VALUES (?,?,?)`, obs.id, dim, nivel);
     }
     marcarAtividade(educadorId, concluir ? 'observacao' : 'rascunho');
-    return { id: obs.id, status, trechos_descartados: f.trechos.length };
+    return { id: obs.id, status };
   });
 }
 
@@ -553,15 +606,30 @@ export function presencaMedia(mesIso = null) {
 // F7 — fecho do ciclo. Template contido: os numeros vem do SQL, nunca de
 // geracao livre. O revisor de sobre-alegacao barra verbo causal forte.
 // --------------------------------------------------------------------------
+// Borda de palavra, nao substring: `gera ` com espaco deixava passar "...gera."
+// no fim de frase (achado A-09 da revisao de 22/08/2026). Irrelevante enquanto o
+// unico produtor de texto era o template do ciclo; virou risco quando o revisor
+// passou a guardar tambem o relatorio do doador, que sai da organizacao.
 const VERBOS_PROIBIDOS = [
-  'gerou', 'gera ', 'causou', 'causa ', 'provou', 'prova que', 'comprova que',
-  'garante', 'garantiu', 'resultou em', 'e responsavel por', 'é responsável por',
-  'demonstra causalidade', 'em decorrencia direta', 'em decorrência direta',
+  'gerou', 'gera', 'causou', 'causa', 'provou', 'prova que', 'comprova que',
+  'garante', 'garantiu', 'resultou em', 'é responsável por', 'e responsavel por',
+  'demonstra causalidade', 'em decorrência direta', 'em decorrencia direta',
+  // Sem preposição no fim: em português ela se contrai com o artigo ("graças ao",
+  // "por causa da") e a borda de palavra deixaria de casar.
+  'graças', 'gracas', 'por causa', 'o impacto foi', 'transformou',
+  // "contribuiu para" é atribuição causal atenuada — e era o buraco do revisor:
+  // o próprio template do relatório passava por ele. O pack é explícito
+  // (06-AGENTES-IA): escreve "crianças com maior presença apresentam", nunca
+  // "o programa causou". Atenuar com "os dados sugerem" não muda a afirmação.
+  'contribuiu', 'contribuíram', 'contribuiram', 'contribuem', 'contribui',
+  'contribuição', 'contribuicao', 'contribuindo',
 ];
+const REGEX_PROIBIDOS = VERBOS_PROIBIDOS.map(v =>
+  new RegExp('(^|[^a-zà-ú])' + v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![a-zà-ú])', 'i'));
 
 export function revisarSobreAlegacao(texto) {
   const norm = (texto || '').toLowerCase();
-  const achados = VERBOS_PROIBIDOS.filter(v => norm.includes(v));
+  const achados = VERBOS_PROIBIDOS.filter((_, i) => REGEX_PROIBIDOS[i].test(norm));
   const temRessalva = /fatores externos n[aã]o foram isolados/i.test(texto || '');
   const notas = [];
   if (achados.length) notas.push(`Verbo causal forte encontrado: ${achados.join(', ')}.`);
@@ -633,8 +701,12 @@ export function redigirSintese(n) {
   if (n.alertas_abertos) {
     partes.push(`${n.alertas_abertos} crianças acumulam ausências consecutivas e estão em acompanhamento ativo.`);
   }
+  // Leitura de associação, nunca de causa — e a ressalva metodológica vem em
+  // sentença PRÓPRIA, para que a trava do revisor não fique amarrada a uma
+  // afirmação causal (era o que acontecia até 22/08/2026).
   partes.push(
-    'Os dados sugerem que os programas contribuíram para os avanços observados; fatores externos não foram isolados.');
+    'As médias acima descrevem o que a equipe observou no período, não efeito medido do programa.');
+  partes.push('A leitura é de associação: fatores externos não foram isolados.');
   return partes.join(' ');
 }
 
@@ -673,6 +745,43 @@ export function aprovarSintese(cicloId, programaId, educadorId) {
   run(`UPDATE sintese SET status='aprovada', aprovado_por=?, aprovado_em=? WHERE id = ?`,
       educadorId, agora(), s.id);
   return sinteseDe(cicloId, programaId);
+}
+
+// --------------------------------------------------------------------------
+// Fecho de ciclo — executa a retencao declarada em `governanca_campo`.
+// O campo livre saiu do produto na v2 (ver salvarObservacao), mas a coluna
+// permanece no esquema por compatibilidade; fechar o ciclo e' o mecanismo que
+// cumpre a retencao "descarte ao fim do ciclo" para qualquer valor legado.
+// Fecha o achado A-05 da revisao arquitetural de 22/08/2026.
+// --------------------------------------------------------------------------
+export function fecharCiclo(cicloId, usuarioId, { abrirProximo = false } = {}) {
+  const u = get(`SELECT * FROM educador WHERE id = ?`, usuarioId);
+  if (!u) throw erro(404, 'Usuário não encontrado.');
+  if (u.papel !== 'coordenacao') throw erro(403, 'Somente a coordenação fecha o ciclo de observação.');
+  const ciclo = get(`SELECT * FROM ciclo WHERE id = ?`, cicloId);
+  if (!ciclo) throw erro(404, 'Ciclo não encontrado.');
+  if (ciclo.status === 'fechado') throw erro(422, 'Este ciclo já está fechado.');
+
+  return tx(() => {
+    const comTexto = get(
+      `SELECT COUNT(*) AS n FROM observacao WHERE ciclo_id = ? AND nota_livre IS NOT NULL`, cicloId).n;
+    run(`UPDATE observacao SET nota_livre = NULL WHERE ciclo_id = ?`, cicloId);
+    run(`UPDATE ciclo SET status = 'fechado' WHERE id = ?`, cicloId);
+
+    let proximo = null;
+    if (abrirProximo) {
+      const ordem = ciclo.ordem + 1;
+      const inicio = addDias(ciclo.fim, 1);
+      const fim = addDias(inicio, 40);
+      const mes = new Date(inicio + 'T12:00:00Z')
+        .toLocaleDateString('pt-BR', { month: 'short', timeZone: 'UTC' }).replace('.', '');
+      run(`INSERT INTO ciclo (nome, ano, ordem, inicio, fim, status) VALUES (?,?,?,?,?, 'aberto')`,
+          `Ciclo ${ordem} · ${mes}`, Number(inicio.slice(0, 4)), ordem, inicio, fim);
+      proximo = get(`SELECT * FROM ciclo WHERE ano = ? AND ordem = ?`, Number(inicio.slice(0, 4)), ordem);
+    }
+    marcarAtividade(usuarioId, 'fecho_ciclo');
+    return { ciclo: get(`SELECT * FROM ciclo WHERE id = ?`, cicloId), notas_descartadas: comTexto, proximo };
+  });
 }
 
 // --------------------------------------------------------------------------
@@ -726,8 +835,11 @@ export function fichaCrianca(criancaId) {
   const consentimentos = all(`SELECT * FROM governanca_campo ORDER BY rowid`)
     .map(g => { const { gov, ...r } = consentimentoDe(criancaId, g.campo); return { ...g, ...r }; });
   const idade = Math.floor(diasEntre(c.nascimento, hoje()) / 365.25);
+  const aspiracoes = all(
+    `SELECT area, declarada_em FROM aspiracao WHERE crianca_id = ? ORDER BY declarada_em DESC`, criancaId);
   return {
-    crianca: { ...c, idade },
+    crianca: { ...c, idade, aspiracao: aspiracoes[0]?.area ?? null },
+    aspiracoes,
     matriculas, presencas,
     presenca_pct: totalPres.t ? Math.round(((totalPres.p ?? 0) / totalPres.t) * 100) : null,
     ausencias_consecutivas: ausenciasConsecutivas(criancaId).n,
@@ -920,12 +1032,13 @@ export function planoDaTurma(turmaId) {
   // 3 · Ganchos de aspiracao: criancas da turma com aspiracao declarada no
   //     Laboratorio de Sonhos — repertorio para conectar a atividade ao sonho.
   const ganchos = all(
-    `SELECT c.aspiracao AS area, COUNT(*) AS n,
+    `SELECT a.area AS area, COUNT(DISTINCT c.id) AS n,
             GROUP_CONCAT(c.nome, ' · ') AS criancas
        FROM crianca c
        JOIN matricula m ON m.crianca_id = c.id AND m.turma_id = ? AND m.status = 'ativa'
-      WHERE c.aspiracao IS NOT NULL AND c.ativo = 1
-      GROUP BY c.aspiracao ORDER BY n DESC, area`, turmaId);
+       JOIN aspiracao a ON a.crianca_id = c.id
+      WHERE c.ativo = 1
+      GROUP BY a.area ORDER BY n DESC, area`, turmaId);
 
   return {
     turma: { id: turma.id, nome: turma.nome, programa: turma.programa },

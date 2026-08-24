@@ -11,6 +11,9 @@ import { semear } from './src/seed.js';
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const PUBLICO = join(ROOT, 'public');
 const PORTA = Number(process.env.PORT) || 3000;
+// Em hospedagem, PORT implica bind público (Render e plataformas equivalentes).
+// No uso local sem PORT, limita o MVP à própria máquina por segurança.
+const HOST = process.env.HOST || (process.env.PORT ? '0.0.0.0' : '127.0.0.1');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -79,4 +82,4 @@ if (!get(`SELECT COUNT(*) AS n FROM educador`).n) {
   semear();
 }
 
-servidor.listen(PORTA, () => console.log(`\n  Percurso rodando em  http://localhost:${PORTA}\n`));
+servidor.listen(PORTA, HOST, () => console.log(`\n  Percurso rodando em  http://localhost:${PORTA}  (${HOST})\n`));

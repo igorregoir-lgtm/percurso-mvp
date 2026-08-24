@@ -4,6 +4,13 @@ Análise do template preenchido em aula (`1 - Arquitetura/Material Produzido em 
 com o dossiê de campo e o guia de entregas do módulo. Este documento não propõe nada novo: ele
 registra o que a inception já decidiu, para que o escopo do MVP seja auditável.
 
+> **Documento histórico, de antes da v2.** Ele descreve o escopo F1–F7 como decidido na inception.
+> Em 22/08/2026 o `percurso-v2-pack` foi incorporado e duas coisas descritas aqui mudaram por
+> decisão registrada: o **campo livre da observação saiu do produto** (o filtro de perímetro passou
+> a guardar a transcrição de voz, onde a revelação sensível é muito mais provável) e o escopo ganhou
+> as quinze features do pack. Ver [`O-QUE-VEIO-DA-V2.md`](O-QUE-VEIO-DA-V2.md) e a decisão técnica
+> nº 15.
+
 ---
 
 ## 1. O problema que o produto resolve
@@ -176,7 +183,7 @@ sucesso: é uma parada. Maria vê, em sequência:
 
   > *"Entre o primeiro e o segundo ciclo de observação, as médias da turma subiram em 5 de 5
   > dimensões socioemocionais. 'Expressão emocional' segue como a menor média e orienta o plano do
-  > próximo período. Os programas contribuíram para os avanços observados; fatores externos não
+  > próximo período. As médias descrevem o que a equipe observou, não efeito medido; fatores externos não
   > foram isolados."*
 
   seguida de: **"É esta frase — e não o número de presenças — que o Instituto não conseguia dizer a
