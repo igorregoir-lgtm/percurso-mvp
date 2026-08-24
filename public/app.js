@@ -1,5 +1,6 @@
 // Percurso — aplicacao. Sem framework: DOM + hash routing.
 // A ordem das telas segue a jornada da persona: hoje -> chamada -> ciclo -> turma.
+import { criarFila } from './fila.js';
 
 const app     = document.getElementById('app');
 const navEl   = document.getElementById('nav');
@@ -49,6 +50,38 @@ async function api(caminho, opcoes = {}) {
 }
 const post = (c, dados) => api(c, { method: 'POST', body: JSON.stringify(dados || {}) });
 
+// --------------------------------------------------------------------------
+// Fila offline. A regra mora em `fila.js`, com armazenamento e envio injetados,
+// para poder ser testada sem navegador. Aqui só a fiação e o aviso na tela.
+// --------------------------------------------------------------------------
+const fila = criarFila({ armazenamento: localStorage, enviar: post });
+const lerFila = () => fila.ler();
+
+async function postComFila(caminho, corpo, rotulo) {
+  const r = await fila.enfileirar(caminho, corpo, rotulo);
+  if (!r.enviado) { toast('Sem internet. Vai ser enviado quando voltar.', 'ruim'); pintarFila(); }
+  return r.enviado;
+}
+
+let drenando = false;
+async function drenarFila() {
+  if (drenando) return;
+  drenando = true;
+  try {
+    const r = await fila.drenar();
+    for (const x of r.recusados) toast(`"${x.rotulo}" não pôde ser enviado: ${x.motivo}`, 'ruim');
+    if (r.enviados) { toast(`${r.enviados} registro(s) que estavam na fila foram enviados.`, 'bom'); navegar(); }
+    pintarFila();
+  } finally { drenando = false; }
+}
+
+function pintarFila() {
+  const n = fila.tamanho();
+  const el = document.getElementById('fila');
+  if (el) el.textContent = n ? `${n} na fila` : '';
+}
+window.addEventListener('online', drenarFila);
+
 function comErro(fn) {
   return async (...args) => {
     try { return await fn(...args); }
@@ -64,23 +97,29 @@ const barra = (pct, ok = false) =>
 
 // ------------------------------------------------------------------ navegacao
 const NAV_EDUCADOR = [
-  ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'], ['#/ciclo', '◔', 'Ciclo'],
+  ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'], ['#/pauta', '◈', 'Pauta'],
   ['#/turma', '▥', 'Turma'], ['#/criancas', '☺', 'Crianças'],
 ];
 const NAV_COORDENACAO = [
-  ['#/painel', '▦', 'Painel'], ['#/safras', '↝', 'Safras'], ['#/sintese', '✎', 'Síntese'],
-  ['#/consentimentos', '🔒', 'Consent.'], ['#/criancas', '☺', 'Crianças'],
+  ['#/painel', '▦', 'Painel'], ['#/scores', '◑', 'Scores'], ['#/safras', '↝', 'Safras'],
+  ['#/sintese', '✎', 'Síntese'], ['#/consentimentos', '⚿', 'Consent.'],
+];
+const NAV_DIRETORIA = [
+  ['#/relatorio', '▤', 'Relatório'], ['#/consulta', '?', 'Perguntar'],
 ];
 
 function pintarNav(rotaAtual) {
   if (!sessao) { navEl.hidden = true; return; }
-  const itens = sessao.papel === 'coordenacao' ? NAV_COORDENACAO : NAV_EDUCADOR;
+  const itens = sessao.papel === 'coordenacao' ? NAV_COORDENACAO
+              : sessao.papel === 'diretoria' ? NAV_DIRETORIA : NAV_EDUCADOR;
   navEl.hidden = false;
   navEl.innerHTML = itens.map(([href, ic, rot]) =>
     `<a href="${href}" ${rotaAtual.startsWith(href) ? 'aria-current="page"' : ''}>
        <em aria-hidden="true">${ic}</em>${rot}</a>`).join('');
+  setTimeout(pintarFila, 0);
   quemEl.innerHTML =
-    `<span class="sintetico">dados sintéticos</span>
+    `<span class="sintetico" id="fila"></span>
+     <span class="sintetico">dados sintéticos</span>
      <b>${esc(sessao.apelido)}</b>
      <button class="btn pequeno fantasma" data-acao="sair" style="min-height:32px;padding:5px 10px">sair</button>`;
 }
@@ -92,6 +131,9 @@ const rota = (re, tela) => rotas.push([re, tela]);
 async function navegar() {
   const hash = location.hash || '#/hoje';
   if (!sessao && hash !== '#/entrar') { location.hash = '#/entrar'; return; }
+  // Servidor fora do ar com rede ativa também enfileira, e nesse caso `online`
+  // nunca dispara. Tentar a cada navegação custa nada quando a fila está vazia.
+  if (sessao && lerFila().length) drenarFila();
   for (const [re, tela] of rotas) {
     const m = hash.match(re);
     if (m) {
@@ -127,20 +169,23 @@ rota(/^#\/entrar/, async () => {
     <h1>Percurso</h1>
     <p class="sub">Transforma a observação de minutos do educador em evidência de evolução — sem que dado de criança saia da organização.</p>
     <div class="cartao" style="margin-top:20px">
-      <h2>Quem está usando?</h2>
+      <h2>Quem está registrando hoje?</h2>
       <p class="sub">Escolha o perfil para entrar. O MVP não guarda senha: o controle de acesso real fica com a coordenação.</p>
       <div class="pilha" style="margin-top:14px">
         ${usuarios.map(u => `
           <button class="item" data-acao="entrar" data-id="${u.id}">
             <div><div class="nome">${esc(u.nome)}</div>
-              <div class="meta">${u.papel === 'coordenacao' ? 'Coordenação' : 'Educadora · turma da tarde'}</div></div>
+              <div class="meta">${PAPEL[u.papel] ?? 'Educadora'}</div></div>
             <span class="seta" aria-hidden="true">›</span>
           </button>`).join('')}
       </div>
     </div>
-    <p class="rodape">Todos os dados desta aplicação são sintéticos (regra 1 do bloco 6 do dossiê).<br>
-      Nenhum dado real de criança atendida foi usado, em nenhuma etapa.</p>`;
+    <p class="rodape">Cada pessoa entra com a própria conta. O registro fica no instituto.<br>
+      Todos os dados desta aplicação são sintéticos (regra 1 do bloco 6 do dossiê):<br>
+      nenhum dado real de criança atendida foi usado, em nenhuma etapa.</p>`;
 });
+
+const PAPEL = { coordenacao: 'Coordenação', diretoria: 'Diretoria', educador: 'Professora' };
 
 // ======================================================================
 // HOJE — a tela que a persona abre primeiro
@@ -173,7 +218,18 @@ rota(/^#\/hoje/, async () => {
     </div>` : '';
 
   const ch = d.chamada;
-  const cartaoChamada = !ch ? '' : ch.registrada ? `
+  // Sabado numa turma de semana, feriado, recesso: nao ha encontro hoje. Oferecer
+  // "chamada de hoje" nesse dia seria convidar a registrar um encontro que nao
+  // aconteceu — o cartao passa a apontar a data em aberto mais recente.
+  const cartaoChamada = !ch ? '' : !d.dia_letivo && !ch.registrada ? `
+    <div class="cartao compacto">
+      <div class="linha"><h2 class="cresce">Hoje não tem encontro</h2><span class="selo bloq">${esc(diaSemana(d.hoje))}</span></div>
+      <p class="sub">${esc(d.turma?.nome || '')} não tem encontro ${esc(diaSemana(d.hoje))}.
+        ${d.chamadas_abertas.length ? 'Dá para fechar o que ficou em aberto.' : 'Nada pendente.'}</p>
+      ${d.chamadas_abertas.length ? `<div class="linha" style="margin-top:12px">
+        <button class="btn largo secundario" data-acao="ir" data-href="#/chamada?data=${d.chamadas_abertas.at(-1)}">
+          Chamada de ${dataBR(d.chamadas_abertas.at(-1))}</button></div>` : ''}
+    </div>` : ch.registrada ? `
     <div class="cartao compacto">
       <div class="linha"><h2 class="cresce">Chamada de hoje</h2><span class="selo ok">registrada</span></div>
       <p class="sub">${ch.criancas.filter(c => c.status === 'P').length} presentes de ${ch.criancas.length}.</p>
@@ -199,8 +255,51 @@ rota(/^#\/hoje/, async () => {
       <div class="linha" style="margin-top:12px">
         ${ag.pendentes > 0
           ? `<button class="btn largo" data-acao="ir" data-href="#/ciclo">Continuar observações · faltam ${ag.pendentes}</button>`
-          : `<button class="btn largo secundario" data-acao="ir" data-href="#/turma">Ver o que a turma mostrou</button>`}
+          : `<button class="btn largo secundario" data-acao="ir" data-href="#/turma">Ver o que a turma mostrou</button>
+             <button class="btn largo fantasma" data-acao="ir" data-href="#/ciclo">Rever os olhares do ciclo</button>`}
       </div>
+    </div>`;
+
+  // "Contar como foi": a porta de entrada da voz. Fica acima de tudo o que
+  // e' tarefa — o sistema pede a fala, nao o preenchimento.
+  const folhaFeita = !!d.folha;
+  // A folha e' do ENCONTRO: existe enquanto houver um encontro registrado,
+  // mesmo que ele tenha sido no ultimo dia letivo e nao hoje.
+  const cartaoFolha = !d.data_folha ? '' : `
+    <div class="cartao compacto">
+      <div class="linha"><h2 class="cresce">Folha ${d.data_folha === d.hoje ? 'do dia' : `de ${dataBR(d.data_folha)}`}</h2>
+        <span class="selo ${folhaFeita ? 'ok' : 'pend'}">${folhaFeita ? (d.folha.origem === 'voz' ? 'por voz' : 'manual') : 'pendente'}</span></div>
+      <p class="sub">${folhaFeita
+        ? 'Registrada. Dá para ajustar enquanto o dia não fecha.'
+        : 'Fale por 40 segundos enquanto arruma a sala — o resto o Percurso monta.'}</p>
+      <div class="linha" style="margin-top:12px">
+        <button class="btn largo" data-acao="ir" data-href="#/voz">${folhaFeita ? 'Contar de novo' : 'Contar como foi'}</button>
+        <button class="btn largo secundario" data-acao="ir" data-href="#/folha">Preencher à mão</button>
+      </div>
+    </div>`;
+
+  // "Para esta semana" — o bloco que substituiu "Falta completar neste ciclo".
+  // O sistema deixa de cobrar e passa a devolver.
+  const pt = d.pauta;
+  const linhasSemana = [];
+  if (pt?.risco?.n) linhasSemana.push([
+    `${pt.risco.n} ${pt.risco.n === 1 ? 'criança em risco de sair' : 'crianças em risco de sair'}`,
+    'Duas ou mais faltas seguidas', '#/pauta', true]);
+  if (pt?.exposicao?.area) linhasSemana.push([
+    `${esc(pt.exposicao.area)} sem atividade`,
+    `${pt.exposicao.criancas} interessada(s), nada no período`, '#/pauta', true]);
+  if (d.agenda?.pendentes) linhasSemana.push([
+    `${d.agenda.pendentes} olhar(es) em aberto no ciclo`,
+    'Opcional — a folha já registrou a turma', '#/ciclo', false]);
+  const paraEstaSemana = `
+    <div class="cartao compacto">
+      <div class="lbl">Para esta semana</div>
+      ${linhasSemana.length ? linhasSemana.map(([t, sub, href, atencao]) => `
+        <button class="link" data-acao="ir" data-href="${href}">
+          <span><span>${t}</span><span class="d ${atencao ? 'atencao' : ''}">${sub}</span></span>
+          <span class="chev" aria-hidden="true">›</span>
+        </button>`).join('')
+        : `<p class="sub">${esc(pt?.mensagem_tranquila || 'Ninguém sumiu do radar esta semana.')}</p>`}
     </div>`;
 
   const abertas = d.chamadas_abertas.length && !d.retomada.em_lapso ? `
@@ -221,9 +320,9 @@ rota(/^#\/hoje/, async () => {
     <h1>${saudacao}, ${esc(sessao.apelido.split(' ')[0])}</h1>
     <p class="sub">${esc(d.turma ? d.turma.nome : 'Sem turma atribuída')} · ${esc(porExtenso(d.hoje))}</p>
     <div class="pilha">
-      ${retomada}${alertas}${cartaoChamada}${cartaoCiclo}${abertas}
+      ${retomada}${cartaoChamada}${cartaoFolha}${paraEstaSemana}${alertas}${cartaoCiclo}${abertas}
     </div>
-    <p class="rodape">O Percurso funciona em três gestos: chamada em um toque, observação em minutos —<br>e o resto ele organiza para você.</p>`;
+    <p class="rodape">Chamada em um toque, 40 segundos de voz — e o resto o Percurso organiza para você.</p>`;
 });
 
 // ======================================================================
@@ -378,7 +477,8 @@ rota(/^#\/observacao\/(\d+)/, async (id) => {
   app.innerHTML = `
     <p class="kicker">${esc(d.ciclo.nome)} · observação</p>
     <h1>${esc(d.crianca.nome)}</h1>
-    <p class="sub">${esc(d.crianca.codigo)} · ${d.observacao?.status === 'rascunho'
+    <p class="sub">Opcional. A folha do dia já registrou a turma.<br>
+      ${esc(d.crianca.codigo)} · ${d.observacao?.status === 'rascunho'
       ? 'Você tinha começado — continue de onde parou.'
       : `${d.elegibilidade.convivio} encontros de convívio registrados`}</p>
 
@@ -402,15 +502,13 @@ rota(/^#\/observacao\/(\d+)/, async (id) => {
           </div>
         </div>`).join('')}
 
-      <div class="dim">
-        <h3>Quer anotar algo mais? <span style="font-weight:400;color:var(--muted)">(opcional)</span></h3>
-        <p class="desc">Filtro de proteção ativo: assuntos da vida íntima ou da família da criança não são gravados aqui — isso protege ela e protege você.</p>
-        <p class="desc">Prefere falar? Use o microfone do teclado do celular para ditar — o filtro de proteção vale do mesmo jeito.</p>
-        <textarea id="nota" placeholder="Ex.: começou a puxar conversa na roda de leitura."
-          ${d.campo_livre.status !== 'ativo' ? 'disabled' : ''}>${esc(ctx.obs.nota)}</textarea>
-        ${d.campo_livre.status !== 'ativo'
-          ? '<p class="desc" style="margin-top:6px">Campo livre bloqueado: falta o consentimento específico do responsável para este campo.</p>' : ''}
-      </div>
+    </div>
+
+    <div class="aviso protecao" style="margin-top:14px">
+      <h3>Não há campo de opinião sobre a criança</h3>
+      <p>Texto narrativo sobre criança nomeada é registro clínico, e registro clínico não entra no Percurso —
+         a titular desse dado é a psicóloga. Se apareceu algo que precisa de encaminhamento,
+         fale com a coordenação: esse caminho é fora daqui.</p>
     </div>
 
     ${anterior.ciclos.length ? `
@@ -457,12 +555,32 @@ function tabelaTrajetoria(t) {
 rota(/^#\/turma/, async () => {
   const d = await api('/api/hoje');
   if (!d.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2></div>`; return; }
-  const p = await api(`/api/turma/painel?turma_id=${d.turma.id}`);
+  const [p, est, risco] = await Promise.all([
+    api(`/api/turma/painel?turma_id=${d.turma.id}`),
+    api(`/api/turma/estado?turma_id=${d.turma.id}`),
+    api(`/api/turma/risco?turma_id=${d.turma.id}`),
+  ]);
+  const emRisco = new Set(risco.linhas.map(l => l.crianca_id));
   app.innerHTML = `
     <p class="kicker">Agregado · sem dado individual</p>
     <h1>Painel da turma</h1>
     <p class="sub">${esc(p.turma.nome)} · médias por dimensão, escala de 1 a 4</p>
     <div class="cartao" style="margin-top:16px">
+      <div class="lbl">${est.criancas.length} crianças matriculadas</div>
+      <div class="pilha" style="margin-top:0">
+        ${est.criancas.map(c => `
+          <button class="link" data-acao="ir" data-href="#/crianca/${c.id}">
+            <span><span>${esc(c.nome)}</span>
+              <span class="d ${c.estado === 'atrasado' ? 'atencao' : ''}">${esc(c.rotulo)}${emRisco.has(c.id) ? ' · em risco de sair' : ''}</span></span>
+            <span class="chev" aria-hidden="true">›</span>
+          </button>`).join('')}
+      </div>
+      <p class="sub" style="margin-top:10px">O rótulo descreve o registro, nunca a criança.</p>
+    </div>
+
+    <div class="cartao" style="margin-top:14px">
+      <h2>Médias por dimensão</h2>
+      <p class="sub" style="margin-bottom:12px">Escala de 1 a 4, agregado da turma.</p>
       ${barrasDimensoes(p.agregado)}
     </div>
     <div class="grade d2" style="margin-top:14px">
@@ -637,11 +755,11 @@ rota(/^#\/crianca\/(\d+)/, async (id) => {
 // ALERTAS (F6)
 // ======================================================================
 rota(/^#\/alertas/, async () => {
-  const { alertas } = await api('/api/alertas');
+  const { alertas, faltas_para_lista } = await api('/api/alertas');
   app.innerHTML = `
     <p class="kicker">Agir antes da evasão</p>
     <h1>Alertas de ausência</h1>
-    <p class="sub">Disparam com 3 faltas consecutivas — antes de virar evasão.</p>
+    <p class="sub">Disparam com ${faltas_para_lista} faltas consecutivas — antes de virar evasão.</p>
     <div class="pilha">
       ${alertas.length ? alertas.map(a => `
         <div class="cartao compacto">
@@ -717,6 +835,26 @@ rota(/^#\/painel/, async () => {
       <div style="margin-top:14px">${barrasDimensoes(d.agregado)}</div>
     </div>
 
+    <div class="cartao" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Cobertura do registro</h2>
+        <span class="selo ${d.cobertura.alerta ? 'pend' : 'ok'}">${d.cobertura.valor}%</span></div>
+      <p class="sub">${esc(d.cobertura.doutrina)}</p>
+      <div class="dado" style="margin-top:10px"><span class="k">Folhas completas</span><b>${d.cobertura.completas} de ${d.cobertura.total}</b></div>
+      <div class="dado"><span class="k">Turmas sem registro</span>
+        <b style="color:${d.cobertura.turmas_sem_registro ? 'var(--atencao)' : 'var(--ink)'}">${d.cobertura.turmas_sem_registro}</b></div>
+      <div class="dado"><span class="k">Olhares registrados</span><b>${d.olhares_registrados}</b></div>
+      <div class="dado"><span class="k">Crianças em risco de sair</span><b>${d.evasao.em_risco}</b></div>
+      <div class="dado"><span class="k">Áreas de interesse sem atividade</span>
+        <b style="color:${d.exposicao.lacunas.length ? 'var(--atencao)' : 'var(--ink)'}">${d.exposicao.lacunas.map(l => esc(l.rotulo)).join(', ') || 'nenhuma'}</b></div>
+      ${barra(d.cobertura.valor, !d.cobertura.alerta)}
+      <div class="linha" style="margin-top:14px">
+        <button class="btn pequeno secundario" data-acao="ir" data-href="#/scores">Ver os três scores</button>
+        <button class="btn pequeno fantasma" data-acao="ir" data-href="#/consulta">Perguntar à base</button>
+        <button class="btn pequeno fantasma" data-acao="ir" data-href="#/criancas">Buscar criança</button>
+        <button class="btn pequeno fantasma" data-acao="ir" data-href="#/importar">Importar planilha antiga</button>
+      </div>
+    </div>
+
     ${d.alertas.length ? `<div class="cartao compacto" style="margin-top:14px">
       <div class="linha"><h2 class="cresce">Alertas abertos</h2>
         <button class="btn pequeno secundario" data-acao="ir" data-href="#/alertas">Tratar</button></div>
@@ -758,7 +896,9 @@ function graficoSafras(s) {
   const W = 320, H = 180, ml = 34, mb = 26, mt = 10, mr = 8;
   const x = (i) => ml + (i / (s.marcos.length - 1)) * (W - ml - mr);
   const y = (p) => mt + (1 - p / 100) * (H - mt - mb);
-  const cores = ['#8a6d3b', '#cd4433', '#3e6b4f'];
+  // Tokens, nunca hex literal: hex fixo não acompanha o modo escuro e não está
+  // na paleta do board (achado FE-02).
+  const cores = ['var(--red)', 'var(--ok)', 'var(--atencao)'];
   return `
     <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Curvas de permanência por safra de entrada">
       ${[0, 25, 50, 75, 100].map(v => `
@@ -809,7 +949,7 @@ rota(/^#\/sintese/, async () => {
     <div class="cartao area-impressao" style="margin-top:14px">
       <div class="linha"><h2 class="cresce">Texto gerado</h2>
         <span class="selo ${s.status === 'aprovada' ? 'ok' : 'pend'}">${s.status}</span></div>
-      <p style="font-family:var(--serif);font-size:16.5px;line-height:1.6;margin-top:12px">${esc(s.texto)}</p>
+      <p style="font-size:15.5px;line-height:1.65;margin-top:12px">${esc(s.texto)}</p>
       <div class="linha" style="margin-top:14px">
         <span class="selo ${s.revisor_status === 'aprovado' ? 'ok' : 'alerta'}">revisor de sobre-alegação: ${esc(s.revisor_status)}</span>
         <span class="selo ${s.status === 'aprovada' ? 'ok' : 'pend'}">aprovação humana: ${s.status === 'aprovada' ? 'feita' : 'pendente'}</span>
@@ -823,7 +963,20 @@ rota(/^#\/sintese/, async () => {
              <span class="sub">Liberada em ${dataBR(s.aprovado_em)}.</span>`}
       </div>
     </div>
-    <p class="rodape">Verbos causais controlados: "contribuiu para", nunca "gerou".<br>A linguagem também é artefato metodológico.</p>
+
+    ${d.ciclo.status === 'aberto' ? `
+    <div class="cartao compacto" style="margin-top:14px">
+      <h2>Fechar o ciclo</h2>
+      <p class="sub">Fechar executa a retenção declarada na governança: o ciclo para de aceitar observação nova e
+        qualquer anotação de texto legada é apagada do banco. Abre o próximo ciclo em seguida.</p>
+      <div class="linha" style="margin-top:12px">
+        <button class="btn secundario" data-acao="fechar-ciclo" data-id="${d.ciclo.id}">Fechar ${esc(d.ciclo.nome)} e abrir o próximo</button>
+      </div>
+    </div>` : ''}
+
+    <p class="rodape">Verbo causal é bloqueado pelo revisor, inclusive a atribuição atenuada
+      ("contribuiu para", "graças a"). O que o texto afirma é associação, não efeito medido.<br>
+      A linguagem também é artefato metodológico.</p>
     ` : `
     <div class="cartao" style="margin-top:14px">
       <h2>Nenhuma síntese gerada ainda</h2>
@@ -910,7 +1063,8 @@ async function celebrar(agenda) {
             ? `Entre o primeiro e o segundo ciclo de observação, as médias da turma subiram em ${subiram.length} de ${agg.series.length} dimensões socioemocionais.`
             : `A turma tem agora duas medidas comparáveis de evolução socioemocional.`}
         ${menor ? `“${esc(menor.dimensao)}” segue como a menor média e orienta o plano do próximo período.` : ''}
-        Os programas contribuíram para os avanços observados; fatores externos não foram isolados.”
+        As médias acima descrevem o que a equipe observou no período, não efeito medido do programa.
+        A leitura é de associação: fatores externos não foram isolados.”
         <div class="sub" style="font-style:normal;margin-top:12px;font-family:var(--sans);font-size:12.5px">
           É esta frase — e não o número de presenças — que o Instituto não conseguia dizer a quem financia.
         </div>
@@ -925,6 +1079,500 @@ async function celebrar(agenda) {
   document.body.appendChild(el);
   el.querySelector('button')?.focus();
 }
+
+// ======================================================================
+// FOLHA DO DIA (F2) — o registro E' DA TURMA.
+// ======================================================================
+function pills(lista, selecionados, grupo, unico) {
+  return lista.map(x => `
+    <button class="p ${selecionados.includes(x.codigo) ? 'on' : 'off'}" type="button"
+            data-acao="pill" data-grupo="${grupo}" data-codigo="${x.codigo}" data-unico="${unico ? 1 : 0}"
+            aria-pressed="${selecionados.includes(x.codigo)}">${esc(x.rotulo)}</button>`).join('');
+}
+
+function blocosDaFolha() {
+  const f = ctx.folha, c = f.catalogos;
+  return `
+    <div class="cartao">
+      <div class="lbl" id="lbl-atividade">O que a turma fez</div>
+      <div role="group" aria-labelledby="lbl-atividade">${pills(c.atividades, [f.campos.atividade], 'atividade', true)}</div>
+    </div>
+    <div class="cartao">
+      <div class="lbl" id="lbl-area">Área do encontro</div>
+      <div role="group" aria-labelledby="lbl-area">${pills(c.areas, [f.campos.area_tematica], 'area_tematica', true)}</div>
+    </div>
+    <div class="cartao">
+      <div class="lbl" id="lbl-marcadores">Como foi o grupo</div>
+      <div role="group" aria-labelledby="lbl-marcadores">${pills(c.marcadores, f.campos.marcadores_turma, 'marcadores_turma', false)}</div>
+      <p class="sub" style="margin-top:4px">Até ${c.max_marcadores} marcadores. Descrevem o grupo, nunca uma criança.</p>
+    </div>
+    <div class="cartao">
+      <div class="dado">
+        <span class="k">Pediram ajuda</span>
+        <span class="step">
+          <button type="button" data-acao="ajuda" data-d="-1" aria-label="Menos um">−</button>
+          <b id="ajuda">${f.campos.pediram_ajuda}</b>
+          <button type="button" data-acao="ajuda" data-d="1" aria-label="Mais um">+</button>
+        </span>
+      </div>
+      <div class="dado">
+        <span class="k">Faltaram</span>
+        <span>${f.faltas.length
+          ? f.faltas.map(n => `<span class="p redsoft" style="margin:0 4px 0 0">${esc(n)}</span>`).join('')
+          : '<span class="sub">ninguém</span>'}</span>
+      </div>
+    </div>`;
+}
+
+async function carregarFolha(turmaId, data) {
+  const d = await api(`/api/folha?turma_id=${turmaId}&data=${data || ''}`);
+  ctx.folha = {
+    turma: d.turma, data: d.data, catalogos: d.catalogos,
+    encontro: d.encontro, existente: d.folha,
+    faltas: d.chamada.criancas.filter(c => c.status === 'F').map(c => c.nome),
+    // Editar a mao uma folha que veio da voz e' edicao MANUAL: manter 'voz' aqui
+    // sujaria a taxa de correcao do agente com correcao que nao foi dele.
+    origem: 'manual',
+    sugestao: null, excluido: !!d.folha?.conteudo_excluido, trechos: [], baixaConfianca: false,
+    campos: {
+      atividade: d.folha?.atividade ?? 'nao_identificada',
+      area_tematica: d.folha?.area_tematica ?? 'nenhuma',
+      marcadores_turma: d.folha?.marcadores ?? [],
+      pediram_ajuda: d.folha?.pediram_ajuda ?? 0,
+      conteudo_excluido: !!d.folha?.conteudo_excluido,
+    },
+  };
+  return d;
+}
+
+rota(/^#\/folha/, async () => {
+  const h = await api('/api/hoje');
+  if (!h.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2></div>`; return; }
+  const params = new URLSearchParams(location.hash.split('?')[1] || '');
+  const d = await carregarFolha(h.turma.id, params.get('data') || h.data_folha);
+  if (!d.encontro) {
+    app.innerHTML = `
+      <p class="kicker">Folha do dia</p><h1>Antes, a chamada</h1>
+      <p class="sub">A folha é do encontro. Registre a chamada de ${dataBR(d.data)} e a folha abre em seguida.</p>
+      <div class="linha" style="margin-top:16px"><button class="btn" data-acao="ir" data-href="#/chamada?data=${d.data}">Fazer a chamada</button></div>`;
+    return;
+  }
+  const fechada = d.folha?.status === 'fechada';
+  app.innerHTML = `
+    <p class="kicker">${esc(d.turma.programa)}</p>
+    <h1>Folha do dia</h1>
+    <p class="sub">${esc(d.turma.nome)} · ${esc(porExtenso(d.data))}</p>
+    <div class="pilha">
+      ${blocosDaFolha()}
+      <div class="aviso neutro">O que cada criança fez não entra aqui. Esta folha é da turma.</div>
+      ${fechada ? `
+        <div class="aviso"><h3>Folha fechada</h3>
+          <p>Esta folha foi fechada em ${dataBR(d.folha.confirmado_em)} e não aceita mais alteração.
+             Se ficou errada, a coordenação reabre.</p>
+          ${sessao.papel === 'coordenacao'
+            ? `<div class="linha"><button class="btn pequeno" data-acao="reabrir-folha">Reabrir a folha</button></div>` : ''}
+        </div>`
+        : `
+        <button class="btn largo" data-acao="ir" data-href="#/voz">Contar como foi</button>
+        <button class="btn largo secundario" data-acao="salvar-folha" data-fechar="1">Fechar a folha</button>`}
+      <button class="btn largo fantasma" data-acao="imprimir">Imprimir a folha</button>
+    </div>
+    <p class="rodape">Registro da turma. Base legal: legítimo interesse — execução do programa.</p>`;
+  if (fechada) document.querySelectorAll('[data-acao="pill"],[data-acao="ajuda"]')
+    .forEach(b => { b.disabled = true; b.style.opacity = '.55'; });
+});
+
+// ======================================================================
+// REGISTRAR POR VOZ (F3) — 40 s, áudio descartado na transcrição.
+// ======================================================================
+const temReconhecimento = () =>
+  typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
+
+rota(/^#\/voz/, async () => {
+  const h = await api('/api/hoje');
+  if (!h.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2></div>`; return; }
+  const d = await carregarFolha(h.turma.id, h.data_folha);
+  if (!d.encontro) { location.hash = '#/folha'; navegar(); return; }
+
+  const nativo = !!temReconhecimento();
+  ctx.voz = { transcricao: '', gravando: false, restante: d.catalogos.voz_segundos, rec: null, timer: null };
+
+  app.innerHTML = `
+    <p class="kicker">Folha do dia · turma</p>
+    <h1>Contar como foi</h1>
+    <p class="sub">${esc(d.turma.nome)} · ${esc(porExtenso(d.data))}</p>
+
+    <div class="cartao voz" style="margin-top:16px">
+      <div class="lbl" id="voz-estado" role="status" aria-live="polite" style="margin:0">${nativo ? 'Pronto' : 'Ditado do teclado'}</div>
+      <button class="mic" id="mic" data-acao="voz-toggle" aria-pressed="false"
+              aria-label="Começar a gravar" ${nativo ? '' : 'disabled'}><i aria-hidden="true"></i></button>
+      <div class="onda" id="onda" aria-hidden="true">${Array.from({ length: 15 }, () => '<i style="height:5px"></i>').join('')}</div>
+      <div class="contagem-voz" id="contagem" role="status" aria-live="polite">0:00 de 0:${String(d.catalogos.voz_segundos).padStart(2, '0')}</div>
+    </div>
+
+    <div class="cartao compacto" style="margin-top:10px">
+      <p class="sub">Fale enquanto arruma a sala. Diga como foi a turma, o que fizeram e quem faltou.</p>
+    </div>
+
+    <div class="cartao" style="margin-top:10px">
+      <div class="lbl">${nativo ? 'Ou escreva o que você contaria' : 'Este navegador não transcreve voz — escreva aqui'}</div>
+      <p class="sub" style="margin-bottom:10px">${nativo
+        ? 'Se o microfone não pegar, ou se você preferir, digite aqui — ou use o microfone do teclado do celular para ditar neste campo.'
+        : 'Digite aqui, ou use o microfone do teclado do celular para ditar neste campo.'}
+        O resto é idêntico: o Percurso extrai os campos e você confirma.</p>
+      <textarea id="ditado" placeholder="Ex.: hoje a gente fez uma roda de conversa sobre saúde, a turma participou bastante e três pediram ajuda."></textarea>
+    </div>
+
+    <div class="pilha">
+      <button class="btn largo" data-acao="voz-terminei" id="btn-terminei">Terminei</button>
+      <button class="btn largo secundario" data-acao="ir" data-href="#/folha">Prefiro escrever</button>
+    </div>
+    <p class="rodape">O áudio é apagado assim que o texto é extraído.<br>
+      A transcrição acontece no seu aparelho e não é gravada em lugar nenhum.</p>`;
+});
+
+function pararVoz() {
+  const v = ctx.voz; if (!v) return;
+  clearInterval(v.timer); v.timer = null;
+  try { v.rec?.stop(); } catch {}
+  v.gravando = false;
+  const mic = document.getElementById('mic');
+  if (mic) {
+    mic.classList.remove('gravando');
+    mic.setAttribute('aria-pressed', 'false');
+    mic.setAttribute('aria-label', 'Começar a gravar');
+  }
+  document.getElementById('onda')?.classList.remove('ativa');
+}
+
+function animarOnda() {
+  const onda = document.getElementById('onda');
+  if (!onda || !ctx.voz?.gravando) return;
+  onda.querySelectorAll('i').forEach((b, i) => {
+    b.style.height = `${5 + Math.abs(Math.sin(Date.now() / 190 + i)) * 17}px`;
+  });
+}
+
+// ======================================================================
+// CONFIRMAR REGISTRO (F6) — nada é gravado antes de confirmar.
+// ======================================================================
+rota(/^#\/confirmar/, async () => {
+  if (!ctx.folha || !ctx.folha.sugestao) { location.hash = '#/voz'; navegar(); return; }
+  const f = ctx.folha;
+  app.innerHTML = `
+    <p class="kicker">Nada foi gravado ainda</p>
+    <h1>O que entendi</h1>
+    <p class="sub">Confira e ajuste antes de guardar</p>
+
+    ${f.baixaConfianca ? `
+      <div class="aviso" style="margin-top:14px">
+        <h3>Não consegui entender direito</h3>
+        <p>Marque você mesma. Não pré-marquei nada — falhar em branco é melhor que falhar preenchido.</p>
+      </div>` : ''}
+
+    <div class="pilha">
+      ${blocosDaFolha()}
+      ${f.excluido ? `
+        <div class="aviso" role="alert">
+          <h3>Tem algo aqui que não entra no sistema</h3>
+          <p>Fale com a coordenação — esse caminho é fora daqui.
+             ${f.trechos.length ? `O trecho era de <b>${esc(f.trechos.map(t => t.categoria).join(', '))}</b>.` : ''}
+             Ele não foi extraído, não foi gravado e não fica em lugar nenhum.</p>
+        </div>` : ''}
+      <button class="btn largo" data-acao="salvar-folha" data-fechar="0">Confirmar e guardar</button>
+      <button class="btn largo secundario" data-acao="descartar-folha">Descartar</button>
+      <button class="btn largo fantasma" data-acao="ir" data-href="#/voz">Regravar</button>
+    </div>
+    <p class="rodape">Áudio e transcrição são apagados ao confirmar.<br>
+      Confiança do extrator nesta fala: ${f.sugestao.confianca != null ? String(f.sugestao.confianca).replace('.', ',') : '—'}.</p>`;
+});
+
+// ======================================================================
+// PAUTA DE SEGUNDA (F11) — o laço de devolução.
+// ======================================================================
+rota(/^#\/pauta/, async () => {
+  const h = await api('/api/hoje');
+  if (!h.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2></div>`; return; }
+  const p = await api(`/api/pauta?turma_id=${h.turma.id}`);
+  ctx.pautaTurma = h.turma.id;
+
+  app.innerHTML = `
+    <p class="kicker">Segunda-feira · gerado sozinho</p>
+    <h1>Três coisas para a semana</h1>
+    <p class="sub">${esc(p.turma.nome)} · semana de ${dataBR(p.semana)}</p>
+
+    ${p.tranquila ? `<div class="cartao" style="margin-top:16px">
+      <div class="big">${esc(p.mensagem_tranquila)}</div>
+      <p class="sub" style="margin-top:6px">Nenhuma criança com faltas seguidas e nenhuma área de interesse sem atividade.</p>
+    </div>` : ''}
+
+    <div class="pilha">
+      ${p.risco.n ? `
+      <div class="cartao ambar">
+        <div class="lbl">${esc(p.risco.titulo)}</div>
+        <div class="big">${p.risco.n} ${p.risco.n === 1 ? 'criança' : 'crianças'}</div>
+        <p class="sub" style="margin-top:4px">${esc(p.risco.frase)}</p>
+        <div style="margin-top:9px">${p.risco.criancas.map(c =>
+          `<button class="p amb" data-acao="ir" data-href="#/crianca/${c.crianca_id}" title="${esc(c.motivo)}">${esc(c.nome)}</button>`).join('')}</div>
+      </div>` : ''}
+
+      ${p.exposicao.area ? `
+      <div class="cartao">
+        <div class="lbl">${esc(p.exposicao.titulo)}</div>
+        <div class="big">${esc(p.exposicao.area)}</div>
+        <p class="sub" style="margin-top:4px">${esc(p.exposicao.frase)}</p>
+      </div>` : ''}
+
+      ${p.sugestao ? `
+      <div class="cartao">
+        <div class="lbl">Sugestão de pauta</div>
+        <b style="font-size:14.5px">${esc(p.sugestao.titulo)}</b>
+        <p class="sub" style="margin-top:5px">${esc(p.sugestao.descricao)}</p>
+        <p class="sub" style="margin-top:5px">${esc(p.sugestao.duracao)} · ${esc(p.sugestao.porque)}</p>
+        ${p.sugestao.decisao
+          ? `<p class="sub" style="margin-top:10px"><span class="selo ${p.sugestao.decisao === 'aceita' ? 'ok' : 'bloq'}">${p.sugestao.decisao}</span> em ${dataBR(p.sugestao.decidido_em)}</p>`
+          : `<div class="linha" style="margin-top:11px">
+               <button class="btn cresce" data-acao="pauta" data-decisao="aceita">Aceitar e pôr no sábado</button>
+               <button class="btn secundario cresce" data-acao="pauta" data-decisao="descartada">Não faz sentido</button>
+             </div>`}
+      </div>` : ''}
+    </div>
+    <p class="rodape">${esc(p.rodape)}<br>${esc(p.doutrina)}</p>`;
+});
+
+// ======================================================================
+// SCORES (F8/F9/F10) — coordenação e diretoria. Nunca em tela de professora.
+// ======================================================================
+rota(/^#\/scores/, async () => {
+  const d = await api('/api/scores');
+  const e = d.evasao, c = d.cobertura, x = d.exposicao;
+  app.innerHTML = `
+    <p class="kicker">Três scores · nenhum pontua a criança</p>
+    <h1>Scores</h1>
+    <p class="sub">${esc(d.doutrina)}</p>
+
+    <div class="kpis" style="margin-top:16px">
+      <div class="kpi"><b>${e.em_risco}</b><span>Matrículas em risco</span><small>de ${e.avaliadas} avaliadas</small></div>
+      <div class="kpi"><b>${c.valor}%</b><span>Cobertura do registro</span><small>${c.completas} de ${c.total} encontros</small></div>
+      <div class="kpi"><b>${x.valor}%</b><span>Exposição</span><small>${x.areas_cobertas} de ${x.areas_com_interesse} áreas</small></div>
+      <div class="kpi"><b>${d.extrator.taxa_correcao_pct ?? '—'}%</b><span>Correção pós-extração</span><small>${d.extrator.por_voz} folhas por voz</small></div>
+    </div>
+
+    <div class="cartao" style="margin-top:16px">
+      <h2>Risco de evasão</h2>
+      <p class="sub">${esc(e.doutrina)} Entra na lista com ${e.faltas_para_lista} faltas seguidas ou score acima de ${e.limiar_acao}.</p>
+      ${e.nominal_suprimido ? `
+        <div class="aviso protecao" style="margin-top:12px">
+          <h3>A lista nominal não abre neste perfil</h3>
+          <p>A diretoria trabalha sobre a camada agregada: quem presta contas não precisa saber
+             o nome da criança para agir, e por isso não recebe. Quem liga para a família é a
+             coordenação. Abaixo, a distribuição por turma — com recortes menores que
+             ${e.minimo_celula ?? 5} crianças agrupados.</p>
+        </div>
+        <div class="rolagem" style="margin-top:12px"><table>
+          <thead><tr><th>Turma</th><th>Em risco</th></tr></thead>
+          <tbody>${e.por_turma.map(t => `<tr><td>${esc(t.turma)}</td><td><b>${t.n}</b></td></tr>`).join('')}</tbody>
+        </table></div>
+        ${e.turmas_suprimidas ? `<p class="sub" style="margin-top:8px">${e.turmas_suprimidas} turma(s) com menos de ${e.minimo_celula} em risco foram agrupadas.</p>` : ''}`
+      : e.linhas.length ? `<div class="rolagem" style="margin-top:12px"><table>
+        <thead><tr><th>Criança</th><th>Turma</th><th>Score</th><th>Motivo</th><th>Linha de base</th><th>Recente</th></tr></thead>
+        <tbody>${e.linhas.slice(0, 20).map(l => `<tr>
+          <td><b>${esc(l.nome)}</b></td><td>${esc(l.turma || '—')}</td>
+          <td><b style="color:var(--red)">${l.valor}</b></td><td>${esc(l.motivo)}</td>
+          <td>${l.linha_de_base_pct}%</td><td>${l.recente_pct}%</td></tr>`).join('')}</tbody></table></div>`
+        : '<p class="vazio">Nenhuma matrícula em risco.</p>'}
+    </div>
+
+    <div class="cartao" style="margin-top:14px">
+      <h2>Cobertura do registro</h2>
+      <p class="sub">${esc(c.doutrina)}</p>
+      <div class="dado" style="margin-top:10px"><span class="k">Folhas completas</span><b>${c.completas} de ${c.total}</b></div>
+      <div class="dado"><span class="k">Turmas sem registro</span><b style="color:var(--atencao)">${c.turmas_sem_registro}</b></div>
+      <div class="dado"><span class="k">Período</span><b>${dataBR(c.periodo.inicio)} a ${dataBR(c.periodo.fim)}</b></div>
+      ${barra(c.valor, !c.alerta)}
+      <div class="rolagem" style="margin-top:14px"><table>
+        <thead><tr><th>Turma</th><th>Completas</th><th>Encontros</th><th>%</th><th>Última completa</th></tr></thead>
+        <tbody>${c.turmas.map(t => `<tr><td>${esc(t.turma)}</td><td>${t.completas}</td><td>${t.total}</td>
+          <td><b>${t.pct}%</b></td><td>${t.ultima_completa ? dataBR(t.ultima_completa) : '—'}</td></tr>`).join('')}</tbody></table></div>
+    </div>
+
+    <div class="cartao" style="margin-top:14px">
+      <h2>Exposição</h2>
+      <p class="sub">${esc(x.doutrina)}</p>
+      <div class="rolagem" style="margin-top:12px"><table>
+        <thead><tr><th>Área declarada</th><th>Crianças</th><th>Atividades</th><th>Situação</th></tr></thead>
+        <tbody>${x.areas.map(a => `<tr><td><b>${esc(a.rotulo)}</b></td><td>${a.criancas}</td><td>${a.atividades}</td>
+          <td>${a.lacuna ? '<span class="selo alerta">em aberto</span>' : '<span class="selo ok">coberta</span>'}</td></tr>`).join('')}</tbody></table></div>
+    </div>
+
+    <div class="cartao compacto" style="margin-top:14px">
+      <h2>Qualidade dos agentes</h2>
+      <p class="sub">As duas métricas que medem a IA de verdade. Se a educadora corrige muito, o agente está pior que o formulário; se descarta muito, a pauta está genérica.</p>
+      <div class="dado" style="margin-top:10px"><span class="k">Taxa de correção pós-extração</span><b>${d.extrator.taxa_correcao_pct ?? '—'}%</b></div>
+      <div class="dado"><span class="k">Confiança média do extrator</span><b>${d.extrator.confianca_media != null ? String(d.extrator.confianca_media).replace('.', ',') : '—'}</b></div>
+      <div class="dado"><span class="k">Falas com conteúdo excluído</span><b>${d.extrator.excluiram_conteudo}</b></div>
+      <div class="dado"><span class="k">Taxa de descarte da pauta</span>
+        <b style="color:${d.descarte.alerta ? 'var(--red)' : 'var(--ink)'}">${d.descarte.pct ?? '—'}%</b></div>
+      <p class="sub" style="margin-top:8px">Limiar de alerta da pauta: ${d.descarte.limiar}%. ${d.descarte.decididas} sugestões decididas.</p>
+    </div>
+    <p class="rodape">A cobertura do registro não aparece em tela de educadora e não vira ranking.</p>`;
+});
+
+// ======================================================================
+// RELATÓRIO DO CICLO (F13/F14) — diretoria.
+// ======================================================================
+rota(/^#\/relatorio/, async () => {
+  const params = new URLSearchParams(location.hash.split('?')[1] || '');
+  const tipo = params.get('tipo') || 'ciclo';
+  const periodo = params.get('periodo') || '';
+  const d = await api(`/api/relatorio?tipo=${tipo}${periodo ? `&periodo=${periodo}` : ''}`);
+  ctx.rel = { tipo, periodo, periodos: d.periodos };
+  const r = d.relatorio, n = d.previa;
+
+  app.innerHTML = `
+    <p class="kicker">Diretoria · saída para quem financia</p>
+    <h1>Boa tarde, ${esc(sessao.apelido.split(' ')[0])}.</h1>
+    <p class="sub">O doador não entra no sistema. Ele recebe este artefato, gerado e revisado aqui.</p>
+
+    <div class="cartao" style="margin-top:16px">
+      <div class="lbl">Tipo</div>
+      <button class="p ${tipo === 'ciclo' ? 'on' : 'off'}" data-acao="rel-tipo" data-tipo="ciclo">Relatório do ciclo</button>
+      <button class="p ${tipo === 'carta' ? 'on' : 'off'}" data-acao="rel-tipo" data-tipo="carta">Carta do trimestre</button>
+      <div class="lbl" style="margin-top:14px">Período</div>
+      ${d.periodos.map(p => `<button class="p ${periodo === `${p.inicio}..${p.fim}` ? 'on' : 'off'}"
+        data-acao="rel-periodo" data-periodo="${p.inicio}..${p.fim}">${esc(p.rotulo)}</button>`).join('')}
+      <div style="margin-top:12px">
+        <label for="custo" style="font-size:12.5px;font-weight:600">Custo do período (opcional)</label>
+        <input type="number" id="custo" min="0" step="0.01" placeholder="Ex.: 48200.50"
+               value="${r?.numeros?.custo?.valor ?? ''}" style="margin-top:6px">
+        <p class="sub" style="margin-top:5px">Sem custo preenchido, o bloco 7 publica só os dois denominadores.</p>
+      </div>
+    </div>
+
+    ${n ? `
+    <div class="cartao" style="margin-top:14px">
+      <div class="lbl">Prévia</div>
+      <div class="big">${n.permanencia.mais_de_doze_meses} crianças</div>
+      <p class="sub" style="margin-top:4px">com mais de 12 meses de vínculo</p>
+      <div class="dado" style="margin-top:10px"><span class="k">Presença média</span><b>${n.permanencia.presenca_pct ?? '—'}%</b></div>
+      <div class="dado"><span class="k">Crianças únicas · matrículas</span><b>${n.cobertura.criancas_unicas} · ${n.cobertura.matriculas}</b></div>
+      <div class="dado"><span class="k">Áreas com interesse declarado</span><b>${n.exposicao.areas_com_interesse}</b></div>
+      <div class="dado"><span class="k">Aspirações declaradas</span><b>${n.exposicao.aspiracoes_declaradas}</b></div>
+      <div class="aviso neutro" style="margin-top:12px">Nenhuma criança aparece isolada. Recortes com menos de ${d.minimo_celula} crianças são agrupados ou suprimidos.</div>
+      <div class="linha" style="margin-top:14px">
+        <button class="btn cresce" data-acao="gerar-relatorio">${r ? 'Gerar de novo' : 'Gerar rascunho'}</button>
+      </div>
+    </div>` : `<div class="aviso calmo" style="margin-top:14px"><p>Escolha o período para ver a prévia.</p></div>`}
+
+    ${r ? `
+    <div class="cartao area-impressao" style="margin-top:14px">
+      <div class="linha">
+        <div class="cresce"><h2>${tipo === 'ciclo' ? 'Relatório do Ciclo' : 'Carta do trimestre'}</h2>
+          <p class="sub">${esc(r.periodo_inicio)} a ${esc(r.periodo_fim)} · gerado em ${dataBR(r.gerado_em)}</p></div>
+        <span class="selo ${r.status === 'publicado' ? 'ok' : 'pend'}">${r.status}</span>
+      </div>
+
+      <div class="aviso ${r.revisor_status === 'aprovado' ? 'calmo' : ''}" style="margin-top:12px">
+        <h3>Revisor de sobre-alegação: ${esc(r.revisor_status)}</h3>
+        <p>${esc(r.revisor_notas || 'Nenhum verbo causal forte e a ressalva metodológica está presente.')}</p>
+      </div>
+
+      ${r.blocos.map(b => `
+        <div class="bloco-relatorio">
+          <div class="numero">Bloco ${b.numero}</div>
+          <h3>${esc(b.titulo)}</h3>
+          ${b.destaque ? `<div class="destaque">${esc(b.destaque)}</div>` : ''}
+          <p>${esc(b.texto)}</p>
+          ${b.tabela?.length ? `<div class="rolagem" style="margin-top:10px"><table>
+            <thead><tr>${Object.keys(b.tabela[0]).map(k => `<th>${esc(k)}</th>`).join('')}</tr></thead>
+            <tbody>${b.tabela.map(l => `<tr>${Object.values(l).map(v => `<td>${esc(v ?? '—')}</td>`).join('')}</tr>`).join('')}</tbody>
+          </table></div>` : ''}
+        </div>`).join('')}
+
+      <div class="suprimido">
+        <b>Supressão aplicada antes da redação.</b>
+        Mínimo de ${r.supressoes.minimo} crianças por recorte.
+        ${r.supressoes.programas.length ? `Programas agrupados: ${esc(r.supressoes.programas.join(', '))}.` : ''}
+        ${r.supressoes.areas.length ? `Áreas agrupadas: ${esc(r.supressoes.areas.join(', '))}.` : ''}
+        ${r.supressoes.dose_publicavel ? '' : 'Bloco de dose não publicado neste período.'}
+        ${r.supressoes.observacao_publicavel ? '' : 'Bloco de observação não publicado neste período.'}
+      </div>
+    </div>
+
+    <div class="pilha">
+      ${r.status === 'publicado'
+        ? `<div class="aviso calmo"><h3>Publicado</h3><p>Publicado em ${dataBR(r.publicado_em)}. Para mudar, gere um período novo.</p></div>`
+        : `<button class="btn largo" data-acao="publicar-relatorio" ${r.revisor_status !== 'aprovado' ? 'disabled' : ''}>Revisar e publicar</button>`}
+      <button class="btn largo secundario" data-acao="baixar-rascunho">Baixar rascunho</button>
+      <button class="btn largo fantasma" data-acao="imprimir">Imprimir</button>
+    </div>` : ''}
+
+    ${d.lista.length ? `<div class="cartao compacto" style="margin-top:14px">
+      <h2>Gerados até agora</h2>
+      <div class="pilha" style="margin-top:10px">
+        ${d.lista.map(l => `<button class="item" data-acao="ir" data-href="#/relatorio?tipo=${l.tipo}&periodo=${l.periodo}">
+          <div class="cresce"><div class="nome">${l.tipo === 'ciclo' ? 'Relatório do ciclo' : 'Carta'} · ${dataBR(l.periodo_inicio)} a ${dataBR(l.periodo_fim)}</div>
+            <div class="meta">gerado em ${dataBR(l.gerado_em)}</div></div>
+          <span class="selo ${l.status === 'publicado' ? 'ok' : 'pend'}">${l.status}</span>
+        </button>`).join('')}
+      </div></div>` : ''}
+
+    <p class="rodape">Gerado a partir do que já foi registrado. Nada é publicado sem sua revisão.<br>
+      Nenhum número no texto que não venha do banco. Nenhuma afirmação causal.</p>`;
+});
+
+// ======================================================================
+// CONSULTA EM LINGUAGEM NATURAL (F15) — só a camada agregada.
+// ======================================================================
+rota(/^#\/consulta/, async () => {
+  app.innerHTML = `
+    <p class="kicker">Camada agregada · nunca dado individual</p>
+    <h1>Perguntar à base</h1>
+    <p class="sub">Escreva a pergunta. A resposta é montada com número vindo do banco — se eu não souber, eu digo que não sei.</p>
+    <div class="cartao" style="margin-top:16px">
+      <input type="text" id="pergunta" placeholder="Ex.: quantas crianças estão em risco de sair?" autocomplete="off">
+      <div class="linha" style="margin-top:12px"><button class="btn largo" data-acao="perguntar">Perguntar</button></div>
+    </div>
+    <div id="resposta" class="pilha"></div>
+    <p class="rodape">Dado individual de criança não é respondido aqui, em nenhuma formulação.</p>`;
+  document.getElementById('pergunta')?.focus();
+});
+
+// ======================================================================
+// INGESTÃO RETROATIVA (F7) — coordenação.
+// ======================================================================
+rota(/^#\/importar/, async () => {
+  const [{ importacoes }, { turmas }] = await Promise.all([api('/api/importacoes'), api('/api/turmas')]);
+  app.innerHTML = `
+    <p class="kicker">Camada 1 · a série histórica que um sistema novo só teria em 2029</p>
+    <h1>Importar planilha antiga</h1>
+    <p class="sub">Colunas escritas de qualquer jeito, nomes em três grafias, presença como P/F, 1/0 ou sim/não.
+      A deduplicação é por primeiro nome mais data de nascimento — e toda decisão aparece no relatório antes de gravar.</p>
+
+    <div class="cartao" style="margin-top:16px">
+      <label for="turma-imp" style="font-size:12.5px;font-weight:600">Turma de destino</label>
+      <select id="turma-imp" style="margin-top:6px">${turmas.map(t =>
+        `<option value="${t.id}">${esc(t.nome)} · ${esc(t.programa)}</option>`).join('')}</select>
+      <label for="csv" style="font-size:12.5px;font-weight:600;display:block;margin-top:14px">Conteúdo da planilha (CSV)</label>
+      <textarea id="csv" style="min-height:150px;margin-top:6px" placeholder="Nome;Nascimento;Data;Presença"></textarea>
+      <div class="linha" style="margin-top:12px">
+        <button class="btn secundario cresce" data-acao="importar" data-simular="1">Simular</button>
+        <button class="btn cresce" data-acao="importar" data-simular="0">Importar</button>
+      </div>
+      <p class="sub" style="margin-top:8px">Simular não grava nada. Use antes de importar.</p>
+    </div>
+
+    <div id="resultado-import" class="pilha"></div>
+
+    ${importacoes.length ? `<div class="cartao compacto" style="margin-top:14px">
+      <h2>Importações anteriores</h2>
+      <div class="rolagem" style="margin-top:10px"><table>
+        <thead><tr><th>Arquivo</th><th>Linhas</th><th>Novas</th><th>Reconhecidas</th><th>Duplicatas</th><th>Quando</th></tr></thead>
+        <tbody>${importacoes.map(i => `<tr><td>${esc(i.origem)}</td><td>${i.linhas}</td><td>${i.criancas_novas}</td>
+          <td>${i.reconhecidas}</td><td>${i.duplicatas}</td><td>${dataBR(i.executado_em)}</td></tr>`).join('')}</tbody>
+      </table></div></div>` : ''}
+    <p class="rodape">A planilha não é guardada. O que fica é o log da decisão: quantas crianças, quantas grafias, o que foi descartado e por quê.</p>`;
+});
 
 // ======================================================================
 // MODAL DO FILTRO DE PROTECAO
@@ -962,27 +1610,28 @@ function modalCampo({ titulo, texto, rotulo, dica, confirmar }, aoConfirmar) {
   });
 }
 
-function modalFiltro(dados, aoConfirmar) {
+// Encaminhamento humano (F5). O sistema nao tenta impedir que a revelacao
+// aconteca — ela vai acontecer. Ele reconhece, nao grava, e devolve o caminho
+// certo. E' o bloco 6 do dossie virando funcionalidade.
+function modalEncaminhamento(trechos) {
   const veu = document.createElement('div');
   veu.className = 'veu';
   veu.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
-      <h2 id="mt">Filtro de proteção</h2>
-      <p>Um trecho da sua anotação parece falar da vida íntima ou da família da criança.
-         O Percurso não guarda esse tipo de conteúdo — isso protege a criança e protege você.</p>
-      ${dados.filtro.trechos.map(t => `<div class="trecho"><b>${esc(t.categoria)}</b>${esc(t.trecho)}</div>`).join('')}
-      <p>Se for algo sério, procure a psicóloga do Instituto — é o canal certo, com o sigilo certo.
-         O que você marcou na rubrica será salvo normalmente.</p>
+      <h2 id="mt">Tem algo aqui que não entra no sistema</h2>
+      <p>Fale com a coordenação — esse caminho é fora daqui. O trecho não foi extraído,
+         não foi gravado e não fica em lugar nenhum: some quando você fechar este aviso.</p>
+      ${(trechos || []).map(t => `<div class="trecho"><b>${esc(t.categoria)}</b>${esc(t.trecho)}</div>`).join('')}
+      <p>Se for situação de proteção, o canal é a coordenação e, quando for o caso, a psicóloga do Instituto —
+         com o sigilo certo. O resto do que você contou virou campo normalmente.</p>
       <div class="linha" style="margin-top:16px">
-        <button class="btn cresce" data-acao="filtro-ok">Salvar sem esse trecho</button>
-        <button class="btn secundario cresce" data-acao="filtro-voltar">Voltar e editar</button>
+        <button class="btn cresce" data-acao="encaminhamento-ok">Entendi</button>
       </div>
     </div>`;
   document.body.appendChild(veu);
-  veu.querySelector('[data-acao="filtro-ok"]').focus();
+  veu.querySelector('[data-acao="encaminhamento-ok"]').focus();
   veu.addEventListener('click', (e) => {
-    if (e.target.dataset.acao === 'filtro-ok') { veu.remove(); aoConfirmar(); }
-    if (e.target.dataset.acao === 'filtro-voltar' || e.target === veu) veu.remove();
+    if (e.target.dataset.acao === 'encaminhamento-ok' || e.target === veu) veu.remove();
   });
 }
 
@@ -1001,9 +1650,14 @@ document.addEventListener('click', comErro(async (ev) => {
   if (a === 'entrar') {
     const { usuario } = await post('/api/sessao', { educador_id: Number(alvo.dataset.id) });
     sessao = usuario;
-    location.hash = usuario.papel === 'coordenacao' ? '#/painel' : '#/hoje';
+    location.hash = usuario.papel === 'coordenacao' ? '#/painel'
+                  : usuario.papel === 'diretoria' ? '#/relatorio' : '#/hoje';
     if (!location.hash) navegar();
     navegar();
+    // A sessão pode ter expirado com registros na fila: sem isto eles ficavam
+    // presos mostrando "N na fila" até um reload que ninguém sabe que precisa
+    // dar, porque o evento `online` não dispara num aparelho já conectado.
+    drenarFila();
     return;
   }
 
@@ -1037,7 +1691,14 @@ document.addEventListener('click', comErro(async (ev) => {
       const c = ctx.chamada;
       const marcacoes = Object.entries(c.marcas).map(([id, status]) => ({ crianca_id: Number(id), status }));
       const duracao = Math.max(1, Math.round((performance.now() - c.inicio) / 1000));
-      const r = await post('/api/chamada', { turma_id: c.turma.id, data: c.data, marcacoes, duracao_segundos: duracao });
+      let r;
+      try { r = await post('/api/chamada', { turma_id: c.turma.id, data: c.data, marcacoes, duracao_segundos: duracao }); }
+      catch (e) {
+        if (!e.rede) throw e;
+        await postComFila('/api/chamada', { turma_id: c.turma.id, data: c.data, marcacoes, duracao_segundos: duracao }, 'Chamada');
+        location.hash = '#/hoje'; navegar();
+        return;
+      }
       const presentes = marcacoes.filter(m => m.status === 'P').length;
       const dSeg = Math.round((performance.now() - c.inicio) / 1000);
       toast(`Chamada de ${dataBR(c.data)} salva · ${presentes} presentes · ${Math.floor(dSeg / 60)}m${String(dSeg % 60).padStart(2, '0')}s de registro.`, 'bom');
@@ -1067,27 +1728,10 @@ document.addEventListener('click', comErro(async (ev) => {
 
   if (a === 'salvar-obs') {
     const concluir = alvo.dataset.concluir === '1';
-    const nota = document.getElementById('nota')?.value || '';
     const itens = Object.entries(ctx.obs.marcas).map(([d, n]) => ({ dimensao_id: Number(d), nivel: n }));
-    const enviar = async (forcar) => post('/api/observacao', {
-      crianca_id: ctx.obs.criancaId, itens, nota_livre: nota, concluir, forcar_limpeza: forcar,
-    });
     alvo.disabled = true;
     try {
-      let r;
-      try { r = await enviar(false); }
-      catch (e) {
-        if (e.status === 409 && e.dados?.filtro) {
-          alvo.disabled = false;
-          modalFiltro(e.dados, comErro(async () => {
-            const r2 = await enviar(true);
-            toast('Observação salva sem o trecho bloqueado.', 'bom');
-            await depoisDaObservacao(r2, concluir);
-          }));
-          return;
-        }
-        throw e;
-      }
+      const r = await post('/api/observacao', { crianca_id: ctx.obs.criancaId, itens, concluir });
       toast(concluir ? 'Observação concluída.' : 'Rascunho guardado — dá para voltar quando quiser.', 'bom');
       await depoisDaObservacao(r, concluir);
     } finally { alvo.disabled = false; }
@@ -1108,6 +1752,291 @@ document.addEventListener('click', comErro(async (ev) => {
       : 'Situação resolvida pela equipe.';
     await post('/api/alerta', { id: Number(alvo.dataset.id), status: alvo.dataset.status, tratativa });
     toast(alvo.dataset.status === 'resolvido' ? 'Alerta encerrado.' : 'Coordenação avisada.', 'bom');
+    navegar();
+    return;
+  }
+
+  // ---- folha do dia / confirmacao (F2, F6) ----
+  if (a === 'pill') {
+    const g = alvo.dataset.grupo, cod = alvo.dataset.codigo, unico = alvo.dataset.unico === '1';
+    const c = ctx.folha.campos;
+    if (unico) {
+      const neutro = g === 'atividade' ? 'nao_identificada' : 'nenhuma';
+      c[g] = c[g] === cod ? neutro : cod;
+      alvo.parentElement.querySelectorAll('.p').forEach(b => {
+        const on = c[g] === b.dataset.codigo;
+        b.classList.toggle('on', on); b.classList.toggle('off', !on);
+        b.setAttribute('aria-pressed', String(on));
+      });
+    } else {
+      const i = c[g].indexOf(cod);
+      if (i >= 0) c[g].splice(i, 1);
+      else if (c[g].length >= ctx.folha.catalogos.max_marcadores) {
+        toast(`Até ${ctx.folha.catalogos.max_marcadores} marcadores — tire um antes de pôr outro.`);
+        return;
+      } else c[g].push(cod);
+      const on = c[g].includes(cod);
+      alvo.classList.toggle('on', on); alvo.classList.toggle('off', !on);
+      alvo.setAttribute('aria-pressed', String(on));
+    }
+    return;
+  }
+
+  if (a === 'ajuda') {
+    const c = ctx.folha.campos;
+    c.pediram_ajuda = Math.max(0, Math.min(30, c.pediram_ajuda + Number(alvo.dataset.d)));
+    document.getElementById('ajuda').textContent = c.pediram_ajuda;
+    return;
+  }
+
+  if (a === 'salvar-folha') {
+    const f = ctx.folha;
+    alvo.disabled = true;
+    try {
+      const corpo = {
+        turma_id: f.turma.id, data: f.data, campos: f.campos,
+        origem: f.origem, sugestao: f.sugestao, fechar: alvo.dataset.fechar === '1',
+      };
+      const enviado = await postComFila('/api/folha', corpo, 'Folha do dia');
+      // A transcricao morre aqui, junto com a sugestao do agente.
+      if (ctx.voz) ctx.voz.transcricao = '';
+      f.sugestao = null;
+      if (enviado) toast(alvo.dataset.fechar === '1' ? 'Folha fechada.' : 'Folha guardada.', 'bom');
+      location.hash = '#/hoje'; navegar();
+    } finally { alvo.disabled = false; }
+    return;
+  }
+
+  if (a === 'reabrir-folha') {
+    await post('/api/folha/reabrir', { turma_id: ctx.folha.turma.id, data: ctx.folha.data });
+    toast('Folha reaberta.', 'bom');
+    navegar();
+    return;
+  }
+
+  if (a === 'descartar-folha') {
+    // Nada a apagar: nada foi gravado. E' o ponto da tela.
+    if (ctx.voz) ctx.voz.transcricao = '';
+    ctx.folha.sugestao = null;
+    toast('Descartado. Nada tinha sido gravado.');
+    location.hash = '#/hoje'; navegar();
+    return;
+  }
+
+  // ---- captura por voz (F3) ----
+  if (a === 'voz-toggle') {
+    const v = ctx.voz;
+    if (v.gravando) { pararVoz(); document.getElementById('voz-estado').textContent = 'Pausado'; return; }
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Rec) { toast('Este navegador não transcreve voz. Escreva no campo abaixo.'); return; }
+    const rec = new Rec();
+    rec.lang = 'pt-BR'; rec.continuous = true; rec.interimResults = false;
+    rec.onresult = (ev) => {
+      for (let i = ev.resultIndex; i < ev.results.length; i++)
+        if (ev.results[i].isFinal) v.transcricao += ev.results[i][0].transcript + ' ';
+    };
+    rec.onerror = (ev) => {
+      pararVoz();
+      const el = document.getElementById('voz-estado');
+      if (el) el.textContent = ev.error === 'not-allowed' ? 'Microfone bloqueado' : 'Deu problema';
+      toast(ev.error === 'not-allowed'
+        ? 'O navegador bloqueou o microfone. Dá para escrever — o resto é igual.'
+        : 'A transcrição falhou. O registro manual continua funcionando.', 'ruim');
+    };
+    v.rec = rec; v.gravando = true; v.restante = ctx.folha.catalogos.voz_segundos;
+    try { rec.start(); } catch {}
+    alvo.classList.add('gravando');
+    alvo.setAttribute('aria-pressed', 'true');
+    alvo.setAttribute('aria-label', 'Parar de gravar');
+    document.getElementById('onda').classList.add('ativa');
+    document.getElementById('voz-estado').textContent = 'Gravando';
+    v.timer = setInterval(() => {
+      v.restante--;
+      animarOnda();
+      const total = ctx.folha.catalogos.voz_segundos;
+      const dec = document.getElementById('contagem');
+      if (dec) {
+        const usado = total - v.restante;
+        dec.textContent = `0:${String(Math.max(0, usado)).padStart(2, '0')} de 0:${total}`;
+        dec.classList.toggle('acabando', v.restante <= 8);
+      }
+      if (v.restante <= 0) {
+        pararVoz();
+        const el = document.getElementById('voz-estado');
+        if (el) el.textContent = 'Quarenta segundos — pode tocar em Terminei';
+      }
+    }, 1000);
+    return;
+  }
+
+  if (a === 'voz-terminei') {
+    const v = ctx.voz;
+    pararVoz();
+    const ditado = document.getElementById('ditado')?.value || '';
+    const texto = (v.transcricao + ' ' + ditado).trim();
+    if (!texto) {
+      toast('Não ouvi nada. Grave de novo ou toque em "Prefiro escrever".');
+      return;
+    }
+    alvo.disabled = true;
+    try {
+      const r = await post('/api/voz/extrair', { turma_id: ctx.folha.turma.id, transcricao: texto });
+      // A transcricao sai de cena aqui: nao foi gravada e nao volta para a tela.
+      v.transcricao = '';
+      const el = document.getElementById('ditado'); if (el) el.value = '';
+      const f = ctx.folha;
+      f.origem = 'voz';
+      f.sugestao = r.extracao;
+      f.excluido = r.excluido;
+      f.trechos = r.trechos;
+      f.baixaConfianca = r.baixa_confianca;
+      f.campos = {
+        atividade: r.extracao.atividade,
+        area_tematica: r.extracao.area_tematica,
+        marcadores_turma: [...r.extracao.marcadores_turma],
+        pediram_ajuda: r.extracao.pediram_ajuda,
+        conteudo_excluido: r.extracao.conteudo_excluido,
+      };
+      if (r.excluido) modalEncaminhamento(r.trechos);
+      location.hash = '#/confirmar'; navegar();
+    } catch (e) {
+      if (e.rede) {
+        toast('Sem internet. O registro manual continua funcionando.', 'ruim');
+        location.hash = '#/folha'; navegar();
+        return;
+      }
+      throw e;
+    } finally { alvo.disabled = false; }
+    return;
+  }
+
+  // ---- pauta de segunda (F11) ----
+  if (a === 'pauta') {
+    alvo.disabled = true;
+    try {
+      const r = await post('/api/pauta/decidir', { turma_id: ctx.pautaTurma, decisao: alvo.dataset.decisao });
+      toast(alvo.dataset.decisao === 'aceita'
+        ? 'Anotado no sábado.'
+        : `Registrado como descarte — taxa atual de ${r.descarte.pct}%. É assim que a sugestão melhora.`, 'bom');
+      navegar();
+    } finally { alvo.disabled = false; }
+    return;
+  }
+
+  // ---- relatorio do doador (F13/F14) ----
+  if (a === 'rel-tipo')    { location.hash = `#/relatorio?tipo=${alvo.dataset.tipo}${ctx.rel?.periodo ? `&periodo=${ctx.rel.periodo}` : ''}`; navegar(); return; }
+  if (a === 'rel-periodo') { location.hash = `#/relatorio?tipo=${ctx.rel?.tipo || 'ciclo'}&periodo=${alvo.dataset.periodo}`; navegar(); return; }
+
+  if (a === 'gerar-relatorio') {
+    const [inicio, fim] = (ctx.rel.periodo || '').split('..');
+    if (!inicio) { toast('Escolha o período primeiro.'); return; }
+    alvo.disabled = true;
+    try {
+      const custo = document.getElementById('custo')?.value;
+      await post('/api/relatorio/gerar', { tipo: ctx.rel.tipo, inicio, fim, custo });
+      toast('Rascunho gerado a partir dos números do período.', 'bom');
+      navegar();
+    } finally { alvo.disabled = false; }
+    return;
+  }
+
+  if (a === 'publicar-relatorio') {
+    await post('/api/relatorio/publicar', { tipo: ctx.rel.tipo, periodo: ctx.rel.periodo });
+    toast('Publicado. É este artefato que vai para quem financia.', 'bom');
+    navegar();
+    return;
+  }
+
+  if (a === 'baixar-rascunho') {
+    const d = await api(`/api/relatorio?tipo=${ctx.rel.tipo}&periodo=${ctx.rel.periodo}`);
+    if (!d.relatorio) { toast('Gere o rascunho antes de baixar.'); return; }
+    const r = d.relatorio;
+    const txt = [
+      `INSTITUTO SOCIAL EBENÉZER`,
+      r.tipo === 'ciclo' ? 'Relatório do Ciclo' : 'Carta do trimestre',
+      `Período: ${r.periodo_inicio} a ${r.periodo_fim}`,
+      `Gerado em ${r.gerado_em} · status: ${r.status} · revisor: ${r.revisor_status}`,
+      '', ...r.blocos.map(b => `## ${b.titulo}\n${b.destaque ? b.destaque + '\n' : ''}${b.texto}`),
+      '', `Supressão: mínimo de ${r.supressoes.minimo} crianças por recorte.`,
+      'Todos os dados desta demonstração são sintéticos.',
+    ].join('\n\n');
+    const url = URL.createObjectURL(new Blob([txt], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url; link.download = `percurso-${r.tipo}-${r.periodo_inicio}-a-${r.periodo_fim}.txt`;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    return;
+  }
+
+  // ---- consulta agregada (F15) ----
+  if (a === 'perguntar') {
+    const campo = document.getElementById('pergunta');
+    const q = campo?.value.trim();
+    if (!q) { toast('Escreva a pergunta.'); return; }
+    alvo.disabled = true;
+    try {
+      const r = await post('/api/consulta', { pergunta: q });
+      const alvoEl = document.getElementById('resposta');
+      alvoEl.innerHTML = `
+        <div class="cartao">
+          <div class="lbl">${r.reconhecida ? esc(r.intencao) : 'não reconhecida'}</div>
+          <p style="font-size:14.5px;line-height:1.55">${esc(r.resposta)}</p>
+          ${r.fonte ? `<p class="sub" style="margin-top:8px">Fonte: ${esc(r.fonte)}.</p>` : ''}
+          ${r.sugestoes ? `<div style="margin-top:10px">${r.sugestoes.map(x =>
+            `<button class="p off" data-acao="sugestao" data-q="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : ''}
+          <p class="sub" style="margin-top:10px">${esc(r.doutrina)}</p>
+        </div>` + alvoEl.innerHTML;
+    } finally { alvo.disabled = false; }
+    return;
+  }
+
+  if (a === 'sugestao') {
+    const campo = document.getElementById('pergunta');
+    campo.value = alvo.dataset.q;
+    document.querySelector('[data-acao="perguntar"]')?.click();
+    return;
+  }
+
+  // ---- ingestão retroativa (F7) ----
+  if (a === 'importar') {
+    const csv = document.getElementById('csv')?.value || '';
+    const turmaId = Number(document.getElementById('turma-imp')?.value);
+    if (!csv.trim()) { toast('Cole o conteúdo da planilha primeiro.'); return; }
+    const simular = alvo.dataset.simular === '1';
+    alvo.disabled = true;
+    try {
+      const r = await post('/api/importar', { csv, turma_id: turmaId, origem: 'planilha-colada.csv', simular });
+      document.getElementById('resultado-import').innerHTML = `
+        <div class="cartao" style="margin-top:14px">
+          <div class="linha"><h2 class="cresce">${simular ? 'Simulação' : 'Importado'}</h2>
+            <span class="selo ${simular ? 'pend' : 'ok'}">${simular ? 'nada gravado' : 'gravado'}</span></div>
+          <div class="dado" style="margin-top:10px"><span class="k">Formato reconhecido</span><b>${esc(r.formato)}</b></div>
+          <div class="dado"><span class="k">Linhas lidas</span><b>${r.linhas}</b></div>
+          <div class="dado"><span class="k">Crianças no arquivo</span><b>${r.criancas_no_arquivo}</b></div>
+          ${simular ? '' : `<div class="dado"><span class="k">Crianças novas</span><b>${r.criancas_novas}</b></div>
+          <div class="dado"><span class="k">Já existiam</span><b>${r.reconhecidas}</b></div>
+          <div class="dado"><span class="k">Encontros e presenças criados</span><b>${r.encontros} · ${r.presencas}</b></div>`}
+          ${r.periodo ? `<div class="dado"><span class="k">Período reconstruído</span><b>${dataBR(r.periodo.inicio)} a ${dataBR(r.periodo.fim)}</b></div>` : ''}
+          ${r.duplicatas_resolvidas.length ? `
+            <div class="lbl" style="margin-top:14px">Grafias unificadas</div>
+            ${r.duplicatas_resolvidas.map(d => `<div class="trecho"><b>${esc(d.nome)}</b>${esc(d.grafias.join('  ·  '))}</div>`).join('')}` : ''}
+          ${r.sem_nascimento.length ? `<div class="aviso" style="margin-top:12px">
+            <h3>${r.sem_nascimento.length} criança(s) sem data de nascimento</h3>
+            <p>A chave de deduplicação fica fraca sem a data. Confira à mão: ${esc(r.sem_nascimento.join(', '))}.</p></div>` : ''}
+          ${r.descartadas.length ? `
+            <div class="lbl" style="margin-top:14px">Linhas descartadas</div>
+            <div class="rolagem"><table><thead><tr><th>Linha</th><th>Motivo</th></tr></thead>
+              <tbody>${r.descartadas.map(x => `<tr><td>${x.linha}</td><td>${esc(x.motivo)}</td></tr>`).join('')}</tbody></table></div>` : ''}
+        </div>`;
+      toast(simular ? 'Simulação pronta — nada foi gravado.' : `Importado: ${r.presencas} presenças reconstruídas.`, 'bom');
+    } finally { alvo.disabled = false; }
+    return;
+  }
+
+  // ---- fecho de ciclo (retenção declarada) ----
+  if (a === 'fechar-ciclo') {
+    const r = await post('/api/ciclo/fechar', { ciclo_id: Number(alvo.dataset.id), abrir_proximo: true });
+    toast(`Ciclo fechado. ${r.notas_descartadas} anotação(ões) legada(s) descartada(s).`, 'bom');
     navegar();
     return;
   }
@@ -1180,7 +2109,9 @@ document.addEventListener('input', (ev) => {
 
 document.addEventListener('keydown', (ev) => {
   if (ev.key !== 'Escape') return;
-  document.querySelector('.veu')?.remove();
+  const veu = document.querySelector('.veu');
+  if (veu) { veu.remove(); return; }
+  document.querySelector('.festa')?.remove();
 });
 
 // ======================================================================
@@ -1199,4 +2130,5 @@ window.addEventListener('hashchange', navegar);
   }
   if (!sessao && location.hash !== '#/entrar') location.hash = '#/entrar';
   navegar();
+  if (sessao) drenarFila();
 })();

@@ -3,7 +3,8 @@
 // Tudo aqui e gerado por PRNG deterministico (mesma semente => mesmo banco),
 // para que os testes do fluxo principal sejam reproduziveis.
 import { getDb, all, get, run, tx } from './db.js';
-import { hoje, addDias, recalcularAlertas } from './domain.js';
+import { hoje, agora, addDias, diasEntre, recalcularAlertas } from './domain.js';
+import { segundaDa } from './scores.js';
 
 const rand = mulberry32(20261009);
 function mulberry32(a) {
@@ -54,6 +55,11 @@ const GOVERNANCA = [
   { campo: 'rubrica_socioemocional', rotulo: 'Rubrica socioemocional', base_legal: 'Consentimento específico do responsável (LGPD Art. 14)', titular: 'Organização', acesso: 'Educador da criança + coordenação', retencao: 'Enquanto ativa + 2 anos', exige_consentimento: 1 },
   { campo: 'campo_livre', rotulo: 'Campo livre da observação', base_legal: 'Consentimento específico do responsável (LGPD Art. 14)', titular: 'Organização', acesso: 'Educador que registrou', retencao: 'Descarte ao fim do ciclo', exige_consentimento: 1 },
   { campo: 'aspiracao', rotulo: 'Aspiração declarada (Lab. de Sonhos)', base_legal: 'Legítimo interesse — atividade-fim do programa (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Equipe do programa', retencao: 'Enquanto ativa', exige_consentimento: 0 },
+  { campo: 'folha_do_dia', rotulo: 'Folha do dia (registro da turma)', base_legal: 'Legítimo interesse — execução do programa (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Equipe do programa', retencao: '5 anos', exige_consentimento: 0 },
+  { campo: 'audio_da_voz', rotulo: 'Áudio da captura por voz', base_legal: 'Não coletado — descartado na transcrição, dentro do navegador', titular: '—', acesso: 'Ninguém', retencao: 'Não persiste em nenhum momento', exige_consentimento: 0 },
+  { campo: 'transcricao_da_voz', rotulo: 'Transcrição da captura por voz', base_legal: 'Não coletada — usada em memória e descartada na confirmação', titular: '—', acesso: 'Ninguém', retencao: 'Não persiste em nenhum momento', exige_consentimento: 0 },
+  { campo: 'score_evasao', rotulo: 'Score de risco de evasão', base_legal: 'Legítimo interesse — proteção do vínculo (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Coordenação e diretoria', retencao: 'Recalculado a cada consulta; não historiado', exige_consentimento: 0 },
+  { campo: 'agregado_publicado', rotulo: 'Agregado publicado no relatório', base_legal: 'Legítimo interesse — prestação de contas (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Público, após revisão da diretoria', retencao: 'Permanente', exige_consentimento: 0 },
   { campo: 'conteudo_clinico', rotulo: 'Conteúdo clínico', base_legal: 'Fora do sistema por construção — sigilo profissional da psicóloga', titular: 'Psicóloga', acesso: 'Ninguém, no Percurso', retencao: 'Não coletado', exige_consentimento: 1 },
 ];
 
@@ -62,7 +68,7 @@ export function semear() {
   const T = hoje();
 
   return tx(() => {
-    for (const t of ['atividade','sintese','alerta','consentimento','observacao_item','observacao','presenca','encontro','matricula','crianca','turma','programa','ancora','dimensao','ciclo','educador','governanca_campo'])
+    for (const t of ['importacao','relatorio','pauta','atividade_area','folha_marcador','folha','aspiracao','atividade','sintese','alerta','consentimento','observacao_item','observacao','presenca','encontro','matricula','crianca','turma','programa','ancora','dimensao','ciclo','educador','governanca_campo'])
       db.exec(`DELETE FROM ${t};`);
 
     for (const g of GOVERNANCA)
@@ -72,7 +78,8 @@ export function semear() {
     run(`INSERT INTO educador (id,nome,apelido,papel) VALUES
          (1,'Maria Silvia','Maria S.','educador'),
          (2,'Rita Amaral','Rita A.','coordenacao'),
-         (3,'Cleide Nunes','Cleide N.','educador')`);
+         (3,'Cleide Nunes','Cleide N.','educador'),
+         (4,'Solange Ribeiro','Solange R.','diretoria')`);
 
     run(`INSERT INTO programa (id,nome,faixa,cadencia,no_escopo,nota) VALUES
       (1,'Reforço escolar','7 a 11 anos','Segunda a sexta, dois turnos',1,NULL),
@@ -166,10 +173,16 @@ export function semear() {
     // Aspiracao declarada — a metodologia do Laboratorio de Sonhos (bloco 3 do
     // dossie): a crianca nomeia o que quer ser. ~75% das criancas do Laboratorio
     // tem aspiracao declarada; quem nao declara e' levada a ampliar repertorio.
-    const AREAS = ['Saúde', 'Tecnologia', 'Artes', 'Esportes', 'Educação', 'Meio Ambiente', 'Direito', 'Gastronomia'];
+    // As areas usam o MESMO vocabulario fechado da folha do dia (src/voz.js) —
+    // sem isso o score de exposicao compararia macas com laranjas.
+    // Peso deliberado em `saude`: e' a area que fica em lacuna na demonstracao.
+    const AREAS_ASPIRACAO = ['saude','saude','saude','educacao','educacao','esporte','esporte','artes','tecnologia','outra'];
     const doLab = all(`SELECT DISTINCT crianca_id FROM matricula WHERE programa_id = 2 AND status='ativa'`);
     for (const r of doLab) {
-      if (rand() < 0.75) run(`UPDATE crianca SET aspiracao = ? WHERE id = ?`, pick(AREAS), r.crianca_id);
+      if (rand() < 0.78)
+        run(`INSERT INTO aspiracao (crianca_id, area, declarada_em) VALUES (?,?,?)
+             ON CONFLICT(crianca_id, area) DO NOTHING`,
+            r.crianca_id, pick(AREAS_ASPIRACAO), addDias(T, -intBetween(60, 300)));
     }
 
     // Uma matricula recente na Tarde A: bloqueada por janela minima de convivio.
@@ -182,7 +195,13 @@ export function semear() {
 
     // --- Encontros e presenca (F2) ------------------------------------------
     // A persona parou de registrar ha 7 dias — a Tarde A tem datas em aberto.
-    const perfil = new Map(ativas.map(id => [id, 0.72 + rand() * 0.25]));
+    // Perfil de presenca com cauda baixa DE PROPOSITO: sem criancas de dose
+    // baixa o bloco 4 do relatorio nunca sai do estado suprimido, e o score de
+    // evasao nao teria contra o que comparar. ~10% frequentam menos de 60%.
+    const perfil = new Map(ativas.map(id => {
+      const r = rand();
+      return [id, r < 0.10 ? 0.38 + rand() * 0.20 : r < 0.30 ? 0.60 + rand() * 0.18 : 0.78 + rand() * 0.19];
+    }));
     const ultimoRegistro = { 1: addDias(T, -7), 2: T, 3: T, 4: T, 5: T };
     for (const t of all(`SELECT * FROM turma`)) {
       const alunos = all(`SELECT crianca_id, entrada FROM matricula WHERE turma_id = ? AND status='ativa'`, t.id);
@@ -206,11 +225,70 @@ export function semear() {
       }
     }
 
-    // Criancas com ausencias consecutivas — alimentam o alerta (F6).
-    for (const id of [tardeA[2], tardeA[9], ativas[41], ativas[70]]) {
+    // Criancas com ausencias consecutivas — alimentam o alerta (F6) e o score
+    // de risco de evasao (F8). Tres delas ficam na turma da persona, que e' o
+    // numero que a pauta de segunda mostra na demonstracao.
+    // As faltas sao forcadas DENTRO DA TURMA: o score de evasao le a serie da
+    // matricula, entao marcar falta no sabado do Laboratorio nao criaria streak
+    // no Reforco. Sem esse cuidado o dado sintetico nao exercita o score.
+    for (const [id, turmaAlvo, faltas] of
+         [[tardeA[2], 1, 4], [tardeA[9], 1, 3], [tardeA[15], 1, 2], [ativas[41], null, 4], [ativas[70], null, 3]]) {
+      const tid = turmaAlvo ?? get(
+        `SELECT turma_id FROM matricula WHERE crianca_id = ? AND status='ativa' AND turma_id IS NOT NULL LIMIT 1`, id)?.turma_id;
+      if (!tid) continue;
       for (const u of all(`SELECT p.id FROM presenca p JOIN encontro e ON e.id = p.encontro_id
-                            WHERE p.crianca_id = ? ORDER BY e.data DESC LIMIT 4`, id))
+                            WHERE p.crianca_id = ? AND e.turma_id = ? ORDER BY e.data DESC LIMIT ?`, id, tid, faltas))
         run(`UPDATE presenca SET status='F' WHERE id = ?`, u.id);
+    }
+
+    // --- Folha do dia, exposicao e pauta (v2) --------------------------------
+    // A folha e' da TURMA. Nenhum campo aqui fala de crianca nomeada.
+    // A turma 4 fica DELIBERADAMENTE sem folha nenhuma: e' a "turma sem registro"
+    // que a cobertura da coordenacao precisa mostrar para ser util.
+    const ATIVIDADES_SEED = ['roda','brincadeira','leitura','desenho','musica','parque'];
+    // `saude` esta fora de proposito: e' a area com aspiracao declarada e ZERO
+    // atividade, a lacuna que a pauta de segunda e o relatorio publicam.
+    const AREAS_SEED = ['educacao','educacao','esporte','artes','tecnologia','outra','nenhuma'];
+    const MARCADORES_SEED = ['colaborou','participou','agitado','disperso','alegre','cansado'];
+
+    for (const t of all(`SELECT * FROM turma`)) {
+      if (t.id === 4) continue;
+      const encs = all(`SELECT id, data FROM encontro WHERE turma_id = ? ORDER BY data`, t.id);
+      encs.forEach((e, i) => {
+        if (rand() > 0.82) return;                       // ~18% de encontros sem folha
+        const porVoz = rand() < 0.35;
+        const area = pick(AREAS_SEED);
+        const marcs = [...new Set([pick(MARCADORES_SEED), pick(MARCADORES_SEED)])];
+        // Taxa de correcao alvo ~20%: um extrator lexical que acertasse tudo
+        // seria implausivel, e a metrica so serve se for honesta.
+        const editados = porVoz ? (rand() < 0.45 ? 0 : rand() < 0.75 ? 1 : rand() < 0.92 ? 2 : 3) : 0;
+        run(`INSERT INTO folha (encontro_id, atividade, area_tematica, pediram_ajuda, origem,
+                                confianca, campos_sugeridos, campos_editados, conteudo_excluido,
+                                confirmado_por, confirmado_em, status)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+            e.id, pick(ATIVIDADES_SEED), area, intBetween(0, 5), porVoz ? 'voz' : 'manual',
+            porVoz ? Math.round((0.62 + rand() * 0.36) * 100) / 100 : null,
+            porVoz ? 4 : 0, editados,
+            porVoz && rand() < 0.06 ? 1 : 0,
+            t.educador_id ?? 1, e.data + 'T17:20:00.000Z',
+            i === encs.length - 1 ? 'aberta' : 'fechada');
+        const fid = get(`SELECT id FROM folha WHERE encontro_id = ?`, e.id).id;
+        for (const m of marcs) run(`INSERT INTO folha_marcador (folha_id, marcador) VALUES (?,?)`, fid, m);
+        if (area !== 'nenhuma')
+          run(`INSERT INTO atividade_area (turma_id, area, data, origem) VALUES (?,?,?, 'folha')`, t.id, area, e.data);
+      });
+    }
+
+    // Historico de decisao da pauta — o descarte e' o dado de qualidade do agente.
+    for (const turmaId of [1, 2]) {
+      for (let semanas = 8; semanas >= 1; semanas--) {
+        const seg = segundaDa(addDias(T, -semanas * 7));
+        const descartada = rand() < 0.26;                // taxa de descarte alvo ~26%
+        run(`INSERT INTO pauta (turma_id, semana, sugestao_codigo, sugestao_titulo, decisao, decidido_por, decidido_em)
+             VALUES (?,?,?,?,?,?,?) ON CONFLICT(turma_id, semana) DO NOTHING`,
+            turmaId, seg, 'EXP-SAUDE', 'Roda de conversa sobre profissões de cuidado',
+            descartada ? 'descartada' : 'aceita', turmaId === 1 ? 1 : 3, seg + 'T09:00:00.000Z');
+      }
     }
 
     // --- Observacoes (F3/F5) -------------------------------------------------
@@ -219,8 +297,12 @@ export function semear() {
     const base  = { INTER: 2.7,  COOP: 2.6,  EXPR: 1.9,  AUTO: 2.4,  PERS: 2.3 };
     const delta = { INTER: 0.35, COOP: 0.30, EXPR: 0.18, AUTO: 0.28, PERS: -0.05 };
     const dims = all(`SELECT * FROM dimensao ORDER BY ordem`);
-    const nivelDe = (cod, ciclo) =>
-      Math.max(1, Math.min(4, Math.round(base[cod] + (ciclo === 2 ? delta[cod] : 0) + (rand() - 0.5) * 1.6)));
+    // A dose entra no avanco: crianca que frequenta mais avanca um pouco mais.
+    // E' uma premissa do MUNDO SINTETICO, declarada aqui — nao um achado. O
+    // bloco 4 do relatorio publica a comparacao sempre com a caixa de limites.
+    const nivelDe = (cod, ciclo, dose = 1) =>
+      Math.max(1, Math.min(4, Math.round(
+        base[cod] + (ciclo === 2 ? delta[cod] * dose : 0) + (rand() - 0.5) * 1.6)));
 
     const gravaObs = (cicloId, criancaId, educadorId, status) => {
       const ts = new Date().toISOString();
@@ -228,9 +310,11 @@ export function semear() {
            VALUES (?,?,?,?,NULL,?,?)`,
           cicloId, criancaId, educadorId, status, ts, status === 'concluida' ? ts : null);
       const oid = get(`SELECT id FROM observacao WHERE ciclo_id=? AND crianca_id=?`, cicloId, criancaId).id;
+      // dose: 0,3 para quem frequenta ~40%; ~1,4 para quem frequenta ~97%.
+      const dose = Math.max(0.3, ((perfil.get(criancaId) ?? 0.85) - 0.35) / 0.45);
       dims.slice(0, status === 'concluida' ? dims.length : 3).forEach(d =>
         run(`INSERT INTO observacao_item (observacao_id,dimensao_id,nivel) VALUES (?,?,?)`,
-            oid, d.id, nivelDe(d.codigo, cicloId)));
+            oid, d.id, nivelDe(d.codigo, cicloId, dose)));
     };
     const educadorDa = (criancaId) =>
       get(`SELECT t.educador_id AS e FROM matricula m JOIN turma t ON t.id = m.turma_id
@@ -274,5 +358,10 @@ export function resumo() {
     presencas: get(`SELECT COUNT(*) n FROM presenca`).n,
     observacoes: get(`SELECT COUNT(*) n FROM observacao`).n,
     consentimentos_pendentes: get(`SELECT COUNT(*) n FROM consentimento WHERE campo='rubrica_socioemocional' AND status='pendente'`).n,
+    folhas: get(`SELECT COUNT(*) n FROM folha`).n,
+    folhas_por_voz: get(`SELECT COUNT(*) n FROM folha WHERE origem='voz'`).n,
+    aspiracoes: get(`SELECT COUNT(*) n FROM aspiracao`).n,
+    atividades_por_area: get(`SELECT COUNT(*) n FROM atividade_area`).n,
+    pautas_decididas: get(`SELECT COUNT(*) n FROM pauta WHERE decisao IS NOT NULL`).n,
   };
 }

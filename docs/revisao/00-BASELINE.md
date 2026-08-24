@@ -1,5 +1,9 @@
 # Baseline de conformidade — revisão arquitetural (22/08/2026)
 
+> **Baseline datado.** Este documento registra os requisitos como estavam em 22/08/2026, antes
+> da incorporação do `percurso-v2-pack`. Ele não é atualizado de propósito: é a régua contra a qual
+> a revisão daquele dia mediu. O escopo corrente está em [`../O-QUE-VEIO-DA-V2.md`](../O-QUE-VEIO-DA-V2.md).
+
 Consolida os requisitos extraídos de `1 - Arquitetura/` contra os quais o MVP Percurso foi
 auditado. Cada requisito é classificado em uma de três faixas:
 

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: percurso-mvp
+    runtime: node
+    plan: starter
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeployTrigger: commit
+    envVars:
+      - key: PERCURSO_DB
+        value: /var/data/percurso.db
+    disk:
+      name: percurso-data
+      mountPath: /var/data
+      sizeGB: 1

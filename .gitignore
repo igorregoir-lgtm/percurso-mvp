@@ -8,6 +8,13 @@ video/quadros/
 video/molduras/
 data/*.db-wal
 data/*.db-shm
+npm-debug.log*
+*.tmp
+*.bak
 
 # Protótipo de referência Bússola — material comparativo, não é o produto (ver README)
 remix-bússola-—-instituto-ebenézer/
+
+# Cache de ferramenta de pesquisa e cópias soltas de trabalho — não são fonte
+.firecrawl/
+mvp-src-only/
