@@ -296,6 +296,27 @@ svg{display:block; max-width:100%; height:auto}
   border:3px solid #fff; border-top:none; border-radius:0 0 16px 16px;
 }
 @keyframes pulsa{0%,100%{box-shadow:0 0 0 0 var(--red-soft)}50%{box-shadow:0 0 0 12px transparent}}
+
+/* ---------- ditado por voz (componente reutilizável) ----------
+   O mesmo gesto da folha do dia, em qualquer campo de texto: toca, fala,
+   toca para parar. Idle: neutro. Ouvindo: terracota pulsando. */
+.mic-ditado{
+  flex:0 0 46px; width:46px; height:46px; border-radius:50%;
+  background:var(--card-2); border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  transition:transform 240ms cubic-bezier(.34,1.56,.64,1), background .15s ease;
+}
+.mic-ditado:active{transform:scale(.92); transition-duration:60ms}
+.mic-ditado i{width:10px; height:15px; border-radius:5px; background:var(--red); display:block; position:relative}
+.mic-ditado i::after{
+  content:""; position:absolute; left:-4.5px; bottom:-7px; width:19px; height:9px;
+  border:2.5px solid var(--red); border-top:none; border-radius:0 0 10px 10px;
+}
+.mic-ditado.gravando{background:var(--red); border-color:var(--red); animation:pulsa 1.6s ease-in-out infinite}
+.mic-ditado.gravando i{background:#fff}
+.mic-ditado.gravando i::after{border-color:#fff}
+.ditado-estado{min-height:18px}
+.ditado-estado.ouvindo{color:var(--red); font-weight:600}
 .onda{display:flex; align-items:center; justify-content:center; gap:3px; height:26px; margin-bottom:6px}
 .onda i{display:block; width:3px; border-radius:2px; background:var(--line); transition:height .12s linear}
 .onda.ativa i{background:var(--red)}

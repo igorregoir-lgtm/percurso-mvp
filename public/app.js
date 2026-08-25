@@ -25,6 +25,94 @@ const porExtenso = (iso) =>
 const REDUZ = matchMedia('(prefers-reduced-motion: reduce)');
 const espera = (ms) => new Promise(r => setTimeout(r, ms));
 
+// --------------------------------------------------------------------------
+// Ditado por voz — componente reutilizável (copilot, consulta; a folha do dia
+// tem o fluxo próprio em #/voz). O MESMO contrato de privacidade de sempre:
+// o áudio é transcrito pelo navegador e nunca chega ao servidor do Percurso;
+// o texto só sai do campo quando a pessoa toca no botão de enviar.
+// --------------------------------------------------------------------------
+let ditadoAtivo = null;   // { botao, parar }
+
+function pararDitado() {
+  const d = ditadoAtivo;
+  ditadoAtivo = null;
+  try { d?.parar(); } catch {}
+}
+
+/** O par botão-de-microfone + linha de estado, para pôr ao lado de um campo.
+ *  Sem suporte no navegador, devolve só a dica do teclado (iOS/Android têm
+ *  ditado no próprio teclado — o caminho continua existindo). */
+function blocoDitado(campoId, estadoId) {
+  if (!temReconhecimento()) {
+    return {
+      botao: '',
+      estado: `<p class="sub ditado-estado" id="${estadoId}">Digite — ou use o microfone do teclado do celular.</p>`,
+    };
+  }
+  return {
+    botao: `<button type="button" class="mic-ditado" data-acao="ditado"
+              data-campo="${campoId}" data-estado="${estadoId}"
+              aria-pressed="false" aria-label="Falar em vez de digitar"><i aria-hidden="true"></i></button>`,
+    estado: `<p class="sub ditado-estado" id="${estadoId}">Toque no microfone e fale — ou digite.</p>`,
+  };
+}
+
+function iniciarDitado(botao, campo, estadoEl) {
+  const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Rec) { toast('Este navegador não transcreve voz — use o microfone do teclado.'); return; }
+  const rec = new Rec();
+  rec.lang = 'pt-BR';
+  rec.continuous = true;
+  rec.interimResults = false;
+  let ativo = true;
+  let religadas = 0;
+
+  const ui = (gravando) => {
+    botao.classList.toggle('gravando', gravando);
+    botao.setAttribute('aria-pressed', String(gravando));
+    botao.setAttribute('aria-label', gravando ? 'Parar de falar' : 'Falar em vez de digitar');
+    if (estadoEl) {
+      estadoEl.textContent = gravando
+        ? 'Ouvindo… fale à vontade e toque de novo para parar.'
+        : 'Toque no microfone e fale — ou digite.';
+      estadoEl.classList.toggle('ouvindo', gravando);
+    }
+  };
+
+  rec.onresult = (ev) => {
+    let novo = '';
+    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      if (ev.results[i].isFinal) novo += ev.results[i][0].transcript;
+    }
+    novo = novo.trim();
+    if (!novo) return;
+    campo.value = (campo.value.trim() + ' ' + novo).trim();
+    campo.dispatchEvent(new Event('input', { bubbles: true }));
+    campo.scrollTop = campo.scrollHeight;
+  };
+  rec.onerror = (ev) => {
+    if (ev.error === 'not-allowed') {
+      toast('Microfone bloqueado pelo navegador. Digite — ou use o microfone do teclado.', 'ruim');
+      parar();
+    }
+    // 'no-speech' e afins: o onend religa; sem toast para não virar ruído.
+  };
+  // iOS/Safari encerra o reconhecimento sozinho depois de uma pausa — religar
+  // enquanto a pessoa não tocou em parar é o que faz o ditado parecer contínuo.
+  rec.onend = () => {
+    if (ativo && ditadoAtivo?.botao === botao && religadas < 40) {
+      religadas++;
+      try { rec.start(); return; } catch {}
+    }
+    if (ditadoAtivo?.botao === botao) ditadoAtivo = null;
+    ui(false);
+  };
+
+  const parar = () => { ativo = false; try { rec.stop(); } catch {} ui(false); };
+  ditadoAtivo = { botao, parar };
+  try { rec.start(); ui(true); } catch { ditadoAtivo = null; ui(false); }
+}
+
 function toast(msg, tipo = '') {
   const el = document.createElement('div');
   el.className = 'toast ' + tipo;
@@ -168,10 +256,11 @@ async function navegar() {
             app.innerHTML = '<div class="carregando">Carregando…</div>';
           }, 240);
           try {
-            // Overlay esquecido não atravessa navegação: modal, festa e magia
-            // são fechados (com cleanup de rAF/timeout) antes da rota nova.
+            // Overlay esquecido não atravessa navegação: modal, festa, magia e
+            // ditado são fechados (com cleanup) antes da rota nova.
             document.querySelectorAll('.veu').forEach(v => v.remove());
             pararFesta();
+            pararDitado();
             document.querySelectorAll('.magia').forEach(mg => mg._cancelarPelaRota?.());
             pintarNav(hash);
             await tela(...m.slice(1));
@@ -1933,9 +2022,14 @@ rota(/^#\/consulta/, async () => {
   app.innerHTML = `
     <p class="kicker">Camada agregada · nunca dado individual</p>
     <h1>Perguntar à base</h1>
-    <p class="sub">Escreva a pergunta. A resposta é montada com número vindo do banco — se eu não souber, eu digo que não sei.</p>
+    <p class="sub">Fale ou escreva a pergunta. A resposta é montada com número vindo do banco — se eu não souber, eu digo que não sei.</p>
     <div class="cartao" style="margin-top:16px">
-      <input type="text" id="pergunta" placeholder="Ex.: quantas crianças estão em risco de sair?" autocomplete="off">
+      ${(() => { const d = blocoDitado('pergunta', 'pergunta-ditado-estado'); return `
+      <div class="linha" style="flex-wrap:nowrap">
+        <input type="text" id="pergunta" class="cresce" placeholder="Ex.: quantas crianças estão em risco de sair?" autocomplete="off" style="width:auto">
+        ${d.botao}
+      </div>
+      ${d.estado}`; })()}
       <div class="linha" style="margin-top:12px"><button class="btn largo" data-acao="perguntar">Perguntar</button></div>
     </div>
     <div id="resposta" class="pilha"></div>
@@ -2131,15 +2225,20 @@ rota(/^#\/copilot/, async () => {
     <p class="kicker">Sala de reflexão · modelo local · nada sai da máquina</p>
     <h1>Refletir</h1>
     <div class="cartao" style="margin-top:12px">
-      <p class="sub" style="margin:0">Descreva a <b>situação</b>, não a criança: nomes do cadastro viram
-        pseudônimos antes do modelo, mas apelidos e descrições que identificam não são cobertos.
-        Hipóteses não são fatos; a decisão pedagógica é sua. Situação de violência, saúde ou risco:
-        o caminho é a coordenação, fora daqui.</p>
+      <p class="sub" style="margin:0"><b>Fale ou escreva</b> a <b>situação</b>, não a criança — como na
+        folha do dia. Nomes do cadastro viram pseudônimos antes do modelo, mas apelidos e descrições
+        que identificam não são cobertos. Hipóteses não são fatos; a decisão pedagógica é sua.
+        Situação de violência, saúde ou risco: o caminho é a coordenação, fora daqui.</p>
     </div>
     <div id="copilot-fio" class="pilha" style="margin-top:12px">${copiloto.trocas.map(pintarTroca).join('')}</div>
     <div class="cartao" style="margin-top:12px">
-      <textarea id="copilot-texto" rows="3" placeholder="Ex.: metade da turma se dispersa na roda depois de dez minutos…"
-        style="width:100%;resize:vertical"></textarea>
+      ${(() => { const d = blocoDitado('copilot-texto', 'copilot-ditado-estado'); return `
+      <div class="linha" style="align-items:flex-end;flex-wrap:nowrap">
+        <textarea id="copilot-texto" class="cresce" rows="3" placeholder="Ex.: metade da turma se dispersa na roda depois de dez minutos…"
+          style="resize:vertical"></textarea>
+        ${d.botao}
+      </div>
+      ${d.estado}`; })()}
       <div class="linha" style="margin-top:10px">
         <button class="btn cresce" data-acao="copilot-enviar">Refletir junto</button>
         <button class="btn secundario" data-acao="copilot-apagar" title="Apaga a memória desta sessão — nada dela é persistido">Apagar sessão</button>
@@ -2242,6 +2341,7 @@ document.addEventListener('click', comErro(async (ev) => {
   if (!alvo) return;
   const a = alvo.dataset.acao;
   if (a === 'copilot-enviar') {
+    pararDitado();   // fala pendente entra no campo antes do envio; mic desliga
     const campo = document.getElementById('copilot-texto');
     const v = campo?.value ?? '';
     if (campo) campo.value = '';
@@ -2411,6 +2511,7 @@ document.addEventListener('click', comErro(async (ev) => {
   }
 
   if (a === 'sair') {
+    pararDitado();
     if (copiloto.sessao) { try { await api('/api/copilot/sessao', { method: 'DELETE', body: JSON.stringify({ session_id: copiloto.sessao }) }); } catch {} }
     await post('/api/sair');
     limparEstadoLocal();
@@ -2497,6 +2598,16 @@ document.addEventListener('click', comErro(async (ev) => {
   }
 
   if (a === 'magia-pular') { pularMagia(); return; }
+
+  if (a === 'ditado') {
+    const campo = document.getElementById(alvo.dataset.campo);
+    const estadoEl = document.getElementById(alvo.dataset.estado);
+    if (!campo) return;
+    if (ditadoAtivo?.botao === alvo) { pararDitado(); return; }  // segundo toque = parar
+    pararDitado();
+    iniciarDitado(alvo, campo, estadoEl);
+    return;
+  }
 
   // ---- alertas ----
   if (a === 'tratar-alerta') {
@@ -2743,9 +2854,10 @@ document.addEventListener('click', comErro(async (ev) => {
 
   // ---- consulta agregada (F15) ----
   if (a === 'perguntar') {
+    pararDitado();
     const campo = document.getElementById('pergunta');
     const q = campo?.value.trim();
-    if (!q) { toast('Escreva a pergunta.'); return; }
+    if (!q) { toast('Escreva ou fale a pergunta.'); return; }
     alvo.disabled = true;
     try {
       const r = await post('/api/consulta', { pergunta: q });
