@@ -116,7 +116,7 @@ export const GUIA = [
     oQueE: 'Em "Contar como foi", você fala por até 40 segundos sobre o encontro da TURMA e o Percurso transforma a fala em campos — que você confere e confirma antes de qualquer coisa ser gravada.',
     chips: ['Como funciona a captura por voz?', 'O áudio fica gravado?', 'E se eu preferir escrever?'],
     tarefas: [
-      { intencoes: ['gravar', 'falar', 'voz', 'microfone', 'audio'], resposta: 'Toque no microfone grande, fale sobre o encontro da turma (atividade, tema, como o grupo esteve) e toque em Terminei. Os campos se preenchem sozinhos para você conferir — nada é gravado antes do seu "Confirmar e guardar".', acao: 'voz' },
+      { intencoes: ['gravar', 'falar', 'voz', 'microfone', 'audio', 'conto como', 'contar como foi', 'como foi o encontro', 'relato do encontro'], resposta: 'Toque no microfone grande, fale sobre o encontro da turma (atividade, tema, como o grupo esteve) e toque em Terminei. Os campos se preenchem sozinhos para você conferir — nada é gravado antes do seu "Confirmar e guardar".', acao: 'voz' },
       { intencoes: ['audio fica', 'gravacao', 'fica gravado', 'guardado o audio'], resposta: 'O áudio nunca sai do seu aparelho e nunca chega ao servidor: o navegador transcreve na hora, o texto é usado para preencher os campos e morre na confirmação. Não existe gravação de voz no Percurso.', acao: null },
       { intencoes: ['escrever', 'digitar', 'sem falar', 'teclado'], resposta: 'Prefere escrever? Na mesma tela há o campo de texto — ou use "Preencher à mão" na folha do dia. A voz é atalho, nunca obrigação.', acao: 'folha' },
       { intencoes: ['nome de crianca', 'posso falar nome', 'falar da crianca'], resposta: 'Fale da TURMA, não de uma criança. Se algo sensível sobre alguém escapar, o filtro de proteção segura o trecho: ele não vira campo, não é gravado, e a tela orienta o caminho humano (coordenação).', acao: null },
@@ -152,7 +152,7 @@ export const GUIA = [
     chips: ['Como encontro uma criança?', 'O que tem na ficha?'],
     naoEnxergo: 'Eu não enxergo a ficha de ninguém — eu só te levo até a lista.',
     tarefas: [
-      { intencoes: ['buscar', 'busca', 'encontr', 'procur', 'achar', 'acho', 'lista de crianca'], resposta: 'Na tela Crianças, use a busca por nome ou código — a lista mostra as crianças das suas turmas. Toque no nome para abrir a ficha viva.', acao: 'criancas' },
+      { intencoes: ['buscar', 'busca', 'encontrar', 'encontro uma', 'encontro a crianca', 'procur', 'achar', 'acho', 'lista de crianca'], resposta: 'Na tela Crianças, use a busca por nome ou código — a lista mostra as crianças das suas turmas. Toque no nome para abrir a ficha viva.', acao: 'criancas' },
     ],
   },
   {
@@ -300,6 +300,7 @@ const VOCABULARIO = new Set([
   'sintese', 'revisor', 'consentimento', 'consentimentos', 'importar', 'planilha',
   'relatorio', 'doador', 'supressao', 'impacto', 'sroi', 'cenario', 'consulta',
   'cobertura', 'calibra', 'alerta', 'registro', 'registrar', 'retomar', 'navega',
+  'encontro',   // o encontro com a turma — vocabulário central do produto
 ]);
 
 export function dominioDoProduto(texto) {
@@ -320,12 +321,16 @@ export function casarIntencao(texto, tela, papel) {
   const daTela = guiaDe(tela);
   const doPapel = guiaDoPapel(papel);
 
-  // 1. tarefas — primeiro a tela atual, depois as demais do papel
+  // 1. tarefas — primeiro a tela atual, depois as demais do papel.
+  // A pontuação é o comprimento da MAIOR intenção casada: "como marco todos
+  // presentes?" precisa vencer pela intenção específica ('todos presentes'),
+  // não perder para duas genéricas curtas somadas ('presente' + 'como marco').
   const listas = [daTela, ...doPapel.filter(g => g !== daTela)].filter(Boolean);
   let melhor = null;
   for (const g of listas) {
     for (const tarefa of g.tarefas) {
-      const pontos = tarefa.intencoes.filter(i => t.includes(semAcento(i))).length;
+      const casadas = tarefa.intencoes.map(semAcento).filter(i => t.includes(i));
+      const pontos = casadas.length ? Math.max(...casadas.map(i => i.length)) : 0;
       if (pontos > 0 && (!melhor || pontos > melhor.pontos)) {
         melhor = { pontos, resposta: tarefa.resposta, acao: validarAcao(tarefa.acao, papel) };
       }
@@ -341,24 +346,32 @@ export function casarIntencao(texto, tela, papel) {
 
   // 3. intenção de navegação: "ir/abrir/levar/como chego" + nome de tela.
   // Palavras vazias fora do casamento: "como" está no rótulo "Contar como foi
-  // (voz)" e fazia TODA frase "como chego …" oferecer a tela errada.
+  // (voz)" e fazia TODA frase "como chego …" oferecer a tela errada. E "hoje"
+  // — id da primeira tela E palavra de quase toda frase — só vence quando é o
+  // ÚNICO candidato ("quero ver a chamada de hoje" tem que oferecer a Chamada).
   if (/(ir para|abrir|abre|leva|me leve|como chego|onde fica|quero ver)/.test(t)) {
+    const candidatos = [];
     for (const a of catalogoDoPapel(papel)) {
       const tokens = semAcento(a.rotulo).split(/\s+/).map(p => p.replace(/[()]/g, ''));
       if (tokens.some(p => p.length >= 4 && !PALAVRAS_VAZIAS.has(p) && t.includes(p)) || t.includes(a.id)) {
-        return { resposta: `${a.rotulo} — posso te levar até lá.`, acao: a };
+        candidatos.push(a);
       }
     }
+    const a = candidatos.find(c => c.id !== 'hoje') ?? candidatos[0];
+    if (a) return { resposta: `${a.rotulo} — posso te levar até lá.`, acao: a };
   }
 
-  // 4. "o que é X" sobre outra tela do papel
+  // 4. "o que é X" sobre outra tela do papel — mesma regra do "hoje" acima.
+  const candidatos = [];
   for (const g of doPapel) {
     const a = validarAcao(g.id, papel);
     const tokens = a ? semAcento(a.rotulo).split(/\s+/).map(p => p.replace(/[()]/g, '')) : [];
     if (a && (t.includes(g.id) || tokens.some(p => p.length >= 5 && !PALAVRAS_VAZIAS.has(p) && t.includes(p)))) {
-      return { resposta: g.oQueE, acao: a };
+      candidatos.push({ g, a });
     }
   }
+  const esc = candidatos.find(c => c.g.id !== 'hoje') ?? candidatos[0];
+  if (esc) return { resposta: esc.g.oQueE, acao: esc.a };
   return null;
 }
 

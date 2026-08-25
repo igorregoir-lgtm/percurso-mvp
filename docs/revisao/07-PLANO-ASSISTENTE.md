@@ -98,8 +98,10 @@ nunca decide** — a doutrina inteira do Percurso vale para ele.
 - **Fala**: `speechSynthesis` com voz pt-BR do aparelho; fala o campo `fala` da resposta; cancela
   fala anterior; NUNCA fala com som desligado; para ao fechar o painel/navegar. Privacidade: a
   síntese é do navegador/aparelho — nada de áudio sai do Percurso.
-- **Ação**: resposta com `acao` → navega (`location.hash`), fecha o painel, toast "Te levei para
-  {rotulo}" e fala curta de confirmação. Client revalida papel antes de navegar.
+- **Ação**: resposta com `acao` → botão-OFERTA "Ir para {rotulo}" no fio; a navegação só
+  acontece no TOQUE da pessoa (correção 7 desta revisão: o Passo nunca navega sozinho).
+  Client revalida papel antes de navegar. *(Redigido originalmente como auto-navegação —
+  corrigido aqui para bater com a decisão e com o código.)*
 - Timeout/Cancelar: mesmo padrão anti-travamento do copilot (75s + botão Cancelar + pergunta
   devolvida ao campo).
 - Estado local do Passo limpo em `limparEstadoLocal` (troca de perfil não herda conversa).

@@ -422,6 +422,8 @@ não um chat aberto. As decisões que o mantêm dentro da doutrina:
   apagada no sair; pergunta e resposta nunca tocam o banco.
 - **Entrada por voz** reusa o `blocoDitado` (transcrição no aparelho, nada de áudio no
   servidor); a saída de voz usa `speechSynthesis` do navegador — zero dependência nova.
+- **Kill switch independente**: `AI_ASSISTENTE=0` desliga só o modelo do Passo (o copilot
+  continua); o Passo segue respondendo pelo guia. Herda o gate da PoC (decisão 19).
 
 ---
 

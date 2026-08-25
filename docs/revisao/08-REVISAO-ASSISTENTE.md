@@ -59,6 +59,31 @@ já existia) e um sobre o respiro do body vs. FAB (o rolável é o `main`, a con
 
 77 unit · 255 smoke (seed fresco) · 6 RAG (hit@5 20/20) · 24 ai-stub — todos verdes.
 
+## Adendo — segunda revisão adversarial (25/08 à noite)
+
+Rodada extra com 3 lentes NOVAS (regressão das próprias correções, integração com os recursos
+pré-existentes, consistência código×docs×CI), 15 agentes: 12 achados brutos, **11 confirmados,
+1 refutado** — todos os 11 corrigidos e retestados no mesmo ciclo:
+
+| # | Sev. | Achado | Correção |
+|---|---|---|---|
+| 1 | **bloqueante** | Roster de pseudonimização com `ativo = 1`: nome de criança EVADIDA atravessava perímetro, decisão 16, pseudonimização e scrub da fala — e chegaria ao modelo (evasão é pauta da diretoria) | `nomesParaAnonimizar` e a revalidação da doação agora usam TODAS as crianças, sem filtro de ativo |
+| 2 | importante | Intenção `'encontr'` capturava "o encontro" — o chip da própria tela Hoje respondia com a busca de Crianças | Radicais desambiguados (`'encontrar'`, `'encontro uma'`) + intenções novas na voz (`'conto como'`…) + `'encontro'` no vocabulário |
+| 3 | importante | Token "hoje" (id da 1ª tela = palavra de toda frase) sombreava Chamada/Folha nos passos 3–4 | "hoje" só vence quando é o ÚNICO candidato |
+| 4 | importante | Repintura sem troca de rota (fila drenada no `online`, resposta do copilot) fechava o Passo no meio do uso, cortando ditado e fala | `hashRenderizado`: repintura da mesma tela preserva o painel, o ditado DELE e a fala |
+| 5 | importante | `docs/TESTES.md` com contagens velhas (17/63) e tabela sem os blocos novos | Tabela + contagens atualizadas (81 unit · 255 smoke · 24 stub) |
+| 6 | menor | Desempate por quantidade fazia "como marco todos presentes?" cair na resposta genérica | Pontuação = comprimento da MAIOR intenção casada (especificidade vence) |
+| 7 | menor | 401 no painel virava bolha de erro em loop | `e.status === 401` → fecha o painel e leva ao `#/entrar` (convenção do app) |
+| 8 | menor | Troca de pessoa herdava a voz ligada (`percurso_passo_som`) | `limparEstadoLocal` zera `passo.som` e remove a chave — opt-in é por pessoa |
+| 9 | menor | `AI_ASSISTENTE` sem documentação operacional | Documentado em `ai/README.md` e na decisão 26 |
+| 10 | menor | §Cliente do plano 07 ainda descrevia auto-navegação | Corrigido para a oferta (com nota de retificação) |
+| 11 | menor | Seções 12/13 duplicadas no smoke | Renumeradas para 19/20 |
+
+Refutado: "doação sem gate automatizado" (o smoke cobre prévia/doar/revogar).
+
+Validação ao vivo pós-correção: diretoria + nome de evadida → recusa determinística; os 8 casos
+do matcher corretos; 81 unit · 255 smoke · 6 RAG · 24 stub verdes.
+
 ## Pendências humanas (herdadas, inalteradas)
 
 - Ligar `AI_ENABLED` em operação real continua atrás do gate da PoC (decisão 19).

@@ -285,13 +285,13 @@ Alvo: http://localhost:3000
   ✓ o fecho reporta quantas anotações legadas foram descartadas
   ✓ ciclo já fechado não fecha de novo (422)
 
-12 · Escopo de turma nas rotas de leitura individual (decisão 22)
+19 · Escopo de turma nas rotas de leitura individual (decisão 22)
   ✓ a lista da Cleide também vem escopada e não-vazia
   ✓ existe criança exclusiva de outra educadora para o teste
   ✓ educadora NÃO abre ficha de criança de outra turma (403)
   ✓ educadora NÃO abre observação de criança de outra turma (403)
 
-13 · Passo — assistente-parceiro (limites no servidor)
+20 · Passo — assistente-parceiro (limites no servidor)
   ✓ sem sessão, o Passo responde 401
   ✓ pergunta vazia responde 422
   ✓ pergunta reflexiva redireciona ao copilot, sem passar por modelo

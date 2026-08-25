@@ -17,7 +17,7 @@ node scripts/smoke-test.mjs
 Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **255 passaram,
 0 falharam**.
 
-Há também uma bateria de **77 testes unitários** das regras críticas de domínio (filtro de
+Há também uma bateria de **81 testes unitários** das regras críticas de domínio (filtro de
 perímetro, validação do schema do extrator, determinismo do agente, os três scores, supressão com
 agrupamento, deduplicação da ingestão, revisor de sobre-alegação, consentimento, imutabilidade da
 síntese, fecho de ciclo), que roda sem servidor, contra um banco temporário descartável:
@@ -61,6 +61,8 @@ node scripts/reset.mjs
 | **16 · Relatório do doador (F13/F14)** | 41 | diretoria entra; **diretoria não abre ficha nem lista crianças (403)**; coordenação não publica (403); sete blocos na ordem do pack; revisor aprova; **nenhum verbo causal forte**; ressalva metodológica presente; crianças únicas e matrículas lado a lado; **supressão aplicada antes da redação e declarada**; programa pequeno agrupado; **nenhum nome de criança no relatório**; dois denominadores de custo juntos; âncora acadêmica declarada como ausente; publicação só pela diretoria; publicado não é sobrescrito; carta pelo mesmo pipeline; período invertido recusado |
 | **17 · Consulta agregada (F15)** | 10 | educadora não usa (403); intenção reconhecida com fonte citada; **pergunta sobre criança individual não é reconhecida**; **quando não sabe, diz que não sabe**; oferece o que sabe responder; doutrina de perímetro declarada; pergunta vazia recusada |
 | **18 · Fecho de ciclo (achado A-05)** | 5 | educadora não fecha (403); coordenação fecha; abre o próximo; **reporta quantas anotações legadas foram descartadas**; ciclo fechado não fecha de novo |
+| **19 · Escopo de turma (decisão 22)** | 4 | lista escopada da outra educadora; existe criança exclusiva de outra turma; **ficha e observação de criança alheia recusadas (403)** |
+| **20 · Passo — assistente (decisão 26)** | 9 | 401 sem sessão; 422 vazia; **pergunta reflexiva redireciona ao copilot sem modelo**; redirecionamento sem fala; fora do produto = limite declarado; **diretoria + nome = recusa (decisão 16)**; chips por tela e por papel; sessão apagada |
 
 ---
 
@@ -113,14 +115,16 @@ crianças em risco apareciam com o mesmo número (decisão técnica nº 18).
 | Bateria | Comando | O que cobre | Onde roda |
 |---|---|---|---|
 | Avaliação do RAG | `npm run test:rag` | reconstrói o índice do zero e mede **hit@5 ≥ 14/20**, 100% das citações apontando para chunk real, cobertura pt-BR ≥ 90% e pseudonimização da consulta | CI e local |
-| Camada de IA com stub | `npm run test:ia` | contrato dos 7 blocos por schema, verificador de citações (fonte inventada é descartada), perímetro/recusas SEM chamada de modelo, fallbacks (saída inválida, HTTP 500, timeout), fila de 2 com teto → 503, Modo A com pseudonimização reversível e fallback lexical — 17 asserções, sem GGUF | CI e local |
+| Camada de IA com stub | `npm run test:ia` | contrato dos 7 blocos por schema, verificador de citações (fonte inventada é descartada), perímetro/recusas SEM chamada de modelo, fallbacks (saída inválida, HTTP 500, timeout), fila de 2 com teto → 503, Modo A com pseudonimização reversível e fallback lexical, e o Passo (schema `assistente_*`, scrub da fala, `fala: null` preservada, ação validada por papel, timeout → guia) — 24 asserções, sem GGUF | CI e local |
 | Modo A com modelo real | bateria manual (`ai/README.md`) | 100% de saída válida contra `validarExtracao` e zero regressão frente ao extrator lexical — executada em 25/08/2026: **6/6, 0 regressões** | só local |
 | Modo B com modelo real | sessão manual | 7 blocos, citações reais do corpus, recusa de diagnóstico/score, encaminhamento de perímetro, pseudonimização (nome nunca aparece na resposta) — validada em 25/08/2026 | só local |
 
-Os testes unitários somam **63** (os 55 originais + escopo de turma, aviso de corte da lista,
-denominador da cobertura só com programas em escopo, e o motor SROI: 3 cenários determinísticos,
-dupla contagem bloqueada, benchmark recusado no cálculo, rastreabilidade das premissas,
-parâmetro fora de 0..1 recusado).
+Os testes unitários somam **81** (os 55 originais + escopo de turma, aviso de corte da lista,
+denominador da cobertura só com programas em escopo, o motor SROI — 3 cenários determinísticos,
+dupla contagem bloqueada, benchmark recusado no cálculo, rastreabilidade das premissas, parâmetro
+fora de 0..1 recusado — e o Passo: sub-tarefas da chamada, recusa da diretoria, redirecionamento
+reflexivo, `telaSegura`, perímetro parcial com trechos, `limparFala`, catálogo por papel, sessões
+com lookup puro e teto).
 
 O CI (`.github/workflows/ci.yml`) roda tudo com `AI_ENABLED=false` explícito — o produto tem que
 ser exatamente o mesmo sem modelo; os gates que exigem modelo real são gates de máquina local.

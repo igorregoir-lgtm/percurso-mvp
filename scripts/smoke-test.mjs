@@ -864,8 +864,8 @@ secao('18 · Fecho de ciclo executa a retenção declarada');
   T('ciclo já fechado não fecha de novo (422)', denovo.status === 422);
 }
 
-// ------------------------------------------------ 12. escopo de turma (A4)
-secao('12 · Escopo de turma nas rotas de leitura individual (decisão 22)');
+// ------------------------------------------------ 19. escopo de turma (A4)
+secao('19 · Escopo de turma nas rotas de leitura individual (decisão 22)');
 {
   // Cleide (educador 3) tem turma própria; Maria não pode abrir criança dela.
   await POST('cleide', '/api/sessao', { educador_id: 3 });
@@ -885,10 +885,10 @@ secao('12 · Escopo de turma nas rotas de leitura individual (decisão 22)');
   T('educadora NÃO abre observação de criança de outra turma (403)', obs.status === 403, `(${obs.status})`);
 }
 
-// ------------------------------------------------ 13. Passo (assistente)
+// ------------------------------------------------ 20. Passo (assistente)
 // Só os caminhos que NUNCA chegam ao modelo — o Passo com modelo é coberto
 // pelo ai-stub-test. Assim o bloco passa igual com AI_ENABLED ligado ou não.
-secao('13 · Passo — assistente-parceiro (limites no servidor)');
+secao('20 · Passo — assistente-parceiro (limites no servidor)');
 {
   const anon = await POST('anon-passo', '/api/assistente', { message: 'oi', tela: '#/hoje' });
   T('sem sessão, o Passo responde 401', anon.status === 401, `(${anon.status})`);

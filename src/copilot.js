@@ -162,7 +162,11 @@ export async function comVaga(fn) {
  *  também não pode chegar ao modelo nem à busca (revisão de 25/08,
  *  SEGURANCA-IA-02). */
 export function nomesParaAnonimizar(_u) {
-  return all(`SELECT DISTINCT nome FROM crianca WHERE ativo = 1`).map(r => r.nome);
+  // SEM filtro de ativo: criança que saiu do programa continua protegida —
+  // evasão é justamente pauta de conversa (revisão de 25/08 à noite): com
+  // `ativo = 1`, o nome de uma evadida atravessava perímetro, decisão 16,
+  // pseudonimização e o scrub da fala.
+  return all(`SELECT DISTINCT nome FROM crianca`).map(r => r.nome);
 }
 
 /** Verificador de citações: só sobrevive fonte cujo id foi de fato fornecido. */
@@ -309,9 +313,9 @@ export function preverDoacao(u, sessaoId, indice) {
 
 export function doarInteracao(u, sessaoId, indice) {
   const previa = preverDoacao(u, sessaoId, indice);
-  // Validação de anonimização ANTES de persistir: nenhum nome de criança ativa
-  // pode aparecer no que será gravado (revalida — não confia no caminho feliz).
-  const nomes = all(`SELECT nome FROM crianca WHERE ativo = 1`).map(r => r.nome);
+  // Validação de anonimização ANTES de persistir: nenhum nome de criança —
+  // ativa OU evadida — pode aparecer no que será gravado (revalida sempre).
+  const nomes = all(`SELECT DISTINCT nome FROM crianca`).map(r => r.nome);
   const blob = JSON.stringify(previa);
   const { substituicoes } = anonimizarTexto(blob, nomes);
   if (substituicoes > 0)

@@ -924,3 +924,43 @@ test('sessões: teto de quantidade despeja a mais antiga em vez de crescer sem f
   assert.equal(m.obter(u, 'a'), null, 'a mais antiga cede a vaga');
   assert.ok(m.obter(u, 'd'), 'a recém-criada existe');
 });
+
+// ---------------------------------------------------------------------------
+// Segunda revisão adversarial (25/08 à noite) — regressões corrigidas.
+// ---------------------------------------------------------------------------
+test('roster de proteção inclui criança que SAIU do programa (ativo=0)', async () => {
+  const C2 = await import('../src/copilot.js');
+  const evadida = get(`SELECT nome FROM crianca WHERE ativo = 0 LIMIT 1`)?.nome;
+  assert.ok(evadida, 'o seed precisa ter criança evadida para este teste');
+  assert.ok(C2.nomesParaAnonimizar({ id: 1, papel: 'educador' }).includes(evadida),
+    'nome de evadida tem que estar no roster de pseudonimização');
+  // Decisão 16 vale para quem saiu: evasão é justamente pauta da diretoria.
+  const r = await A.assistente({ id: 4, papel: 'diretoria' },
+    { message: `quantas faltas a ${evadida.split(' ')[0]} teve no percurso?`, tela: '#/relatorio' });
+  assert.equal(r.tipo, 'recusa');
+  assert.equal(r.fala, null);
+});
+
+test('passo: chip "como conto como foi o encontro?" casa a VOZ, não a busca de crianças', () => {
+  const r = A.casarIntencao('como conto como foi o encontro?', '#/hoje', 'educador');
+  assert.equal(r?.acao?.id, 'voz');
+  // e a busca continua casando pelo verbo, sem capturar "o encontro"
+  const r2 = A.casarIntencao('como encontro uma criança na lista?', '#/hoje', 'educador');
+  assert.equal(r2?.acao?.id, 'criancas');
+});
+
+test('passo: "hoje" na frase não sombreia a tela pedida', () => {
+  const r1 = A.casarIntencao('quero ver a chamada de hoje', '#/chamada', 'educador');
+  assert.equal(r1?.acao?.id, 'chamada');
+  const r2 = A.casarIntencao('abrir a folha de hoje', '#/hoje', 'educador');
+  assert.equal(r2?.acao?.id, 'folha');
+  const r3 = A.casarIntencao('quero ver o hoje', '#/turma', 'educador');
+  assert.equal(r3?.acao?.id, 'hoje');   // único candidato: aí sim
+});
+
+test('passo: intenção específica vence as genéricas ("todos presentes")', () => {
+  const r = A.casarIntencao('como marco todos presentes?', '#/chamada', 'educador');
+  assert.match(r.resposta, /Todos presentes/);
+  const r2 = A.casarIntencao('como marco presença de uma criança?', '#/chamada', 'educador');
+  assert.match(r2.resposta, /dois botões/);
+});

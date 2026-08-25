@@ -291,12 +291,22 @@ async function navegar() {
           try {
             // Overlay esquecido não atravessa navegação: modal, festa, magia,
             // ditado e o Passo são fechados (com cleanup) antes da rota nova.
-            if (document.querySelector('.passo-veu')) fecharPasso({ foco: false });
-            document.querySelectorAll('.veu').forEach(v => v.remove());
+            // REPINTURA da mesma tela (fila drenada no evento `online`,
+            // resposta do copilot chegando) NÃO é navegação: o Passo — que
+            // vive fora do #app — fica aberto, falando e ouvindo.
+            const mesmaTela = hash === hashRenderizado;
+            if (!mesmaTela) {
+              if (document.querySelector('.passo-veu')) fecharPasso({ foco: false });
+              cancelarFala();
+            }
+            // Ditado no painel do Passo sobrevive à repintura (o campo dele
+            // não é re-renderizado); ditado em campo da TELA não — o elemento
+            // fica órfão no re-render.
+            if (!mesmaTela || !(ditadoAtivo?.botao?.closest('.passo-veu'))) pararDitado();
+            document.querySelectorAll(mesmaTela ? '.veu:not(.passo-veu)' : '.veu').forEach(v => v.remove());
             pararFesta();
-            pararDitado();
-            pararVoz();       // gravação da folha não sobrevive à troca de rota
-            cancelarFala();
+            pararVoz();       // gravação da folha não sobrevive a re-render
+            hashRenderizado = hash;
             document.querySelectorAll('.magia').forEach(mg => mg._cancelarPelaRota?.());
             pintarNav(hash);
             await tela(...m.slice(1));
@@ -345,6 +355,7 @@ async function navegar() {
   }
 }
 let vtAtual = null;
+let hashRenderizado = null;   // última rota de fato pintada (repintura ≠ navegação)
 
 // ======================================================================
 // ENTRAR
@@ -2387,6 +2398,10 @@ function limparEstadoLocal() {
   sroi.resultado = null; sroi.explicacao = null;
   sroi.n = sroi.inv = sroi.anos = sroi.proxy_ids = undefined;
   passo.sessao = null; passo.trocas = []; passo.rascunho = '';
+  // A voz do Passo é opt-in POR PESSOA, não do aparelho: quem entra depois
+  // não herda o som ligado por quem saiu.
+  passo.som = false;
+  localStorage.removeItem('percurso_passo_som');
 }
 
 document.addEventListener('click', comErro(async (ev) => {
@@ -2754,6 +2769,14 @@ async function passoEnviar(texto) {
     if (r.fala && document.querySelector('.passo-veu')) falar(r.fala);
   } catch (e) {
     passo.trocas.splice(passo.trocas.indexOf(pensando), 1);
+    if (e.status === 401) {
+      // Mesma convenção do app inteiro: sessão expirada leva ao #/entrar —
+      // nunca vira bolha de erro em loop dentro do painel.
+      fecharPasso({ foco: false });
+      sessao = null;
+      location.hash = '#/entrar';
+      return;
+    }
     if (e.cancelado) {
       // Rascunho devolvido: cancelar não come a pergunta.
       passo.rascunho = t;

@@ -30,6 +30,8 @@ AI_ENABLED=1 node server.js        # terminal 2 — Percurso com a camada ativa
 
 `GET /api/ia/status` mostra o estado por papel. `AI_EXTRATOR=1` liga também o
 Modo A por modelo (o extrator lexical continua sendo o fallback de toda falha).
+`AI_ASSISTENTE=0` desliga SÓ o modelo do Passo mantendo o copilot — kill switch
+independente; o Passo continua respondendo pelo guia determinístico.
 
 **Em operação real com educadoras, ligar é condicionado ao GO da PoC**
 (`docs/POC-COPILOT.md`, gates absolutos do §6.3 da análise). Até lá, a flag só
