@@ -58,10 +58,23 @@ export function painelDoPasso(u, tela = '', opcoes = {}) {
   const ref = opcoes.ref ?? D.hoje();
   // O perfil é opcional em todos os sentidos: desligado por padrão, e o painel
   // funciona idêntico sem ele (pesos vazios ⇒ ranking determinístico puro).
-  const prefs = opcoes.prefs ?? P.preferenciaDe(u.id);
-  const pesos = opcoes.pesos ?? P.pesosDe(u.id, ref);
-  const silenciadas = opcoes.silenciadas ?? P.silenciadasDe(u.id, ref);
-  return montar(u, tela, { pesos, prefs, silenciadas, ref });
+  // O perfil é ACESSÓRIO: banco corrompido, disco cheio ou diretório sem
+  // permissão não podem derrubar o painel. Sem este try, uma falha ao abrir
+  // data/passo/uso.db virava 5xx no Passo e gaveta de chips vazia — o oposto
+  // da doutrina de fallback determinístico em 100% das falhas.
+  let prefs = {}, pesos = {}, silenciadas = new Set();
+  try {
+    prefs = opcoes.prefs ?? P.preferenciaDe(u.id);
+    pesos = opcoes.pesos ?? P.pesosDe(u.id, ref);
+    silenciadas = opcoes.silenciadas ?? P.silenciadasDe(u.id, ref);
+  } catch (e) {
+    console.error('[percurso] perfil do Passo indisponível:', e.message);
+  }
+  try { return montar(u, tela, { pesos, prefs, silenciadas, ref }); }
+  catch (e) {
+    console.error('[percurso] painel do Passo falhou:', e.message);
+    return fallbackDoGuia(u, tela);
+  }
 }
 
 function montar(u, tela, { pesos, prefs, silenciadas, ref }) {
@@ -93,7 +106,7 @@ function montar(u, tela, { pesos, prefs, silenciadas, ref }) {
     // no primeiro caractere para o texto não sair com cara de fragmento.
     const texto = maiuscula(String(c.texto(env) ?? ''));
     return {
-      id: c.id, tipo: c.tipo, classe: c.classe, nucleo: !!c.nucleo,
+      id: c.id, tipo: c.tipo, classe: c.classe, nucleo: !!c.nucleo, imune: !!c.imune,
       rotulo: c.rotulo,
       // Trava final, no caminho quente: um texto que escape do lint não vai à
       // tela — cai no rótulo, que é curto e auditado.

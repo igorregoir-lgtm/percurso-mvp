@@ -95,7 +95,7 @@ const decair = (peso, dia, ref) =>
 // --------------------------------------------------------------------------
 // Vocabulário fechado — a fronteira que impede um nome de virar chave.
 // --------------------------------------------------------------------------
-const FORMA = /^[a-z0-9_.#/\-]{1,64}$/i;
+const FORMA = /^[a-z0-9_.#/\-:]{1,64}$/i;
 let VALIDA = null;
 export function ligarVocabulario({ ids, tipos, rotas }) {
   VALIDA = {
@@ -103,6 +103,13 @@ export function ligarVocabulario({ ids, tipos, rotas }) {
     tipo: (v) => tipos.includes(v),
     tela: (v) => rotas.has(v) || v === '',
   };
+}
+
+/** A fronteira, num lugar só: TODA escrita passa por aqui, sem exceção. */
+function validarChave(familia, chave) {
+  if (!VALIDA) throw erro(422, 'Vocabulário do Passo não inicializado.');
+  if (!FORMA.test(String(chave ?? '')) || !VALIDA[familia]?.(String(chave)))
+    throw erro(422, 'Chave de uso fora do vocabulário do Passo.');
 }
 
 export function preferenciaDe(educadorId) {
@@ -129,7 +136,9 @@ export function salvarPreferencia(educadorId, mudanca = {}) {
      ON CONFLICT(educador_id) DO UPDATE SET aprender=excluded.aprender,
        resumo_do_dia=excluded.resumo_do_dia, prefere_tipo=excluded.prefere_tipo,
        convidado=excluded.convidado, atualizado_em=excluded.atualizado_em`)
-    .run(educadorId, nova.aprender, nova.resumo_do_dia, nova.prefere_tipo, nova.convidado, new Date().toISOString());
+    // DIA, nunca hora — a política que a tela mostra diz literalmente "não
+    // guardo hora, só o dia", e `toISOString()` a tornava falsa.
+    .run(educadorId, nova.aprender, nova.resumo_do_dia, nova.prefere_tipo, nova.convidado, hoje());
   // Desligar o aprendizado APAGA o que já foi aprendido. "Pare de aprender" e
   // "esqueça o que aprendeu" são a mesma expectativa para quem desliga.
   if (!nova.aprender && atual.aprender) apagarMemoria(educadorId);
@@ -142,20 +151,23 @@ export function registrar(educadorId, familia, chave, evento, ref = hoje()) {
   if (!VALIDA) return { ok: true, gravado: false };
   if (!['mostrada', 'aceita', 'dispensada'].includes(evento))
     throw erro(422, 'Evento fora do vocabulário do Passo.');
-  if (!FORMA.test(String(chave)) || !VALIDA[familia]?.(String(chave)))
-    throw erro(422, 'Chave de uso fora do vocabulário do Passo.');
+  validarChave(familia, chave);
   if (!preferenciaDe(educadorId).aprender) return { ok: true, gravado: false };
 
   purgar(ref);
   const d = conectar();
-  // 'mostrada' conta UMA vez por dia por sugestão — senão reabrir o painel
-  // afunda a novidade de tudo sem a pessoa ter lido nada.
-  if (evento === 'mostrada' && familia === 'sugestao') {
+  // 'mostrada' conta UMA vez por dia — e para as TRÊS famílias. Cobrindo só
+  // `sugestao`, cada repintura do painel (e o refinamento pelo modelo é uma)
+  // inflava `tipo:*:mostrada` e `tela:*:mostrada`, que entram no ranking pelo
+  // termo de afinidade de tipo: a memória da pessoa era afogada por ruído do
+  // próprio cliente.
+  if (evento === 'mostrada') {
+    const marca = `${familia}:${chave}`;
     const ja = d.prepare(`SELECT 1 x FROM mostrada_dia WHERE educador_id=? AND sugestao_id=? AND dia=?`)
-      .get(educadorId, chave, ref);
+      .get(educadorId, marca, ref);
     if (ja) return { ok: true, gravado: false };
     d.prepare(`INSERT OR IGNORE INTO mostrada_dia (educador_id, sugestao_id, dia) VALUES (?,?,?)`)
-      .run(educadorId, chave, ref);
+      .run(educadorId, marca, ref);
   }
   const atual = d.prepare(
     `SELECT peso, n, dia_ultimo FROM uso WHERE educador_id=? AND familia=? AND chave=? AND evento=?`)
@@ -172,13 +184,17 @@ export function registrar(educadorId, familia, chave, evento, ref = hoje()) {
 /** "Hoje não". Silêncio SEMPRE expira — nunca existe "nunca mais me mostre". */
 export function silenciar(educadorId, sugestaoId, { nucleo = false, ref = hoje() } = {}) {
   if (!PASSO_PERFIL) return { ate: ref };
-  // Item núcleo cala só até o fim do dia, e a tela DIZ isso — o produto não
-  // mente sobre o que o botão faz.
+  // A MESMA fronteira de registrar(), e ela precisa estar AQUI: silenciar()
+  // gravava string livre e passava por fora do vocabulário fechado. Um POST
+  // com id = "Joao Pedro da Silva" respondia 422 (porque registrar() lançava
+  // depois) e mesmo assim deixava a linha gravada, visível na tela de memória
+  // por 14 dias. O 422 mentia: a escrita já tinha acontecido.
+  validarChave('sugestao', sugestaoId);
   const ate = nucleo ? ref : addDias(ref, SILENCIO_DIAS);
   conectar().prepare(
     `INSERT INTO silenciada (educador_id, sugestao_id, ate, criado_em) VALUES (?,?,?,?)
      ON CONFLICT(educador_id, sugestao_id) DO UPDATE SET ate=excluded.ate, criado_em=excluded.criado_em`)
-    .run(educadorId, sugestaoId, ate, new Date().toISOString());
+    .run(educadorId, sugestaoId, ate, ref);   // DIA, nunca hora
   return { ate };
 }
 

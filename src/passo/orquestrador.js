@@ -32,12 +32,21 @@ export const PASSO_PAINEL = !['0', 'false'].includes(
 // orquestração faz diferença — nem para descobrir que ela parou de fazer.
 const conta = {
   chamadas: 0, ordem_alterada: 0, rotulo_aceito: 0,
-  veto_digito: 0, veto_numeral: 0, veto_cobranca: 0, veto_nome: 0, veto_enum: 0,
+  veto_digito: 0, veto_numeral: 0, veto_imperativo: 0, veto_cobranca: 0, veto_nome: 0, veto_enum: 0,
   falhou: 0, ocupado: 0, desligado: 0,
 };
 export const estatisticas = () => ({ ...conta });
 
 const NUMERAL = /(^|\s)(um|uma|dois|duas|tr[êe]s|quatro|cinco|seis|sete|oito|nove|dez|dezenas?|centenas?|metade|maioria|quase tod[oa]s?|v[áa]rias?|v[áa]rios|muit[oa]s?|poucas?|poucos)(\s|$|[,.;!?])/i;
+
+// O catálogo escreve rótulo em voz de OFERTA de propósito ("A pauta da semana
+// espera sua decisão"). Medido ao vivo, o 4B devolvia "Decida a pauta da
+// semana", "Conte seu encontro", "Feche o ciclo" — e nenhum desses casava o
+// lint de cobrança, que só pega acusação explícita. O painel inteiro deixava
+// de ser conjunto de ofertas e virava lista de comandos, que é exatamente o
+// formato que o ranking existe para não produzir. Pedir no prompt não é
+// portão; isto é.
+const IMPERATIVO = /^(decida|decide|conte|conta|feche|fecha|registre|registra|fa[çc]a|veja|vê|abra|abre|confira|confere|resolva|resolve|publique|publica|revise|revisa|marque|marca|salve|salva|complete|completa|termine|termina|ligue|liga|avise|avisa|corrija|corrige|preencha|preenche|atualize|atualiza|verifique|verifica|olhe|olha|clique|clica|toque|toca|envie|envia|leia|lê)\b/i;
 
 /** Teto de tamanho SEMPRE pós-geração: `maxLength` no schema degrada a
  *  gramática do llama.cpp de ~143 para 1,5 tok/s. */
@@ -60,6 +69,7 @@ export function aceitarRotulo(novo, base, { roster = [], anonimizar = null } = {
   if (base.imune) return base.rotulo;                       // doutrina escrita à mão
   if (/\d/.test(t)) { conta.veto_digito++; return base.rotulo; }
   if (NUMERAL.test(t)) { conta.veto_numeral++; return base.rotulo; }
+  if (IMPERATIVO.test(t)) { conta.veto_imperativo++; return base.rotulo; }
   if (base.semCobranca && !base.semCobranca(t)) { conta.veto_cobranca++; return base.rotulo; }
   if (/[Cc]rian[çc]as?\s+[A-Z]{1,2}\b/.test(t)) { conta.veto_nome++; return base.rotulo; }
   if (anonimizar && anonimizar(t, roster).substituicoes > 0) { conta.veto_nome++; return base.rotulo; }
@@ -151,6 +161,7 @@ Você recebe uma lista de sugestões que o sistema JÁ decidiu mostrar. Seu trab
 REGRAS INEGOCIÁVEIS:
 - NUNCA escreva número, algarismo ou quantidade por extenso em rótulo nenhum.
 - NUNCA invente uma sugestão que não está na lista, e nunca omita uma que está.
+- NUNCA escreva no imperativo ("decida", "conte", "feche"): o rótulo é uma OFERTA, não uma ordem.
 - NUNCA escreva nada que soe como cobrança ("você não fez", "está atrasada").
 - Rótulo tem no máximo 44 caracteres, em português do Brasil, sentence case.
 - Se não tiver certeza de que um rótulo ficou melhor, não o reescreva.`;

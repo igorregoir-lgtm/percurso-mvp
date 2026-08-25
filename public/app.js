@@ -2656,6 +2656,10 @@ function pintarPassoFab(visivel) {
     passo.bolhaNestaAbertura = true;
     const primeira = !localStorage.getItem('percurso_passo_apresentado');
     if (primeira) localStorage.setItem('percurso_passo_apresentado', '1');
+    // A apresentação é a única vez em que o Passo diz o que ELE é. O badge
+    // chegava ~3 ms depois e a sobrescrevia — a apresentação era gasta sem ter
+    // sido lida, e o flag já estava consumido.
+    passo.balaoDeApresentacao = primeira;
     const h = new Date().getHours();
     const saudacao = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
     const b = document.createElement('div');
@@ -2688,7 +2692,8 @@ async function buscarBadge() {
     // Quando há algo relevante, o balão de saudação carrega a sugestão do dia
     // em vez da frase genérica — é a diferença entre "oi" e "olha isto aqui".
     const b = document.getElementById('passo-bolha');
-    if (b && p.badge && p.sugestoes?.[0]) b.textContent = `${p.sugestoes[0].rotulo} — toque para ver.`;
+    if (b && p.badge && p.sugestoes?.[0] && !passo.balaoDeApresentacao)
+      b.textContent = `${p.sugestoes[0].rotulo} — toque para ver.`;
   } catch { /* badge é enfeite: falha de rede não pode virar erro na tela */ }
 }
 
@@ -2722,6 +2727,10 @@ function fecharPasso({ foco = true } = {}) {
 async function abrirPasso() {
   if (document.querySelector('.passo-veu')) return;
   document.getElementById('passo-bolha')?.remove();
+  // O painel é da TELA: sem zerar aqui, o resumo e as sugestões da tela
+  // anterior ficavam na gaveta e o Passo afirmava o estado de ontem como se
+  // fosse o de hoje quando a busca falhasse.
+  passo.painel = null; passo.resumo = null;
   const dit = blocoDitado('passo-texto', 'passo-ditado-estado');
   const veu = document.createElement('div');
   veu.className = 'veu passo-veu';
@@ -2830,7 +2839,14 @@ async function refinarPainel() {
     const r = await post('/api/passo/refinar', { tela: location.hash || '#/hoje' }, { timeoutMs: 9000 });
     if (!r.refinado || passo.painel?.hash !== hash) return;   // painel trocou: descarta
     const porId = new Map(passo.painel.sugestoes.map(s => [s.id, s]));
-    for (const { id, rotulo } of (r.rotulos || [])) { const s = porId.get(id); if (s) s.rotulo = rotulo; }
+    // `rotuloBase` preservado: o rótulo do modelo é superfície do CHIP e nada
+    // mais. Sem isto, ele era empurrado no fio como `quem: 'voce'` — a pessoa
+    // via, atribuída a si, uma frase que ela nunca escreveu ("O áudio tá
+    // gravado onde?") e o TTS lia aquilo como se fosse dela.
+    for (const { id, rotulo } of (r.rotulos || [])) {
+      const s = porId.get(id);
+      if (s) { s.rotuloBase ??= s.rotulo; s.rotulo = rotulo; }
+    }
     const ordem = (r.ordem || []).map(id => porId.get(id)).filter(Boolean);
     const resto = passo.painel.sugestoes.filter(s => !ordem.includes(s));
     passo.painel.sugestoes = [...ordem, ...resto];
@@ -2998,22 +3014,27 @@ document.addEventListener('click', comErro(async (ev) => {
     const id = alvo.closest('.passo-sug')?.dataset.id;
     const s = (passo.painel?.sugestoes || []).find(x => x.id === id);
     if (!s) { await passoEnviar(alvo.textContent); return; }
+    // TOCAR já é o sinal positivo. Sem isto, 'aceita' só existia no botão
+    // "Ir para", que pergunta e dúvida nunca têm: o Passo só conseguia
+    // aprender a ESCONDER — penalizava por fadiga justamente o que a pessoa
+    // mais usa, e nunca recompensava.
+    marcarUso(s.id, 'aceita');
     if (s.resposta) {
       // Pergunta agregada: o número já veio do banco com o painel. Não há ida
       // ao servidor nem ao modelo — e nunca é falada.
-      passo.trocas.push({ quem: 'voce', texto: s.rotulo });
+      passo.trocas.push({ quem: 'voce', texto: s.rotuloBase ?? s.rotulo });
       passo.trocas.push({ quem: 'passo', resposta: s.resposta.texto, acao: s.acao, fonte: s.resposta.fonte });
       pintarPassoFio();
       return;
     }
     if (s.tipo === 'pergunta' || s.tipo === 'duvida') {
       if (s.texto && s.texto !== s.rotulo) {
-        passo.trocas.push({ quem: 'voce', texto: s.rotulo });
+        passo.trocas.push({ quem: 'voce', texto: s.rotuloBase ?? s.rotulo });
         passo.trocas.push({ quem: 'passo', resposta: s.texto, acao: s.acao, porque: s.porque });
         pintarPassoFio();
         return;
       }
-      await passoEnviar(s.rotulo);
+      await passoEnviar(s.rotuloBase ?? s.rotulo);
       return;
     }
     passo.trocas.push({ quem: 'passo', resposta: s.texto, acao: s.acao, porque: s.porque, sugestao: s.id });

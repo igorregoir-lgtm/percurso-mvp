@@ -475,15 +475,29 @@ export const rotas = {
     const painel = PP.painelDoPasso(u, tela);
     const alvos = painel.sugestoes.filter(s => !s.id.startsWith('guia:'));
     if (alvos.length < 2) return { refinado: false, motivo: 'nada_a_fazer' };
+    const porId = new Map(alvos.map(s => [s.id, s]));
+    const nomesDeTurma = all(`SELECT nome FROM turma`).map(t => t.nome);
     const r = await PO.refinarPainel(
-      alvos.map(s => ({ id: s.id, tipo: s.tipo, rotulo: s.rotulo, nucleo: s.nucleo, imune: !!s.imune })),
+      alvos.map(s => ({
+        id: s.id, tipo: s.tipo, rotulo: s.rotulo, nucleo: s.nucleo,
+        // `imune` e `nomesProibidos` vinham vazios: a imunidade doutrinária
+        // (edu.retomada) e o veto de nome de turma eram portões inertes.
+        imune: !!s.imune, nomesProibidos: nomesDeTurma,
+      })),
       {
         roster: nomesParaAnonimizar(u),
         anonimizar: anonimizarTexto,
         semCobranca: PP.semCobranca,
-        // O piso e as travas rodam DEPOIS do modelo: a ordem devolvida é
-        // reaplicada sobre a composição determinística, nunca sobre a tela.
-        recompor: (ordem) => ordem,
+        // O PORTÃO 4, agora de verdade. Antes isto era `(ordem) => ordem` — a
+        // identidade — enquanto o comentário e o corpo de /api/passo/qualidade
+        // afirmavam que "o piso de núcleo roda DEPOIS do modelo". A doutrina
+        // publicada era mais forte que o código; o modelo definia a vaga 1.
+        // Sort ESTÁVEL por núcleo: o conjunto não muda, só garante que nenhum
+        // sinal que o instituto precisa ver seja rebaixado pelo modelo.
+        recompor: (ordem) => [
+          ...ordem.filter(id => porId.get(id)?.nucleo),
+          ...ordem.filter(id => !porId.get(id)?.nucleo),
+        ],
       });
     if (r.origem !== 'modelo') return { refinado: false, motivo: 'falhou' };
     return {
@@ -498,9 +512,10 @@ export const rotas = {
     return {
       orquestrador: PO.estatisticas(),
       envelope_falhou: envelopeFalhou(),
-      doutrina: 'O modelo reordena candidatos e pode encurtar rótulo. Ele nunca escreve número '
-        + '(o rótulo é livre de dígito por construção), nunca escolhe ação e nunca inventa sugestão. '
-        + 'O piso institucional e o teto de pendência rodam DEPOIS dele.',
+      doutrina: 'O modelo ORDENA dentro de um conjunto que o determinístico já fechou, e pode encurtar rótulo. '
+        + 'Ele nunca escreve número (o rótulo é livre de dígito por construção), nunca escolhe ação, nunca '
+        + 'inventa nem some com sugestão. O teto de pendência e os três slots são fixados ANTES dele; o piso '
+        + 'de núcleo é reaplicado DEPOIS — nenhum sinal que o instituto precisa ver é rebaixado pelo modelo.',
     };
   },
 

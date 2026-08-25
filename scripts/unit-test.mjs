@@ -1135,3 +1135,81 @@ test('passo: pergunta agregada responde com número do BANCO e nunca fala', asyn
   const e = await A.assistente(MARIA, { message: 'Como está a cobertura do registro?', tela: '#/hoje' });
   assert.notEqual(e.origem, 'banco', 'educadora não alcança a camada agregada');
 });
+
+// ---------------------------------------------------------------------------
+// Revisão da implementação (28 achados) — os que viraram invariante.
+// ---------------------------------------------------------------------------
+const PO = await import('../src/passo/orquestrador.js');
+
+test('passo/perfil: silenciar() passa pelo MESMO vocabulário — 422 não deixa rastro', () => {
+  PF.salvarPreferencia(21, { aprender: true });
+  const nome = get(`SELECT nome FROM crianca LIMIT 1`).nome;
+  assert.throws(() => PF.silenciar(21, nome), /vocabul/i);
+  assert.throws(() => PF.silenciar(21, '<script>alert(1)</script>'), /vocabul/i);
+  assert.equal(PF.memoriaDe(21).silenciadas.length, 0, 'um 422 não pode deixar linha gravada');
+});
+
+test('passo/perfil: nada de HORA no arquivo — a política que a tela mostra é verdade', () => {
+  PF.salvarPreferencia(22, { aprender: true });
+  PF.silenciar(22, 'edu.duvida.audio');
+  const blob = JSON.stringify(PF.memoriaDe(22));
+  assert.doesNotMatch(blob, /T\d\d:\d\d/, 'ISO com hora vazou no perfil');
+});
+
+test('passo/perfil: dedupe de "mostrada" cobre as TRÊS famílias', () => {
+  PF.salvarPreferencia(23, { aprender: true });
+  for (const [f, k] of [['sugestao', 'edu.duvida.audio'], ['tipo', 'duvida'], ['tela', '#/voz']]) {
+    assert.equal(PF.registrar(23, f, k, 'mostrada').gravado, true, `${f}: primeira`);
+    assert.equal(PF.registrar(23, f, k, 'mostrada').gravado, false, `${f}: repintura não pode contar de novo`);
+  }
+});
+
+test('passo/ranking: no dia de exploração o núcleo NÃO perde o topo', () => {
+  const cands = [
+    { id: 'n', tipo: 'acao', classe: 'pendencia', base: 80, nucleo: true },
+    { id: 'a', tipo: 'aprimoramento', classe: 'melhoria', base: 60, nucleo: false },
+    { id: 'b', tipo: 'duvida', classe: 'saber', base: 50, nucleo: false },
+    { id: 'c', tipo: 'pergunta', classe: 'saber', base: 40, nucleo: false },
+  ];
+  const ord = PR.ordenar(cands, {}, {});
+  for (const dia of [3, 6, 9, 33, 237]) {
+    const saida = PR.explorar(PR.compor(ord), ord, {}, dia);
+    assert.equal(saida[0]?.nucleo, true, `dia ${dia}: a exploração roubou o slot 1 do núcleo`);
+    assert.equal(saida.length, PR.SLOTS, `dia ${dia}: painel encolheu`);
+  }
+});
+
+test('passo/orquestrador: o rótulo do modelo não vira ordem nem número', () => {
+  const base = { rotulo: 'A pauta da semana espera sua decisão', imune: false };
+  for (const t of ['Decida a pauta da semana', 'Conte seu encontro', 'Feche o ciclo',
+    '4 encontros sem folha', 'Quase todas as crianças', 'Criança A está sem registro'])
+    assert.equal(PO.aceitarRotulo(t, base), base.rotulo, `deveria barrar: ${t}`);
+  assert.equal(PO.aceitarRotulo('A pauta espera você', base), 'A pauta espera você');
+});
+
+test('passo/orquestrador: entrada imune nunca é reescrita', () => {
+  const imune = { rotulo: 'Que bom te ver de volta', imune: true };
+  assert.equal(PO.aceitarRotulo('Bem-vinda de novo', imune), imune.rotulo);
+});
+
+test('passo: o portão agregado não sequestra pergunta de DEFINIÇÃO', async () => {
+  for (const q of ['O que é cobertura?', 'O que é o ciclo de observação?', 'Para que serve a calibração?']) {
+    const r = await A.assistente(RITA, { message: q, tela: '#/painel' });
+    assert.notEqual(r.origem, 'banco', `"${q}" pede definição, não número`);
+  }
+  // Onde o GUIA da própria tela explica o assunto, ele VENCE — é a correção do
+  // sequestro. O número aparece para quem não tem essa explicação no GUIA: a
+  // diretoria, que é de quem são os seis chips de pergunta agregada.
+  const n = await A.assistente(SOL, { message: 'Como está a cobertura do registro?', tela: '#/relatorio' });
+  assert.equal(n.origem, 'banco', 'pergunta quantitativa da diretoria tem que buscar o número');
+});
+
+test('passo/painel: painelDoPasso é TOTAL — nunca lança, seja qual for a entrada', () => {
+  // A rota do Passo não pode responder 5xx nem devolver gaveta vazia. O caminho
+  // do perfil quebrado foi verificado ao vivo com PERCURSO_PASSO_DB inválido
+  // (3 sugestões, origem guia); aqui fica a fronteira que dá para exercitar em
+  // processo: entradas estranhas de papel, tela e usuário.
+  for (const u of [MARIA, RITA, SOL, { id: 999, papel: 'educador' }, { id: 1, papel: 'inventado' }])
+    for (const tela of ['#/chamada', '', '#/inexistente', '#/crianca/7'])
+      assert.doesNotThrow(() => PP.painelDoPasso(u, tela), `${u.papel} ${tela}`);
+});

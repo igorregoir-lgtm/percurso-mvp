@@ -120,5 +120,10 @@ export function explorar(saida, ordenados, pesos, diaDoAno, opcoes = {}) {
   // de exploração em três, uma pendência inédita entrava junto com outra e o
   // painel saía com DUAS pendências, quebrando o teto de forma dependente do
   // calendário (o teste passava ou falhava conforme a data).
-  return compor([inedita, ...saida.slice(0, SLOTS - 1), ...ordenados], opcoes);
+  // A inédita vai para a ÚLTIMA vaga, como o comentário sempre prometeu.
+  // Pô-la no início da lista dava a ela o SLOT 1 (compor preenche em ordem) e
+  // expulsava o terceiro item: com pesos vazios — o padrão — TODO candidato é
+  // inédito, então a exploração disparava para todo mundo, todo terceiro dia,
+  // e o sinal núcleo perdia o topo justamente na configuração de fábrica.
+  return compor([...saida.slice(0, SLOTS - 1), inedita, ...ordenados], opcoes);
 }

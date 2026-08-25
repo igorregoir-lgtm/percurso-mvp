@@ -434,6 +434,16 @@ function consultarAgregado(pergunta) {
 /** Ligado por src/api.js no boot — evita ciclo de import com relatorio.js. */
 export function ligarConsultaAgregada(fn) { _consultar = fn; }
 
+// "O que é cobertura?" pede definição; "como está a cobertura?" pede número.
+// Sem esta distinção o portão agregado sequestrava a conversa de ajuda.
+const DEFINICAO = /^(o que (e|é|significa|sao|são)|que (e|é)|explique|explica|me explique|para que serve|pra que serve|como funciona)\b/;
+const QUANTITATIVA = /(quant[oa]s?\b|como est[áa]|qual (e|e|é) o (risco|numero|n[úu]mero|total|percentual|estado)|quais .*(em aberto|estao|est[ãa]o|sem atividade)|\bn[úu]mero de\b|\btotal de\b|\btaxa\b|%|risco de (evas|sair))/;
+export function pareceQuantitativa(texto) {
+  const t = String(texto ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  if (DEFINICAO.test(t)) return false;
+  return QUANTITATIVA.test(t);
+}
+
 // ---------------------------------------------------------------------------
 // O pipeline do Passo.
 // ---------------------------------------------------------------------------
@@ -498,7 +508,17 @@ export async function assistente(u, { message, session_id, tela }) {
   //    modelo pela porta de trás, exatamente o que a doutrina proíbe.
   //  · `fala: null` sempre: contagem agregada não é coisa para o aparelho ler
   //    em voz alta numa sala.
-  if (u.papel === 'coordenacao' || u.papel === 'diretoria') {
+  //
+  // DUAS CONDIÇÕES antes de consultar, e as duas nasceram de defeito medido:
+  //  · o GUIA vem primeiro. `consultar()` casa por substring em termos
+  //    genéricos ('cobertura', 'ciclo', 'presenca'), então o chip que o próprio
+  //    produto oferece — "O que é cobertura?" — passou a responder "está em
+  //    79%" em vez de explicar o que cobertura É.
+  //  · a pergunta precisa TER FORMA QUANTITATIVA. "O que é o ciclo?" quer
+  //    definição; "como está o ciclo?" quer número.
+  if ((u.papel === 'coordenacao' || u.papel === 'diretoria')
+      && pareceQuantitativa(pergunta)
+      && !casarIntencao(pergunta, tela, u.papel)) {
     const ag = consultarAgregado(pergunta);
     if (ag) {
       const acao = validarAcao('consulta', u.papel);
