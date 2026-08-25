@@ -19,8 +19,11 @@
   --bloq:#8B8478; --bloq-bg:#F0EBE0;
   --chip:#F0EBE0;
   --sombra:0 1px 2px rgba(46,42,36,.04);
+  --rolagem-sombra:rgba(46,42,36,.14);
   --r:11px; --r-s:9px;
-  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  /* -apple-system primeiro: SF no iOS e Roboto/Segoe no resto E' a sensacao
+     nativa honesta — "Inter" nunca foi carregada por rede mesmo. */
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Inter",Helvetica,Arial,sans-serif;
   --serif:var(--sans);
 }
 @media (prefers-color-scheme: dark) {
@@ -33,6 +36,7 @@
     --bloq:#A69E90; --bloq-bg:#332F28;
     --chip:#332F28;
     --sombra:0 1px 2px rgba(0,0,0,.35);
+    --rolagem-sombra:rgba(0,0,0,.5);
   }
 }
 
@@ -40,19 +44,26 @@
 html{-webkit-text-size-adjust:100%}
 body{
   background:var(--bg); color:var(--ink); font-family:var(--sans);
-  font-size:16px; line-height:1.45; padding-bottom:88px;
+  font-size:16px; line-height:1.45;
+  padding-bottom:calc(88px + env(safe-area-inset-bottom));
   -webkit-font-smoothing:antialiased;
+  /* toque nativo: sem flash cinza do UA e sem pull-to-refresh matando a SPA */
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior-y:none;
 }
 :focus-visible{outline:3px solid var(--red); outline-offset:2px; border-radius:6px}
 button,input,select,textarea{font:inherit; color:inherit}
 button{cursor:pointer; background:none; border:none}
 a{color:var(--red)}
+button, a, .item, .p{touch-action:manipulation}
 
 /* ---------- estrutura ---------- */
 .topo{
   position:sticky; top:0; z-index:40; background:var(--bg);
-  border-bottom:1px solid var(--line); padding:10px 16px;
+  border-bottom:1px solid var(--line);
+  padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
   display:flex; align-items:center; gap:12px;
+  view-transition-name:topo;
 }
 .topo .marca{font-weight:700; font-size:17px; letter-spacing:.09em; color:var(--red); text-transform:uppercase}
 .topo .marca span{display:none}
@@ -89,23 +100,25 @@ h3{font-size:14px; font-weight:600}
   min-height:46px; padding:11px 20px; border-radius:var(--r-s);
   background:var(--red); color:#fff; font-weight:500; font-size:14.5px;
   border:1px solid var(--red);
-  transition:transform .08s ease, filter .15s ease;
+  /* press imediato (60ms), release com leve overshoot de mola */
+  transition:transform 260ms cubic-bezier(.34,1.56,.64,1), filter .15s ease;
 }
-.btn:hover{filter:brightness(1.06)}
-.btn:active{transform:scale(.985)}
+@media (hover:hover){ .btn:hover{filter:brightness(1.06)} }
+.btn:active{transform:scale(.97); transition-duration:60ms; transition-timing-function:ease}
 .btn[disabled]{opacity:.45; cursor:not-allowed}
 .btn.secundario{background:var(--card); color:var(--ink); border:1px solid var(--line)}
 .btn.fantasma{background:transparent; color:var(--red); border:1px solid var(--line)}
-.btn.pequeno{min-height:36px; padding:7px 14px; font-size:13px}
+.btn.pequeno{min-height:44px; padding:9px 14px; font-size:13px}
 .btn.largo{width:100%}
 
 /* ---------- pills (o vocabulario fechado da folha) ---------- */
 .p{
-  display:inline-flex; align-items:center; gap:5px; font-size:12px; padding:6px 12px;
-  border-radius:16px; margin:0 5px 6px 0; border:1px solid transparent;
-  white-space:nowrap; min-height:32px;
+  display:inline-flex; align-items:center; gap:5px; font-size:12px; padding:8px 14px;
+  border-radius:20px; margin:0 5px 6px 0; border:1px solid transparent;
+  white-space:nowrap; min-height:40px;
 }
-button.p{cursor:pointer}
+button.p{cursor:pointer; transition:transform 240ms cubic-bezier(.34,1.56,.64,1)}
+button.p:active{transform:scale(.96); transition-duration:60ms}
 .p.on{background:var(--ok-bg); color:var(--ok); border-color:transparent}
 .p.off{background:var(--card-2); color:var(--muted); border-color:var(--line)}
 .p.red{background:var(--red); color:#fff}
@@ -125,7 +138,9 @@ button.p{cursor:pointer}
 .pf button{
   width:52px; height:44px; border-radius:var(--r-s); border:1px solid var(--line);
   background:var(--card-2); font-weight:600; font-size:15px; color:var(--muted);
+  transition:transform 240ms cubic-bezier(.34,1.56,.64,1);
 }
+.pf button:active{transform:scale(.94); transition-duration:60ms}
 .pf button[aria-pressed="true"][data-v="P"]{background:var(--ok-bg); border-color:var(--ok-bg); color:var(--ok)}
 .pf button[aria-pressed="true"][data-v="F"]{background:var(--red-soft); border-color:var(--red-soft); color:var(--red-esc)}
 
@@ -133,9 +148,10 @@ button.p{cursor:pointer}
 .item{
   display:flex; align-items:center; gap:12px; width:100%; text-align:left;
   background:var(--card); border:1px solid var(--line); border-radius:var(--r-s);
-  padding:11px 14px; min-height:54px; transition:transform .08s ease;
+  padding:11px 14px; min-height:54px;
+  transition:transform 260ms cubic-bezier(.34,1.56,.64,1);
 }
-.item:active{transform:scale(.99)}
+.item:active{transform:scale(.98); transition-duration:60ms}
 .item .nome{font-weight:500; font-size:14.5px}
 .item .meta{font-size:12px; color:var(--muted); margin-top:1px}
 .item .meta.atencao{color:var(--atencao)}
@@ -192,7 +208,9 @@ button.p{cursor:pointer}
   display:flex; gap:11px; align-items:flex-start; text-align:left; width:100%;
   background:var(--card-2); border:1px solid var(--line); border-radius:var(--r-s);
   padding:11px 13px; min-height:50px; font-size:13.5px; line-height:1.4;
+  transition:transform 240ms cubic-bezier(.34,1.56,.64,1);
 }
+.ancora:active{transform:scale(.98); transition-duration:60ms}
 .ancora .n{
   flex:0 0 26px; height:26px; border-radius:50%; background:var(--card);
   display:grid; place-items:center; font-weight:600; font-size:12.5px; color:var(--muted);
@@ -200,22 +218,25 @@ button.p{cursor:pointer}
 }
 .ancora[aria-pressed="true"]{border-color:var(--red); background:var(--red-soft)}
 .ancora[aria-pressed="true"] .n{background:var(--red); color:#fff; border-color:var(--red)}
+/* 16px e' o piso do iOS: abaixo disso o Safari da' zoom ao focar */
 textarea{
   width:100%; min-height:96px; background:var(--card-2); border:1px solid var(--line);
-  border-radius:var(--r-s); padding:12px 14px; font-size:15px; resize:vertical;
+  border-radius:var(--r-s); padding:12px 14px; font-size:16px; resize:vertical;
 }
 textarea:disabled{opacity:.6}
 input[type=text],input[type=date],input[type=number],select{
   background:var(--card-2); border:1px solid var(--line); border-radius:var(--r-s);
-  padding:11px 12px; font-size:15px; min-height:44px; width:100%;
+  padding:11px 12px; font-size:16px; min-height:44px; width:100%;
 }
 
 /* contador de "pediram ajuda" */
 .step{display:inline-flex; align-items:center; gap:10px}
 .step button{
-  width:34px; height:34px; border:1px solid var(--line); border-radius:7px;
+  width:44px; height:44px; border:1px solid var(--line); border-radius:7px;
   color:var(--muted); font-size:17px; line-height:1; background:var(--card);
+  transition:transform 240ms cubic-bezier(.34,1.56,.64,1);
 }
+.step button:active{transform:scale(.94); transition-duration:60ms}
 .step b{min-width:26px; text-align:center; font-weight:600; font-size:15px}
 
 /* ---------- kpis ---------- */
@@ -234,7 +255,17 @@ input[type=text],input[type=date],input[type=number],select{
 .dado b{font-weight:600}
 
 /* ---------- tabela ---------- */
-.rolagem{overflow-x:auto; -webkit-overflow-scrolling:touch}
+/* Sombras de rolagem: gradientes "scroll" ficam presos as bordas e os
+   "local" (cor do cartao) os cobrem quando a rolagem encosta na ponta —
+   affordance de que ha' mais tabela para o lado, sem JS. */
+.rolagem{
+  overflow-x:auto; -webkit-overflow-scrolling:touch;
+  background:
+    linear-gradient(90deg, var(--card) 40%, transparent) left/28px 100% no-repeat local,
+    linear-gradient(270deg, var(--card) 40%, transparent) right/28px 100% no-repeat local,
+    linear-gradient(90deg, var(--rolagem-sombra), transparent) left/12px 100% no-repeat scroll,
+    linear-gradient(270deg, var(--rolagem-sombra), transparent) right/12px 100% no-repeat scroll;
+}
 table{width:100%; border-collapse:collapse; font-size:12.5px; min-width:520px}
 th{
   text-align:left; font-size:10px; letter-spacing:.09em; text-transform:uppercase;
@@ -254,7 +285,9 @@ svg{display:block; max-width:100%; height:auto}
 .mic{
   width:76px; height:76px; border-radius:50%; background:var(--red); border:none;
   margin:14px auto 10px; display:flex; align-items:center; justify-content:center;
+  transition:transform 240ms cubic-bezier(.34,1.56,.64,1);
 }
+.mic:active{transform:scale(.94); transition-duration:60ms}
 .mic[disabled]{opacity:.5}
 .mic.gravando{animation:pulsa 1.6s ease-in-out infinite}
 .mic i{width:18px; height:27px; border-radius:9px; background:#fff; display:block; position:relative}
@@ -274,12 +307,19 @@ nav.barra-nav{
   position:fixed; bottom:0; left:0; right:0; z-index:50;
   background:var(--card); border-top:1px solid var(--line);
   display:flex; padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  view-transition-name:nav;
 }
+/* o display:flex acima vence o [hidden] do UA — sem esta linha, a nav da
+   sessão anterior continuava visível na tela de entrada */
+nav.barra-nav[hidden]{display:none}
 nav.barra-nav a{
-  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:3px;
   padding:8px 2px; font-size:9.5px; font-weight:500; color:var(--muted);
   text-decoration:none; border-radius:var(--r-s); min-height:50px; justify-content:center;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  transition:transform 240ms cubic-bezier(.34,1.56,.64,1);
 }
+nav.barra-nav a:active{transform:scale(.92); transition-duration:60ms}
 nav.barra-nav a em{font-style:normal; font-size:17px; line-height:1}
 nav.barra-nav a[aria-current="page"]{color:var(--red)}
 
@@ -306,10 +346,21 @@ nav.barra-nav a[aria-current="page"]{color:var(--red)}
 /* ---------- o momento ---------- */
 .festa{
   position:fixed; inset:0; z-index:90; background:var(--bg);
-  overflow:auto; padding:32px 20px calc(32px + env(safe-area-inset-bottom));
+  overflow:auto;
+  padding:calc(32px + env(safe-area-inset-top))
+          max(20px, env(safe-area-inset-right))
+          calc(32px + env(safe-area-inset-bottom))
+          max(20px, env(safe-area-inset-left));
   animation:surge .3s ease;
 }
-.festa-caixa{max-width:620px; margin:0 auto; text-align:center}
+.festa-caixa{max-width:620px; margin:0 auto; text-align:center; position:relative; z-index:2}
+/* camadas cinematograficas da festa (injetadas por JS; nada sob reduced-motion) */
+.festa-traco{position:fixed; inset:0; width:100%; height:100%; z-index:1; pointer-events:none}
+.festa-traco path{stroke:var(--red); stroke-width:3; fill:none; stroke-linecap:round; opacity:.14;
+                  transition:stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1)}
+.festa-traco circle{fill:var(--red); opacity:0; transition:opacity .3s ease .1s}
+.festa-confete{position:fixed; inset:0; width:100%; height:100%; z-index:3; pointer-events:none}
+.festa .contagem{font-variant-numeric:tabular-nums}
 .festa .selo-topo{
   display:inline-block; background:var(--ok-bg); color:var(--ok); font-size:10.5px;
   font-weight:600; letter-spacing:.09em; text-transform:uppercase; padding:6px 14px; border-radius:16px;
@@ -327,12 +378,101 @@ nav.barra-nav a[aria-current="page"]{color:var(--red)}
 .entra{animation:sobe .5s cubic-bezier(.2,.8,.2,1) backwards}
 @keyframes surge{from{opacity:0}to{opacity:1}}
 @keyframes sobe{from{opacity:0; transform:translateY(14px)}to{opacity:1; transform:none}}
+@keyframes some{to{opacity:0}}
+
+/* ---------- transicao entre rotas (peca "app nativo") ---------- */
+::view-transition-old(root){animation:vtSai 160ms ease both}
+::view-transition-new(root){animation:vtEntra 200ms cubic-bezier(.2,.8,.2,1) both}
+@keyframes vtSai{to{opacity:0}}
+@keyframes vtEntra{from{opacity:0; transform:translateY(6px)}}
+.tela-entra{animation:vtEntra 180ms cubic-bezier(.2,.8,.2,1)}
+/* traco-assinatura da porta de entrada (injetado por JS) */
+.entrar-traco{width:64px; height:10px; margin:6px 0 0}
+.entrar-traco path{stroke:var(--red); stroke-width:2.5; fill:none; stroke-linecap:round}
+
+/* ---------- a voz virando campos (peca "magia") ---------- */
+.magia{position:fixed; inset:0; z-index:70; background:var(--bg); overflow:auto;
+       padding:calc(32px + env(safe-area-inset-top))
+               max(20px, env(safe-area-inset-right))
+               calc(32px + env(safe-area-inset-bottom))
+               max(20px, env(safe-area-inset-left));
+       animation:surge .18s ease}
+.magia.saindo{animation:some .26s ease forwards}
+.magia-caixa{max-width:560px; margin:0 auto}
+.magia-fala{
+  font-size:16px; line-height:1.6; background:var(--card); border:1px solid var(--line);
+  border-radius:var(--r); padding:16px 18px; margin-top:14px;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+  transition:opacity .4s ease;
+}
+.magia-fala.esmaece{opacity:.35}
+.magia-fala span{opacity:0; animation:surge .22s ease forwards}
+.magia-fala mark{
+  color:inherit; background:linear-gradient(var(--red-soft),var(--red-soft)) no-repeat 0 88%;
+  background-size:0% 42%; border-radius:2px;
+}
+.magia-fala.sublinha mark{animation:sublinha .32s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes sublinha{to{background-size:100% 42%}}
+.magia-traco{width:56px; height:auto; margin:2px auto; display:block}
+.magia-traco path{stroke:var(--red); stroke-width:2.5; fill:none; stroke-linecap:round; opacity:.85;
+                  transition:stroke-dashoffset .45s ease-in-out}
+.magia-campos{margin:0; padding:0}
+.magia-campo{
+  list-style:none; background:var(--card); border:1px solid var(--line);
+  border-radius:var(--r-s); padding:11px 14px; margin-top:8px;
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  animation:sobe .32s cubic-bezier(.2,.8,.2,1) backwards;
+}
+.magia-campo .k{font-size:9.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:600}
+.magia-campo b{font-size:14.5px; font-weight:600}
+.magia-campo b.num{font-variant-numeric:tabular-nums}
+.magia-lendo{height:2px; background:var(--line); border-radius:2px; margin-top:10px; overflow:hidden}
+.magia-lendo i{display:block; height:100%; width:38%; background:var(--red); border-radius:2px;
+               animation:le 1.1s ease-in-out infinite alternate}
+.magia-lendo.assentou i{animation:none; background:var(--muted)}
+@keyframes le{from{transform:translateX(-60%)}to{transform:translateX(220%)}}
+.magia-pular{display:block; margin:26px auto 0; color:var(--muted); font-size:12.5px; padding:12px 18px; min-height:44px}
+
+/* ---------- cartoes de opcao (radios do SROI) ---------- */
+.opcao{
+  position:relative; display:flex; gap:11px; align-items:flex-start; background:var(--card-2);
+  border:1px solid var(--line); border-radius:var(--r-s); padding:12px 13px;
+  margin:8px 0; font-size:13.5px; line-height:1.45; cursor:pointer;
+  transition:transform 240ms cubic-bezier(.34,1.56,.64,1);
+}
+.opcao:active{transform:scale(.98); transition-duration:60ms}
+.opcao b{font-weight:600}
+.opcao input{position:absolute; opacity:0; pointer-events:none}
+.opcao .marca-radio{
+  flex:0 0 20px; height:20px; margin-top:1px; border-radius:50%;
+  border:2px solid var(--line); background:var(--card); position:relative;
+}
+/* Essencial por irmão adjacente (funciona em qualquer engine); :has é só o
+   realce do contêiner, enhancement progressivo. */
+.opcao input:checked + .marca-radio{border-color:var(--red)}
+.opcao input:checked + .marca-radio::after{
+  content:""; position:absolute; inset:3px; border-radius:50%; background:var(--red);
+}
+.opcao input:focus-visible + .marca-radio{outline:3px solid var(--red); outline-offset:2px}
+.opcao:has(input:checked){border-color:var(--red); background:var(--red-soft)}
+
+/* o scrollIntoView do copilot nao pode esconder a resposta atras da nav fixa */
+#copilot-fio > *{scroll-margin-bottom:150px}
+
 @media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important}
+  /* delays zerados TAMBÉM: com `backwards` e delay inline, o elemento ficaria
+     invisível esperando a vez mesmo com duração .01ms — o escalonamento
+     continuaria existindo, só que como conteúdo piscando. */
+  *,*::before,*::after{
+    animation-duration:.01ms !important; animation-iteration-count:1 !important;
+    animation-delay:0s !important;
+    transition-duration:.01ms !important; transition-delay:0s !important;
+  }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*){animation:none !important}
 }
 
 /* ---------- toast ---------- */
-.toasts{position:fixed; left:12px; right:12px; bottom:96px; z-index:95; display:flex; flex-direction:column; gap:8px; pointer-events:none}
+.toasts{position:fixed; left:12px; right:12px; bottom:calc(96px + env(safe-area-inset-bottom)); z-index:95; display:flex; flex-direction:column; gap:8px; pointer-events:none}
 .toast{
   background:var(--ink); color:var(--bg); border-radius:var(--r-s); padding:11px 15px;
   font-size:13.5px; box-shadow:0 4px 18px rgba(46,42,36,.16); animation:sobe .2s ease;

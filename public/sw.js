@@ -10,8 +10,9 @@
 // localhost/127.0.0.1 e no deploy HTTPS (Render). Pelo IP da rede local
 // (http://IP:3000) o navegador NÃO registra o SW: a página funciona normal,
 // sem offline/instalação. Ver README, seção "PWA e acesso pelo celular".
-const VERSAO = 'percurso-v1';
-const SHELL = ['/', '/index.html', '/styles.css', '/app.js', '/fila.js', '/manifest.json', '/icone.svg'];
+const VERSAO = 'percurso-v2';
+const SHELL = ['/', '/index.html', '/styles.css', '/app.js', '/fila.js', '/manifest.json',
+               '/icone.svg', '/icone-192.png', '/icone-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSAO).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

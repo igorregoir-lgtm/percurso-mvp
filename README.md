@@ -81,6 +81,22 @@ Nada sai da máquina: o modelo escuta só em `127.0.0.1` e toda mensagem passa p
 perímetro e pela pseudonimização ANTES de chegar a ele. Em operação real com educadoras, ligar
 é condicionado ao go da PoC (`docs/POC-COPILOT.md`). Detalhes: [`ai/README.md`](ai/README.md).
 
+### Demo no celular (QR code, voz e instalação — grupo inteiro)
+
+```bash
+ai/scripts/demo-celular.sh
+```
+
+Sobe modelo + Percurso + túnel HTTPS temporário e imprime a URL `trycloudflare.com` com QR code —
+iPhone e Android abrem, instalam como app e **a voz funciona** (HTTPS ✓). `Ctrl+C` derruba tudo e
+a URL deixa de existir. Ferramenta de demonstração (decisão 25): pública, efêmera, sem senha —
+só com os dados sintéticos. Requisitos na máquina que apresenta: `brew install cloudflared qrencode`.
+
+Para instalar o Percurso em OUTRO computador (o do Instituto), o passo a passo sem jargão está em
+[`docs/MANUAL-DE-INSTALACAO.md`](docs/MANUAL-DE-INSTALACAO.md) — inclui o início automático no
+login (`ai/scripts/instalar-inicio-automatico.sh`), para ligar o computador e o Percurso já estar
+no ar.
+
 ### PWA e acesso pelo celular
 
 Em `localhost` e no deploy HTTPS (Render), o Percurso instala como aplicativo (manifest + service
@@ -290,6 +306,7 @@ cd prototipo-figma && python3 -m http.server 8765
 - [`docs/POC-COPILOT.md`](docs/POC-COPILOT.md) — protocolo da PoC com pedagogos (condição para ligar a IA em operação)
 - [`docs/VALIDACAO-USUARIO.md`](docs/VALIDACAO-USUARIO.md) — protocolo da validação com usuária real (pendência humana)
 - [`docs/PENDENCIAS-DE-ENTREGA.md`](docs/PENDENCIAS-DE-ENTREGA.md) — o que depende de gente até 09/10
+- [`docs/MANUAL-DE-INSTALACAO.md`](docs/MANUAL-DE-INSTALACAO.md) — instalar em qualquer computador, sem jargão, com início automático
 - [`docs/EVIDENCIAS-DE-TESTE.txt`](docs/EVIDENCIAS-DE-TESTE.txt) — saída da última execução
 - [`docs/ROTEIRO-DO-VIDEO.md`](docs/ROTEIRO-DO-VIDEO.md) — o roteiro do vídeo
 - [`video/percurso-demonstracao.mp4`](video/percurso-demonstracao.mp4) — vídeo demonstrativo, 6m14s, 1080p, legendado e sem áudio ([como foi gerado](video/README.md)). **Atenção: grava a v1** — não mostra voz, pauta nem relatório do doador. Regravar é item aberto da entrega.

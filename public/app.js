@@ -19,6 +19,12 @@ const diaSemana = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR
 const porExtenso = (iso) =>
   new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 
+// Movimento: o CSS tem kill-switch de reduced-motion, mas rAF, canvas e View
+// Transitions vivem no JS — toda peça animada checa REDUZ.matches NA HORA do
+// uso (a preferência pode mudar com o app aberto).
+const REDUZ = matchMedia('(prefers-reduced-motion: reduce)');
+const espera = (ms) => new Promise(r => setTimeout(r, ms));
+
 function toast(msg, tipo = '') {
   const el = document.createElement('div');
   el.className = 'toast ' + tipo;
@@ -121,42 +127,99 @@ function pintarNav(rotaAtual) {
     `<span class="sintetico" id="fila"></span>
      <span class="sintetico">dados sintéticos</span>
      <b>${esc(sessao.apelido)}</b>
-     <button class="btn pequeno fantasma" data-acao="sair" style="min-height:32px;padding:5px 10px">sair</button>`;
+     <button class="btn pequeno fantasma" data-acao="sair">sair</button>`;
 }
 
 // ------------------------------------------------------------------ roteador
 const rotas = [];
 const rota = (re, tela) => rotas.push([re, tela]);
 
+// Dedupe do padrão `location.hash = X; navegar()` + evento hashchange: sem a
+// guarda, cada navegação manual renderizaria (e animaria) duas vezes — e, no
+// caso do fluxo de voz com perímetro, o segundo render destruiria o modal de
+// encaminhamento recém-aberto. Dois detalhes duros de conquistar:
+//  1. A guarda só pode ser LIBERADA depois que a task do hashchange drenar
+//     (setTimeout 0) — rota síncrona terminava antes do evento chegar.
+//  2. A liberação é condicionada ao hash (if hashEmVoo === hash): um redirect
+//     interno (tela que faz location.hash=Y; navegar()) muda a marca para Y,
+//     e o finally do navegar EXTERNO não pode apagar a marca do interno.
+let hashEmVoo = null;
+
 async function navegar() {
   const hash = location.hash || '#/hoje';
   if (!sessao && hash !== '#/entrar') { location.hash = '#/entrar'; return; }
-  // Servidor fora do ar com rede ativa também enfileira, e nesse caso `online`
-  // nunca dispara. Tentar a cada navegação custa nada quando a fila está vazia.
-  if (sessao && lerFila().length) drenarFila();
-  for (const [re, tela] of rotas) {
-    const m = hash.match(re);
-    if (m) {
-      app.innerHTML = '<div class="carregando">Carregando…</div>';
-      pintarNav(hash);
-      try { await tela(...m.slice(1)); }
-      catch (e) {
-        if (e.status === 401) { sessao = null; location.hash = '#/entrar'; return; }
-        app.innerHTML = `<div class="cartao"><h2>Não deu para abrir esta tela</h2>
-          <p class="sub" style="margin-top:6px">${esc(e.message)}</p>
-          <div class="linha" style="margin-top:14px">
-            <a class="btn secundario" href="#/hoje">Voltar ao início</a>
-            <button class="btn fantasma" data-acao="recarregar">Tentar de novo</button>
-          </div></div>`;
+  if (hash === hashEmVoo) return;
+  hashEmVoo = hash;
+  try {
+    // Servidor fora do ar com rede ativa também enfileira, e nesse caso `online`
+    // nunca dispara. Tentar a cada navegação custa nada quando a fila está vazia.
+    if (sessao && lerFila().length) drenarFila();
+    for (const [re, tela] of rotas) {
+      const m = hash.match(re);
+      if (m) {
+        const render = async () => {
+          // Loader ADIADO: destruir a tela velha na hora inviabiliza qualquer
+          // crossfade — rotas locais resolvem em <240ms e trocam direto; rota
+          // lenta mostra "Carregando…" (e ABORTA a view transition, que congela
+          // a pintura enquanto vive — sem o skip, a educadora veria a tela
+          // velha travada em vez do loader).
+          const tLoader = setTimeout(() => {
+            vtAtual?.skipTransition?.();
+            app.innerHTML = '<div class="carregando">Carregando…</div>';
+          }, 240);
+          try {
+            // Overlay esquecido não atravessa navegação: modal, festa e magia
+            // são fechados (com cleanup de rAF/timeout) antes da rota nova.
+            document.querySelectorAll('.veu').forEach(v => v.remove());
+            pararFesta();
+            document.querySelectorAll('.magia').forEach(mg => mg._cancelarPelaRota?.());
+            pintarNav(hash);
+            await tela(...m.slice(1));
+          }
+          catch (e) {
+            if (e.status === 401) { sessao = null; location.hash = '#/entrar'; return; }
+            app.innerHTML = `<div class="cartao"><h2>Não deu para abrir esta tela</h2>
+              <p class="sub" style="margin-top:6px">${esc(e.message)}</p>
+              <div class="linha" style="margin-top:14px">
+                <a class="btn secundario" href="#/hoje">Voltar ao início</a>
+                <button class="btn fantasma" data-acao="recarregar">Tentar de novo</button>
+              </div></div>`;
+          } finally { clearTimeout(tLoader); }
+          window.scrollTo(0, 0);
+        };
+        // Peça "app nativo": View Transitions quando o navegador tem;
+        // fallback = animação de entrada curta no #app. Reduced-motion pula
+        // tudo; documento oculto (aba em segundo plano) também — a VT aborta
+        // com InvalidStateError nesse estado e as promises ready/finished
+        // rejeitam sozinhas, então são engolidas explicitamente (os erros do
+        // RENDER não: o try interno já pinta o cartão de erro).
+        if (document.startViewTransition && !REDUZ.matches && !document.hidden) {
+          const vt = document.startViewTransition(render);
+          vtAtual = vt;
+          vt.ready.catch(() => {});
+          vt.finished.catch(() => {});
+          try { await vt.updateCallbackDone; }
+          catch (e) { console.error('[percurso] render', e); }
+          finally { vtAtual = null; }
+        } else {
+          await render();
+          if (!REDUZ.matches) {
+            app.classList.remove('tela-entra'); void app.offsetWidth; app.classList.add('tela-entra');
+          }
+        }
+        return;
       }
-      window.scrollTo(0, 0);
-      return;
     }
+    app.innerHTML = `<div class="cartao"><h2>Tela não encontrada</h2>
+      <p class="sub">A rota <code>${esc(hash)}</code> não existe.</p>
+      <div class="linha" style="margin-top:14px"><a class="btn" href="#/hoje">Ir para o início</a></div></div>`;
+  } finally {
+    // Libera só DEPOIS da task do hashchange e só se a marca ainda é deste
+    // hash (redirect interno tem marca própria — ver comentário acima).
+    setTimeout(() => { if (hashEmVoo === hash) hashEmVoo = null; }, 0);
   }
-  app.innerHTML = `<div class="cartao"><h2>Tela não encontrada</h2>
-    <p class="sub">A rota <code>${esc(hash)}</code> não existe.</p>
-    <div class="linha" style="margin-top:14px"><a class="btn" href="#/hoje">Ir para o início</a></div></div>`;
 }
+let vtAtual = null;
 
 // ======================================================================
 // ENTRAR
@@ -164,25 +227,40 @@ async function navegar() {
 rota(/^#\/entrar/, async () => {
   const { usuarios } = await api('/api/sessao');
   navEl.hidden = true; quemEl.innerHTML = '';
+  // Porta de entrada orquestrada: a mesma cascata `entra`/`sobe` da festa, com
+  // um traço-assinatura que se desenha sob o título. Reduced-motion: o
+  // kill-switch do CSS mata os delays; o traço nem é animado.
   app.innerHTML = `
-    <p class="kicker">Instituto Ebenézer · Desafio B</p>
-    <h1>Percurso</h1>
-    <p class="sub">Transforma a observação de minutos do educador em evidência de evolução — sem que dado de criança saia da organização.</p>
-    <div class="cartao" style="margin-top:20px">
+    <p class="kicker entra" style="animation-delay:.03s">Instituto Ebenézer · Desafio B</p>
+    <h1 class="entra" style="animation-delay:.08s">Percurso</h1>
+    <svg class="entrar-traco entra" style="animation-delay:.1s" viewBox="0 0 64 10" aria-hidden="true">
+      <path d="M2 6 C 14 2, 26 9, 38 5 S 58 4, 62 5"/>
+    </svg>
+    <p class="sub entra" style="animation-delay:.13s">Transforma a observação de minutos do educador em evidência de evolução — sem que dado de criança saia da organização.</p>
+    <div class="cartao entra" style="margin-top:20px; animation-delay:.2s">
       <h2>Quem está registrando hoje?</h2>
       <p class="sub">Escolha o perfil para entrar. O MVP não guarda senha: o controle de acesso real fica com a coordenação.</p>
       <div class="pilha" style="margin-top:14px">
-        ${usuarios.map(u => `
-          <button class="item" data-acao="entrar" data-id="${u.id}">
+        ${usuarios.map((u, i) => `
+          <button class="item entra" style="animation-delay:${(0.28 + Math.min(i, 6) * 0.07).toFixed(2)}s" data-acao="entrar" data-id="${u.id}">
             <div><div class="nome">${esc(u.nome)}</div>
               <div class="meta">${PAPEL[u.papel] ?? 'Educadora'}</div></div>
             <span class="seta" aria-hidden="true">›</span>
           </button>`).join('')}
       </div>
     </div>
-    <p class="rodape">Cada pessoa entra com a própria conta. O registro fica no instituto.<br>
+    <p class="rodape entra" style="animation-delay:.55s">Cada pessoa entra com a própria conta. O registro fica no instituto.<br>
       Todos os dados desta aplicação são sintéticos (regra 1 do bloco 6 do dossiê):<br>
       nenhum dado real de criança atendida foi usado, em nenhuma etapa.</p>`;
+  const traco = app.querySelector('.entrar-traco path');
+  if (traco && !REDUZ.matches) {
+    const L = traco.getTotalLength();
+    traco.style.strokeDasharray = L;
+    traco.style.strokeDashoffset = L;
+    traco.style.transition = 'stroke-dashoffset .4s ease-in-out .35s';
+    traco.getBoundingClientRect(); // reflow: sem ele os dois writes colapsam
+    traco.style.strokeDashoffset = '0';
+  }
 });
 
 const PAPEL = { coordenacao: 'Coordenação', diretoria: 'Diretoria', educador: 'Professora' };
@@ -1084,7 +1162,7 @@ async function celebrar(agenda) {
   el.innerHTML = `
     <div class="festa-caixa">
       <span class="selo-topo entra" style="animation-delay:.05s">${esc(agenda.ciclo.nome)} · turma completa</span>
-      <div class="contagem entra" style="animation-delay:.15s">${agenda.concluidas} de ${agenda.observaveis}</div>
+      <div class="contagem entra" style="animation-delay:.15s"><b id="festa-n" style="font-weight:inherit">${REDUZ.matches ? agenda.concluidas : 0}</b> de ${agenda.observaveis}</div>
       <h1 class="entra" style="animation-delay:.25s">Você acabou de fechar o ciclo da sua turma</h1>
       <p class="sub entra" style="animation-delay:.3s">Aquilo que você via toda semana e não conseguia mostrar agora tem forma, número e comparação.</p>
 
@@ -1117,6 +1195,120 @@ async function celebrar(agenda) {
     </div>`;
   document.body.appendChild(el);
   el.querySelector('button')?.focus();
+  efeitosFesta(el, agenda.concluidas);
+}
+
+// As tres camadas cinematograficas da festa: confete de papel nas cores do
+// sistema, contagem que sobe de 0 a N e o traço do proprio "percurso" se
+// desenhando atras do conteudo. Reduced-motion: nada disto e' injetado — a
+// tela e' a estatica de sempre.
+function efeitosFesta(el, concluidas) {
+  if (REDUZ.matches) return;
+  const cancelamentos = [];
+  el._parar = cancelamentos;
+
+  // --- traço do percurso (fundo, opacidade de marca-d'agua) ---------------
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'festa-traco');
+  svg.setAttribute('viewBox', '0 0 400 800');
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.innerHTML = `<path d="M -20 780 C 120 700, 40 560, 180 470 S 260 300, 200 210 S 380 90, 430 40"/>
+                   <circle cx="398" cy="64" r="4"/>`;
+  el.prepend(svg);
+  const caminho = svg.querySelector('path');
+  const L = caminho.getTotalLength();
+  caminho.style.strokeDasharray = L;
+  caminho.style.strokeDashoffset = L;
+  caminho.getBoundingClientRect(); // reflow obrigatorio antes do segundo write
+  const tTraco = setTimeout(() => { caminho.style.strokeDashoffset = '0'; }, 200);
+  const tPonto = setTimeout(() => { svg.querySelector('circle').style.opacity = '.9'; }, 1600);
+  cancelamentos.push(() => { clearTimeout(tTraco); clearTimeout(tPonto); });
+
+  // --- contagem 0 -> N ----------------------------------------------------
+  const alvo = el.querySelector('#festa-n');
+  if (alvo && concluidas > 0) {
+    let rafContagem = null;
+    const t0 = performance.now() + 150;
+    const passo = (agora) => {
+      if (!alvo.isConnected) return;
+      const p = Math.min(1, Math.max(0, (agora - t0) / 900));
+      const e = 1 - Math.pow(1 - p, 3); // easeOutCubic
+      alvo.textContent = Math.round(e * concluidas);
+      if (p < 1) rafContagem = requestAnimationFrame(passo);
+      else alvo.textContent = concluidas;
+    };
+    rafContagem = requestAnimationFrame(passo);
+    cancelamentos.push(() => cancelAnimationFrame(rafContagem));
+  }
+
+  // --- confete de papel (frente, pointer-events none, vida de 2.2s) -------
+  const tConfete = setTimeout(() => {
+    try { navigator.vibrate?.([18, 60, 24]); } catch {}
+    if (!el.isConnected) return;
+    const canvas = document.createElement('canvas');
+    canvas.className = 'festa-confete';
+    el.appendChild(canvas);
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    canvas.width = innerWidth * dpr;
+    canvas.height = innerHeight * dpr;
+    const g = canvas.getContext('2d');
+    const css = getComputedStyle(document.documentElement);
+    const cor = (v) => css.getPropertyValue(v).trim();
+    // tiras de papel nas tintas do sistema — o modo escuro sai certo de graça
+    const paleta = [cor('--red'), cor('--red'), cor('--red'), cor('--ok'), cor('--ok'),
+                    cor('--atencao-linha'), cor('--atencao-linha'), cor('--line'), cor('--line'), cor('--card-2')];
+    const N = Math.min(90, Math.max(55, Math.round(innerWidth / 6)));
+    const p = new Array(N);
+    for (let i = 0; i < N; i++) {
+      p[i] = {
+        x: Math.random() * innerWidth, y: -20 - Math.random() * 120,
+        vx: (Math.random() - .5) * 60, vy: 90 + Math.random() * 70,
+        w: 5 + Math.random() * 4, h: 8 + Math.random() * 6,
+        a: Math.random() * Math.PI * 2, va: (Math.random() - .5) * 6,
+        tf: 2 + Math.random() * 3, fase: Math.random() * Math.PI * 2,
+        cor: paleta[i % paleta.length],
+      };
+    }
+    let raf = null, antes = null;
+    const inicio = performance.now();
+    const desenhar = (agora) => {
+      const vida = (agora - inicio) / 1000;
+      if (vida > 2.2 || !canvas.isConnected) { canvas.remove(); return; }
+      const dt = Math.min(32, agora - (antes ?? agora)) / 1000;
+      antes = agora;
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, innerWidth, innerHeight);
+      g.globalAlpha = vida < 1.5 ? 1 : Math.max(0, 1 - (vida - 1.5) / .6);
+      for (const q of p) {
+        q.vy = Math.min(220, q.vy + 260 * dt);
+        q.x += (q.vx + Math.sin(vida * q.tf + q.fase) * 22) * dt;
+        q.y += q.vy * dt;
+        q.a += q.va * dt;
+        g.save();
+        g.translate(q.x, q.y);
+        g.rotate(q.a);
+        g.scale(Math.sin(vida * q.tf + q.fase), 1); // tombo 3D do papel
+        g.fillStyle = q.cor;
+        g.fillRect(-q.w / 2, -q.h / 2, q.w, q.h);
+        g.restore();
+      }
+      raf = requestAnimationFrame(desenhar);
+    };
+    raf = requestAnimationFrame(desenhar);
+    cancelamentos.push(() => { cancelAnimationFrame(raf); canvas.remove(); });
+  }, 350);
+  cancelamentos.push(() => clearTimeout(tConfete));
+}
+
+// Fecho centralizado: cancela rAF/timeouts pendentes antes de remover — sem
+// isto, fechar a festa cedo deixaria animacao orfa rodando em elemento morto.
+function pararFesta() {
+  const f = document.querySelector('.festa');
+  if (!f) return false;
+  (f._parar || []).forEach(fn => { try { fn(); } catch {} });
+  f.remove();
+  return true;
 }
 
 // ======================================================================
@@ -1290,6 +1482,180 @@ function animarOnda() {
   onda.querySelectorAll('i').forEach((b, i) => {
     b.style.height = `${5 + Math.abs(Math.sin(Date.now() / 190 + i)) * 17}px`;
   });
+}
+
+// ======================================================================
+// A MAGIA — a fala virando campos, entre "Terminei" e "O que entendi".
+//
+// Honesta em três sentidos: começa junto com o POST real (não depois dele),
+// só mostra o que o extrator de fato devolveu, e NÃO acontece quando o
+// sistema falha (baixa confiança) ou protege (perímetro) — fingir encanto
+// sobre uma falha quebraria a confiança que o app inteiro cultiva.
+// A transcrição aparece UMA vez, para quem falou, e morre como sempre morreu;
+// o trecho de perímetro jamais ganha destaque — só esmaece.
+// ======================================================================
+let magiaAtual = null;
+function pularMagia() { magiaAtual?.pular(); }
+
+async function magiaExtracao(texto, promessaPost, catalogos) {
+  const st = { pulado: false, cancels: [] };
+  const dorme = (ms) => new Promise(res => {
+    if (st.pulado) return res();
+    const id = setTimeout(res, ms);
+    st.cancels.push(() => { clearTimeout(id); res(); });
+  });
+
+  const el = document.createElement('div');
+  el.className = 'magia';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-label', 'Lendo o que você contou');
+  const palavras = texto.trim().split(/\s+/);
+  el.innerHTML = `
+    <div class="magia-caixa">
+      <div class="lbl magia-estado" role="status" aria-live="polite" style="margin:0">Lendo o que você contou…</div>
+      <p class="magia-fala">${palavras.slice(0, 24).map((p, i) =>
+        `<span style="animation-delay:${i * 12}ms">${esc(p)} </span>`).join('')}${palavras.length > 24 ? '…' : ''}</p>
+      <div class="magia-lendo"><i></i></div>
+      <svg class="magia-traco" viewBox="0 0 200 90" aria-hidden="true" hidden>
+        <path d="M100 4 C 60 30, 140 55, 100 86"/>
+      </svg>
+      <ol class="magia-campos"></ol>
+      <button class="magia-pular" data-acao="magia-pular">Pular</button>
+    </div>`;
+  document.body.appendChild(el);
+  magiaAtual = { pular: () => { st.pulado = true; st.cancels.forEach(fn => { try { fn(); } catch {} }); } };
+  // O roteador fecha a magia se o usuário navegar no meio (Back, link) — a
+  // coreografia morre, o POST segue, e o handler NÃO sequestra a navegação.
+  el._cancelarPelaRota = () => {
+    st.cancelada = true;
+    magiaAtual?.pular();
+    magiaAtual = null;
+    el.remove();
+  };
+
+  const $ = (s) => el.querySelector(s);
+  const estado = $('.magia-estado');
+  const fala = $('.magia-fala');
+  const lendo = $('.magia-lendo');
+
+  const tEstado = setTimeout(() => { if (!st.pulado) estado.textContent = 'Separando os campos…'; }, 2500);
+  st.cancels.push(() => clearTimeout(tEstado));
+
+  const encerrar = () => {
+    magiaAtual = null;
+    if (!el.isConnected) return;
+    el.classList.add('saindo');
+    setTimeout(() => el.remove(), 400);
+  };
+
+  let r;
+  try {
+    // A encenação nunca mente: espera o POST DE VERDADE (piso de 650ms para a
+    // fase de leitura não virar um flash quando o servidor é rápido).
+    [r] = await Promise.all([promessaPost, dorme(650)]);
+  } catch (e) {
+    clearTimeout(tEstado);
+    encerrar();
+    throw e; // o handler trata rede/erro como sempre tratou
+  }
+  clearTimeout(tEstado);
+
+  if (!st.pulado) {
+    if (r.excluido) {
+      // Desfecho proteção: sóbrio, sem mágica. O trecho NUNCA é destacado.
+      lendo.style.display = 'none';
+      estado.textContent = 'Uma parte do que você contou não entra no sistema';
+      fala.classList.add('esmaece');
+      await dorme(900);
+    } else if (r.baixa_confianca) {
+      // Desfecho falha: nada se materializa — falhar em branco é melhor.
+      lendo.classList.add('assentou');
+      estado.textContent = 'Não consegui entender direito';
+      const sub = document.createElement('p');
+      sub.className = 'sub';
+      sub.style.marginTop = '10px';
+      sub.textContent = 'Você marca — nada foi pré-marcado.';
+      lendo.after(sub);
+      await dorme(1200);
+    } else {
+      // Desfecho feliz: sublinhado honesto → traço → campos um a um.
+      lendo.style.transition = 'opacity .15s ease';
+      lendo.style.opacity = '0';
+      estado.textContent = 'Encontrei os campos na sua fala';
+
+      const rot = (lista, codigo) => lista.find(x => x.codigo === codigo)?.rotulo ?? '';
+      const semAcento = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      const ex = r.extracao;
+      const rotulos = [
+        ex.atividade !== 'nao_identificada' ? rot(catalogos.atividades, ex.atividade) : '',
+        ex.area_tematica !== 'nenhuma' ? rot(catalogos.areas, ex.area_tematica) : '',
+        ...ex.marcadores_turma.map(m => rot(catalogos.marcadores, m)),
+      ].filter(Boolean);
+      // Palavras dos rótulos realmente extraídos (>=4 letras) — o sublinhado só
+      // marca o que de fato virou campo; zero match = beat pulado, nunca inventado.
+      const alvos = new Set(rotulos.flatMap(rt => semAcento(rt).split(/\s+/).filter(w => w.length >= 4)));
+      let marcas = 0;
+      if (alvos.size) {
+        for (const span of fala.querySelectorAll('span')) {
+          if (marcas >= 4) break;
+          const w = semAcento(span.textContent.trim()).replace(/[^\p{L}\p{N}]/gu, '');
+          if (w.length >= 4 && [...alvos].some(a =>
+                w === a || (w.length >= 5 && a.length >= 5 && w.slice(0, 5) === a.slice(0, 5)))) {
+            const mark = document.createElement('mark');
+            mark.style.animationDelay = `${marcas * 90}ms`;
+            mark.textContent = span.textContent;
+            span.textContent = '';
+            span.appendChild(mark);
+            marcas++;
+          }
+        }
+      }
+      if (marcas) { fala.classList.add('sublinha'); await dorme(500); }
+
+      const svg = $('.magia-traco');
+      svg.hidden = false;
+      const caminho = svg.querySelector('path');
+      const L = caminho.getTotalLength();
+      caminho.style.strokeDasharray = L;
+      caminho.style.strokeDashoffset = L;
+      caminho.getBoundingClientRect();
+      caminho.style.strokeDashoffset = '0';
+      await dorme(300);
+
+      // Só campos NÃO neutros se materializam — campo vazio não vira teatro.
+      const campos = [];
+      const campo = (k, corpo) => campos.push(
+        `<li class="magia-campo" style="animation-delay:${campos.length * 160}ms"><span class="k">${k}</span>${corpo}</li>`);
+      if (ex.atividade !== 'nao_identificada')
+        campo('Atividade', `<b>${esc(rot(catalogos.atividades, ex.atividade))}</b>`);
+      if (ex.area_tematica !== 'nenhuma')
+        campo('Área do encontro', `<b>${esc(rot(catalogos.areas, ex.area_tematica))}</b>`);
+      if (ex.marcadores_turma.length)
+        campo('Como foi o grupo', `<span>${ex.marcadores_turma.map(m =>
+          `<span class="p on" style="margin:0 0 0 5px">${esc(rot(catalogos.marcadores, m))}</span>`).join('')}</span>`);
+      if (ex.pediram_ajuda > 0)
+        campo('Pediram ajuda', `<b class="num" id="magia-ajuda">0</b>`);
+      $('.magia-campos').innerHTML = campos.join('');
+
+      const ajuda = $('#magia-ajuda');
+      if (ajuda) {
+        const t0 = performance.now() + campos.length * 160;
+        let raf = null;
+        const passo = (agora) => {
+          if (!ajuda.isConnected || st.pulado) { ajuda.textContent = ex.pediram_ajuda; return; }
+          const p = Math.min(1, Math.max(0, (agora - t0) / 500));
+          ajuda.textContent = Math.round((1 - Math.pow(1 - p, 3)) * ex.pediram_ajuda);
+          if (p < 1) raf = requestAnimationFrame(passo);
+        };
+        raf = requestAnimationFrame(passo);
+        st.cancels.push(() => cancelAnimationFrame(raf));
+      }
+      await dorme(400 + campos.length * 160 + 500);
+      if (el.isConnected) estado.textContent = 'Confira — nada foi gravado ainda.';
+      await dorme(400);
+    }
+  }
+  return { r, encerrar, cancelada: () => !!st.cancelada };
 }
 
 // ======================================================================
@@ -1637,22 +2003,28 @@ rota(/^#\/impacto/, async () => {
 
     <div class="cartao" style="margin-top:12px">
       <h2 style="margin-top:0">Montar cenário</h2>
-      <div class="linha" style="gap:12px;flex-wrap:wrap">
-        <label style="flex:1;min-width:140px">Crianças únicas
+      <div class="grade d3" style="margin-top:10px">
+        <label><span class="lbl" style="display:block">Crianças únicas</span>
           <input type="number" id="sroi-n" value="${sroi.n ?? inv.criancasUnicas}" min="1"></label>
-        <label style="flex:1;min-width:170px">Investimento anual (R$)
+        <label><span class="lbl" style="display:block">Investimento anual (R$)</span>
           <input type="number" id="sroi-inv" value="${sroi.inv ?? ''}" placeholder="ex.: 180000" min="1"></label>
-        <label style="flex:1;min-width:120px">Horizonte (anos)
+        <label><span class="lbl" style="display:block">Horizonte (anos)</span>
           <input type="number" id="sroi-anos" value="${sroi.anos ?? 5}" min="1" max="30"></label>
       </div>
-      <p style="margin:14px 0 6px;font-weight:600">Proxy monetária (dupla contagem é bloqueada pelo motor):</p>
-      <label style="display:block;margin:4px 0"><input type="radio" name="sroi-proxy" value="violencia" checked>
-        Violência dentro do custo da evasão — ${brl(45000)}/jovem (eixo da narrativa, decisão do Instituto)</label>
-      <label style="display:block;margin:4px 0"><input type="radio" name="sroi-proxy" value="envelope">
-        Envelope total da não conclusão — ${brl(372000)}/jovem (JÁ contém a violência e os demais componentes)</label>
-      <label style="display:block;margin:4px 0"><input type="radio" name="sroi-proxy" value="componentes">
-        Componentes somados (renda ${brl(159000)} + qualidade de vida ${brl(114000)} + violência ${brl(45000)})</label>
-      <button class="btn" data-acao="sroi-calcular" style="margin-top:12px">Calcular os 3 cenários</button>
+      <p style="margin:16px 0 2px;font-weight:600">Proxy monetária <span class="sub" style="font-weight:400">(dupla contagem é bloqueada pelo motor)</span></p>
+      <label class="opcao"><input type="radio" name="sroi-proxy" value="violencia" checked>
+        <span class="marca-radio" aria-hidden="true"></span>
+        <span><b>Violência dentro do custo da evasão</b> — ${brl(45000)}/jovem<br>
+          <span class="sub">eixo da narrativa, decisão do Instituto</span></span></label>
+      <label class="opcao"><input type="radio" name="sroi-proxy" value="envelope">
+        <span class="marca-radio" aria-hidden="true"></span>
+        <span><b>Envelope total da não conclusão</b> — ${brl(372000)}/jovem<br>
+          <span class="sub">JÁ contém a violência e os demais componentes</span></span></label>
+      <label class="opcao"><input type="radio" name="sroi-proxy" value="componentes">
+        <span class="marca-radio" aria-hidden="true"></span>
+        <span><b>Componentes somados</b><br>
+          <span class="sub">renda ${brl(159000)} + qualidade de vida ${brl(114000)} + violência ${brl(45000)}</span></span></label>
+      <button class="btn largo" data-acao="sroi-calcular" style="margin-top:12px">Calcular os 3 cenários</button>
     </div>
 
     ${r ? pintarSROI(r) : ''}
@@ -1678,7 +2050,7 @@ function pintarSROI(r) {
         ${r.cenarios.map(c => `
           <div class="cartao area-impressao cresce" style="min-width:180px;margin:0">
             <p class="kicker" style="margin:0">${esc(c.cenario)}</p>
-            <div style="font-size:28px;font-weight:700">R$ ${String(c.sroi.toFixed(2)).replace('.', ',')}</div>
+            <div style="font-size:28px;font-weight:600;letter-spacing:-.02em">R$ ${String(c.sroi.toFixed(2)).replace('.', ',')}</div>
             <p class="sub" style="margin:2px 0 8px">por R$ 1 investido</p>
             <p class="sub" style="margin:0">benefício presente: ${brl(c.beneficio_presente_total)}<br>
               investimento: ${brl(c.investimento_total)}</p>
@@ -1780,9 +2152,9 @@ rota(/^#\/copilot/, async () => {
 function pintarTroca(t, i) {
   if (t.carregando) return `
     <div class="cartao"><p class="sub" style="margin:0">✷ pensando… (o modelo roda local; pode levar alguns segundos)</p></div>`;
-  const cab = `<div class="cartao" style="background:var(--tinta,#2b2620);color:#f6f1e7">
+  const cab = `<div class="cartao" style="background:var(--ink);color:var(--bg);border-color:var(--ink)">
       <p style="margin:0">${esc(t.pergunta)}</p>
-      ${t.nomes_substituidos ? `<p class="sub" style="margin:6px 0 0;opacity:.8">${t.nomes_substituidos} nome(s) viraram pseudônimo antes do modelo</p>` : ''}
+      ${t.nomes_substituidos ? `<p style="margin:6px 0 0;opacity:.75;font-size:13.5px">${t.nomes_substituidos} nome(s) viraram pseudônimo antes do modelo</p>` : ''}
     </div>`;
   if (t.tipo === 'encaminhamento') return cab + `
     <div class="cartao" style="border-left:4px solid var(--red,#b3402a)">
@@ -1812,16 +2184,18 @@ function pintarTroca(t, i) {
         ? '<p class="sub" style="margin:0">Nenhum trecho do corpus sustentou esta resposta — leia como opinião do modelo, não como material documentado.</p>'
         : (r.fontes || []).map(f => `<span class="sintetico" title="${esc(f.secao)}">[fonte:${esc(f.id)}] ${esc(f.titulo)}</span> `).join(''))}
       ${t.decisao ? `<p class="sub" style="margin-top:12px"><b>${t.decisao === 'aceita' ? '✓ Você marcou: vai testar uma das alternativas' : '✕ Você rejeitou esta reflexão'}</b> — registro só desta tela; nada foi gravado.</p>` : ''}
-      <div class="linha" style="margin-top:14px;flex-wrap:wrap">
-        <button class="btn pequeno secundario" data-acao="copilot-aceitar" data-i="${i}"
-          title="Marca que a reflexão ajudou e você vai testar algo — a decisão pedagógica continua sua">Aceitar</button>
-        <button class="btn pequeno secundario" data-acao="copilot-rejeitar" data-i="${i}"
-          title="Marca que não ajudou — peça outra perspectiva ou siga seu caminho">Rejeitar</button>
-        <button class="btn pequeno secundario" data-acao="copilot-outra" data-i="${i}">Outra perspectiva</button>
-        <button class="btn pequeno secundario" data-acao="copilot-escalar"
-          title="Situação de violência, saúde ou risco: o caminho é humano, fora daqui">Escalar</button>
-        <button class="btn pequeno fantasma" data-acao="copilot-doar" data-i="${i}"
+      <div class="linha" style="margin-top:14px">
+        <button class="btn pequeno secundario cresce" data-acao="copilot-outra" data-i="${i}">Outra perspectiva</button>
+        <button class="btn pequeno fantasma cresce" data-acao="copilot-doar" data-i="${i}"
           title="Doa esta interação (anonimizada) para o futuro dataset de ajuste do modelo — ato seu, revogável">Doar interação</button>
+      </div>
+      <div class="linha" style="margin-top:8px">
+        <button class="btn pequeno secundario cresce" data-acao="copilot-aceitar" data-i="${i}"
+          title="Marca que a reflexão ajudou e você vai testar algo — a decisão pedagógica continua sua">✓ Aceitar</button>
+        <button class="btn pequeno secundario cresce" data-acao="copilot-rejeitar" data-i="${i}"
+          title="Marca que não ajudou — peça outra perspectiva ou siga seu caminho">✕ Rejeitar</button>
+        <button class="btn pequeno secundario cresce" data-acao="copilot-escalar"
+          title="Situação de violência, saúde ou risco: o caminho é humano, fora daqui">Escalar</button>
       </div>
       <p class="sub" style="margin-top:10px">${esc(t.aviso || '')}</p>
     </div>`;
@@ -2116,11 +2490,13 @@ document.addEventListener('click', comErro(async (ev) => {
   }
 
   if (a === 'fechar-festa') {
-    document.querySelector('.festa')?.remove();
+    pararFesta();
     location.hash = alvo.dataset.href;
     navegar();
     return;
   }
+
+  if (a === 'magia-pular') { pularMagia(); return; }
 
   // ---- alertas ----
   if (a === 'tratar-alerta') {
@@ -2257,7 +2633,18 @@ document.addEventListener('click', comErro(async (ev) => {
     }
     alvo.disabled = true;
     try {
-      const r = await post('/api/voz/extrair', { turma_id: ctx.folha.turma.id, transcricao: texto });
+      // A encenação (magia) embrulha o MESMO POST — começa junto com ele e só
+      // mostra o que ele devolveu. Reduced-motion: fluxo direto, sem overlay.
+      const promessa = post('/api/voz/extrair', { turma_id: ctx.folha.turma.id, transcricao: texto });
+      let r, encerrarMagia = null, magiaCancelada = false;
+      if (REDUZ.matches) {
+        r = await promessa;
+      } else {
+        const m = await magiaExtracao(texto, promessa, ctx.folha.catalogos);
+        r = m.r;
+        encerrarMagia = m.encerrar;
+        magiaCancelada = m.cancelada();
+      }
       // A transcricao sai de cena aqui: nao foi gravada e nao volta para a tela.
       v.transcricao = '';
       const el = document.getElementById('ditado'); if (el) el.value = '';
@@ -2274,8 +2661,17 @@ document.addEventListener('click', comErro(async (ev) => {
         pediram_ajuda: r.extracao.pediram_ajuda,
         conteudo_excluido: r.extracao.conteudo_excluido,
       };
+      // Se o usuário navegou no MEIO da magia (Back, link), não sequestrar: o
+      // resultado fica em ctx.folha (a tela #/confirmar mostra quando ela
+      // voltar por vontade própria) e nada é forçado.
+      if (magiaCancelada) return;
+      // Navega ANTES do modal de encaminhamento: o foco cai no modal por cima
+      // da tela pronta (e o véu da magia se desfaz sobre ela). O await importa:
+      // o render limpa .veu esquecidos — o modal só pode abrir DEPOIS dele.
+      location.hash = '#/confirmar';
+      await navegar();
+      encerrarMagia?.();
       if (r.excluido) modalEncaminhamento(r.trechos);
-      location.hash = '#/confirmar'; navegar();
     } catch (e) {
       if (e.rede) {
         toast('Sem internet. O registro manual continua funcionando.', 'ruim');
@@ -2488,7 +2884,8 @@ document.addEventListener('keydown', (ev) => {
   if (ev.key !== 'Escape') return;
   const veu = document.querySelector('.veu');
   if (veu) { veu.remove(); return; }
-  document.querySelector('.festa')?.remove();
+  if (document.querySelector('.magia')) { pularMagia(); return; }
+  pararFesta();
 });
 
 // ======================================================================

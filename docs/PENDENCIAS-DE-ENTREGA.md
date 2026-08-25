@@ -151,3 +151,13 @@ para MVP funcional não agregaria nada à entrega final — seria retrabalho de 
 A divergência fica declarada aqui e na defesa do desvio no-code (GAP-10, no `README.md`).
 
 - [ ] Apresentar esta declaração ao professor/mentor e registrar o aceite. **Pendente — humano.**
+
+---
+
+## Demo para o grupo no celular (25/08/2026)
+
+Qualquer membro com Mac roda `ai/scripts/demo-celular.sh` (requisitos:
+`brew install cloudflared qrencode`; modelos via `ai/scripts/setup-model.sh`) e aponta a câmera
+do celular para o QR — iPhone e Android abrem o Percurso instalável com voz funcionando. A URL é
+pública, efêmera e morre no Ctrl+C (decisão 25 — demonstração, nunca operação). Para instalar em
+outro computador (inclusive o do Instituto): `docs/MANUAL-DE-INSTALACAO.md`.

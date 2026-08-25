@@ -378,6 +378,23 @@ futuro (mkcert/túnel) registrado e não adotado.
 
 ---
 
+### 25. Túnel HTTPS temporário é ferramenta de DEMONSTRAÇÃO, não de operação
+
+**Origem:** demanda de mostrar o Percurso no celular (como o celular de uma professora) e
+compartilhar com o grupo — voz e instalação de PWA exigem HTTPS, que a rede local não dá.
+
+`ai/scripts/demo-celular.sh` sobe modelo + app + `cloudflared` *quick tunnel* e imprime QR/URL
+`trycloudflare.com`. Três decisões deliberadas: (a) o **bind continua `127.0.0.1`** — só o túnel
+alcança o processo, nada abre na rede local; (b) a URL é **efêmera** e morre com o script
+(Ctrl+C); (c) o script imprime o aviso de que a URL é pública e sem senha — tolerável apenas com
+dados 100% sintéticos (mesma lógica do deploy-vitrine, decisão 12). Operação real fora da rede
+continua exigindo o caminho do Horizonte 2 (TLS gerenciado + autenticação). A v3 mobile também
+trouxe o início automático no login (`ai/scripts/instalar-inicio-automatico.sh`, LaunchAgent com
+KeepAlive) — autonomia de operação para uma organização sem TI — e o
+`docs/MANUAL-DE-INSTALACAO.md` para instalar em qualquer máquina.
+
+---
+
 ## Dívidas técnicas conhecidas
 
 | Dívida | Impacto | Quando pagar |
