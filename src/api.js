@@ -499,7 +499,7 @@ export const rotas = {
           ...ordem.filter(id => !porId.get(id)?.nucleo),
         ],
       });
-    if (r.origem !== 'modelo') return { refinado: false, motivo: 'falhou' };
+    if (r.origem !== 'modelo') return { refinado: false, motivo: PO.estatisticas().ultimoErro ?? 'falhou' };
     return {
       refinado: true, origem: 'modelo', hash: painel.hash,
       ordem: r.ordem,

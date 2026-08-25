@@ -1184,7 +1184,10 @@ test('passo/orquestrador: o rótulo do modelo não vira ordem nem número', () =
   for (const t of ['Decida a pauta da semana', 'Conte seu encontro', 'Feche o ciclo',
     '4 encontros sem folha', 'Quase todas as crianças', 'Criança A está sem registro'])
     assert.equal(PO.aceitarRotulo(t, base), base.rotulo, `deveria barrar: ${t}`);
-  assert.equal(PO.aceitarRotulo('A pauta espera você', base), 'A pauta espera você');
+  // Compressão honesta passa; 'A pauta espera você' NÃO, porque acrescenta
+  // um conceito que não estava no original — a guarda semântica é estrita.
+  assert.equal(PO.aceitarRotulo('A pauta espera decisão', base), 'A pauta espera decisão');
+  assert.equal(PO.aceitarRotulo('A pauta espera você', base), base.rotulo);
 });
 
 test('passo/orquestrador: entrada imune nunca é reescrita', () => {
@@ -1244,4 +1247,16 @@ test('passo/preferências: prefere_tipo reserva vaga e é visível no primeiro d
 test('passo/preferências: valor fora do vocabulário de tipo vira "sem preferência"', () => {
   const p = PF.salvarPreferencia(2, { prefere_tipo: 'inventado' });
   assert.equal(p.prefere_tipo, null);
+});
+
+test('passo/orquestrador: o modelo só COMPRIME rótulo — nunca acrescenta conceito', () => {
+  const base = { rotulo: 'Há alerta de ausência na sua turma', imune: false };
+  // Inversões de sentido medidas ao vivo, que passavam por todos os outros portões
+  assert.equal(PO.aceitarRotulo('Algo está faltando na turma', base), base.rotulo);
+  assert.equal(PO.aceitarRotulo('Ausência sem justificativa', base), base.rotulo);
+  const sonho = { rotulo: 'Um sonho da turma segue sem atividade', imune: false };
+  assert.equal(PO.aceitarRotulo('O sonho da turma ainda não foi contado', sonho), sonho.rotulo);
+  // Compressão honesta continua passando — é para isso que o modelo serve aqui
+  assert.equal(PO.aceitarRotulo('Sonho da turma sem atividade', sonho), 'Sonho da turma sem atividade');
+  assert.equal(PO.aceitarRotulo('Alerta de ausência', base), 'Alerta de ausência');
 });

@@ -69,3 +69,55 @@ morto: ela tem que MUDAR o painel, não só ser gravada.
 
 Pendência que permanece: ligar `AI_ENABLED` em operação real continua atrás do gate da PoC
 (decisão 19).
+
+
+---
+
+## Adendo — "então não estamos usando o Qwen?" (25/08/2026, à noite)
+
+A pergunta expôs um defeito que nenhuma das três revisões pegou, porque ele só aparece com o
+modelo REAL no ar e com os contadores olhados de perto: **o refinamento do painel falhava em
+100% das chamadas, em silêncio.**
+
+`GET /api/passo/qualidade` mostrava `falhou: 2` em `chamadas: 2`. Causa: `TIMEOUT_MS = 2500`,
+vindo de uma medição parcial minha. A latência REAL da chamada completa (prompt de sistema +
+candidatos + gramática do schema) é **4,6–5,7 s** neste 4B. O modelo era chamado, respondia
+corretamente, e o trabalho ia para o lixo com `refinado: false`. É a pior forma de usar um
+modelo: pagar o custo e descartar o resultado.
+
+**Corrigido:** teto de 8 s (é trabalho de fundo, com prioridade `'fundo'`, sobre um painel já
+pintado — ninguém espera). E o motivo da falha deixou de ser a string genérica `'falhou'`:
+`/api/passo/refinar` devolve a causa real.
+
+### O segundo achado, que só existiu porque o primeiro foi corrigido
+
+Com o refinamento finalmente funcionando, medi 10 reescritas de rótulo: **3 melhoravam, 3 eram
+neutras e 4 PIORAVAM** — e as que pioravam invertiam sentido, passando por todos os nove
+portões:
+
+| catálogo | reescrita do modelo | problema |
+|---|---|---|
+| "Há alerta de ausência na sua turma" | "Algo está faltando na turma" | vago; soa como falta DA turma |
+| "Um sonho da turma segue sem atividade" | "O sonho da turma ainda não foi contado" | invertido: o sonho FOI contado; faltou atividade |
+| "O áudio fica gravado em algum lugar?" | "O áudio é gravado? Tô com dúvida!" | põe dúvida na boca da pessoa, na pergunta mais sensível do produto |
+
+Nenhum portão pegava, porque **nenhum deles olhava para o rótulo original**. A correção não é
+detectar inversão depois que ela acontece — é torná-la impossível: **o modelo pode SUBTRAIR e
+REORDENAR palavras, nunca ACRESCENTAR conceito novo** (`soComprime`). Ele vira um COMPRESSOR de
+rótulo, que é exatamente o que serve numa tela de 375 px.
+
+Medido depois da correção, em 5 telas: **10 reescritas aceitas, 2 barradas por sentido, 1 por
+outros portões, 0 falhas** — e todas as aceitas são compressões honestas ("Há alerta de ausência
+na sua turma" → "Alerta de ausência"; "O áudio fica gravado em algum lugar?" → "O áudio fica
+gravado?").
+
+### Onde o Qwen está, medido
+
+| trabalho | usa o modelo? | evidência |
+|---|---|---|
+| Conversa do Passo | **sim** | `origem: modelo`, 3,5 s, resposta composta ("Vamos começar pela Chamada — é o mais rápido…") |
+| Ordenação e rótulos do painel | **sim** | 10 aceitos em 5 telas, `ordem_alterada` instrumentado |
+| Copilot (Refletir), 7 blocos | sim | pré-existente |
+| Explicação do SROI | sim | pré-existente |
+| Extração da voz (Modo A) | opcional | `AI_EXTRATOR=1` |
+| **Números, escores, qual sugestão dispara, ação** | **não, por construção** | o `texto` com contagens nunca vai ao prompt; o `rotulo` é livre de dígito |

@@ -23,7 +23,18 @@ import { comVaga } from '../fila-modelo.js';
 // caminho do modelo nunca produziria um rótulo. 320 é 2× a saída medida e a
 // latência não muda (1,11 s contra 1,09 s).
 const MAX_TOKENS = 320;
-const TIMEOUT_MS = 2500;
+// MEDIDO, não estimado: a chamada completa (prompt de sistema + candidatos +
+// gramática do schema) leva 4,6-5,7 s no 4B desta máquina. O teto anterior de
+// 2500 ms vinha de uma medição parcial e matava 100% dos refinamentos em
+// SILÊNCIO — o modelo era chamado, respondia, e o trabalho ia para o lixo com
+// `refinado: false`. É a pior forma de usar um modelo: pagar o custo e jogar
+// fora o resultado. Só apareceu porque alguém perguntou "então não estamos
+// usando o Qwen?" e os contadores mostraram `falhou: 2` em `chamadas: 2`.
+//
+// 8 s é folgado de propósito: isto é trabalho de FUNDO com prioridade 'fundo'
+// (desiste na hora se houver disputa), o painel determinístico já está pintado,
+// e ninguém está esperando.
+const TIMEOUT_MS = Number(process.env.PASSO_TIMEOUT_MS) || 8000;
 
 export const PASSO_PAINEL = !['0', 'false'].includes(
   String(process.env.PASSO_PAINEL ?? '').toLowerCase());
@@ -32,7 +43,7 @@ export const PASSO_PAINEL = !['0', 'false'].includes(
 // orquestração faz diferença — nem para descobrir que ela parou de fazer.
 const conta = {
   chamadas: 0, ordem_alterada: 0, rotulo_aceito: 0,
-  veto_digito: 0, veto_numeral: 0, veto_imperativo: 0, veto_cobranca: 0, veto_nome: 0, veto_enum: 0,
+  veto_digito: 0, veto_numeral: 0, veto_imperativo: 0, veto_cobranca: 0, veto_nome: 0, veto_sentido: 0, veto_enum: 0,
   falhou: 0, ocupado: 0, desligado: 0,
 };
 export const estatisticas = () => ({ ...conta });
@@ -47,6 +58,25 @@ const NUMERAL = /(^|\s)(um|uma|dois|duas|tr[êe]s|quatro|cinco|seis|sete|oito|no
 // formato que o ranking existe para não produzir. Pedir no prompt não é
 // portão; isto é.
 const IMPERATIVO = /^(decida|decide|conte|conta|feche|fecha|registre|registra|fa[çc]a|veja|vê|abra|abre|confira|confere|resolva|resolve|publique|publica|revise|revisa|marque|marca|salve|salva|complete|completa|termine|termina|ligue|liga|avise|avisa|corrija|corrige|preencha|preenche|atualize|atualiza|verifique|verifica|olhe|olha|clique|clica|toque|toca|envie|envia|leia|lê)\b/i;
+
+// GUARDA SEMÂNTICA — o portão que faltava, e o único que olha para o rótulo
+// ORIGINAL. Medido: em 10 reescritas, 4 pioravam o sentido e passavam por todos
+// os outros portões. "Há alerta de ausência na sua turma" virava "Algo está
+// faltando na turma" (vago, e soa como falta DA turma); "Um sonho da turma
+// segue sem atividade" virava "O sonho da turma ainda não foi contado" —
+// sentido invertido, porque o sonho FOI contado e o que faltou foi atividade.
+//
+// A regra: o modelo pode SUBTRAIR e REORDENAR palavras, nunca ACRESCENTAR
+// conceito novo. Isso o torna um COMPRESSOR de rótulo — que é exatamente o que
+// serve numa tela de 375 px — e torna impossível inverter o sentido, em vez de
+// tentar detectar inversão depois que ela acontece.
+const semAcentoTxt = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const conceitos = (t) => new Set(semAcentoTxt(t).match(/[a-z]{4,}/g) ?? []);
+function soComprime(novo, original) {
+  const orig = conceitos(original);
+  for (const p of conceitos(novo)) if (!orig.has(p)) return false;
+  return true;
+}
 
 /** Teto de tamanho SEMPRE pós-geração: `maxLength` no schema degrada a
  *  gramática do llama.cpp de ~143 para 1,5 tok/s. */
@@ -74,6 +104,7 @@ export function aceitarRotulo(novo, base, { roster = [], anonimizar = null } = {
   if (/[Cc]rian[çc]as?\s+[A-Z]{1,2}\b/.test(t)) { conta.veto_nome++; return base.rotulo; }
   if (anonimizar && anonimizar(t, roster).substituicoes > 0) { conta.veto_nome++; return base.rotulo; }
   if ((base.nomesProibidos ?? []).some(n => t.includes(n))) { conta.veto_nome++; return base.rotulo; }
+  if (!soComprime(t, base.rotulo)) { conta.veto_sentido++; return base.rotulo; }
   conta.rotulo_aceito++;
   return t;
 }
@@ -146,7 +177,7 @@ export async function refinarPainel(candidatos, { recompor, roster = [], anonimi
     // modelo. A vaga 1 nunca é dele em dia com sinal núcleo aceso.
     return { ordem: recompor ? recompor(ordem) : ordem, rotulos, origem: 'modelo' };
   } catch (e) {
-    if (e?.causa === 'ocupado') conta.ocupado++; else conta.falhou++;
+    if (e?.causa === 'ocupado') conta.ocupado++; else { conta.falhou++; conta.ultimoErro = `${e?.causa ?? 'sem-causa'}: ${e?.message}`; }
     return { ordem: determinada, rotulos: {}, origem: 'guia' };
   }
 }
@@ -161,6 +192,7 @@ Você recebe uma lista de sugestões que o sistema JÁ decidiu mostrar. Seu trab
 REGRAS INEGOCIÁVEIS:
 - NUNCA escreva número, algarismo ou quantidade por extenso em rótulo nenhum.
 - NUNCA invente uma sugestão que não está na lista, e nunca omita uma que está.
+- Você só pode ENCURTAR: use apenas palavras que já estão no rótulo original. Não acrescente conceito novo.
 - NUNCA escreva no imperativo ("decida", "conte", "feche"): o rótulo é uma OFERTA, não uma ordem.
 - NUNCA escreva nada que soe como cobrança ("você não fez", "está atrasada").
 - Rótulo tem no máximo 44 caracteres, em português do Brasil, sentence case.
