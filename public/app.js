@@ -172,7 +172,16 @@ async function api(caminho, opcoes = {}) {
   }
   return corpo;
 }
-const post = (c, dados, opts = {}) => api(c, { ...opts, method: 'POST', body: JSON.stringify(dados || {}) });
+// Todo POST bem-sucedido pode ter apagado o motivo do ponto no FAB (salvou a
+// chamada, fechou a folha). O cliente SABE quando gravou — sem isto, o ponto
+// ficaria aceso até a próxima navegação, justamente no caminho mais comum
+// (#/chamada → salvar → #/hoje). Invalidar aqui é uma linha; adivinhar no
+// servidor seria um cache com defasagem.
+const post = async (c, dados, opts = {}) => {
+  const r = await api(c, { ...opts, method: 'POST', body: JSON.stringify(dados || {}) });
+  if (!c.startsWith('/api/passo/')) passo.badgeRota = null;
+  return r;
+};
 
 // --------------------------------------------------------------------------
 // Fila offline. A regra mora em `fila.js`, com armazenamento e envio injetados,
@@ -2399,9 +2408,12 @@ function limparEstadoLocal() {
   sroi.n = sroi.inv = sroi.anos = sroi.proxy_ids = undefined;
   passo.sessao = null; passo.trocas = []; passo.rascunho = '';
   // A voz do Passo é opt-in POR PESSOA, não do aparelho: quem entra depois
-  // não herda o som ligado por quem saiu.
+  // não herda o som ligado por quem saiu. O painel também não: ele é o estado
+  // do dia de UMA pessoa.
   passo.som = false;
+  passo.painel = null; passo.resumo = null; passo.badge = false; passo.badgeRota = null;
   localStorage.removeItem('percurso_passo_som');
+  document.querySelector('.passo-ponto')?.remove();
 }
 
 document.addEventListener('click', comErro(async (ev) => {
@@ -2569,6 +2581,7 @@ const passo = {
   som: localStorage.getItem('percurso_passo_som') === '1',
   ocupado: false, ctl: null, vozTts: null, ttsDestravado: false, falaGen: 0,
   bolhaNestaAbertura: false,   // balão de saudação: uma vez por abertura do app
+  painel: null, badge: false, badgeRota: null,
 };
 
 function vozDoPasso() {
@@ -2624,7 +2637,9 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) cance
 function pintarPassoFab(visivel) {
   let fab = document.getElementById('passo-fab');
   if (!visivel) { fab?.remove(); document.getElementById('passo-bolha')?.remove(); return; }
-  if (fab) return;
+  // O FAB atravessa as rotas, mas o PONTO é por tela: sem esta linha antes do
+  // early return, o badge era buscado uma única vez na vida da aba.
+  if (fab) { buscarBadge(); return; }
   fab = document.createElement('button');
   fab.id = 'passo-fab';
   fab.className = 'passo-fab';
@@ -2652,6 +2667,44 @@ function pintarPassoFab(visivel) {
       : `${saudacao}! Eu sou o Passo — qualquer dúvida no caminho, toque aqui.`;
     document.body.appendChild(b);
     setTimeout(() => b.remove(), 12000);
+  }
+  buscarBadge();
+}
+
+// O PONTO no FAB — um ponto, nunca um número: contador ao lado do ❋ lê como
+// caixa de entrada em dívida; ponto lê como aviso. Acende só quando há sinal
+// que o instituto precisa que a pessoa veja, e APAGA quando o sinal esfria (a
+// chamada foi feita), não quando a pessoa clica.
+async function buscarBadge() {
+  const rota = location.hash || '#/hoje';
+  if (!sessao || passo.badgeRota === rota) return;
+  passo.badgeRota = rota;
+  try {
+    const p = await api(`/api/passo/painel?tela=${encodeURIComponent(rota)}`, { timeoutMs: 8000 });
+    if (passo.badgeRota !== rota) return;          // navegou no meio: descarta
+    passo.badge = !!p.badge;
+    passo.painel = p;
+    pintarPonto();
+    // Quando há algo relevante, o balão de saudação carrega a sugestão do dia
+    // em vez da frase genérica — é a diferença entre "oi" e "olha isto aqui".
+    const b = document.getElementById('passo-bolha');
+    if (b && p.badge && p.sugestoes?.[0]) b.textContent = `${p.sugestoes[0].rotulo} — toque para ver.`;
+  } catch { /* badge é enfeite: falha de rede não pode virar erro na tela */ }
+}
+
+function pintarPonto() {
+  const fab = document.getElementById('passo-fab');
+  if (!fab) return;
+  const tem = fab.querySelector('.passo-ponto');
+  if (passo.badge && !tem) {
+    const d = document.createElement('i');
+    d.className = 'passo-ponto';
+    d.setAttribute('aria-hidden', 'true');
+    fab.appendChild(d);
+    fab.setAttribute('aria-label', 'Abrir o Passo — há algo que vale a pena ver');
+  } else if (!passo.badge && tem) {
+    tem.remove();
+    fab.setAttribute('aria-label', 'Abrir o Passo, guia do Percurso');
   }
 }
 
@@ -2700,7 +2753,7 @@ async function abrirPasso() {
   prenderFoco(veu);
   veu.addEventListener('click', (e) => { if (e.target === veu) fecharPasso(); });
   if (!passo.trocas.length) {
-    passo.trocas.push({ quem: 'passo', resposta:
+    passo.trocas.push({ quem: 'passo', semente: true, resposta:
       'Oi! Eu sou o Passo, seu parceiro aqui no Percurso. Eu conheço as telas e as tarefas do app, e sei contar quantas coisas estão em aberto — nunca quem. Não abro a ficha de ninguém. Pergunte, por exemplo: "como faço a chamada?"' });
   }
   pintarPassoFio();
@@ -2714,21 +2767,38 @@ async function abrirPasso() {
   });
   campo.focus();
   try {
-    const r = await api(`/api/assistente/chips?tela=${encodeURIComponent(location.hash || '#/hoje')}`);
-    const el = document.getElementById('passo-chips');
-    if (el) el.innerHTML = (r.chips || []).map(c =>
-      `<button type="button" class="passo-chip" data-acao="passo-chip">${esc(c)}</button>`).join('');
-    if (!r.com_modelo) {
-      const s = document.getElementById('passo-sub');
-      if (s) s.textContent = 'seu parceiro no Percurso · respostas do guia';
-    }
-  } catch { /* sem chips não é erro: o campo continua lá */ }
+    const p = await api(`/api/passo/painel?tela=${encodeURIComponent(location.hash || '#/hoje')}`);
+    passo.painel = p;
+    passo.resumo = p.resumo || null;
+    pintarPassoSugestoes();
+    // Com resumo do dia, a saudação-semente sai: as duas abrem o fio e dizer a
+    // mesma coisa duas vezes é o defeito que o painel existe para não ter.
+    if (p.resumo && passo.trocas.length === 1 && passo.trocas[0].semente) passo.trocas = [];
+    pintarPassoFio();
+  } catch { /* sem painel não é erro: o campo continua lá */ }
+}
+
+/** Os chips deixam de ser lista fixa e passam a ser o painel do estado real. */
+function pintarPassoSugestoes() {
+  const el = document.getElementById('passo-chips');
+  const p = passo.painel;
+  if (!el || !p) return;
+  el.innerHTML = (p.sugestoes || []).map(s => `
+    <span class="passo-sug" data-id="${esc(s.id)}">
+      <button type="button" class="passo-chip" data-acao="passo-sug" data-tipo="${esc(s.tipo)}"
+        >${esc(s.rotulo)}</button>${s.silenciavel && !s.id.startsWith('guia:')
+      ? `<button type="button" class="passo-adiar" data-acao="passo-adiar"
+           aria-label="Hoje não: ${esc(s.rotulo)}">×</button>` : ''}
+    </span>`).join('');
 }
 
 function pintarPassoFio() {
   const fio = document.getElementById('passo-fio');
   if (!fio) return;
-  fio.innerHTML = passo.trocas.map(t => {
+  // O resumo do dia abre o fio e sobrevive à repintura — ele é o estado da
+  // pessoa hoje, não uma mensagem da conversa.
+  fio.innerHTML = (passo.resumo ? `<p class="passo-resumo">${esc(passo.resumo)}</p>` : '')
+    + passo.trocas.map(t => {
     if (t.quem === 'voce') return `<div class="passo-msg voce">${esc(t.texto)}</div>`;
     if (t.pensando) return `<div class="passo-msg passo">✷ pensando…
         <button type="button" class="btn pequeno fantasma" data-acao="passo-cancelar" style="margin-left:8px">Cancelar</button></div>`;
@@ -2736,7 +2806,11 @@ function pintarPassoFio() {
     // dentro do Hoje seria botão morto.
     const oferta = t.acao && !(location.hash || '#/hoje').startsWith(t.acao.hash);
     return `<div class="passo-msg passo">${esc(t.resposta)}${(t.trechos || []).map(x =>
-        `<div class="trecho"><b>${esc(x.categoria)}</b>${esc(x.trecho)}</div>`).join('')}${oferta
+        `<div class="trecho"><b>${esc(x.categoria)}</b>${esc(x.trecho)}</div>`).join('')}${
+      // "apareceu porque …": a sugestão diz de onde veio. Sem isso ela é
+      // palpite; com isso é leitura de estado, e a pessoa pode discordar.
+      t.porque ? `<p class="passo-porque">apareceu porque ${esc(t.porque)}</p>` : ''}${
+      t.fonte ? `<p class="passo-porque">número vindo de ${esc(t.fonte)} — nenhum modelo participou</p>` : ''}${oferta
       ? `<div style="margin-top:10px"><button type="button" class="btn secundario pequeno" data-acao="passo-ir"
            data-href="${esc(t.acao.hash)}">Ir para ${esc(t.acao.rotulo)}</button></div>` : ''}</div>`;
   }).join('');
@@ -2841,6 +2915,45 @@ document.addEventListener('click', comErro(async (ev) => {
   if (a === 'passo-chip') {
     destravarTts();
     await passoEnviar(alvo.textContent);
+    return;
+  }
+  // Toque numa sugestão do painel. pergunta/dúvida viram conversa (o
+  // comportamento de sempre); ação/aprimoramento abrem um CARD no fio com o
+  // texto completo, o porquê e a oferta — dois toques até navegar, porque a
+  // oferta continua sendo oferta.
+  if (a === 'passo-sug') {
+    destravarTts();
+    const id = alvo.closest('.passo-sug')?.dataset.id;
+    const s = (passo.painel?.sugestoes || []).find(x => x.id === id);
+    if (!s) { await passoEnviar(alvo.textContent); return; }
+    if (s.resposta) {
+      // Pergunta agregada: o número já veio do banco com o painel. Não há ida
+      // ao servidor nem ao modelo — e nunca é falada.
+      passo.trocas.push({ quem: 'voce', texto: s.rotulo });
+      passo.trocas.push({ quem: 'passo', resposta: s.resposta.texto, acao: s.acao, fonte: s.resposta.fonte });
+      pintarPassoFio();
+      return;
+    }
+    if (s.tipo === 'pergunta' || s.tipo === 'duvida') {
+      if (s.texto && s.texto !== s.rotulo) {
+        passo.trocas.push({ quem: 'voce', texto: s.rotulo });
+        passo.trocas.push({ quem: 'passo', resposta: s.texto, acao: s.acao, porque: s.porque });
+        pintarPassoFio();
+        return;
+      }
+      await passoEnviar(s.rotulo);
+      return;
+    }
+    passo.trocas.push({ quem: 'passo', resposta: s.texto, acao: s.acao, porque: s.porque, sugestao: s.id });
+    pintarPassoFio();
+    return;
+  }
+  if (a === 'passo-adiar') {
+    const span = alvo.closest('.passo-sug');
+    const id = span?.dataset.id;
+    span?.remove();
+    if (passo.painel) passo.painel.sugestoes = passo.painel.sugestoes.filter(x => x.id !== id);
+    toast('Tudo bem — hoje eu não trago mais essa.');
     return;
   }
   if (a === 'passo-cancelar') { passo.ctl?.abort(); return; }

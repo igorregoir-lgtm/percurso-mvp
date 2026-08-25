@@ -621,3 +621,42 @@ body{padding-bottom:calc(124px + env(safe-area-inset-bottom))}
 /* Só para leitores de tela — a região viva do Passo anuncia a última fala. */
 .oculto-acessivel{position:absolute; width:1px; height:1px; overflow:hidden;
   clip-path:inset(50%); white-space:nowrap}
+
+/* ---------- Passo proativo: sugestões tipadas, ponto e resumo ---------- */
+/* Um PONTO, nunca um número: contador ao lado do ❋ lê como caixa de entrada em
+   dívida; ponto lê como aviso — e some quando o motivo esfria, não no clique. */
+.passo-ponto{
+  position:absolute; top:7px; right:7px; width:9px; height:9px; border-radius:50%;
+  background:var(--atencao); box-shadow:0 0 0 2px var(--ink);
+}
+.passo-resumo{
+  margin:0 2px 4px; padding:9px 12px; font-size:14.5px; line-height:1.5;
+  color:var(--ink); background:var(--card-2); border:1px solid var(--line);
+  border-radius:var(--r-s);
+}
+.passo-sug{display:inline-flex; align-items:stretch; max-width:100%}
+/* O chip carrega o tipo num glifo — a pessoa aprende a diferença entre "vá
+   fazer" e "isto costuma confundir" sem ler legenda nenhuma. */
+.passo-chip[data-tipo]::before{
+  margin-right:6px; opacity:.55; font-weight:600;
+}
+.passo-chip[data-tipo="acao"]::before{content:"▸"}
+.passo-chip[data-tipo="pergunta"]::before{content:"?"}
+.passo-chip[data-tipo="aprimoramento"]::before{content:"✦"}
+.passo-chip[data-tipo="duvida"]::before{content:"⌾"}
+.passo-sug .passo-chip{
+  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.passo-sug:has(.passo-adiar) .passo-chip{
+  border-top-right-radius:0; border-bottom-right-radius:0; border-right:none;
+}
+.passo-adiar{
+  min-width:30px; padding:0 9px; font-size:15px; line-height:1; cursor:pointer;
+  border:1px solid var(--line); border-left:1px solid var(--line);
+  border-radius:0 999px 999px 0; background:var(--card-2); color:var(--muted);
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+}
+.passo-porque{
+  margin:8px 0 0; font-size:12.5px; line-height:1.45; color:var(--muted);
+}
+@media print{ .passo-ponto{display:none !important} }
