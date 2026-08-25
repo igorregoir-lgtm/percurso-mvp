@@ -52,9 +52,20 @@ cobrança não pega imperativo; o portão agregado **sequestrava a conversa de a
 revisão, e três deles existem porque o teste anterior passava de forma vácua: verificar que o
 catálogo passa no lint não é o mesmo que verificar que o lint **morde**.
 
-## Pendências declaradas
+## Pendências — fechadas em 25/08/2026
 
-- `prefere_tipo` funciona no servidor e é a alavanca de personalização mais visível, mas ainda
-  não tem controle na interface — a pessoa só a alcança pela API.
-- `resumo_do_dia` é aceito e gravado, mas o cliente ainda não o lê.
-- Ligar `AI_ENABLED` em operação real continua atrás do gate da PoC (decisão 19).
+As duas pendências desta revisão foram implementadas no mesmo dia:
+
+- **`prefere_tipo` ganhou controle na tela.** A seção "O que eu lembro de você" virou leitura
+  **e** controle: quatro chips de tipo mais "sem preferência". É a alavanca que a pessoa sente
+  no primeiro dia, sem telemetria nenhuma — verificado ao vivo: tocar "Dúvidas da tela" muda o
+  painel de `acao · acao · aprimoramento` para `duvida · acao · acao`.
+- **`resumo_do_dia` passou a ser honrado** em `painelDoPasso`, com UMA exceção declarada: quem
+  está em lapso recebe a linha de retomada mesmo com o resumo desligado. Silêncio para quem
+  sumiu é o oposto do desenho anti-abandono.
+
+Três testes novos (106 → 109), incluindo o que impede a preferência declarada de virar botão
+morto: ela tem que MUDAR o painel, não só ser gravada.
+
+Pendência que permanece: ligar `AI_ENABLED` em operação real continua atrás do gate da PoC
+(decisão 19).

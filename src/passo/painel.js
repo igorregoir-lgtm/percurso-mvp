@@ -124,7 +124,11 @@ function montar(u, tela, { pesos, prefs, silenciadas, ref }) {
   // depois de um tempo fora: receber quem sumiu com um aviso é o oposto do
   // desenho anti-abandono.
   const badge = !env.em_lapso && escolhidas.some(c => c.nucleo);
-  const resumo = resumoDe(env, escolhidas, ordenados);
+  // `resumo_do_dia` é preferência da pessoa e é HONRADA aqui: quem desliga não
+  // recebe a frase de abertura. A única exceção é a retomada — quem volta
+  // depois de um tempo fora é recebido, não recebido em silêncio.
+  const querResumo = prefs.resumo_do_dia !== 0 && prefs.resumo_do_dia !== false;
+  const resumo = (querResumo || env.em_lapso) ? resumoDe(env, escolhidas, ordenados) : null;
 
   // Telas em que o estado não tem nada de novo a dizer (o `#/hoje` já pinta
   // tudo) caem nos chips do GUIA em vez de mostrar gaveta vazia.

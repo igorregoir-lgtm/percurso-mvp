@@ -1213,3 +1213,35 @@ test('passo/painel: painelDoPasso é TOTAL — nunca lança, seja qual for a ent
     for (const tela of ['#/chamada', '', '#/inexistente', '#/crianca/7'])
       assert.doesNotThrow(() => PP.painelDoPasso(u, tela), `${u.papel} ${tela}`);
 });
+
+test('passo/preferências: resumo_do_dia é HONRADO — e a retomada é a exceção declarada', () => {
+  PF.salvarPreferencia(2, { resumo_do_dia: true });
+  assert.ok(PP.painelDoPasso(RITA, '#/painel').resumo, 'padrão abre com resumo');
+  PF.salvarPreferencia(2, { resumo_do_dia: false });
+  assert.equal(PP.painelDoPasso(RITA, '#/painel').resumo, null, 'quem desliga não recebe a frase');
+  // Quem volta depois de um tempo fora é recebido de qualquer jeito: silêncio
+  // para quem sumiu é o oposto do desenho anti-abandono.
+  PF.salvarPreferencia(1, { resumo_do_dia: false });
+  const m = PP.painelDoPasso(MARIA, '#/hoje');
+  if (PS.sinaisDe(MARIA, '#/hoje').em_lapso) assert.ok(m.resumo, 'em lapso, a retomada vence o desligamento');
+  PF.salvarPreferencia(2, { resumo_do_dia: true });
+  PF.salvarPreferencia(1, { resumo_do_dia: true });
+});
+
+test('passo/preferências: prefere_tipo reserva vaga e é visível no primeiro dia', () => {
+  const semPref = PP.painelDoPasso(RITA, '#/painel').sugestoes.map(s => s.tipo);
+  for (const tipo of ['duvida', 'aprimoramento']) {
+    PF.salvarPreferencia(2, { prefere_tipo: tipo });
+    const com = PP.painelDoPasso(RITA, '#/painel').sugestoes.map(s => s.tipo);
+    assert.equal(com[0], tipo, `${tipo} declarado tem que abrir o painel`);
+    assert.notDeepEqual(com, semPref, 'a preferência declarada tem que mudar algo — senão é botão morto');
+  }
+  PF.salvarPreferencia(2, { prefere_tipo: null });
+  assert.deepEqual(PP.painelDoPasso(RITA, '#/painel').sugestoes.map(s => s.tipo), semPref,
+    'sem preferência, volta a ordenar por urgência');
+});
+
+test('passo/preferências: valor fora do vocabulário de tipo vira "sem preferência"', () => {
+  const p = PF.salvarPreferencia(2, { prefere_tipo: 'inventado' });
+  assert.equal(p.prefere_tipo, null);
+});

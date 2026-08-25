@@ -2871,6 +2871,67 @@ function pintarConvite() {
     </div>`);
 }
 
+const PASSO_TIPOS = [
+  ['acao', 'Atalhos de ação'],
+  ['duvida', 'Dúvidas da tela'],
+  ['aprimoramento', 'Pontos de melhoria'],
+  ['pergunta', 'Perguntas'],
+];
+
+/** "O que eu lembro de você" — leitura E controle, no mesmo lugar. */
+async function abrirMemoria({ recarregar = false } = {}) {
+  const m = (recarregar ? null : passo.memoria) || await api('/api/passo/memoria').catch(() => null);
+  if (!m) return;
+  passo.memoria = m;
+  document.getElementById('passo-memoria')?.remove();
+  const tocadas = m.linhas.filter(l => l.familia === 'sugestao' && l.evento === 'aceita').slice(0, 4);
+  const tipos = m.linhas.filter(l => l.familia === 'tipo' && l.evento === 'aceita');
+  const rotuloTipo = (k) => PASSO_TIPOS.find(t => t[0] === k)?.[1] ?? k;
+
+  const html = `
+    <div class="passo-memoria" id="passo-memoria">
+      <div class="linha" style="justify-content:space-between;align-items:flex-start">
+        <b>O que eu lembro de você</b>
+        <button type="button" class="passo-fechar" data-acao="passo-fechar-memoria" aria-label="Fechar">×</button>
+      </div>
+
+      <div class="passo-opcao">
+        <span>Aprender com o meu uso</span>
+        <button type="button" class="p ${m.aprender ? 'on' : 'off'}" data-acao="passo-aprender"
+          data-v="${m.aprender ? 0 : 1}" aria-pressed="${!!m.aprender}">${m.aprender ? 'ligado' : 'desligado'}</button>
+      </div>
+      <div class="passo-opcao">
+        <span>Abrir com o resumo do dia</span>
+        <button type="button" class="p ${m.resumo_do_dia ? 'on' : 'off'}" data-acao="passo-resumo-dia"
+          data-v="${m.resumo_do_dia ? 0 : 1}" aria-pressed="${!!m.resumo_do_dia}">${m.resumo_do_dia ? 'ligado' : 'desligado'}</button>
+      </div>
+
+      <p class="lbl" style="margin-top:12px">Eu gosto mais de…</p>
+      <div class="passo-chips" style="padding:6px 0">
+        ${PASSO_TIPOS.map(([k, rot]) => `<button type="button" class="passo-chip ${m.prefere_tipo === k ? 'on' : ''}"
+            data-acao="passo-prefere" data-v="${k}" aria-pressed="${m.prefere_tipo === k}">${esc(rot)}</button>`).join('')}
+        <button type="button" class="passo-chip ${!m.prefere_tipo ? 'on' : ''}" data-acao="passo-prefere"
+          aria-pressed="${!m.prefere_tipo}">Sem preferência</button>
+      </div>
+      <p class="passo-porque">Isto vale já na próxima vez que você me abrir, e não depende de eu ter aprendido nada.</p>
+
+      ${m.aprender ? `
+        <p class="lbl" style="margin-top:12px">O que eu já reparei</p>
+        <p class="passo-porque">
+          ${tocadas.length ? `Você tocou: ${tocadas.map(l => `${esc(l.chave)} (${l.n}×)`).join(' · ')}.` : 'Ainda não sei nada do seu uso.'}
+          ${tipos.length ? ` Tipos que você mais usa: ${tipos.map(l => `${esc(rotuloTipo(l.chave))} ${l.n}×`).join(' · ')}.` : ''}
+          ${m.silenciadas.length ? ` ${m.silenciadas.length} silenciada(s) — a mais próxima volta em ${dataBR(m.silenciadas[0].ate)}.` : ''}
+        </p>` : ''}
+
+      <p class="passo-porque" style="margin-top:10px">${esc(m.politica)}</p>
+      <div class="linha" style="margin-top:10px">
+        <button type="button" class="btn pequeno fantasma" data-acao="passo-esquecer">Esquecer tudo o que eu aprendi</button>
+      </div>
+    </div>`;
+  document.getElementById('passo-chips')?.insertAdjacentHTML('beforebegin', html);
+  document.getElementById('passo-memoria')?.scrollIntoView({ block: 'nearest' });
+}
+
 function pintarRodapeMemoria() {
   const sheet = document.querySelector('.passo-sheet');
   const m = passo.memoria;
@@ -3062,34 +3123,35 @@ document.addEventListener('click', comErro(async (ev) => {
       .then(() => api('/api/passo/memoria')).catch(() => passo.memoria);
     document.getElementById('passo-memoria-link')?.remove();
     pintarRodapeMemoria();
+    if (document.getElementById('passo-memoria')) await abrirMemoria({ recarregar: true });
     toast(liga ? 'Combinado — vou reparar no que te serve.' : 'Tudo bem, sigo sem reparar em nada.');
     return;
   }
-  if (a === 'passo-memoria') {
-    const m = passo.memoria || await api('/api/passo/memoria').catch(() => null);
-    if (!m) return;
-    const tocadas = m.linhas.filter(l => l.familia === 'sugestao' && l.evento === 'aceita');
-    const tipos = m.linhas.filter(l => l.familia === 'tipo' && l.evento === 'aceita');
-    passo.trocas.push({ quem: 'passo', resposta:
-      `${m.aprender ? 'Estou reparando no que você toca aqui.' : 'Não estou aprendendo nada sobre você agora.'}\n\n`
-      + (tocadas.length ? `Sugestões que você tocou: ${tocadas.slice(0, 5).map(l => `${l.chave} (${l.n}×)`).join(' · ')}\n` : '')
-      + (tipos.length ? `Tipos que você prefere: ${tipos.map(l => `${l.chave} ${l.n}×`).join(' · ')}\n` : '')
-      + (m.silenciadas.length ? `Silenciadas: ${m.silenciadas.length} — a mais próxima volta em ${dataBR(m.silenciadas[0].ate)}\n` : '')
-      + (!tocadas.length && !tipos.length ? 'Ainda não sei nada do seu uso.\n' : '')
-      + `\n${m.politica}` });
-    pintarPassoFio();
-    const fio = document.getElementById('passo-fio');
-    if (fio) fio.insertAdjacentHTML('beforeend',
-      `<div class="linha" style="margin:6px 2px 0">
-         <button type="button" class="btn pequeno fantasma" data-acao="passo-esquecer">Esquecer tudo o que o Passo aprendeu</button>
-         <button type="button" class="btn pequeno fantasma" data-acao="passo-aprender" data-v="${m.aprender ? 0 : 1}"
-           >${m.aprender ? 'Parar de aprender' : 'Pode reparar'}</button>
-       </div>`);
+  if (a === 'passo-memoria') { await abrirMemoria(); return; }
+  if (a === 'passo-fechar-memoria') { document.getElementById('passo-memoria')?.remove(); return; }
+  // Os dois controles que faltavam: o tipo que a pessoa prefere (a alavanca de
+  // personalização que ela SENTE no primeiro dia, sem telemetria nenhuma) e o
+  // resumo do dia. Antes existiam só no servidor, alcançáveis pela API.
+  if (a === 'passo-prefere') {
+    const v = alvo.dataset.v || null;
+    passo.memoria = await post('/api/passo/memoria', { prefere_tipo: v })
+      .then(() => api('/api/passo/memoria')).catch(() => passo.memoria);
+    await abrirMemoria({ recarregar: true });
+    toast(v ? 'Combinado — trago esse tipo primeiro quando couber.' : 'Sem preferência: eu ordeno pelo que for mais urgente.');
+    return;
+  }
+  if (a === 'passo-resumo-dia') {
+    const liga = alvo.dataset.v === '1';
+    passo.memoria = await post('/api/passo/memoria', { resumo_do_dia: liga })
+      .then(() => api('/api/passo/memoria')).catch(() => passo.memoria);
+    await abrirMemoria({ recarregar: true });
+    toast(liga ? 'Volto a abrir com o resumo do dia.' : 'Não abro mais com o resumo.');
     return;
   }
   if (a === 'passo-esquecer') {
     const r = await api('/api/passo/memoria', { method: 'DELETE' });
     passo.memoria = await api('/api/passo/memoria').catch(() => passo.memoria);
+    if (document.getElementById('passo-memoria')) await abrirMemoria({ recarregar: true });
     toast(r.aviso || 'Apaguei o que eu sabia do seu uso.', 'bom');
     return;
   }
