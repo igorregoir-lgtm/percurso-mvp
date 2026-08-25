@@ -17,7 +17,7 @@ node scripts/smoke-test.mjs
 Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **255 passaram,
 0 falharam**.
 
-Há também uma bateria de **81 testes unitários** das regras críticas de domínio (filtro de
+Há também uma bateria de **98 testes unitários** das regras críticas de domínio (filtro de
 perímetro, validação do schema do extrator, determinismo do agente, os três scores, supressão com
 agrupamento, deduplicação da ingestão, revisor de sobre-alegação, consentimento, imutabilidade da
 síntese, fecho de ciclo), que roda sem servidor, contra um banco temporário descartável:
@@ -119,7 +119,7 @@ crianças em risco apareciam com o mesmo número (decisão técnica nº 18).
 | Modo A com modelo real | bateria manual (`ai/README.md`) | 100% de saída válida contra `validarExtracao` e zero regressão frente ao extrator lexical — executada em 25/08/2026: **6/6, 0 regressões** | só local |
 | Modo B com modelo real | sessão manual | 7 blocos, citações reais do corpus, recusa de diagnóstico/score, encaminhamento de perímetro, pseudonimização (nome nunca aparece na resposta) — validada em 25/08/2026 | só local |
 
-Os testes unitários somam **81** (os 55 originais + escopo de turma, aviso de corte da lista,
+Os testes unitários somam **98** (os 55 originais + escopo de turma, aviso de corte da lista,
 denominador da cobertura só com programas em escopo, o motor SROI — 3 cenários determinísticos,
 dupla contagem bloqueada, benchmark recusado no cálculo, rastreabilidade das premissas, parâmetro
 fora de 0..1 recusado — e o Passo: sub-tarefas da chamada, recusa da diretoria, redirecionamento

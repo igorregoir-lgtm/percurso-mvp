@@ -2776,6 +2776,11 @@ async function abrirPasso() {
     if (p.resumo && passo.trocas.length === 1 && passo.trocas[0].semente) passo.trocas = [];
     pintarPassoFio();
   } catch { /* sem painel não é erro: o campo continua lá */ }
+  // O refinamento pelo Qwen roda DEPOIS de a tela estar pintada e nunca é
+  // esperado: se chegar, troca rótulos no lugar; se falhar, sumir ou demorar,
+  // nada muda visualmente. O `hash` impede um refinamento velho de reescrever
+  // um painel que já mudou de tela.
+  refinarPainel();
   try {
     const m = await api('/api/passo/memoria');
     passo.memoria = m;
@@ -2815,6 +2820,23 @@ function pintarPassoSugestoes() {
       ? `<button type="button" class="passo-adiar" data-acao="passo-adiar"
            aria-label="Hoje não: ${esc(s.rotulo)}">×</button>` : ''}
     </span>`).join('');
+}
+
+async function refinarPainel() {
+  const p = passo.painel;
+  if (!p || !p.sugestoes?.length) return;
+  const hash = p.hash;
+  try {
+    const r = await post('/api/passo/refinar', { tela: location.hash || '#/hoje' }, { timeoutMs: 9000 });
+    if (!r.refinado || passo.painel?.hash !== hash) return;   // painel trocou: descarta
+    const porId = new Map(passo.painel.sugestoes.map(s => [s.id, s]));
+    for (const { id, rotulo } of (r.rotulos || [])) { const s = porId.get(id); if (s) s.rotulo = rotulo; }
+    const ordem = (r.ordem || []).map(id => porId.get(id)).filter(Boolean);
+    const resto = passo.painel.sugestoes.filter(s => !ordem.includes(s));
+    passo.painel.sugestoes = [...ordem, ...resto];
+    passo.painel.origem = 'modelo';
+    pintarPassoSugestoes();
+  } catch { /* refinamento é enfeite: falhar é gratuito e invisível */ }
 }
 
 function pintarConvite() {

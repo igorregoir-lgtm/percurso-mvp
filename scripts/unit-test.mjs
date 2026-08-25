@@ -964,3 +964,174 @@ test('passo: intenção específica vence as genéricas ("todos presentes")', ()
   const r2 = A.casarIntencao('como marco presença de uma criança?', '#/chamada', 'educador');
   assert.match(r2.resposta, /dois botões/);
 });
+
+// ---------------------------------------------------------------------------
+// Passo proativo (decisão 27) — envelope, catálogo, ranking, perfil.
+// ---------------------------------------------------------------------------
+process.env.PERCURSO_PASSO_DB = join(dirTemp, 'passo-uso.db');
+const PS = await import('../src/passo/sinais.js');
+const PC = await import('../src/passo/catalogo.js');
+const PR = await import('../src/passo/ranking.js');
+const PP = await import('../src/passo/painel.js');
+const PF = await import('../src/passo/perfil.js');
+process.on('exit', () => { try { PF.fecharPerfil(); } catch {} });
+
+const MARIA = { id: 1, papel: 'educador' };
+const RITA = { id: 2, papel: 'coordenacao' };
+const SOL = { id: 4, papel: 'diretoria' };
+
+test('passo/envelope: só escalar e token de enum — identidade é recusada, contagem passa', () => {
+  for (const mau of [{ crianca_id: 7 }, { turma_nome: 'X' }, { nome: 'Ana' }, { crianca_nivel: 3 }, { detalhe: 'Ana faltou' }])
+    assert.throws(() => PS.congelar({ ...mau }), /envelope/);
+  for (const bom of [{ tem_turma: true }, { turmas_sem_registro: 2 }, { exposicao_criancas: 4 }, { tela: '#/hoje' }])
+    assert.doesNotThrow(() => PS.congelar({ ...bom }));
+});
+
+test('passo/envelope: nenhum nome de criança nem de turma em nenhum papel', () => {
+  const nomes = all(`SELECT nome FROM crianca`).map(c => c.nome)
+    .concat(all(`SELECT nome FROM turma`).map(t => t.nome));
+  for (const u of [MARIA, RITA, SOL]) {
+    for (const tela of ['#/hoje', '#/chamada', '#/painel', '#/relatorio']) {
+      const blob = JSON.stringify(PS.sinaisDe(u, tela));
+      for (const n of nomes) assert.ok(!blob.includes(n), `${n} vazou no envelope de ${u.papel}`);
+    }
+  }
+});
+
+test('passo/envelope: falha vira envelope vazio, nunca exceção na rota', () => {
+  assert.doesNotThrow(() => PS.sinaisDe({ id: 999, papel: 'educador' }, '#/hoje'));
+});
+
+test('passo/lint: o anti-cobrança MORDE — não basta o catálogo passar', () => {
+  for (const t of ['Você está atrasada com a folha', 'Você está atrasado', 'Falta você fechar',
+    'voce esta atrasado', 'Você não fez a chamada', 'Isso é pendência sua', 'Não deixe acumular'])
+    assert.equal(PC.semCobranca(t), false, `deveria barrar: ${t}`);
+  for (const t of ['Você ficou 7 dias sem registrar. Nada se perdeu', 'Aqui você só registra que viu'])
+    assert.equal(PC.semCobranca(t), true, `não deveria barrar: ${t}`);
+});
+
+test('passo/catálogo: as sete regras de escrita, em todas as entradas', () => {
+  const turmas = all(`SELECT nome FROM turma`).map(t => t.nome);
+  const env = { folhas_atrasadas: 7, ciclo_pendentes: 3, ciclo_dias_restantes: 2, datas_abertas: 5,
+    ciclo_rascunhos: 2, sem_registro_3mais: 6, exposicao_criancas: 9, alertas_parados: 3,
+    ciclo_vencido_dias: 4, consentimentos_bloqueando: 8, turmas_sem_registro: 2, folhas_abertas: 5,
+    descarte_pct: 41, cobertura_pct: 62, calibracao_divergencias: 2, periodos_sem_relatorio: 2,
+    dias_desde_publicacao: 200, folhas_total: 9, alertas_abertos: 3 };
+  for (const c of PC.CATALOGO) {
+    const papel = c.id.startsWith('edu.') ? 'educador' : c.id.startsWith('coo.') ? 'coordenacao' : 'diretoria';
+    const texto = c.texto(env);
+    assert.doesNotMatch(c.rotulo, /\d/, `${c.id}: rótulo com dígito quebra a trava contra número de modelo`);
+    assert.ok(c.rotulo.length <= 44, `${c.id}: rótulo com ${c.rotulo.length} chars`);
+    assert.ok(PC.semCobranca(c.rotulo) && PC.semCobranca(texto) && PC.semCobranca(c.porque(env)), `${c.id}: cobrança`);
+    for (const n of turmas) assert.ok(!texto.includes(n) && !c.rotulo.includes(n), `${c.id}: nome de turma`);
+    if (c.acao) assert.ok(A.validarAcao(c.acao, papel), `${c.id}: ação inválida para ${papel}`);
+    if (papel === 'educador' && c.tipo === 'aprimoramento')
+      assert.notEqual(c.sujeito, 'pessoa', `${c.id}: aprimoramento de educadora nunca tem a pessoa como sujeito`);
+    assert.ok(PC.TIPOS.includes(c.tipo) && PC.CLASSES.includes(c.classe), `${c.id}: tipo/classe fora do vocabulário`);
+  }
+});
+
+test('passo/catálogo: os quatro tipos e o alívio existem nos TRÊS papéis', () => {
+  for (const papel of ['educador', 'coordenacao', 'diretoria']) {
+    const l = PC.doPapel(papel);
+    for (const tipo of PC.TIPOS)
+      assert.ok(l.some(c => c.tipo === tipo), `${papel} sem nenhuma entrada do tipo ${tipo}`);
+    assert.ok(l.some(c => c.classe === 'alivio'), `${papel} nunca consegue dizer "está tudo em ordem"`);
+  }
+});
+
+test('passo/ranking: o teto pessoal NÃO atravessa faixas de base', () => {
+  const alta = { id: 'a', tipo: 'acao', base: 88, nucleo: false };
+  const baixa = { id: 'b', tipo: 'acao', base: 20, nucleo: false };
+  const pesos = { 'sugestao:b:aceita': 50, 'sugestao:b:mostrada': 50, 'sugestao:a:dispensada': 50, 'sugestao:a:mostrada': 50 };
+  assert.ok(PR.pontuar(alta, pesos) > PR.pontuar(baixa, pesos), 'base 0,88 nunca pode perder para base 0,20');
+});
+
+test('passo/ranking: a personalização NÃO é inerte — termos distintos dão pontos distintos', () => {
+  const c = { id: 'x', tipo: 'acao', base: 50, nucleo: false };
+  const inedito = PR.pontuar(c, {});
+  const aceito = PR.pontuar(c, { 'sugestao:x:aceita': 4, 'sugestao:x:mostrada': 4 });
+  const dispensado = PR.pontuar(c, { 'sugestao:x:dispensada': 4, 'sugestao:x:mostrada': 4 });
+  assert.notEqual(aceito, inedito, 'afinidade positiva tem que mover o escore');
+  assert.ok(dispensado < aceito, 'dispensar tem que valer menos que aceitar');
+});
+
+test('passo/ranking: núcleo tem piso mesmo com vinte dispensas', () => {
+  const n = { id: 'n', tipo: 'acao', base: 88, nucleo: true };
+  assert.ok(PR.pontuar(n, { 'sugestao:n:dispensada': 20, 'sugestao:n:mostrada': 20 }) >= PR.PISO_NUCLEO);
+});
+
+test('passo/ranking: NUNCA mais de uma pendência por painel, nem na exploração', () => {
+  const muitas = Array.from({ length: 6 }, (_, i) =>
+    ({ id: `p${i}`, tipo: 'acao', classe: 'pendencia', base: 80 - i, nucleo: false, pontos: 0.8 }));
+  for (const dia of [3, 6, 9, 30, 99]) {
+    const saida = PR.explorar(PR.compor(muitas), muitas, {}, dia);
+    assert.ok(saida.filter(c => c.classe === 'pendencia').length <= 1, `dia ${dia}: painel virou lista de dívida`);
+    assert.ok(saida.every(Boolean), `dia ${dia}: buraco no array`);
+  }
+});
+
+test('passo/painel: nenhuma tela de nenhum papel devolve painel vazio', () => {
+  const telas = {
+    educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/confirmar', '#/ciclo', '#/observacao', '#/turma', '#/criancas', '#/crianca', '#/alertas', '#/pauta', '#/copilot'],
+    coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/criancas'],
+    diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
+  };
+  const uid = { educador: 1, coordenacao: 2, diretoria: 4 };
+  for (const [papel, ts] of Object.entries(telas)) {
+    for (const tela of ts) {
+      const p = PP.painelDoPasso({ id: uid[papel], papel }, tela);
+      assert.ok(p.sugestoes.length > 0, `${papel} ${tela}: painel vazio`);
+      assert.ok(p.sugestoes.filter(s => s.classe === 'pendencia').length <= 1, `${papel} ${tela}: 2+ pendências`);
+    }
+  }
+});
+
+test('passo/perfil: nasce DESLIGADO e é no-op enquanto estiver', () => {
+  assert.equal(PF.preferenciaDe(7).aprender, 0, 'a única coisa que grava sobre a pessoa não nasce ligada');
+  assert.equal(PF.registrar(7, 'sugestao', 'edu.folha_atrasada', 'aceita').gravado, false);
+  assert.deepEqual(PF.pesosDe(7), {});
+});
+
+test('passo/perfil: vocabulário FECHADO — nome de criança não vira chave', () => {
+  PF.salvarPreferencia(8, { aprender: true });
+  const nome = get(`SELECT nome FROM crianca LIMIT 1`).nome;
+  assert.throws(() => PF.registrar(8, 'tela', nome, 'mostrada'), /vocabul/i);
+  assert.throws(() => PF.registrar(8, 'sugestao', 'inventada', 'aceita'), /vocabul/i);
+  assert.throws(() => PF.registrar(8, 'sugestao', 'edu.folha_atrasada', 'espiada'), /vocabul/i);
+});
+
+test('passo/perfil: "mostrada" conta uma vez por dia; desligar APAGA', () => {
+  PF.salvarPreferencia(9, { aprender: true });
+  assert.equal(PF.registrar(9, 'sugestao', 'edu.folha_atrasada', 'mostrada').gravado, true);
+  assert.equal(PF.registrar(9, 'sugestao', 'edu.folha_atrasada', 'mostrada').gravado, false);
+  assert.ok(Object.keys(PF.pesosDe(9)).length > 0);
+  PF.salvarPreferencia(9, { aprender: false });
+  assert.deepEqual(PF.pesosDe(9), {}, 'desligar tem que esquecer — é a expectativa de quem desliga');
+});
+
+test('passo/perfil: silêncio SEMPRE expira; núcleo cala só até o fim do dia', () => {
+  const hoje = D.hoje();
+  assert.equal(PF.silenciar(10, 'edu.chamada_hoje', { nucleo: true }).ate, hoje);
+  assert.ok(PF.silenciar(10, 'edu.duvida.audio', { nucleo: false }).ate > hoje);
+});
+
+test('passo/perfil: com aprender ligado o ranking continua respeitando o piso', () => {
+  PF.salvarPreferencia(1, { aprender: true });
+  for (let i = 0; i < 20; i++) PF.registrar(1, 'sugestao', 'edu.alerta_turma', 'dispensada', D.addDias(D.hoje(), -i));
+  const p = PP.painelDoPasso(MARIA, '#/chamada');
+  assert.ok(p.sugestoes.length > 0);
+  PF.salvarPreferencia(1, { aprender: false });
+});
+
+test('passo: pergunta agregada responde com número do BANCO e nunca fala', async () => {
+  await import('../src/api.js');
+  for (const c of PC.CATALOGO.filter(x => x.consulta)) {
+    const r = await A.assistente(SOL, { message: c.consulta, tela: '#/relatorio' });
+    assert.equal(r.origem, 'banco', `${c.id} não chegou ao banco`);
+    assert.equal(r.fala, null, `${c.id}: contagem agregada não pode ser falada`);
+    assert.match(r.resposta, /\d/, `${c.id}: sem número não é resposta agregada`);
+  }
+  const e = await A.assistente(MARIA, { message: 'Como está a cobertura do registro?', tela: '#/hoje' });
+  assert.notEqual(e.origem, 'banco', 'educadora não alcança a camada agregada');
+});

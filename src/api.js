@@ -14,8 +14,9 @@ import * as PP from './passo/painel.js';
 // O Passo responde pergunta agregada com número do banco; a ligação é feita
 // aqui para evitar ciclo de import (relatorio.js → domain/scores/db).
 A.ligarConsultaAgregada(R.consultar);
-import { invalidarSinais } from './passo/sinais.js';
+import { invalidarSinais, falhasDoEnvelope as envelopeFalhou } from './passo/sinais.js';
 import * as PF from './passo/perfil.js';
+import * as PO from './passo/orquestrador.js';
 import * as SROI from './sroi/calculator.js';
 import { conversar, AI_ENABLED } from './ai-client.js';
 const { nomesParaAnonimizar } = C;
@@ -462,6 +463,45 @@ export const rotas = {
   'GET /api/passo/painel': (req, _b, q) => {
     const u = exigeUsuario(req);
     return PP.painelDoPasso(u, A.telaSegura(String(q.get('tela') || '')));
+  },
+
+  // O refinamento pelo Qwen — ASSÍNCRONO e opcional. O painel determinístico
+  // já está pintado quando isto roda; falha, timeout, fila ocupada ou modelo
+  // desligado devolvem `refinado:false` e NADA muda na tela. Nunca 5xx.
+  'POST /api/passo/refinar': async (req, body) => {
+    const u = exigeUsuario(req);
+    if (!A.AI_ASSISTENTE) return { refinado: false, motivo: 'desligado' };
+    const tela = A.telaSegura(String(body.tela || ''));
+    const painel = PP.painelDoPasso(u, tela);
+    const alvos = painel.sugestoes.filter(s => !s.id.startsWith('guia:'));
+    if (alvos.length < 2) return { refinado: false, motivo: 'nada_a_fazer' };
+    const r = await PO.refinarPainel(
+      alvos.map(s => ({ id: s.id, tipo: s.tipo, rotulo: s.rotulo, nucleo: s.nucleo, imune: !!s.imune })),
+      {
+        roster: nomesParaAnonimizar(u),
+        anonimizar: anonimizarTexto,
+        semCobranca: PP.semCobranca,
+        // O piso e as travas rodam DEPOIS do modelo: a ordem devolvida é
+        // reaplicada sobre a composição determinística, nunca sobre a tela.
+        recompor: (ordem) => ordem,
+      });
+    if (r.origem !== 'modelo') return { refinado: false, motivo: 'falhou' };
+    return {
+      refinado: true, origem: 'modelo', hash: painel.hash,
+      ordem: r.ordem,
+      rotulos: Object.entries(r.rotulos).map(([id, rotulo]) => ({ id, rotulo })),
+    };
+  },
+
+  'GET /api/passo/qualidade': (req) => {
+    exigeCoordenacao(req);
+    return {
+      orquestrador: PO.estatisticas(),
+      envelope_falhou: envelopeFalhou(),
+      doutrina: 'O modelo reordena candidatos e pode encurtar rótulo. Ele nunca escreve número '
+        + '(o rótulo é livre de dígito por construção), nunca escolhe ação e nunca inventa sugestão. '
+        + 'O piso institucional e o teto de pendência rodam DEPOIS dele.',
+    };
   },
 
   // Telemetria do Passo — só o que a pessoa faz COM ELE. No-op silencioso

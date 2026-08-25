@@ -147,5 +147,5 @@ function respostaDeConsulta(pergunta) {
   } catch { return null; }
 }
 
-/** Só para o lint de teste: o catálogo inteiro, sem filtro de papel. */
-export { CATALOGO };
+/** Só para o lint de teste e para a rota de uso: o catálogo inteiro. */
+export { CATALOGO, semCobranca };
