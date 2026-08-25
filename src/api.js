@@ -15,6 +15,7 @@ import * as PP from './passo/painel.js';
 // aqui para evitar ciclo de import (relatorio.js → domain/scores/db).
 A.ligarConsultaAgregada(R.consultar);
 import { invalidarSinais } from './passo/sinais.js';
+import * as PF from './passo/perfil.js';
 import * as SROI from './sroi/calculator.js';
 import { conversar, AI_ENABLED } from './ai-client.js';
 const { nomesParaAnonimizar } = C;
@@ -462,6 +463,35 @@ export const rotas = {
     const u = exigeUsuario(req);
     return PP.painelDoPasso(u, A.telaSegura(String(q.get('tela') || '')));
   },
+
+  // Telemetria do Passo — só o que a pessoa faz COM ELE. No-op silencioso
+  // enquanto o aprendizado está desligado (que é o padrão).
+  'POST /api/passo/uso': (req, body) => {
+    const u = exigeUsuario(req);
+    const id = String(body.id || '');
+    const evento = String(body.evento || '');
+    if (evento === 'dispensada') {
+      const s = PP.CATALOGO.find(c => c.id === id);
+      const r = PF.silenciar(u.id, id, { nucleo: !!s?.nucleo });
+      PF.registrar(u.id, 'sugestao', id, 'dispensada');
+      if (s) PF.registrar(u.id, 'tipo', s.tipo, 'dispensada');
+      return { ok: true, silenciada_ate: r.ate, nucleo: !!s?.nucleo };
+    }
+    const s = PP.CATALOGO.find(c => c.id === id);
+    const out = PF.registrar(u.id, 'sugestao', id, evento);
+    if (s) PF.registrar(u.id, 'tipo', s.tipo, evento);
+    if (body.tela) PF.registrar(u.id, 'tela', A.telaSegura(String(body.tela)), evento);
+    return out;
+  },
+
+  // A pessoa só lê e apaga a PRÓPRIA memória. Não existe rota para ver a de
+  // outra pessoa — e essa ausência é a decisão, não um esquecimento.
+  'GET /api/passo/memoria': (req) => PF.memoriaDe(exigeUsuario(req).id),
+  'POST /api/passo/memoria': (req, body) => PF.salvarPreferencia(exigeUsuario(req).id, {
+    aprender: body.aprender, resumo_do_dia: body.resumo_do_dia,
+    prefere_tipo: body.prefere_tipo, convidado: body.convidado,
+  }),
+  'DELETE /api/passo/memoria': (req) => PF.apagarMemoria(exigeUsuario(req).id),
 
   'DELETE /api/assistente/sessao': (req, body) =>
     A.apagarSessaoAssistente(exigeUsuario(req), String(body.session_id || '')),

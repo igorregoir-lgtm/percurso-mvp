@@ -91,6 +91,8 @@ const ROTAS_CONHECIDAS = new Set([
   ...CATALOGO_ACOES.map(a => a.hash),
   '#/entrar', '#/alertas', '#/confirmar', '#/observacao', '#/crianca',
 ]);
+/** Mesmo conjunto, exportado: é o vocabulário fechado de `tela` no perfil. */
+export const ROTAS_CONHECIDAS_PASSO = ROTAS_CONHECIDAS;
 export function telaSegura(tela) {
   const rota = String(tela ?? '').split('?')[0];
   if (ROTAS_CONHECIDAS.has(rota)) return rota;

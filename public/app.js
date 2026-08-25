@@ -2776,6 +2776,30 @@ async function abrirPasso() {
     if (p.resumo && passo.trocas.length === 1 && passo.trocas[0].semente) passo.trocas = [];
     pintarPassoFio();
   } catch { /* sem painel não é erro: o campo continua lá */ }
+  try {
+    const m = await api('/api/passo/memoria');
+    passo.memoria = m;
+    // O convite acontece UMA vez, em primeiro plano, e a resposta padrão é
+    // "agora não". A única coisa deste produto que grava algo sobre a pessoa
+    // não pode nascer ligada com o aviso enterrado numa seção que ela talvez
+    // nunca role.
+    if (m.ligada && !m.convidado) pintarConvite();
+    pintarRodapeMemoria();
+  } catch {}
+}
+
+// Telemetria do Passo: SÓ o que a pessoa faz com ele. `keepalive` e falha
+// engolida — isto nunca pode virar toast nem travar a tela. No servidor é
+// no-op silencioso enquanto o aprendizado está desligado (o padrão).
+function marcarUso(id, evento) {
+  if (!id || id.startsWith('guia:')) return;
+  try {
+    fetch('/api/passo/uso', {
+      method: 'POST', keepalive: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, evento, tela: location.hash || '#/hoje' }),
+    }).catch(() => {});
+  } catch {}
 }
 
 /** Os chips deixam de ser lista fixa e passam a ser o painel do estado real. */
@@ -2783,6 +2807,7 @@ function pintarPassoSugestoes() {
   const el = document.getElementById('passo-chips');
   const p = passo.painel;
   if (!el || !p) return;
+  for (const s of p.sugestoes || []) marcarUso(s.id, 'mostrada');
   el.innerHTML = (p.sugestoes || []).map(s => `
     <span class="passo-sug" data-id="${esc(s.id)}">
       <button type="button" class="passo-chip" data-acao="passo-sug" data-tipo="${esc(s.tipo)}"
@@ -2790,6 +2815,31 @@ function pintarPassoSugestoes() {
       ? `<button type="button" class="passo-adiar" data-acao="passo-adiar"
            aria-label="Hoje não: ${esc(s.rotulo)}">×</button>` : ''}
     </span>`).join('');
+}
+
+function pintarConvite() {
+  const el = document.getElementById('passo-chips');
+  if (!el || document.getElementById('passo-convite')) return;
+  el.insertAdjacentHTML('beforebegin', `
+    <div class="passo-convite" id="passo-convite">
+      <p><b>Posso ficar mais útil?</b> Se você deixar, eu passo a reparar no que você toca
+      aqui dentro para trazer primeiro o que costuma te servir. Eu conto só o que você faz
+      COMIGO — nunca o que você faz no Percurso, nunca o texto das suas perguntas, nunca
+      nome de criança, e nem a hora, só o dia.</p>
+      <div class="linha" style="margin-top:10px">
+        <button type="button" class="btn pequeno" data-acao="passo-aprender" data-v="1">Pode reparar</button>
+        <button type="button" class="btn pequeno secundario" data-acao="passo-aprender" data-v="0">Agora não</button>
+      </div>
+    </div>`);
+}
+
+function pintarRodapeMemoria() {
+  const sheet = document.querySelector('.passo-sheet');
+  const m = passo.memoria;
+  if (!sheet || !m?.ligada || document.getElementById('passo-memoria-link')) return;
+  sheet.insertAdjacentHTML('beforeend',
+    `<button type="button" class="passo-memlink" id="passo-memoria-link" data-acao="passo-memoria"
+      >o que eu lembro de você${m.aprender ? '' : ' · não estou aprendendo'}</button>`);
 }
 
 function pintarPassoFio() {
@@ -2812,7 +2862,7 @@ function pintarPassoFio() {
       t.porque ? `<p class="passo-porque">apareceu porque ${esc(t.porque)}</p>` : ''}${
       t.fonte ? `<p class="passo-porque">número vindo de ${esc(t.fonte)} — nenhum modelo participou</p>` : ''}${oferta
       ? `<div style="margin-top:10px"><button type="button" class="btn secundario pequeno" data-acao="passo-ir"
-           data-href="${esc(t.acao.hash)}">Ir para ${esc(t.acao.rotulo)}</button></div>` : ''}</div>`;
+           data-sug="${esc(t.sugestao || '')}" data-href="${esc(t.acao.hash)}">Ir para ${esc(t.acao.rotulo)}</button></div>` : ''}</div>`;
   }).join('');
   fio.scrollTop = fio.scrollHeight;
   // aria-live num nó próprio com SÓ a última fala do Passo: reescrever o fio
@@ -2951,9 +3001,53 @@ document.addEventListener('click', comErro(async (ev) => {
   if (a === 'passo-adiar') {
     const span = alvo.closest('.passo-sug');
     const id = span?.dataset.id;
+    const s = (passo.painel?.sugestoes || []).find(x => x.id === id);
     span?.remove();
     if (passo.painel) passo.painel.sugestoes = passo.painel.sugestoes.filter(x => x.id !== id);
-    toast('Tudo bem — hoje eu não trago mais essa.');
+    marcarUso(id, 'dispensada');
+    // O produto não mente sobre o que o botão faz: item núcleo volta amanhã, e
+    // a frase diz isso. Nunca existe "nunca mais me mostre".
+    toast(s?.nucleo
+      ? 'Tudo bem — hoje eu não trago mais. Amanhã eu trago de novo, porque é ponto que o instituto precisa ver.'
+      : 'Tudo bem — eu guardo essa por umas duas semanas.');
+    return;
+  }
+  if (a === 'passo-aprender') {
+    const liga = alvo.dataset.v === '1';
+    document.getElementById('passo-convite')?.remove();
+    passo.memoria = await post('/api/passo/memoria', { aprender: liga, convidado: true })
+      .then(() => api('/api/passo/memoria')).catch(() => passo.memoria);
+    document.getElementById('passo-memoria-link')?.remove();
+    pintarRodapeMemoria();
+    toast(liga ? 'Combinado — vou reparar no que te serve.' : 'Tudo bem, sigo sem reparar em nada.');
+    return;
+  }
+  if (a === 'passo-memoria') {
+    const m = passo.memoria || await api('/api/passo/memoria').catch(() => null);
+    if (!m) return;
+    const tocadas = m.linhas.filter(l => l.familia === 'sugestao' && l.evento === 'aceita');
+    const tipos = m.linhas.filter(l => l.familia === 'tipo' && l.evento === 'aceita');
+    passo.trocas.push({ quem: 'passo', resposta:
+      `${m.aprender ? 'Estou reparando no que você toca aqui.' : 'Não estou aprendendo nada sobre você agora.'}\n\n`
+      + (tocadas.length ? `Sugestões que você tocou: ${tocadas.slice(0, 5).map(l => `${l.chave} (${l.n}×)`).join(' · ')}\n` : '')
+      + (tipos.length ? `Tipos que você prefere: ${tipos.map(l => `${l.chave} ${l.n}×`).join(' · ')}\n` : '')
+      + (m.silenciadas.length ? `Silenciadas: ${m.silenciadas.length} — a mais próxima volta em ${dataBR(m.silenciadas[0].ate)}\n` : '')
+      + (!tocadas.length && !tipos.length ? 'Ainda não sei nada do seu uso.\n' : '')
+      + `\n${m.politica}` });
+    pintarPassoFio();
+    const fio = document.getElementById('passo-fio');
+    if (fio) fio.insertAdjacentHTML('beforeend',
+      `<div class="linha" style="margin:6px 2px 0">
+         <button type="button" class="btn pequeno fantasma" data-acao="passo-esquecer">Esquecer tudo o que o Passo aprendeu</button>
+         <button type="button" class="btn pequeno fantasma" data-acao="passo-aprender" data-v="${m.aprender ? 0 : 1}"
+           >${m.aprender ? 'Parar de aprender' : 'Pode reparar'}</button>
+       </div>`);
+    return;
+  }
+  if (a === 'passo-esquecer') {
+    const r = await api('/api/passo/memoria', { method: 'DELETE' });
+    passo.memoria = await api('/api/passo/memoria').catch(() => passo.memoria);
+    toast(r.aviso || 'Apaguei o que eu sabia do seu uso.', 'bom');
     return;
   }
   if (a === 'passo-cancelar') { passo.ctl?.abort(); return; }
@@ -2963,6 +3057,7 @@ document.addEventListener('click', comErro(async (ev) => {
     const destino = alvo.dataset.href;
     const permitidas = PASSO_ROTAS_POR_PAPEL[sessao?.papel] ?? [];
     if (!permitidas.includes(destino)) return;
+    marcarUso(alvo.dataset.sug, 'aceita');
     fecharPasso({ foco: false });
     location.hash = destino;
     return;

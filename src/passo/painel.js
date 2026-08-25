@@ -9,6 +9,13 @@ import { sinaisDe, ENVELOPE_VAZIO } from './sinais.js';
 import { CATALOGO, doPapel, semCobranca } from './catalogo.js';
 import { ordenar, compor, explorar, SLOTS } from './ranking.js';
 import { validarAcao, chipsDe } from '../assistente.js';
+import * as P from './perfil.js';
+import { CATALOGO as CAT, IDS_CATALOGO, TIPOS } from './catalogo.js';
+import { ROTAS_CONHECIDAS_PASSO } from '../assistente.js';
+
+// O vocabulário fechado do perfil nasce do catálogo: sem esta ligação,
+// `registrar()` recusa tudo — é o que garante que só id conhecido vira chave.
+P.ligarVocabulario({ ids: IDS_CATALOGO, tipos: TIPOS, rotas: ROTAS_CONHECIDAS_PASSO });
 
 const maiuscula = (s) => s ? s[0].toUpperCase() + s.slice(1) : s;
 
@@ -48,7 +55,17 @@ function resumoDe(env, escolhidas, resumoOnly = []) {
  *
  * @returns {{tela, papel, origem, badge, hash, resumo, sugestoes: Array}}
  */
-export function painelDoPasso(u, tela = '', { pesos = {}, prefs = {}, silenciadas = new Set(), ref = D.hoje() } = {}) {
+export function painelDoPasso(u, tela = '', opcoes = {}) {
+  const ref = opcoes.ref ?? D.hoje();
+  // O perfil é opcional em todos os sentidos: desligado por padrão, e o painel
+  // funciona idêntico sem ele (pesos vazios ⇒ ranking determinístico puro).
+  const prefs = opcoes.prefs ?? P.preferenciaDe(u.id);
+  const pesos = opcoes.pesos ?? P.pesosDe(u.id, ref);
+  const silenciadas = opcoes.silenciadas ?? P.silenciadasDe(u.id, ref);
+  return montar(u, tela, { pesos, prefs, silenciadas, ref });
+}
+
+function montar(u, tela, { pesos, prefs, silenciadas, ref }) {
   const env = sinaisDe(u, tela, ref);
   const ctx = { diaDoAno: diaDoAno(ref) };
 
@@ -68,7 +85,8 @@ export function painelDoPasso(u, tela = '', { pesos = {}, prefs = {}, silenciada
   // `apenasResumo` sai da disputa por vaga: ela é a linha de abertura, não um
   // chip. Continua no conjunto para alimentar o resumo.
   const paraChip = ordenados.filter(c => !c.apenasResumo);
-  const escolhidas = explorar(compor(paraChip, { slots: SLOTS }), paraChip, pesos, ctx.diaDoAno);
+  const comp = { slots: SLOTS, prefereTipo: prefs.prefere_tipo ?? null };
+  const escolhidas = explorar(compor(paraChip, comp), paraChip, pesos, ctx.diaDoAno, comp);
 
   const sugestoes = escolhidas.map(c => {
     const acao = c.acao ? validarAcao(c.acao, u.papel) : null;
