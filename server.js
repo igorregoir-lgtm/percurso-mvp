@@ -5,7 +5,8 @@ import { readFile, stat } from 'node:fs/promises';
 import { join, extname, normalize, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getDb, get } from './src/db.js';
-import { rotas } from './src/api.js';
+import { rotas, usuarioDa } from './src/api.js';
+import { invalidarSinais } from './src/passo/sinais.js';
 import { semear } from './src/seed.js';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -54,6 +55,13 @@ const servidor = createServer(async (req, res) => {
       if (!handler) return json(res, 404, { erro: `Rota não encontrada: ${rota}` });
       const corpo = ['POST', 'DELETE'].includes(req.method) ? await lerCorpo(req) : {};
       const saida = await handler(req, corpo, url.searchParams);
+      // Todo POST/DELETE bem-sucedido pode ter mudado o estado que alimenta o
+      // painel do Passo. Sem esta linha, o memo de 30 s de src/passo/sinais.js
+      // nunca era invalidado e o painel mostrava estado velho depois de a
+      // chamada ser salva — o `invalidarSinais` estava importado e nunca
+      // chamado, que é a pior forma de cache: a que parece existir.
+      if (['POST', 'DELETE'].includes(req.method) && !url.pathname.startsWith('/api/passo/'))
+        invalidarSinais(usuarioDa(req)?.id ?? null);
       const cookie = saida?._cookie;
       if (saida && typeof saida === 'object') delete saida._cookie;
       return json(res, 200, saida ?? { ok: true }, cookie);

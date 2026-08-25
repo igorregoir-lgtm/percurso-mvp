@@ -427,6 +427,56 @@ não um chat aberto. As decisões que o mantêm dentro da doutrina:
 
 ---
 
+### 27. O Passo proativo: dois canais, contadores em vez de fichas, e o modelo onde ele não pode mentir
+
+**Origem:** o Passo era reativo — três chips escritos à mão por tela, iguais para todo mundo,
+independentemente do que estivesse acontecendo. A demanda: sugerir perguntas, ações, pontos de
+aprimoramento e dúvidas a cada papel, melhorar com o uso, e ter o Qwen como orquestrador.
+
+**A troca de doutrina, e por que ela foi feita em vez de contornada.** A doutrina 5 dizia *"o
+Passo NÃO enxerga dado nenhum"*, e a UI repetia isso à pessoa. Ancorar sugestão em estado real
+tornaria essa frase falsa. Num produto cuja história inteira de privacidade repousa em **limites
+declarados serem verdadeiros**, um limite que virou mentira é pior do que a mudança. Então a
+frase mudou, nos nove lugares onde aparecia, para o que passou a ser verdade:
+
+- **Canal CONVERSA** (`assistente()`) continua **cego**: nada do banco entra no prompt de uma
+  resposta a pergunta.
+- **Canal SUGESTÃO** (`src/passo/`) enxerga um **envelope de contadores** do próprio dia da
+  pessoa — quantos, quantas datas, quantos dias. **Conta quantos, nunca quem.** Nunca um nome,
+  nunca uma ficha, nunca um nível, nunca um escore individual. `congelar()` roda em **produção**
+  e recusa qualquer valor fora do contrato.
+- Nunca o **nome da turma**: `turma.educador_id` é 1:1, então "a turma X está sem registro" É
+  "a educadora Y não registrou", com outro rótulo.
+
+**O que impede a sugestão de virar cobrança.** Não é o tom de cada frase — é a composição.
+Teto de **UMA pendência por painel**: cada item pode ser gentil e o somatório ser uma lista de
+dívida diária. Mais: a sugestão é suprimida na tela que já mostra o mesmo fato; nenhuma entrada
+de educadora nasce de cobertura, tempo de registro ou taxa de correção (as métricas que o
+próprio produto declara medirem o sistema, não a professora); e existe uma classe **alívio** nos
+três papéis, para o Passo poder dizer "está tudo em ordem".
+
+**A memória nasce desligada.** É a única coisa do produto que grava algo sobre a **pessoa** —
+não podia ser a exceção que nasce ligada num produto onde tudo é opt-in. Um convite de um toque
+na primeira abertura, com "Agora não" ao lado. Vive em `data/passo/uso.db`, banco **derivado**
+(mesmo motivo do corpus do RAG, decisão 20: `src/db.js` derruba todas as tabelas quando a
+assinatura do DDL muda). Vocabulário **fechado por código**: um nome de criança não tem por onde
+virar chave. Desligar **apaga**. "Hoje não" em item núcleo cala só até o fim do dia — e a tela
+diz isso, porque o produto não mente sobre o que o botão faz.
+
+**O Qwen3-4B como orquestrador, com poder real e limite estrutural.** Ele faz dois trabalhos:
+(a) responde, pelo portão agregado, a pergunta de coordenação/diretoria com número vindo de SQL
+— antes, 2 das 6 perguntas eram recusadas e 4 devolviam texto de ajuda genérico; (b) reordena os
+candidatos e reescreve rótulos. O que ele **não pode é estrutural, não verificado**: o `rotulo`
+é livre de dígito por construção e é o único campo que ele reescreve, enquanto o `texto` — que
+carrega as contagens — nunca vai ao prompt nem volta dele. Logo, **nenhum número exibido pode ter
+vindo de modelo**. O piso institucional e o teto de pendência rodam **depois** dele.
+`AI_ASSISTENTE=0` e `PASSO_PAINEL=0` desligam em cascata; sem modelo, o produto é idêntico.
+
+**Trilha:** plano em `docs/revisao/09-PLANO-PASSO-PROATIVO.md` (painel de 4 propostas × 3 juízes),
+revisão do plano com 20 achados confirmados, revisão da implementação em `10-REVISAO-PASSO-PROATIVO.md`.
+
+---
+
 ## Dívidas técnicas conhecidas
 
 | Dívida | Impacto | Quando pagar |

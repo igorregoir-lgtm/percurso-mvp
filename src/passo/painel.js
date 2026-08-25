@@ -6,11 +6,10 @@
 import * as D from '../domain.js';
 import * as R from '../relatorio.js';
 import { sinaisDe, ENVELOPE_VAZIO } from './sinais.js';
-import { CATALOGO, doPapel, semCobranca } from './catalogo.js';
+import { CATALOGO, doPapel, semCobranca, IDS_CATALOGO, TIPOS } from './catalogo.js';
 import { ordenar, compor, explorar, SLOTS } from './ranking.js';
 import { validarAcao, chipsDe } from '../assistente.js';
 import * as P from './perfil.js';
-import { CATALOGO as CAT, IDS_CATALOGO, TIPOS } from './catalogo.js';
 import { ROTAS_CONHECIDAS_PASSO } from '../assistente.js';
 
 // O vocabulário fechado do perfil nasce do catálogo: sem esta ligação,
