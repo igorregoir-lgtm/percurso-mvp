@@ -3,6 +3,9 @@
 // filtro de perimetro do campo livre, alertas de ausencia, safras,
 // trajetorias e a sintese de ciclo (template contido + revisor).
 import { all, get, run, tx } from './db.js';
+// O modelo REDIGE a síntese; os números continuam vindo do SQL daqui e são
+// conferidos um a um contra ele antes de o texto existir (decisão 28).
+import { redigirComModelo, SISTEMA_REDATOR } from './redacao-modelo.js';
 
 // Parametros de protocolo (M6 — protocolo de aplicacao) ------------------------
 export const PARAMS = {
@@ -762,9 +765,24 @@ export function redigirSintese(n) {
   return partes.join(' ');
 }
 
-export function gerarSintese(cicloId, programaId = null) {
+export async function gerarSintese(cicloId, programaId = null) {
   const n = numerosDoCiclo(cicloId, programaId);
-  const texto = redigirSintese(n);
+  const determinado = redigirSintese(n);
+  // O modelo REDIGE; os números continuam vindo do SQL acima e são conferidos
+  // um a um contra ele antes de o texto existir. Qualquer reprovação — número
+  // que não bate, verbo causal, falha do modelo — cai neste `determinado`, que
+  // é o texto que o produto sempre soube escrever. A aprovação humana da
+  // coordenação continua exatamente onde estava.
+  const r = await redigirComModelo({
+    sistema: SISTEMA_REDATOR,
+    pedido: `Este é o rascunho automático da síntese do ciclo, correto mas seco:\n\n"""${determinado}"""\n\n`
+      + `Reescreva-o para a coordenação do instituto em 2 a 3 parágrafos curtos, com tom de quem `
+      + `conta o ciclo para a equipe: frases simples, e o que cada número significa para as `
+      + `crianças. MANTENHA exatamente os mesmos números, cada um ligado à mesma coisa a que já `
+      + `está ligado, sem acrescentar nem remover nenhum.`,
+    fatos: n, determinado, revisor: revisarSobreAlegacao, maxTokens: 700,
+  });
+  const texto = r.texto;
   const rev = revisarSobreAlegacao(texto);
   const existente = get(
     `SELECT * FROM sintese WHERE ciclo_id = ? AND programa_id IS ?`, cicloId, programaId ?? null);
@@ -777,8 +795,9 @@ export function gerarSintese(cicloId, programaId = null) {
          texto=excluded.texto, numeros_json=excluded.numeros_json,
          revisor_status=excluded.revisor_status, revisor_notas=excluded.revisor_notas,
          status='rascunho', gerado_em=excluded.gerado_em, aprovado_por=NULL, aprovado_em=NULL`,
-      cicloId, programaId ?? null, texto, JSON.stringify(n), rev.status, rev.notas.join(' '), agora());
-  return sinteseDe(cicloId, programaId);
+      cicloId, programaId ?? null, texto, JSON.stringify({ ...n, _origem: r.origem, _rotulo: r.rotulo, _motivo: r.motivo ?? null, _texto_automatico: determinado }),
+      rev.status, rev.notas.join(' '), agora());
+  return { ...sinteseDe(cicloId, programaId), origem: r.origem, rotulo: r.rotulo, motivo: r.motivo ?? null };
 }
 
 export function sinteseDe(cicloId, programaId = null) {

@@ -477,6 +477,47 @@ revisão do plano com 20 achados confirmados, revisão da implementação em `10
 
 ---
 
+### 28. O Qwen redigindo a síntese e o relatório: a infraestrutura ficou, o 4B não passou
+
+**Origem:** pedido explícito de explorar o modelo redigindo a síntese do ciclo e o rascunho do
+relatório do doador, ambos com human-in-the-loop (que já existiam: a coordenação aprova a
+síntese, a diretoria publica o relatório).
+
+**A cadeia construída** (`src/redacao-modelo.js`). Os números continuam vindo do SQL; o modelo
+recebe o texto determinístico e o REESCREVE com outro tom. Cada reescrita atravessa, em ordem:
+
+1. **`soUsaNumerosDe`** — pode omitir número, nunca acrescentar, trocar ou repetir. Repetir é
+   como se reatribui um número a outro conceito, por isso a checagem é por contagem.
+2. **`semAtribuicaoACrianca`** — barra "as crianças têm dificuldade em…", "mostra que as
+   crianças…". A rubrica mede comportamento observado; ela não diagnostica criança.
+3. **`preservaObrigatorias`**, e ela é **simétrica**: a declaração protegida tem que estar no
+   texto reescrito se — e somente se — estiver no original. O lado "não inventa" é o mais
+   importante: nada impedia o modelo de acrescentar "há mais de um ano" a uma capa em que esse
+   recorte foi **suprimido** por ter menos de cinco crianças.
+4. **`revisarSobreAlegacao`** — o revisor de sempre.
+5. Qualquer reprovação cai no **template determinístico**, por bloco. O documento nunca fica
+   pior do que era.
+6. A tela mostra as **duas versões** lado a lado, e a publicação continua sendo ato humano.
+
+**O resultado medido, e ele é negativo.** Com todos os portões valendo, o Qwen3-4B teve
+**0 aceitações em 16 chamadas**: 6 reprovações por uso de número, 10 por apagar ou inventar
+declaração obrigatória. Antes dos portões, o mesmo modelo produziu: *"67 crianças foram
+observadas em 106 atividades"* (106 é o número de crianças ativas), *"78% delas vieram aos
+encontros"* (78% é a taxa de presença, não a fração de crianças) e *"2,13 de 4, o que mostra
+que muitas crianças ainda têm dificuldade em mostrar como se sentem"* — todos com números
+verdadeiros e frases falsas.
+
+**A conclusão honesta:** neste porte de modelo, prosa segura e prosa útil não coexistem nestes
+dois documentos. `AI_REDATOR` fica **desligado por padrão** — ligar hoje só adiciona latência
+para cair no mesmo template. A infraestrutura e os testes ficam prontos: num modelo maior (o
+hardware comporta um Qwen 14B/30B) a conta muda, e a reavaliação é uma variável de ambiente.
+
+**O que isto ensinou, e vale além deste caso:** fidelidade numérica não é fidelidade semântica.
+Um verificador que confere cada número contra o banco aprova, sem hesitar, um documento em que
+todo número está certo e todas as frases estão erradas.
+
+---
+
 ## Dívidas técnicas conhecidas
 
 | Dívida | Impacto | Quando pagar |

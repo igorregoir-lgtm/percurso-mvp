@@ -751,9 +751,9 @@ export const rotas = {
     };
   },
 
-  'POST /api/relatorio/gerar': (req, body) => {
+  'POST /api/relatorio/gerar': async (req, body) => {
     exigeDiretoria(req);
-    return R.gerarRelatorio({
+    return await R.gerarRelatorio({
       tipo: body.tipo || 'ciclo', inicio: body.inicio, fim: body.fim,
       custoPeriodo: body.custo == null || body.custo === '' ? null : Number(body.custo),
     });

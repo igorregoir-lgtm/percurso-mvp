@@ -1211,7 +1211,15 @@ rota(/^#\/sintese/, async () => {
     <div class="cartao area-impressao" style="margin-top:14px">
       <div class="linha"><h2 class="cresce">Texto gerado</h2>
         <span class="selo ${s.status === 'aprovada' ? 'ok' : 'pend'}">${s.status}</span></div>
+      ${s.numeros?._origem === 'modelo' ? `<div class="selo alerta" style="margin-top:10px">redigido por modelo local · confira antes de aprovar</div>` : ''}
       <p style="font-size:15.5px;line-height:1.65;margin-top:12px">${esc(s.texto)}</p>
+      ${s.numeros?._origem === 'modelo' ? `
+        <details class="comparar">
+          <summary>ver a versão automática</summary>
+          <p>${esc(s.numeros._texto_automatico || '')}</p>
+          <p class="sub">Os números são os mesmos — a conferência garante. O que pode ter mudado é a
+             QUEM o número está ligado numa frase. Leia as duas antes de aprovar.</p>
+        </details>` : ''}
       <div class="linha" style="margin-top:14px">
         <span class="selo ${s.revisor_status === 'aprovado' ? 'ok' : 'alerta'}">revisor de sobre-alegação: ${esc(s.revisor_status)}</span>
         <span class="selo ${s.status === 'aprovada' ? 'ok' : 'pend'}">aprovação humana: ${s.status === 'aprovada' ? 'feita' : 'pendente'}</span>
@@ -2032,7 +2040,17 @@ rota(/^#\/relatorio/, async () => {
           <div class="numero">Bloco ${b.numero}</div>
           <h3>${esc(b.titulo)}</h3>
           ${b.destaque ? `<div class="destaque">${esc(b.destaque)}</div>` : ''}
+          ${b.origem === 'modelo' ? `<div class="selo alerta" style="margin-bottom:8px">redigido por modelo local · confira antes de publicar</div>` : ''}
           <p>${esc(b.texto)}</p>
+          ${b.origem === 'modelo' && b.texto_automatico ? `
+            <details class="comparar">
+              <summary>ver a versão automática deste bloco</summary>
+              <p>${esc(b.texto_automatico)}</p>
+              <p class="sub">Os números são os mesmos nas duas versões — a conferência garante isso.
+                 O que pode ter mudado é a QUEM o número está ligado numa frase. É por isso que a
+                 comparação existe: leia as duas antes de publicar.</p>
+              <button class="btn pequeno fantasma" data-acao="usar-automatico" data-bloco="${b.numero}">Prefiro a versão automática</button>
+            </details>` : ''}
           ${b.tabela?.length ? `<div class="rolagem" style="margin-top:10px"><table>
             <thead><tr>${Object.keys(b.tabela[0]).map(k => `<th>${esc(k)}</th>`).join('')}</tr></thead>
             <tbody>${b.tabela.map(l => `<tr>${Object.values(l).map(v => `<td>${esc(v ?? '—')}</td>`).join('')}</tr>`).join('')}</tbody>

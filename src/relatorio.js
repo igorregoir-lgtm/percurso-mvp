@@ -19,6 +19,9 @@ import {
 } from './domain.js';
 import { suprimir, exposicao, coberturaRegistro, riscoEvasao } from './scores.js';
 import { MARCADORES } from './voz.js';
+// O modelo reescreve cada bloco; os números continuam vindo do SQL deste
+// arquivo e são conferidos contra o bloco determinístico (decisão 28).
+import { redigirComModelo, SISTEMA_REDATOR } from './redacao-modelo.js';
 
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : null);
 // Decimal em portugues: 13,6 e nao 13.6.
@@ -453,10 +456,34 @@ export function periodosSugeridos(ref = hoje()) {
 // --------------------------------------------------------------------------
 // Geracao, revisao e publicacao.
 // --------------------------------------------------------------------------
-export function gerarRelatorio({ tipo = 'ciclo', inicio, fim, custoPeriodo = null }) {
+export async function gerarRelatorio({ tipo = 'ciclo', inicio, fim, custoPeriodo = null }) {
   if (!['ciclo', 'carta'].includes(tipo)) throw erro(422, 'Tipo de relatório inválido.');
   const n = numerosDoPeriodo({ inicio, fim, custoPeriodo });
   const blocos = tipo === 'ciclo' ? redigirRelatorio(n) : redigirCarta(n);
+
+  // O modelo REESCREVE cada bloco, um a um, e cada reescrita atravessa a mesma
+  // cadeia: só pode usar números que já estão no bloco determinístico, não pode
+  // atribuir nada à criança, e passa pelo revisor de sobre-alegação. Bloco
+  // reprovado fica com o texto do template — a mistura é por bloco, e o
+  // documento nunca fica pior do que era. A publicação continua sendo ato da
+  // diretoria, e ela vê as duas versões lado a lado (decisão 28).
+  let algumPeloModelo = false;
+  for (const b of blocos) {
+    const r = await redigirComModelo({
+      sistema: SISTEMA_REDATOR,
+      pedido: `Este é um bloco do relatório para quem financia o instituto, correto mas seco.\n\n`
+        + `TÍTULO: ${b.titulo}\nTEXTO:\n"""${b.texto}"""\n\n`
+        + `Reescreva SÓ o texto (não repita o título) em tom de carta a quem doa: frases curtas, `
+        + `palavras do dia a dia, e o que cada número significa para uma criança. Mantenha cada `
+        + `número ligado exatamente à mesma coisa a que já está ligado.`,
+      fatos: n, determinado: b.texto, revisor: revisarSobreAlegacao, maxTokens: 800,
+    });
+    b.texto_automatico = b.texto;          // a versão conferida fica guardada
+    b.origem = r.origem;
+    if (r.origem === 'modelo') { b.texto = r.texto; b.rotulo = r.rotulo; algumPeloModelo = true; }
+    else b.motivo = r.motivo;
+  }
+
   const texto = textoCorrido(blocos);
   const rev = revisarSobreAlegacao(texto);
   const periodo = `${inicio}..${fim}`;
@@ -470,6 +497,8 @@ export function gerarRelatorio({ tipo = 'ciclo', inicio, fim, custoPeriodo = nul
     capa_por_vinculo: capaPorVinculo(n),
     dose_publicavel: n.dose.publicavel,
     observacao_publicavel: n.observacao.publicavel,
+    blocos_pelo_modelo: blocos.filter(b => b.origem === 'modelo').map(b => b.numero),
+    algum_pelo_modelo: algumPeloModelo,
   };
 
   const existente = get(`SELECT * FROM relatorio WHERE tipo = ? AND periodo = ?`, tipo, periodo);

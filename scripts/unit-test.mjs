@@ -243,11 +243,11 @@ test('agregadoPorCiclo: célula pequena real é suprimida (não arredondada)', (
 // ---------------------------------------------------------------------------
 // Síntese aprovada é imutável até reabertura.
 // ---------------------------------------------------------------------------
-test('gerarSintese: síntese aprovada não é sobrescrita', () => {
+test('gerarSintese: síntese aprovada não é sobrescrita', async () => {
   const ciclo = get(`SELECT id FROM ciclo WHERE status='aberto'`);
-  D.gerarSintese(ciclo.id, null);
+  await D.gerarSintese(ciclo.id, null);
   D.aprovarSintese(ciclo.id, null, 2);           // Rita (coordenação)
-  assert.throws(() => D.gerarSintese(ciclo.id, null), (e) => e.status === 422);
+  await assert.rejects(() => D.gerarSintese(ciclo.id, null), (e) => e.status === 422);
 });
 
 test('aprovarSintese: educadora não aprova (403)', () => {
@@ -656,9 +656,9 @@ test('a INTERFACE não escreve à mão o que o revisor barra (rodada 2)', async 
     assert.doesNotMatch(front, re, `frase causal escrita à mão em public/app.js: ${re}`);
 });
 
-test('relatório: a supressão roda antes da redação e é declarada', () => {
+test('relatório: a supressão roda antes da redação e é declarada', async () => {
   const fim = D.hoje(), inicio = D.addDias(fim, -180);
-  const r = R.gerarRelatorio({ tipo: 'ciclo', inicio, fim });
+  const r = await R.gerarRelatorio({ tipo: 'ciclo', inicio, fim });
   assert.equal(r.blocos.length, 7);
   assert.equal(r.revisor_status, 'aprovado');
   assert.equal(r.supressoes.minimo, D.PARAMS.MINIMO_CELULA);
@@ -1259,4 +1259,55 @@ test('passo/orquestrador: o modelo só COMPRIME rótulo — nunca acrescenta con
   // Compressão honesta continua passando — é para isso que o modelo serve aqui
   assert.equal(PO.aceitarRotulo('Sonho da turma sem atividade', sonho), 'Sonho da turma sem atividade');
   assert.equal(PO.aceitarRotulo('Alerta de ausência', base), 'Alerta de ausência');
+});
+
+// ---------------------------------------------------------------------------
+// Redação por modelo (decisão 28) — as travas que tornam prosa de modelo
+// aceitável num documento que uma pessoa assina.
+// ---------------------------------------------------------------------------
+const RM = await import('../src/redacao-modelo.js');
+
+test('redação: fidelidade numérica — inventar número reprova o texto INTEIRO', () => {
+  const fatos = { observadas: 16, ativas: 18, cobertura_pct: 89, menor_media: 2.4, ciclo_fim: '2026-09-20', custo: 48200.5, meses: 13.6 };
+  const ok = RM.numerosPermitidos(fatos), dt = RM.datasPermitidas(fatos);
+  for (const t of ['16 das 18 crianças (89%)', 'a menor média é 2,4 de 4', 'janela até 20/09/2026',
+    'R$ 48.200,50 no período', 'vínculo de 13,6 meses', 'os sete blocos'])
+    assert.equal(RM.conferirNumeros(t, ok, dt).ok, true, `deveria aceitar: ${t}`);
+  for (const t of ['17 das 18 crianças', 'cobertura de 90%', 'a média foi 2,5',
+    'cerca de 20 crianças', 'vínculo de 14 meses', 'janela até 21/09/2026'])
+    assert.equal(RM.conferirNumeros(t, ok, dt).ok, false, `deveria barrar: ${t}`);
+});
+
+test('redação: o arredondado NÃO é permitido — 13,6 nunca vira 14', () => {
+  const ok = RM.numerosPermitidos({ meses: 13.6 });
+  assert.equal(RM.conferirNumeros('13,6 meses', ok).ok, true);
+  assert.equal(RM.conferirNumeros('14 meses', ok).ok, false);
+});
+
+test('redação: reescrita só pode OMITIR número, nunca acrescentar ou repetir', () => {
+  const base = 'Foram 106 crianças únicas e 120 matrículas ativas, em 179 encontros.';
+  assert.equal(RM.soUsaNumerosDe('Foram 106 crianças e 120 matrículas.', base).ok, true);
+  assert.equal(RM.soUsaNumerosDe('Foram 106 crianças em 106 encontros.', base).ok, false,
+    'repetir um número que só aparece uma vez é como se reatribui a outro conceito');
+  assert.equal(RM.soUsaNumerosDe('Foram 106 crianças e 130 matrículas.', base).ok, false);
+});
+
+test('redação: atribuir dificuldade à CRIANÇA é barrado — o número certo na frase proibida', () => {
+  for (const t of ['o que mostra que muitas crianças ainda têm dificuldade em se expressar',
+    'as crianças têm dificuldade de expressão', 'a média indica que as crianças estão mais maduras',
+    'nível baixo de maturidade emocional', 'revela que os alunos apresentam defasagem'])
+    assert.equal(RM.semAtribuicaoACrianca(t), false, `deveria barrar: ${t}`);
+  for (const t of ['a equipe registrou menor média nesta dimensão',
+    '"Expressão emocional" segue como a menor média (2,13 de 4)',
+    'crianças com maior presença apresentam os avanços descritos aqui'])
+    assert.equal(RM.semAtribuicaoACrianca(t), true, `não deveria barrar: ${t}`);
+});
+
+test('redação: sem modelo, síntese e relatório são idênticos ao template de sempre', async () => {
+  const c = D.cicloAberto();
+  const esperado = D.redigirSintese(D.numerosDoCiclo(c.id, null));
+  run(`UPDATE sintese SET status='rascunho' WHERE ciclo_id = ?`, c.id);
+  const s = await D.gerarSintese(c.id, null);
+  assert.equal(s.origem, 'deterministico', 'com AI_ENABLED=false o texto é o template');
+  assert.equal(s.texto, esperado);
 });
