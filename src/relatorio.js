@@ -229,12 +229,14 @@ function compararDose({ inicio, fim }) {
   return {
     publicavel, alta, baixa,
     fonte: 'rubrica interna de observação',
-    // O texto é do disclaimer, mas o revisor lê palavra por palavra e não entende
-    // negação: "não estabelece causa" reprovaria por conter "causa". Aqui a
-    // redação usa o adjetivo, que é mais preciso e não trava o revisor.
-    limites: 'Não há grupo de comparação fora do instituto, e presença alta pode refletir apoio familiar que também influencia a escola. '
-           + 'A leitura é de associação e não estabelece relação causal. O instituto apresenta este número como sinal de dose, não como efeito medido. '
-           + 'A avaliação do parceiro educacional não entra aqui: ela ainda não é ingerida pelo sistema.',
+    // A ressalva fala com quem doa, não com um comitê: mesma honestidade, sem
+    // jargão. Uma trava se mantém — o revisor lê palavra por palavra e não
+    // entende negação ("não estabelece causa" reprovaria por conter "causa"),
+    // então a redação diz o que a leitura É, nunca o que ela não é.
+    limites: 'Só que a gente não está dizendo que o instituto fez isso acontecer. '
+           + 'Quem vem mais costuma ter mais apoio em casa, e esse apoio pesa na escola do mesmo jeito; não temos um grupo de fora para comparar. '
+           + 'Lemos este número como sinal de que vir importa — nunca como efeito medido. '
+           + 'A avaliação da escola parceira não entra aqui: ela ainda não chega até nós por um caminho seguro.',
   };
 }
 
@@ -274,15 +276,30 @@ function marcadoresDoPeriodo({ inicio, fim }) {
     // folhas em uma das metades a comparacao nao e' publicavel.
     publicavel: a.total >= PARAMS.MINIMO_CELULA && b.total >= PARAMS.MINIMO_CELULA,
     linhas,
-    aviso: 'São observações de educadoras sobre o comportamento do grupo, não instrumento validado nem avaliação individual. '
-         + 'Educadoras diferentes observam de modo diferente, e parte da variação pode vir de quem observa. '
-         + 'Nenhuma criança é avaliada, pontuada ou classificada.',
+    aviso: 'É o olhar de quem estava na sala, não um teste. '
+         + 'Cada educadora enxerga de um jeito, e parte da diferença entre as colunas pode vir daí. '
+         + 'Nenhuma criança é avaliada, pontuada ou classificada: a anotação é sempre sobre o grupo.',
   };
 }
 
 // --------------------------------------------------------------------------
 // Redacao — template fechado. Cada numero abaixo veio de `numerosDoPeriodo`.
-// A ordem e' deliberada: do mais auditavel para o mais fragil.
+//
+// QUEM FALA: o instituto, para quem doa. Nao e' um sistema descrevendo o que
+// fez: e' a casa contando o periodo para quem a mantem aberta. Por isso o texto
+// trata o leitor por "voce", usa palavra do dia a dia no lugar de jargao
+// ("recorte", "denominador", "publicavel") e explica o que cada numero
+// significa para uma crianca, nao para o metodo.
+//
+// A ORDEM segue a leitura de quem doa, nao a do auditor:
+//   1 abertura · 2 quem foi recebido · 3 elas continuam vindo ·
+//   4 o que se ve em quem vem mais · 5 o que a educadora ve na sala ·
+//   6 o que elas sonham e o que faltou · 7 de onde vem o numero e o custo.
+// O bloco 6 fecha o conteudo de proposito: termina no que ainda falta, que e'
+// o unico pedido honesto que um relatorio assim pode fazer.
+//
+// O que NAO muda com o tom: nenhum numero nasce fora do banco, nenhum verbo
+// causal passa pelo revisor, e a supressao ja rodou antes desta funcao.
 // --------------------------------------------------------------------------
 
 /**
@@ -297,67 +314,85 @@ export function capaPorVinculo(n) {
 export function redigirRelatorio(n) {
   const b = [];
 
+  // 1 · Abertura. O número que abre é o mais difícil de conseguir no território:
+  // criança que continua vindo. Sem gente suficiente nesse recorte, a abertura
+  // troca de número e DIZ que trocou — sem nomear "doze meses" nem "um ano",
+  // porque a própria formulação já entregaria o grupo pequeno.
   b.push(capaPorVinculo(n)
-    ? { numero: 1, titulo: 'Capa · a afirmação deste ciclo', destaque: `${n.permanencia.mais_de_doze_meses} crianças`,
-        texto: `${n.permanencia.mais_de_doze_meses} crianças estão no instituto há mais de doze meses`
-          + (n.permanencia.presenca_pct != null ? `, com presença média de ${n.permanencia.presenca_pct}% nos encontros do período` : '')
-          + `. Permanência e presença são os dois indicadores que saem de registro contínuo, cobrem todas as crianças e podem ser conferidos encontro a encontro. `
-          + `Período de ${n.periodo.rotulo}.` }
-    : { numero: 1, titulo: 'Capa · a afirmação deste ciclo',
+    ? { numero: 1, titulo: 'Para começar · o que aconteceu por aqui', destaque: `${n.permanencia.mais_de_doze_meses} crianças`,
+        texto: `${n.permanencia.mais_de_doze_meses} crianças estão nesta casa há mais de um ano`
+          + (n.permanencia.presenca_pct != null ? `, e vieram a ${n.permanencia.presenca_pct}% dos encontros deste período` : '')
+          + `. No Jardim Ângela, continuar vindo é a coisa mais difícil de conseguir — e é isso que você ajuda a sustentar. `
+          + `Estes dois números saem da lista de presença de cada encontro, uma criança por vez: dá para conferir dia a dia. `
+          + `Este é o retrato de ${n.periodo.rotulo}.` }
+    : { numero: 1, titulo: 'Para começar · o que aconteceu por aqui',
         destaque: n.permanencia.presenca_pct != null ? `${n.permanencia.presenca_pct}% de presença` : `${n.cobertura.criancas_unicas} crianças`,
-        texto: `O instituto atendeu ${n.cobertura.criancas_unicas} crianças únicas no período`
-          + (n.permanencia.presenca_pct != null ? `, com presença média de ${n.permanencia.presenca_pct}% nos encontros` : '')
-          + `. O recorte de vínculo acima de doze meses não é publicado neste período: ele tem menos de ${n.minimo_celula} crianças e seria identificável. `
-          + `Período de ${n.periodo.rotulo}.` });
+        texto: `Neste período recebemos ${n.cobertura.criancas_unicas} crianças únicas`
+          + (n.permanencia.presenca_pct != null ? `, que vieram a ${n.permanencia.presenca_pct}% dos encontros` : '')
+          + `. Tem um número que preferimos não colocar aqui: quantas delas já completaram um ciclo inteiro de casa. `
+          + `São menos de ${n.minimo_celula}, e publicar apontaria para crianças específicas — nenhum número vale isso. `
+          + `Este é o retrato de ${n.periodo.rotulo}.` });
 
-  b.push({ numero: 2, titulo: 'Cobertura · quem o instituto atendeu',
-    texto: `${n.cobertura.criancas_unicas} crianças únicas e ${n.cobertura.matriculas} matrículas ativas, em ${n.cobertura.programas.length} recorte(s) de programa publicáveis, com ${n.cobertura.encontros} encontros realizados no período. `
-      + `${n.cobertura.multi_programa} crianças participam de mais de um programa: é exatamente a diferença entre as duas contagens. `
-      + `Somar matrículas e chamar de crianças superestimaria o alcance em cerca de ${n.cobertura.diferenca_pct}%.`,
+  b.push({ numero: 2, titulo: 'Quem você ajudou a receber',
+    texto: `Foram ${n.cobertura.criancas_unicas} crianças únicas e ${n.cobertura.matriculas} matrículas ativas, em ${n.cobertura.encontros} encontros ao longo do período. `
+      + `Os dois números são diferentes de propósito: ${n.cobertura.multi_programa} crianças participam de mais de um programa e aparecem duas vezes na conta de matrículas. `
+      + `Daria para somar tudo e dizer que alcançamos cerca de ${n.cobertura.diferenca_pct}% a mais de gente. Preferimos não fazer isso. `
+      + `Quando você lê "criança" neste documento, é uma criança, contada uma vez só.`,
     tabela: n.cobertura.programas.map(p => ({
-      recorte: p.rotulo, faixa: p.faixa ?? '—', criancas: p.criancas, matriculas: p.matriculas, encontros: p.encontros })) });
+      'Programa': p.rotulo, 'Idade': p.faixa ?? '—', 'Crianças': p.criancas,
+      'Matrículas': p.matriculas, 'Encontros': p.encontros })) });
 
-  b.push({ numero: 3, titulo: 'Permanência e presença',
-    texto: `O tempo médio de vínculo é de ${dec(n.permanencia.meses_medios)} meses, com mediana de ${dec(n.permanencia.mediana_meses)} meses; nenhuma criança conta mais de uma vez. `
+  b.push({ numero: 3, titulo: 'Elas continuam vindo',
+    texto: `Cada criança está conosco, em média, há ${dec(n.permanencia.meses_medios)} meses; metade delas, há ${dec(n.permanencia.mediana_meses)} meses ou mais. `
       + (n.permanencia.retencao_pct != null
-          ? `Das crianças com matrícula anterior ao período, ${n.permanencia.retencao_pct}% seguem matriculadas. ` : '')
-      + `A distribuição de vínculo e a presença por programa aparecem na tabela.`,
-    tabela: n.permanencia.faixas.map(f => ({ recorte: f.rotulo, criancas: f.criancas })) });
+          ? `Das que já estavam matriculadas antes deste período, ${n.permanencia.retencao_pct}% seguem aqui. ` : '')
+      + `É o número que a gente mais olha por dentro: criança que volta é criança que confia no lugar. `
+      + `Na tabela, há quanto tempo cada grupo está na casa — e ninguém é contado duas vezes.`,
+    tabela: n.permanencia.faixas.map(f => ({ 'Há quanto tempo estão aqui': f.rotulo, 'Crianças': f.criancas })) });
 
-  b.push({ numero: 4, titulo: 'Dose e trajetória',
+  b.push({ numero: 4, titulo: 'O que a gente vê em quem vem mais',
     texto: n.dose.publicavel
-      ? `Entre as crianças com presença de 80% ou mais, ${n.dose.alta.pct}% de ${n.dose.alta.n} avançaram na média da rubrica entre ciclos. `
-        + `Entre as com presença abaixo de 60%, ${n.dose.baixa.pct}% de ${n.dose.baixa.n} avançaram na mesma leitura. ${n.dose.limites}`
-      : `Este bloco não é publicado neste período: um dos grupos de dose tem menos de ${n.minimo_celula} crianças e a comparação seria identificável. ${n.dose.limites}` });
+      ? `Este é o número que pede mais calma. Entre as crianças que vieram a 80% ou mais dos encontros, ${n.dose.alta.pct}% das ${n.dose.alta.n} melhoraram na leitura das educadoras de um ciclo para o outro. `
+        + `Entre as que vieram a menos de 60%, foram ${n.dose.baixa.pct}% das ${n.dose.baixa.n}. ${n.dose.limites}`
+      : `Neste período a gente não publica esta comparação: um dos dois grupos tem menos de ${n.minimo_celula} crianças, e o número acabaria apontando para elas. ${n.dose.limites}` });
 
-  b.push({ numero: 5, titulo: 'Exposição · aspiração declarada e o que foi oferecido',
-    texto: `${n.exposicao.aspiracoes_declaradas} aspirações declaradas no Laboratório de Sonhos, distribuídas em ${n.exposicao.areas_com_interesse} áreas; `
-      + `${n.exposicao.areas_cobertas} dessas áreas tiveram atividade no período — cobertura de ${n.exposicao.valor}%. `
-      + (n.exposicao.lacunas.length
-          ? `Em aberto: ${n.exposicao.lacunas.map(l => `${l.rotulo ?? l.area} (${l.criancas} crianças, nenhuma atividade)`).join('; ')}. Publicar o que faltou é o que torna o resto do documento confiável.`
-          : `Nenhuma área com interesse declarado ficou sem atividade no período.`),
-    tabela: n.exposicao.areas.map(a => ({
-      recorte: a.rotulo, criancas: a.criancas, atividades: a.atividades,
-      situacao: a.atividades > 0 ? 'coberta' : 'em aberto' })) });
-
-  b.push({ numero: 6, titulo: 'Observação estruturada · o que as educadoras registram',
+  b.push({ numero: 5, titulo: 'O que a educadora vê na sala',
     texto: n.observacao.publicavel
-      ? `Ao fim de cada encontro a educadora registra marcadores de comportamento observável no nível da turma. `
-        + `A tabela compara a primeira metade do período (${n.observacao.folhas_primeira_metade} folhas) com a segunda (${n.observacao.folhas_segunda_metade} folhas). `
+      ? `No fim de cada encontro, a educadora para um minuto e anota como a turma esteve naquele dia: se o grupo colaborou, se participou, se estava agitado. `
+        + `A tabela compara o começo do período (${n.observacao.folhas_primeira_metade} anotações) com o fim (${n.observacao.folhas_segunda_metade}). `
         + n.observacao.aviso
-      : `Este bloco não é publicado neste período: o número de folhas registradas em uma das metades ficou abaixo de ${n.minimo_celula} e a leitura não seria confiável. `
+      : `Neste período tivemos poucas anotações em uma das metades — menos de ${n.minimo_celula} — e a comparação diria mais sobre o nosso registro do que sobre as crianças. Por isso ela fica de fora. `
         + n.observacao.aviso,
     tabela: n.observacao.publicavel
-      ? n.observacao.linhas.map(l => ({ recorte: l.rotulo, inicio: l.inicio_pct, fim: l.fim_pct })) : [] });
+      ? n.observacao.linhas.map(l => ({
+          'O que a educadora anotou': l.rotulo,
+          'No começo do período': l.inicio_pct == null ? null : `${l.inicio_pct}% dos encontros`,
+          'No fim': l.fim_pct == null ? null : `${l.fim_pct}% dos encontros` }))
+      : [] });
 
-  b.push({ numero: 7, titulo: 'Método, limites e custo',
-    texto: `Cada indicador declara a fonte e a cobertura na tabela. `
+  // 6 · fecha o conteúdo no que ainda falta: é o pedido, e é o que dá crédito
+  // a tudo o que veio antes.
+  b.push({ numero: 6, titulo: 'O que elas sonham — e o que a gente conseguiu oferecer',
+    texto: `No Laboratório de Sonhos, ${n.exposicao.aspiracoes_declaradas} crianças disseram o que querem ser quando crescer. `
+      + `São ${n.exposicao.areas_com_interesse} áreas diferentes, e a gente conseguiu levar atividade a ${n.exposicao.areas_cobertas} delas: ${n.exposicao.valor}% dos sonhos encontraram alguém para conversar. `
+      + (n.exposicao.lacunas.length
+          ? `Ainda estão esperando: ${n.exposicao.lacunas.map(l => `${l.rotulo ?? l.area}, com ${l.criancas} crianças`).join('; ')}. `
+            + `São meninas e meninos que disseram o que querem ser e ainda não encontraram ninguém daquela área para conhecer. `
+            + `A gente conta o que faltou porque é isso que faz o resto deste documento valer alguma coisa.`
+          : `Nenhuma área ficou sem atividade neste período.`),
+    tabela: n.exposicao.areas.map(a => ({
+      'Área do sonho': a.rotulo, 'Crianças': a.criancas, 'Atividades no período': a.atividades,
+      'Situação': a.atividades > 0 ? 'teve atividade' : 'ainda esperando' })) });
+
+  b.push({ numero: 7, titulo: 'De onde vêm os números, quanto custou e o que a gente não afirma',
+    texto: `Cada número daqui vem do registro do dia a dia, feito pela educadora no fim do encontro — a tabela mostra a origem de cada um e o quanto ele cobre. Nada foi estimado. `
       + (n.custo.valor != null
-          ? `O custo do período foi de ${n.custo.valor_brl}: ${brl(n.custo.por_crianca_unica)} por criança única (denominador ${n.custo.denominador_crianca_unica}) e ${brl(n.custo.por_matricula)} por matrícula (denominador ${n.custo.denominador_matricula}). As duas leituras aparecem sempre juntas — publicar apenas a segunda faria o custo por criança parecer menor do que é. `
-          : `O custo do período ainda não foi preenchido; quando for, os dois denominadores serão publicados lado a lado (${n.custo.denominador_crianca_unica} crianças únicas e ${n.custo.denominador_matricula} matrículas). `)
-      + `Crianças com maior presença apresentam os avanços descritos neste documento. `
-      + `A leitura é de associação: fatores externos não foram isolados.`,
-    tabela: n.fontes.map(f => ({ recorte: f.indicador, fonte: f.fonte, cobertura: f.cobertura })) });
+          ? `Manter esta casa aberta neste período custou ${n.custo.valor_brl}: ${brl(n.custo.por_crianca_unica)} por criança única e ${brl(n.custo.por_matricula)} por matrícula. `
+            + `As duas contas aparecem sempre juntas; se a gente publicasse só a segunda, o custo por criança pareceria menor do que ele é. `
+          : `O custo deste período ainda não foi fechado. Quando for, as duas contas vão aparecer lado a lado — por criança única (${n.custo.denominador_crianca_unica} crianças) e por matrícula (${n.custo.denominador_matricula}) —, nunca só uma delas. `)
+      + `E, para terminar com honestidade: as crianças com mais presença apresentam os avanços descritos aqui, mas nada neste documento separa o que veio do instituto do que veio da escola, da família ou da própria criança. Fatores externos não foram isolados. `
+      + `Nenhuma criança aparece sozinha em nenhuma linha: qualquer grupo com menos de ${n.minimo_celula} é reunido a outro ou fica de fora.`,
+    tabela: n.fontes.map(f => ({ 'Número': f.indicador, 'De onde vem': f.fonte, 'Quanto cobre': f.cobertura })) });
 
   return b;
 }
@@ -374,15 +409,15 @@ export function redigirCarta(n) {
   const p = [];
   p.push(`Você ajudou a manter esta casa aberta neste período. Aqui está o que aconteceu dentro dela.`);
   p.push(porVinculo
-    ? `${n.permanencia.mais_de_doze_meses} crianças estão no instituto há mais de um ano. No Jardim Ângela, continuar é o resultado mais difícil de conseguir.`
-    : `O instituto atendeu ${n.cobertura.criancas_unicas} crianças únicas no período`
-      + (n.permanencia.presenca_pct != null ? `, com presença média de ${n.permanencia.presenca_pct}%` : '')
-      + `. O recorte de quem está aqui há mais de um ano não é publicado neste período: ele tem menos de ${n.minimo_celula} crianças e seria identificável.`);
-  p.push(`Neste período, ${n.exposicao.aspiracoes_declaradas} crianças disseram o que querem ser quando crescer, em ${n.exposicao.areas_com_interesse} áreas; ${n.exposicao.areas_cobertas} dessas áreas tiveram atividade.`
-    + (lac ? ` ${lac.criancas} ainda esperam encontrar alguém da área de ${(lac.rotulo ?? lac.area).toLowerCase()}.` : ''));
-  p.push(`Nenhuma criança aparece isolada neste texto: recortes com menos de ${n.minimo_celula} crianças são agrupados ou suprimidos antes da publicação.`);
-  p.push(`Crianças com maior presença apresentam os avanços descritos acima. `
-    + `A leitura é de associação: fatores externos não foram isolados.`);
+    ? `${n.permanencia.mais_de_doze_meses} crianças estão no instituto há mais de um ano. No Jardim Ângela, continuar vindo é a coisa mais difícil de conseguir — e é isso que você sustenta.`
+    : `Recebemos ${n.cobertura.criancas_unicas} crianças únicas`
+      + (n.permanencia.presenca_pct != null ? `, que vieram a ${n.permanencia.presenca_pct}% dos encontros` : '')
+      + `. Quantas delas já estão aqui há mais tempo? Esse número não é publicado neste período: são menos de ${n.minimo_celula} crianças, e ele acabaria apontando para elas.`);
+  p.push(`Neste período, ${n.exposicao.aspiracoes_declaradas} crianças disseram o que querem ser quando crescer, em ${n.exposicao.areas_com_interesse} áreas; conseguimos levar atividade a ${n.exposicao.areas_cobertas} delas.`
+    + (lac ? ` Outras ${lac.criancas} ainda esperam conhecer alguém da área de ${(lac.rotulo ?? lac.area).toLowerCase()}.` : ''));
+  p.push(`Nenhuma criança aparece sozinha nestas linhas: grupos com menos de ${n.minimo_celula} crianças são agrupados ou suprimidos antes de qualquer publicação.`);
+  p.push(`As crianças que vêm mais apresentam os avanços que você leu aqui. `
+    + `Só que a gente não separa o que veio desta casa do que veio da escola e da família: fatores externos não foram isolados.`);
   return [{
     numero: 1, titulo: `Carta do período · ${n.periodo.rotulo}`,
     destaque: porVinculo

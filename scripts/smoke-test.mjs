@@ -780,7 +780,10 @@ secao('16 · Relatório do ciclo, carta e supressão (F13/F14)');
   T('a manchete da capa respeita o mínimo de célula',
     g.corpo.supressoes.capa_por_vinculo
       ? g.corpo.numeros.permanencia.mais_de_doze_meses >= 5
-      : !/há mais de doze meses/.test(g.corpo.blocos[0].texto));
+      // As DUAS formulações do recorte são barradas: com o texto em linguagem
+      // de carta, "há mais de um ano" é o jeito natural de dizer o mesmo — e
+      // publicaria o grupo pequeno pela porta dos fundos.
+      : !/há mais de doze meses|há mais de um ano/.test(g.corpo.blocos[0].texto));
   T('crianças únicas e matrículas aparecem lado a lado',
     /crianças únicas e \d+ matrículas/i.test(g.corpo.texto));
   T('a supressão foi aplicada ANTES da redação e é declarada',
