@@ -1,78 +1,3 @@
-Percurso — evidências de teste
-Execução em 24/08/2026 19:52 · Node v26.7.0
-
-================================================================
-  1) TESTES UNITÁRIOS DAS REGRAS CRÍTICAS  (banco temporário)
-================================================================
-
-✔ filtrarPerimetro: barra frase clínica e preserva o restante (0.678166ms)
-✔ filtrarPerimetro: cobre as quatro categorias do perímetro (0.101958ms)
-✔ filtrarPerimetro: texto benigno passa intacto (0.079958ms)
-✔ filtrarPerimetro: texto vazio ou nulo não quebra (0.261541ms)
-✔ filtrarPerimetro: limite declarado — paráfrase sem termo da lista passa (0.076125ms)
-✔ revisarSobreAlegacao: verbo causal forte reprova (0.4195ms)
-✔ revisarSobreAlegacao: sem a ressalva metodológica reprova (0.263417ms)
-✔ revisarSobreAlegacao: texto contido com ressalva aprova (0.03975ms)
-✔ redigirSintese: o template fechado sempre passa no próprio revisor (0.91575ms)
-✔ elegibilidade: consentimento pendente bloqueia com motivo explícito (0.154708ms)
-✔ elegibilidade: registrar e revogar consentimento abre e fecha o campo (0.523417ms)
-✔ registrarConsentimento: ativar sem nomear o responsável é recusado (422) (0.177542ms)
-✔ salvarObservacao: o olhar não aceita texto sobre a criança (v2) (0.507916ms)
-✔ salvarObservacao: ciclo fechado não aceita observação nova (0.054666ms)
-✔ salvarObservacao: nível fora da escala 1–4 é recusado (0.105ms)
-✔ agregadoPorCiclo: nenhuma média circula com n abaixo do mínimo (0.610458ms)
-✔ agregadoPorCiclo: célula pequena real é suprimida (não arredondada) (1.823458ms)
-✔ gerarSintese: síntese aprovada não é sobrescrita (1.456875ms)
-✔ aprovarSintese: educadora não aprova (403) (0.057958ms)
-✔ utilitários de data: addDias e diasEntre são consistentes (0.058875ms)
-✔ validarExtracao: só aceita o schema fechado (0.113792ms)
-✔ extrairDaFala: mesma fala, mesma saída (determinístico e auditável) (0.511667ms)
-✔ extrairDaFala: a lista de exclusão barra antes de extrair, e o resto sobrevive (0.266417ms)
-✔ extrairDaFala: abaixo do piso de confiança nada é pré-marcado (0.055541ms)
-✔ extrairDaFala: falta só entra com nome da turma e verbo explícito (0.169ms)
-✔ suprimir: recorte pequeno é agrupado, não apagado em silêncio (0.086917ms)
-✔ suprimir: se nem o agrupado passa do mínimo, ele não é publicado (0.031334ms)
-✔ riscoEvasao: duas faltas seguidas colocam a matrícula na lista (0.424542ms)
-✔ riscoEvasao: o valor discrimina em vez de saturar em 100 (4.406917ms)
-✔ riscoEvasao: compara a criança com a linha de base dela, não com a turma (3.950541ms)
-✔ coberturaRegistro: folha em branco não conta como registro (0.452375ms)
-✔ exposicao: área com interessadas e zero atividades vira lacuna nomeada (0.205584ms)
-✔ segundaDa: qualquer dia da semana resolve para a segunda-feira dela (0.03125ms)
-✔ estadoDoRegistro: o rótulo descreve o registro, nunca a criança (0.271833ms)
-✔ lerCsv: aspas, ponto e vírgula, BOM e CRLF (0.112167ms)
-✔ chaveDeCrianca: três grafias do mesmo nome geram a mesma chave (0.0725ms)
-✔ fila: falha de REDE enfileira e nada se perde (0.1405ms)
-✔ fila: erro de REGRA (4xx) propaga e NÃO entra na fila (0.082125ms)
-✔ fila: ao voltar a rede, drenar envia tudo e esvazia (0.108459ms)
-✔ fila: item recusado por regra na drenagem sai da fila e é reportado (0.069459ms)
-✔ fila: drenar com fila vazia não faz nada (0.034083ms)
-✔ consultar: sobre criança individual, o sistema diz que não sabe (0.205125ms)
-✔ relatório: o revisor barra verbo causal e exige a ressalva (0.035167ms)
-✔ revisor: borda de palavra, não substring (achado A-09) (0.056208ms)
-✔ revisor: "contribuiu para" é atribuição causal e reprova (achado E-02) (0.023875ms)
-✔ perímetro: termo acentuado casa (achado SRV-04) (0.073167ms)
-✔ ingestão: sentinela de nascimento desconhecido não entra na chave (achado SRV-02) (0.021292ms)
-✔ coberturaRegistro: turma que parou de registrar continua no painel (achado SRV-05) (0.252333ms)
-✔ perímetro: categoria 5 exige nome da turma E estado interno (rodada 2) (0.146334ms)
-✔ perímetro: "saúde" como ÁREA passa; saúde de criança barra (rodada 2) (0.061458ms)
-✔ ingestão: sem nascimento, grafias incompatíveis NÃO se fundem (rodada 2) (0.5115ms)
-✔ carta: a manchete de vínculo obedece ao mínimo de célula (rodada 2) (0.073541ms)
-✔ a INTERFACE não escreve à mão o que o revisor barra (rodada 2) (0.739333ms)
-✔ relatório: a supressão roda antes da redação e é declarada (5.448959ms)
-✔ fecharCiclo: executa a retenção declarada e apaga texto legado (0.423ms)
-ℹ tests 55
-ℹ suites 0
-ℹ pass 55
-ℹ fail 0
-ℹ cancelled 0
-ℹ skipped 0
-ℹ todo 0
-ℹ duration_ms 33.384125
-
-================================================================
-  2) BATERIA DO FLUXO PRINCIPAL  (contra o servidor no ar)
-================================================================
-
 
 Percurso — testes do fluxo principal
 Alvo: http://localhost:3000
@@ -360,5 +285,11 @@ Alvo: http://localhost:3000
   ✓ o fecho reporta quantas anotações legadas foram descartadas
   ✓ ciclo já fechado não fecha de novo (422)
 
-242 passaram · 0 falharam
+12 · Escopo de turma nas rotas de leitura individual (decisão 22)
+  ✓ a lista da Cleide também vem escopada e não-vazia
+  ✓ existe criança exclusiva de outra educadora para o teste
+  ✓ educadora NÃO abre ficha de criança de outra turma (403)
+  ✓ educadora NÃO abre observação de criança de outra turma (403)
+
+246 passaram · 0 falharam
 

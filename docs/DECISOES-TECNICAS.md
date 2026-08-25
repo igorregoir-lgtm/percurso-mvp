@@ -11,8 +11,10 @@ dossiê, não a uma preferência de stack.
 licença recorrente"* · *"A solução precisa sobreviver à semana 10"*.
 
 **Decisão.** Servidor HTTP do próprio Node (`node:http`) e banco SQLite do próprio Node
-(`node:sqlite`, estável a partir da v22.5). Nenhum `npm install`, nenhuma etapa de build e nenhum
-framework são necessários para executar localmente.
+(`node:sqlite` — **sem flag a partir da v22.13**; entre 22.5 e 22.12 exigia
+`--experimental-sqlite`, e a declaração antiga de "22.5 ou superior" quebrava o boot — corrigido na
+revisão de 25/08/2026: `.nvmrc` fixa o Node 24 LTS e `engines` exige `>=22.13`). Nenhum
+`npm install`, nenhuma etapa de build e nenhum framework são necessários para executar localmente.
 
 O repositório mantém um `package-lock.json` mínimo apenas para registrar de forma reproduzível os
 metadados de `package.json`; ele não instala pacote algum. `npm install` continua desnecessário
@@ -137,8 +139,8 @@ autenticação por senha ou SSO; (b) HTTPS; (c) registro de auditoria de acesso 
 
 ### 9. Dados sintéticos determinísticos
 
-PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 242
-asserções de fluxo e os 55 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
+PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 246
+asserções de fluxo e os 63 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
 a *hoje*, então a demonstração nunca "envelhece".
 
 ---
@@ -213,6 +215,11 @@ saída obrigatoriamente válida contra `validarExtracao`. Um SLM local (ou uma A
 orçamento) entra nesse lugar **sem tocar em mais nada** — a validação de schema, a lista de exclusão
 e a confirmação humana continuam sendo do sistema, não do modelo.
 
+**Atualização (25/08/2026).** A troca prevista foi implementada como OPÇÃO: `extrairComModelo`
+(`src/copilot.js`) usa o Qwen local sob o MESMO schema fechado, com pseudonimização reversível antes
+do modelo e fallback lexical em qualquer falha — atrás de `AI_EXTRATOR=1`, desligada por padrão.
+O contrato desta decisão não mudou; ganhou uma segunda implementação plugável (ver decisão 19).
+
 ---
 
 ### 14. Migração de esquema pela assinatura do próprio DDL
@@ -286,6 +293,91 @@ priorizar qual família ligar primeiro.
 
 ---
 
+### 19. Camada de IA local: opt-in, desligável e com fallback determinístico em tudo
+
+**Origem:** plano de arquitetura (PLANO-IMPLEMENTACAO-RAG-COPILOT-SROI-LORA.md) e análise
+ANALISE-SLM-E-SROI.md, implementados na revisão de 25/08/2026 (plano auditado em
+`revisao/04-PLANO-COMPLEMENTACAO-IA.md`).
+
+Um SLM local (Qwen3 4B Instruct 2507, GGUF Q4_K_M, Apache-2.0) roda via `llama.cpp` em
+`127.0.0.1:8081`, atrás de `AI_ENABLED` — **desligada por padrão**. Três usos, três coleiras:
+
+- **Copilot reflexivo (Modo B, `#/copilot`)** — os 7 blocos do contrato saem por `json_schema`
+  (gramática, não boa vontade); ordem obrigatória do pipeline: filtro de perímetro sobre o texto
+  ORIGINAL → recusas determinísticas → pseudonimização → RAG → modelo → verificador de citações.
+  Memória só de sessão (RAM, TTL), botão "Apagar sessão", fila de 2 com teto.
+- **Modo A opcional (`AI_EXTRATOR=1`)** — mesma validação, mesmo fallback (decisão 13).
+- **Explicação do SROI (`/api/sroi/explicar`)** — prompt fechado, saída sob o revisor de
+  sobre-alegação; a diretoria continua sem acesso ao chat (decisão 16).
+
+O que a camada NUNCA faz: pontuar criança, escolher coeficiente, gravar sem confirmação, receber
+nome (pseudonimização com limite residual DECLARADO na UI), escutar na rede. Ligar em operação
+real com educadoras é condicionado ao go da PoC (`docs/POC-COPILOT.md`). Detalhes: `ai/README.md`.
+
+**Herança declarada:** os papéis da camada de IA vêm do mesmo cookie sem assinatura da decisão 8 —
+sem autenticação real, o gate de papel é declarativo. Aceitável só com dado sintético; com dado
+real, a dívida de autenticação bloqueia também esta camada.
+
+---
+
+### 20. RAG em banco separado; FTS5 proibido no banco principal
+
+O corpus do copilot vive em `data/rag/corpus.db` (SQLite + FTS5), **reconstruível do zero** por
+`node src/rag/ingest.mjs` a partir do texto canônico versionado + `data/rag/manifest.json` — o
+binário não entra no git; o CI reconstrói. Motivo duro: a migração por assinatura de DDL
+(decisão 14) derruba e recria o banco principal, e um drop ingênuo não sobrevive às shadow tables
+do FTS5 — portanto **nenhuma virtual table entra em `data/percurso.db`**. O manifest é JSON
+(não YAML) porque o runtime não ganha parser novo (decisão 1). Política de admissão de fontes:
+`docs/GOVERNANCA-FONTES-RAG.md` — sem licença verificável, não entra; dado infantil, nunca.
+
+---
+
+### 21. SROI exploratório: o número nasce de fórmula versionada, o modelo só explica
+
+`src/sroi/calculator.js` implementa a equação da análise (§5.8) com 3 cenários e faixa
+obrigatória; dupla contagem (envelope Insper XOR componentes) é 422; benchmark não vira
+multiplicador; toda proxy sai com fonte, ano-base e ressalva (`data/sroi/premissas.json`). O
+eixo narrativo é a prevenção de violência — decisão do Instituto, registrada como relevância
+estratégica, não como prova causal. Método e limites: `docs/SROI-METODOLOGIA.md`.
+
+---
+
+### 22. Escopo de turma nas rotas herdadas de leitura individual
+
+O item 1.2 do horizonte 1 foi fechado (25/08/2026): ficha, lista, observação-leitura e alertas
+agora aplicam "educador DA criança + coordenação" (`exigeAcessoCrianca`/filtros por turma em
+`src/api.js`). **Limitação declarada:** a educadora substituta não tem representação no modelo —
+quando precisar cobrir uma turma, o caminho é a coordenação (que enxerga tudo), até a coordenação
+decidir se substituição vira vínculo no modelo.
+
+---
+
+### 23. Políticas propostas — pendentes de validação da coordenação
+
+Duas lacunas da revisão de 22/08 (A-06 e A-11) ganham **proposta default documentada**, marcada
+como pendente — o MVP não inventa decisão da organização:
+
+- **Dado histórico após revogação de consentimento (A-06):** congelar — o histórico categórico já
+  gravado deixa de entrar em qualquer agregado novo e some das telas; descarte definitivo (apagar
+  vs. anonimizar) é decisão da coordenação antes de dado real. Hoje a revogação já bloqueia novas
+  observações; o congelamento dos agregados é a proposta a validar.
+- **Janela mínima de convívio (A-11):** contar por dupla educadora-criança (mais conservador — o
+  instrumento exige convívio de QUEM aplica), e não por instituição. O código atual conta
+  presenças da criança na instituição; a mudança fica condicionada à validação da coordenação.
+
+---
+
+### 24. PWA network-first, com a limitação de contexto seguro declarada
+
+`public/manifest.json` + `public/sw.js` com **network-first para tudo** (cache só como fallback
+offline) — cache-first serviria app velho a cada atualização e foi descartado. Instalação e
+offline funcionam onde há *secure context*: `localhost` e o deploy HTTPS (Render). Pelo IP da
+rede local (`http://IP:3000`) o navegador não registra service worker: a página funciona normal,
+sem offline/instalação — limitação técnica declarada no README, sem promessa falsa. Caminho
+futuro (mkcert/túnel) registrado e não adotado.
+
+---
+
 ## Dívidas técnicas conhecidas
 
 | Dívida | Impacto | Quando pagar |
@@ -295,4 +387,9 @@ priorizar qual família ligar primeiro.
 | Sem log de auditoria de acesso individual | Exigível sob LGPD | Antes do primeiro dado real |
 | Filtro de perímetro por termo, não por sentido | Deixa passar paráfrase | Depende de avaliação com a psicóloga |
 | Sem exportação (CSV/PDF) da síntese | Copiar e colar resolve hoje | Quando o relatório anual for montado |
-| Sem paginação na lista de crianças (limite 60) | Irrelevante em 106 crianças | Se a operação dobrar |
+| Sem paginação na lista de crianças (limite 60, agora com aviso de corte) | Irrelevante em 106 crianças | Se a operação dobrar |
+| PoC do copilot com pedagogos não realizada | Bloqueia `AI_ENABLED=1` em operação real | Antes de ligar a IA para educadoras (protocolo pronto em `POC-COPILOT.md`) |
+| 20 consultas do rag-test de autoria interna | Gate C não congelado | Validação por pedagogo (registrada em `POC-COPILOT.md`) |
+| Anonimização não cobre apelido/paráfrase | Risco residual declarado na UI | Reavaliar com a PoC; orientação de uso é a mitigação |
+| Educadora substituta sem representação no modelo | Escopo de turma barra acesso legítimo temporário | Decisão da coordenação (decisão 22) |
+| Políticas A-06/A-11 propostas, não validadas | Pendência de governança | Validação da coordenação (decisão 23) |

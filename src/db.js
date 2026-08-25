@@ -12,6 +12,11 @@ export const DB_PATH = process.env.PERCURSO_DB || join(ROOT, 'data', 'percurso.d
 // Versao legivel do esquema, para documentacao e handover.
 export const ESQUEMA_VERSAO = 2;
 
+// GUARDA: nenhuma virtual table FTS5 neste banco — a migracao por assinatura
+// (drop de todas as tabelas + recriacao) nao sobrevive as shadow tables do
+// FTS. O RAG vive em data/rag/corpus.db, derivado e reconstrucao propria
+// (decisao 20; src/rag/ingest.mjs).
+
 let db = null;
 
 export function getDb() {

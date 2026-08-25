@@ -47,7 +47,7 @@ const servidor = createServer(async (req, res) => {
     try {
       const handler = rotas[rota];
       if (!handler) return json(res, 404, { erro: `Rota não encontrada: ${rota}` });
-      const corpo = req.method === 'POST' ? await lerCorpo(req) : {};
+      const corpo = ['POST', 'DELETE'].includes(req.method) ? await lerCorpo(req) : {};
       const saida = await handler(req, corpo, url.searchParams);
       const cookie = saida?._cookie;
       if (saida && typeof saida === 'object') delete saida._cookie;

@@ -864,5 +864,26 @@ secao('18 · Fecho de ciclo executa a retenção declarada');
   T('ciclo já fechado não fecha de novo (422)', denovo.status === 422);
 }
 
+// ------------------------------------------------ 12. escopo de turma (A4)
+secao('12 · Escopo de turma nas rotas de leitura individual (decisão 22)');
+{
+  // Cleide (educador 3) tem turma própria; Maria não pode abrir criança dela.
+  await POST('cleide', '/api/sessao', { educador_id: 3 });
+  const deCleide = (await GET('cleide', '/api/criancas')).corpo.criancas;
+  T('a lista da Cleide também vem escopada e não-vazia', deCleide.length > 0);
+
+  // Criança em 2 programas pode estar em turmas de DUAS educadoras — o alvo
+  // do teste é uma criança que NÃO tenha vínculo com a Maria.
+  const daMaria = (await GET('maria', '/api/criancas')).corpo.criancas;
+  const alheia = deCleide.find(c => !daMaria.some(x => x.id === c.id));
+  T('existe criança exclusiva de outra educadora para o teste', !!alheia);
+
+  const ficha = await GET('maria', `/api/crianca?id=${alheia.id}`);
+  T('educadora NÃO abre ficha de criança de outra turma (403)', ficha.status === 403, `(${ficha.status})`);
+
+  const obs = await GET('maria', `/api/observacao?crianca_id=${alheia.id}`);
+  T('educadora NÃO abre observação de criança de outra turma (403)', obs.status === 403, `(${obs.status})`);
+}
+
 console.log(`\n\x1b[1m${ok} passaram · ${falhas} falharam\x1b[0m\n`);
 process.exit(falhas ? 1 : 0);

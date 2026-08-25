@@ -134,6 +134,11 @@ quatro respostas do bloco 6.** A regra virou chave estrangeira.
 
 ## Dados sintéticos semeados
 
+> Snapshot medido em 22/08/2026. As datas da seed são relativas a *hoje*, então os volumes que
+> dependem de calendário (encontros, presenças, folhas, observações, consentimentos pendentes)
+> variam alguns pontos conforme o dia da semana em que o banco é semeado. **Invariantes exatos**,
+> que os testes protegem: 132 crianças, 106 ativas únicas, 120 matrículas, 14 em dois programas.
+
 | Item | Volume |
 |---|---|
 | Crianças (ativas + egressas) | 132 |
@@ -150,3 +155,42 @@ quatro respostas do bloco 6.** A regra virou chave estrangeira.
 
 A geração é determinística (PRNG com semente fixa em `src/seed.js`): rodar `node scripts/reset.mjs`
 duas vezes produz exatamente o mesmo banco, o que torna os testes reproduzíveis.
+
+## Bancos derivados da camada de IA (v3)
+
+O banco operacional (`data/percurso.db`) **não** ganhou tabela nenhuma na v3 — e não pode ganhar
+FTS5 nunca: a migração por assinatura de DDL (decisão 14) derruba e recria o esquema, e o drop não
+sobrevive às shadow tables de uma virtual table. A camada de IA vive em artefatos derivados:
+
+| Arquivo | O que é | Fonte de verdade |
+|---|---|---|
+| `data/rag/corpus.db` | índice FTS5 do corpus do copilot (`chunk` + `chunk_fts`) | `data/rag/manifest.json` + `data/rag/corpus/*.txt` — reconstruível por `node src/rag/ingest.mjs`; não entra no git |
+| `data/ai-doacoes.jsonl` | interações doadas explicitamente pelos pedagogos (anonimizadas) | ato da pessoa; revogável por id; não entra no git |
+| `data/sroi/premissas.json` | proxies do SROI com fonte, ano-base e ressalva | versionado no git; é config, não banco |
+
+## Costura da âncora acadêmica (M2, deferida)
+
+O M2 (nota do parceiro educacional) segue deferido até o canal mediado responder à pergunta 2 do
+bloco 7 — mas o esquema **já comporta** a série sem migração destrutiva. A extensão proposta é uma
+tabela nova, sem tocar nas existentes:
+
+```sql
+CREATE TABLE serie_academica (
+  id          INTEGER PRIMARY KEY,
+  crianca_id  INTEGER NOT NULL REFERENCES crianca(id) ON DELETE CASCADE,
+  fonte       TEXT NOT NULL,            -- 'parceiro-educacional'
+  periodo     TEXT NOT NULL,            -- '2026-1' (semestre/ano do parceiro)
+  disciplina  TEXT NOT NULL,            -- portugues | matematica | ingles
+  medida      TEXT NOT NULL,            -- escala DECLARADA pelo parceiro (pergunta 2 em aberto)
+  valor       TEXT NOT NULL,            -- valor na escala original, sem conversão
+  importado_em TEXT NOT NULL,
+  UNIQUE (crianca_id, fonte, periodo, disciplina)
+);
+```
+
+Decisões embutidas na costura: o valor entra **na escala original do parceiro** (sem converter
+para a rubrica — são instrumentos diferentes); a série é aditiva (`trajetoriaCrianca` ganha uma
+série ao lado, nunca uma média combinada); e a governança exige linha própria em
+`governanca_campo` (base legal + consentimento) **antes** do primeiro dado real — mesmo padrão da
+rubrica. Como todo o dado atual é sintético, ativar a tabela é acrescentá-la ao `ESQUEMA_SQL`
+(a assinatura muda e o banco recria — decisão 14); com dado real, vira `ALTER TABLE` incremental.

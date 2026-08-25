@@ -237,15 +237,23 @@ export function recalcularAlertas(turmaId = null) {
   return { alertasAbertos: abertos.length };
 }
 
-export function alertas(status = null) {
+export function alertas(status = null, educadorId = null) {
+  // Escopo de turma (A4): a educadora vê os alertas das SUAS turmas; a lista
+  // completa é da coordenação. Papel sozinho não cumpre o "educador DA criança".
+  const escopo = educadorId
+    ? `AND a.crianca_id IN (SELECT m.crianca_id FROM matricula m
+         JOIN turma t ON t.id = m.turma_id
+        WHERE m.status='ativa' AND t.educador_id = ?)` : '';
   const sql = `SELECT a.*, c.nome, c.codigo,
                       (SELECT GROUP_CONCAT(p.nome, ', ') FROM matricula m
                          JOIN programa p ON p.id = m.programa_id
                         WHERE m.crianca_id = c.id AND m.status='ativa') AS programas
                  FROM alerta a JOIN crianca c ON c.id = a.crianca_id
                 ${status ? 'WHERE a.status = ?' : "WHERE a.status <> 'resolvido'"}
+                ${escopo}
                 ORDER BY a.status, a.criado_em DESC`;
-  return status ? all(sql, status) : all(sql);
+  const p = [...(status ? [status] : []), ...(educadorId ? [educadorId] : [])];
+  return all(sql, ...p);
 }
 
 export function atualizarAlerta(id, status, tratativa) {
@@ -643,9 +651,13 @@ export function numerosDoCiclo(cicloId, programaId = null) {
   const filtro = programaId ? 'AND m.programa_id = ?' : '';
   const p = programaId ? [programaId] : [];
 
+  // A-10: o denominador da cobertura publicada conta só programas no escopo —
+  // a Vivência terapêutica (no_escopo=0) não entra, senão o percentual distorce
+  // na síntese do ciclo e no painel da coordenação.
   const ativas = get(
     `SELECT COUNT(DISTINCT m.crianca_id) AS n FROM matricula m
-      WHERE m.status='ativa' ${filtro}`, ...p).n;
+       JOIN programa pr ON pr.id = m.programa_id
+      WHERE m.status='ativa' AND pr.no_escopo = 1 ${filtro}`, ...p).n;
   const observadas = get(
     `SELECT COUNT(DISTINCT o.crianca_id) AS n FROM observacao o
       WHERE o.ciclo_id = ? AND o.status='concluida'
@@ -678,6 +690,46 @@ export function numerosDoCiclo(cicloId, programaId = null) {
     menor_dimensao: menor?.dimensao ?? null, menor_media: menor?.valor ?? null,
     presenca_mes: pres.mes, presenca_pct: pres.pct, alertas_abertos: alertasAbertos,
     programa: programaId ? get(`SELECT nome FROM programa WHERE id = ?`, programaId).nome : 'todos os programas',
+  };
+}
+
+// --------------------------------------------------------------------------
+// Borda 2 da doutrina de IA ("consistência entre observadores") — versão
+// DETERMINÍSTICA: compara, por dimensão, a média de cada educadora com a média
+// geral do ciclo. É leitura de CALIBRAÇÃO do olhar para conversa de equipe —
+// nunca ranking, nunca métrica de desempenho da educadora. Supressão de célula
+// pequena vale aqui também: educadora com menos de MINIMO_CELULA observações
+// na dimensão não aparece.
+// --------------------------------------------------------------------------
+export function calibracaoEntreObservadores(cicloId) {
+  const LIMIAR = 0.75; // diferença de nível (escala 1-4) que merece conversa
+  const porEducadora = all(
+    `SELECT d.id AS dimensao_id, d.nome AS dimensao, e.id AS educador_id, e.apelido AS educadora,
+            COUNT(*) AS n, ROUND(AVG(oi.nivel), 2) AS media
+       FROM observacao_item oi
+       JOIN observacao o ON o.id = oi.observacao_id AND o.status = 'concluida' AND o.ciclo_id = ?
+       JOIN dimensao d ON d.id = oi.dimensao_id
+       JOIN educador e ON e.id = o.educador_id
+      GROUP BY d.id, e.id
+     HAVING COUNT(*) >= ?
+      ORDER BY d.ordem, e.id`, cicloId, PARAMS.MINIMO_CELULA);
+  const geral = new Map(all(
+    `SELECT d.id AS dimensao_id, ROUND(AVG(oi.nivel), 2) AS media, COUNT(*) AS n
+       FROM observacao_item oi
+       JOIN observacao o ON o.id = oi.observacao_id AND o.status = 'concluida' AND o.ciclo_id = ?
+       JOIN dimensao d ON d.id = oi.dimensao_id
+      GROUP BY d.id`, cicloId).map(g => [g.dimensao_id, g]));
+  const linhas = porEducadora.map(l => {
+    const g = geral.get(l.dimensao_id);
+    const desvio = g ? Math.round((l.media - g.media) * 100) / 100 : null;
+    return { ...l, media_geral: g?.media ?? null, desvio, divergente: desvio != null && Math.abs(desvio) >= LIMIAR };
+  });
+  return {
+    limiar: LIMIAR,
+    minimo_celula: PARAMS.MINIMO_CELULA,
+    linhas,
+    divergencias: linhas.filter(l => l.divergente),
+    leitura: 'Leitura de calibração do olhar: onde duas educadoras enxergam a mesma dimensão de jeitos muito diferentes, o convite é calibrar juntas com as âncoras — nunca comparar desempenho.',
   };
 }
 
@@ -849,21 +901,34 @@ export function fichaCrianca(criancaId) {
   };
 }
 
-export function listarCriancas({ q = '', turmaId = null, programaId = null, limite = 60 } = {}) {
+export function listarCriancas({ q = '', turmaId = null, programaId = null, educadorId = null, limite = 60 } = {}) {
   const termo = `%${(q || '').trim().toLowerCase()}%`;
   const cond = [`c.ativo = 1`, `m.status = 'ativa'`];
   const p = [];
   if (q) { cond.push(`(lower(c.nome) LIKE ? OR lower(c.codigo) LIKE ?)`); p.push(termo, termo); }
   if (turmaId) { cond.push(`m.turma_id = ?`); p.push(turmaId); }
   if (programaId) { cond.push(`m.programa_id = ?`); p.push(programaId); }
-  return all(
+  // Escopo de turma (A4): educadora enxerga só as crianças das próprias turmas.
+  if (educadorId) {
+    cond.push(`m.turma_id IN (SELECT id FROM turma WHERE educador_id = ?)`);
+    p.push(educadorId);
+  }
+  const where = cond.join(' AND ');
+  // A-13: o corte de 60 era silencioso; o total permite a tela declarar
+  // "mostrando X de N" e apontar a busca.
+  const total = get(
+    `SELECT COUNT(DISTINCT c.id) AS n
+       FROM crianca c JOIN matricula m ON m.crianca_id = c.id
+      WHERE ${where}`, ...p).n;
+  const criancas = all(
     `SELECT DISTINCT c.id, c.codigo, c.nome,
             (SELECT GROUP_CONCAT(p2.nome, ' · ') FROM matricula m2
                JOIN programa p2 ON p2.id = m2.programa_id
               WHERE m2.crianca_id = c.id AND m2.status='ativa') AS programas
        FROM crianca c JOIN matricula m ON m.crianca_id = c.id
-      WHERE ${cond.join(' AND ')}
+      WHERE ${where}
       ORDER BY c.nome LIMIT ?`, ...p, limite);
+  return { criancas, total, limite };
 }
 
 export function painelConsentimentos() {

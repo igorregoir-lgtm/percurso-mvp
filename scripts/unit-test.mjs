@@ -697,3 +697,98 @@ test('fecharCiclo: executa a retenção declarada e apaga texto legado', () => {
   assert.throws(() => D.fecharCiclo(ciclo.id, 2), (e) => e.status === 422);
 });
 
+
+// ---------------------------------------------------------------------------
+// Etapa A da complementação (25/08/2026) — invariantes das correções.
+// ---------------------------------------------------------------------------
+test('numerosDoCiclo: o denominador da cobertura só conta programas no escopo (A-10)', () => {
+  const ciclo = get(`SELECT * FROM ciclo WHERE status='aberto'`) ??
+    all(`SELECT * FROM ciclo ORDER BY ano DESC, ordem DESC LIMIT 1`)[0];
+  const n = D.numerosDoCiclo(ciclo.id);
+  const dentroDoEscopo = get(
+    `SELECT COUNT(DISTINCT m.crianca_id) AS n FROM matricula m
+       JOIN programa p ON p.id = m.programa_id
+      WHERE m.status='ativa' AND p.no_escopo = 1`).n;
+  const comForaDeEscopo = get(
+    `SELECT COUNT(DISTINCT crianca_id) AS n FROM matricula WHERE status='ativa'`).n;
+  assert.equal(n.ativas, dentroDoEscopo);
+  // O seed tem criança só na Vivência terapêutica; se isso mudar, o teste
+  // continua válido — só deixa de exercitar a diferença.
+  if (comForaDeEscopo > dentroDoEscopo) assert.ok(n.ativas < comForaDeEscopo);
+});
+
+test('listarCriancas: escopo de educadora restringe às turmas dela e declara o total (A4/A-13)', () => {
+  const tudo = D.listarCriancas({ limite: 500 });
+  assert.ok(tudo.total > 0 && tudo.criancas.length <= 500);
+  const educadora = get(`SELECT educador_id AS id FROM turma WHERE educador_id IS NOT NULL LIMIT 1`);
+  const dela = D.listarCriancas({ educadorId: educadora.id, limite: 500 });
+  assert.ok(dela.total < tudo.total, `escopo não restringiu (${dela.total} vs ${tudo.total})`);
+  const turmasDela = new Set(all(`SELECT id FROM turma WHERE educador_id = ?`, educadora.id).map(t => t.id));
+  for (const c of dela.criancas) {
+    const temVinculo = get(
+      `SELECT 1 x FROM matricula WHERE crianca_id = ? AND status='ativa' AND turma_id IN
+         (SELECT id FROM turma WHERE educador_id = ?)`, c.id, educadora.id);
+    assert.ok(temVinculo, `criança ${c.codigo} fora das turmas da educadora ${educadora.id}`);
+  }
+  assert.ok(turmasDela.size >= 1);
+});
+
+test('alertas: escopo de educadora filtra por turma; sem escopo vem tudo (A4)', () => {
+  const todos = D.alertas();
+  const educadora = get(`SELECT educador_id AS id FROM turma WHERE educador_id IS NOT NULL LIMIT 1`);
+  const dela = D.alertas(null, educadora.id);
+  assert.ok(dela.length <= todos.length);
+  for (const a of dela) {
+    const vinculo = get(
+      `SELECT 1 x FROM matricula m JOIN turma t ON t.id = m.turma_id
+        WHERE m.crianca_id = ? AND m.status='ativa' AND t.educador_id = ?`, a.crianca_id, educadora.id);
+    assert.ok(vinculo, `alerta de criança fora da turma da educadora`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// SROI exploratório (Fase 3) — motor determinístico.
+// ---------------------------------------------------------------------------
+const SROI = await import('../src/sroi/calculator.js');
+
+test('sroi: 3 cenários, faixa presente e nunca número único', () => {
+  const r = SROI.calcular({ criancas: 100, investimento_anual: 180000, proxy_ids: ['violencia-evasao'] });
+  assert.equal(r.cenarios.length, 3);
+  assert.deepEqual(r.cenarios.map(c => c.cenario), ['conservador', 'base', 'superior']);
+  assert.ok(r.faixa_sroi.minimo < r.faixa_sroi.maximo);
+  assert.match(r.leitura_obrigatoria, /associação compatível, não causalidade comprovada/);
+  assert.ok(r.ressalvas.some(x => /fatores externos não foram isolados/i.test(x)));
+  // determinismo: mesma entrada, mesmo resultado
+  const r2 = SROI.calcular({ criancas: 100, investimento_anual: 180000, proxy_ids: ['violencia-evasao'] });
+  assert.deepEqual(r.faixa_sroi, r2.faixa_sroi);
+});
+
+test('sroi: dupla contagem (envelope + componente) é bloqueada', () => {
+  assert.throws(
+    () => SROI.calcular({ criancas: 100, investimento_anual: 180000, proxy_ids: ['nao-conclusao-total', 'violencia-evasao'] }),
+    (e) => e.status === 422 && /Dupla contagem/i.test(e.message));
+});
+
+test('sroi: benchmark e referência não entram no cálculo por criança', () => {
+  for (const id of ['sroi-vim', 'custo-aluno-infantil', 'ipea-homicidios-bem-estar']) {
+    assert.throws(() => SROI.calcular({ criancas: 100, investimento_anual: 180000, proxy_ids: [id] }),
+      (e) => e.status === 422);
+  }
+});
+
+test('sroi: toda proxy usada sai com fonte, ano-base e ressalva', () => {
+  const r = SROI.calcular({ criancas: 106, investimento_anual: 200000, proxy_ids: ['renda-remuneracao', 'qualidade-vida', 'violencia-evasao'] });
+  for (const p of r.proxies_usadas) {
+    assert.ok(p.fonte && p.url && p.ano_base && p.ressalva, `proxy ${p.id} sem rastreabilidade completa`);
+  }
+  // componentes somados < envelope: coerência do grupo exclusivo
+  const soma = r.proxies_usadas.reduce((s, p) => s + p.valor, 0);
+  assert.ok(soma <= 372000);
+});
+
+test('sroi: parâmetro de cenário fora de 0..1 é recusado', () => {
+  assert.throws(() => SROI.calcular({
+    criancas: 10, investimento_anual: 1000, proxy_ids: ['violencia-evasao'],
+    cenarios: { base: { deadweight: 1.5 } },
+  }), (e) => e.status === 422);
+});

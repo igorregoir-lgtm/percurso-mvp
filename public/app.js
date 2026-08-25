@@ -98,14 +98,14 @@ const barra = (pct, ok = false) =>
 // ------------------------------------------------------------------ navegacao
 const NAV_EDUCADOR = [
   ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'], ['#/pauta', '◈', 'Pauta'],
-  ['#/turma', '▥', 'Turma'], ['#/criancas', '☺', 'Crianças'],
+  ['#/turma', '▥', 'Turma'], ['#/criancas', '☺', 'Crianças'], ['#/copilot', '✷', 'Refletir'],
 ];
 const NAV_COORDENACAO = [
   ['#/painel', '▦', 'Painel'], ['#/scores', '◑', 'Scores'], ['#/safras', '↝', 'Safras'],
-  ['#/sintese', '✎', 'Síntese'], ['#/consentimentos', '⚿', 'Consent.'],
+  ['#/sintese', '✎', 'Síntese'], ['#/consentimentos', '⚿', 'Consent.'], ['#/copilot', '✷', 'Refletir'],
 ];
 const NAV_DIRETORIA = [
-  ['#/relatorio', '▤', 'Relatório'], ['#/consulta', '?', 'Perguntar'],
+  ['#/relatorio', '▤', 'Relatório'], ['#/impacto', '◬', 'Impacto'], ['#/consulta', '?', 'Perguntar'],
 ];
 
 function pintarNav(rotaAtual) {
@@ -487,6 +487,20 @@ rota(/^#\/observacao\/(\d+)/, async (id) => {
          Cada âncora descreve um comportamento observável.</p>
     </div>
 
+    <!-- M6: treinamento breve embutido no proprio produto — calibracao do olhar
+         no lugar onde a rubrica e' aplicada. Conteudo espelha o protocolo
+         (data/rag/corpus/interno-rubrica-ancoras.md); validar com a psicologa. -->
+    <details class="cartao compacto" style="margin-top:10px">
+      <summary style="cursor:pointer;font-weight:600">Como calibrar o olhar (1 minuto)</summary>
+      <ul class="sub" style="margin:10px 0 0;padding-left:18px">
+        <li>Marque pelo comportamento <b>predominante</b> do encontro, não pelo episódio isolado.</li>
+        <li>Na dúvida entre dois níveis, escolha o <b>menor</b> — subir de nível é conquista observada, não benefício da dúvida.</li>
+        <li>Encontro atípico (festa, passeio, visita) não é base para observação — pule o ciclo desta criança se foi o caso.</li>
+        <li>Compare a criança <b>com ela mesma</b> entre ciclos; nunca com os colegas.</li>
+        <li>O que você viu que não cabe na âncora tem caminho humano: fale com a coordenação — texto sobre a criança não entra aqui.</li>
+      </ul>
+    </details>
+
     <div class="cartao" style="margin-top:14px">
       ${d.dimensoes.map(dim => `
         <div class="dim">
@@ -680,22 +694,31 @@ function barrasDimensoes(agg) {
 // CRIANCAS + FICHA VIVA (F1)
 // ======================================================================
 rota(/^#\/criancas/, async () => {
-  const { criancas } = await api('/api/criancas');
+  const r = await api('/api/criancas');
   app.innerHTML = `
     <p class="kicker">Ficha viva · criança é entidade, matrícula é relação</p>
     <h1>Crianças</h1>
     <div class="cartao" style="margin-top:16px">
       <input type="text" id="busca" data-acao="buscar" placeholder="Buscar por nome ou código…" autocomplete="off">
-      <div class="pilha" id="resultado" style="margin-top:12px">${listaCriancas(criancas)}</div>
+      <div class="pilha" id="resultado" style="margin-top:12px">${listaCriancas(r)}</div>
     </div>`;
 });
 
-const listaCriancas = (cs) => cs.length ? cs.map(c => `
+// A-13: o corte da lista deixa de ser silencioso — quando ha' mais criancas do
+// que a tela mostra, a propria lista declara o corte e aponta a busca.
+const listaCriancas = (r) => {
+  const cs = r.criancas ?? r;
+  const total = r.total ?? cs.length;
+  if (!cs.length) return '<p class="vazio">Nenhuma criança encontrada.</p>';
+  const aviso = total > cs.length
+    ? `<p class="sub" style="margin:0 0 8px">Mostrando ${cs.length} de ${total} crianças — use a busca para encontrar as demais.</p>` : '';
+  return aviso + cs.map(c => `
   <button class="item" data-acao="ir" data-href="#/crianca/${c.id}">
     <div class="cresce"><div class="nome">${esc(c.nome)}</div>
       <div class="meta">${esc(c.codigo)} · ${esc(c.programas || '')}</div></div>
     <span class="seta" aria-hidden="true">›</span>
-  </button>`).join('') : '<p class="vazio">Nenhuma criança encontrada.</p>';
+  </button>`).join('');
+};
 
 rota(/^#\/crianca\/(\d+)/, async (id) => {
   const f = await api(`/api/crianca?id=${id}`);
@@ -834,6 +857,22 @@ rota(/^#\/painel/, async () => {
       <p class="sub">Agregado de todos os programas em escopo. Nenhum dado individual.</p>
       <div style="margin-top:14px">${barrasDimensoes(d.agregado)}</div>
     </div>
+
+    ${d.calibracao && d.calibracao.linhas.length ? `<div class="cartao" style="margin-top:14px">
+      <h2>Calibração do olhar entre educadoras</h2>
+      <p class="sub">${esc(d.calibracao.leitura)} Só entram células com ${d.calibracao.minimo_celula}+ observações;
+        divergência marcada a partir de ${String(d.calibracao.limiar).replace('.', ',')} nível.</p>
+      <div class="rolagem" style="margin-top:12px"><table>
+        <thead><tr><th>Dimensão</th><th>Educadora</th><th>Média dela</th><th>Média geral</th><th>Desvio</th></tr></thead>
+        <tbody>${d.calibracao.linhas.map(l => `<tr${l.divergente ? ' style="font-weight:600"' : ''}>
+          <td>${esc(l.dimensao)}</td><td>${esc(l.educadora)}</td>
+          <td>${String(l.media).replace('.', ',')}</td><td>${String(l.media_geral ?? '—').replace('.', ',')}</td>
+          <td>${l.desvio > 0 ? '+' : ''}${String(l.desvio ?? '—').replace('.', ',')}${l.divergente ? ' ◆' : ''}</td>
+        </tr>`).join('')}</tbody></table></div>
+      ${d.calibracao.divergencias.length
+        ? `<p class="sub" style="margin-top:10px">◆ ${d.calibracao.divergencias.length} célula(s) para calibrar juntas com as âncoras — pauta de reunião, nunca avaliação de educadora.</p>`
+        : '<p class="sub" style="margin-top:10px">Nenhuma divergência acima do limiar neste ciclo.</p>'}
+    </div>` : ''}
 
     <div class="cartao" style="margin-top:14px">
       <div class="linha"><h2 class="cresce">Cobertura do registro</h2>
@@ -1575,8 +1614,341 @@ rota(/^#\/importar/, async () => {
 });
 
 // ======================================================================
+// IMPACTO — SROI exploratorio (Fase 3). Motor deterministico; o modelo so'
+// explica premissas (rotulado e fora do relatorio exportado por padrao).
+// Eixo central da narrativa: prevencao de violencia/criminalidade — decisao
+// registrada do Instituto; relevancia estrategica, NAO prova de causalidade.
+// ======================================================================
+const sroi = { resultado: null, explicacao: null };
+const brl = (v) => 'R$ ' + Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+
+rota(/^#\/impacto/, async () => {
+  const [prem, inv] = await Promise.all([api('/api/sroi/premissas'), api('/api/inventario')]);
+  const r = sroi.resultado;
+  app.innerHTML = `
+    <p class="kicker">Cenários exploratórios · associação compatível, não causalidade comprovada</p>
+    <h1>Impacto potencial</h1>
+    <div class="cartao" style="margin-top:12px">
+      <p class="sub" style="margin:0"><b>O que esta tela é:</b> uma faixa exploratória de valor social
+        potencial, com todas as premissas expostas, para conversa de captação.
+        <b>O que ela não é:</b> prova de impacto — a ponte causal é pendência declarada, e uso externo
+        exige revisão humana. O eixo da narrativa é a <b>prevenção de violência</b>, decisão do Instituto.</p>
+    </div>
+
+    <div class="cartao" style="margin-top:12px">
+      <h2 style="margin-top:0">Montar cenário</h2>
+      <div class="linha" style="gap:12px;flex-wrap:wrap">
+        <label style="flex:1;min-width:140px">Crianças únicas
+          <input type="number" id="sroi-n" value="${sroi.n ?? inv.criancasUnicas}" min="1"></label>
+        <label style="flex:1;min-width:170px">Investimento anual (R$)
+          <input type="number" id="sroi-inv" value="${sroi.inv ?? ''}" placeholder="ex.: 180000" min="1"></label>
+        <label style="flex:1;min-width:120px">Horizonte (anos)
+          <input type="number" id="sroi-anos" value="${sroi.anos ?? 5}" min="1" max="30"></label>
+      </div>
+      <p style="margin:14px 0 6px;font-weight:600">Proxy monetária (dupla contagem é bloqueada pelo motor):</p>
+      <label style="display:block;margin:4px 0"><input type="radio" name="sroi-proxy" value="violencia" checked>
+        Violência dentro do custo da evasão — ${brl(45000)}/jovem (eixo da narrativa, decisão do Instituto)</label>
+      <label style="display:block;margin:4px 0"><input type="radio" name="sroi-proxy" value="envelope">
+        Envelope total da não conclusão — ${brl(372000)}/jovem (JÁ contém a violência e os demais componentes)</label>
+      <label style="display:block;margin:4px 0"><input type="radio" name="sroi-proxy" value="componentes">
+        Componentes somados (renda ${brl(159000)} + qualidade de vida ${brl(114000)} + violência ${brl(45000)})</label>
+      <button class="btn" data-acao="sroi-calcular" style="margin-top:12px">Calcular os 3 cenários</button>
+    </div>
+
+    ${r ? pintarSROI(r) : ''}
+    ${r ? `
+    <div class="cartao no-print" style="margin-top:12px">
+      <div class="linha">
+        <button class="btn secundario" data-acao="imprimir">Imprimir / exportar relatório</button>
+        <button class="btn fantasma" data-acao="sroi-explicar">Explicar premissas</button>
+      </div>
+      ${sroi.explicacao ? `
+        <div style="margin-top:12px;border-left:4px solid var(--ok,#4a7c59);padding-left:12px">
+          ${sroi.explicacao.rotulo ? `<p class="sintetico" style="margin:0 0 8px">${esc(sroi.explicacao.rotulo)}</p>` : ''}
+          ${sroi.explicacao.texto.split('\n\n').map(p => `<p class="sub" style="margin:0 0 8px">${esc(p)}</p>`).join('')}
+        </div>` : ''}
+    </div>` : ''}`;
+});
+
+function pintarSROI(r) {
+  return `
+    <div class="cartao area-impressao" style="margin-top:12px">
+      <h2 style="margin-top:0">${esc(r.leitura_obrigatoria)}</h2>
+      <div class="linha" style="gap:10px;flex-wrap:wrap">
+        ${r.cenarios.map(c => `
+          <div class="cartao area-impressao cresce" style="min-width:180px;margin:0">
+            <p class="kicker" style="margin:0">${esc(c.cenario)}</p>
+            <div style="font-size:28px;font-weight:700">R$ ${String(c.sroi.toFixed(2)).replace('.', ',')}</div>
+            <p class="sub" style="margin:2px 0 8px">por R$ 1 investido</p>
+            <p class="sub" style="margin:0">benefício presente: ${brl(c.beneficio_presente_total)}<br>
+              investimento: ${brl(c.investimento_total)}</p>
+            <p class="sub" style="margin:8px 0 0">efeito ${Math.round(c.parametros.efeito_incremental * 100)}% ·
+              deadweight ${Math.round(c.parametros.deadweight * 100)}% ·
+              atribuição ${Math.round(c.parametros.atribuicao * 100)}% ·
+              desconto ${Math.round(c.parametros.desconto * 100)}%</p>
+          </div>`).join('')}
+      </div>
+      <h2>Premissas usadas (cada uma com fonte e ressalva)</h2>
+      ${r.proxies_usadas.map(p => `
+        <div style="margin-bottom:10px">
+          <b>${esc(p.nome)}</b> — ${brl(p.valor)} (${esc(p.unidade)}, ano-base ${p.ano_base})<br>
+          <span class="sub">Fonte: <a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.fonte)}</a> ·
+          confiança: ${esc(p.confianca)} · ${esc(p.status_ebenezer)}</span><br>
+          <span class="sub">${esc(p.ressalva)}</span>
+        </div>`).join('')}
+      <h2>Benchmarks brasileiros (método, nunca multiplicador)</h2>
+      ${r.benchmarks.map(b => `
+        <p class="sub" style="margin:0 0 6px"><b>${esc(b.nome)}</b>: R$ ${String(b.valor).replace('.', ',')}/R$ 1
+          ${b.faixa ? `(sensibilidade R$ ${String(b.faixa[0]).replace('.', ',')}–${String(b.faixa[1]).replace('.', ',')})` : ''}
+          — ${esc(b.fonte)}. ${esc(b.ressalva)}</p>`).join('')}
+      <h2>Ressalvas metodológicas</h2>
+      <ul style="padding-left:18px">${r.ressalvas.map(x => `<li class="sub">${esc(x)}</li>`).join('')}</ul>
+      <p class="sub">Motor v${esc(r.versao_motor)} · premissas ${esc(r.versao_premissas)} — cálculo determinístico, sem modelo de linguagem.</p>
+    </div>`;
+}
+
+document.addEventListener('click', comErro(async (ev) => {
+  const alvo = ev.target.closest('[data-acao]');
+  if (!alvo) return;
+  if (alvo.dataset.acao === 'sroi-calcular') {
+    const proxy = document.querySelector('input[name="sroi-proxy"]:checked')?.value;
+    const proxy_ids = proxy === 'envelope' ? ['nao-conclusao-total']
+      : proxy === 'componentes' ? ['renda-remuneracao', 'qualidade-vida', 'violencia-evasao']
+      : ['violencia-evasao'];
+    sroi.n = Number(document.getElementById('sroi-n').value);
+    sroi.inv = Number(document.getElementById('sroi-inv').value);
+    sroi.anos = Number(document.getElementById('sroi-anos').value);
+    sroi.explicacao = null;
+    sroi.resultado = await post('/api/sroi/calcular', {
+      criancas: sroi.n, investimento_anual: sroi.inv, horizonte_anos: sroi.anos, proxy_ids,
+    });
+    sroi.proxy_ids = proxy_ids;
+    navegar();
+  }
+  if (alvo.dataset.acao === 'sroi-explicar') {
+    sroi.explicacao = await post('/api/sroi/explicar', {
+      criancas: sroi.n, investimento_anual: sroi.inv, horizonte_anos: sroi.anos, proxy_ids: sroi.proxy_ids,
+    });
+    navegar();
+  }
+}));
+
+// ======================================================================
+// COPILOT — sala de reflexao pedagogica (Modo B). Fase 2 do plano de IA.
+// A IA nunca grava; memoria so' de sessao; a decisao e' sempre humana.
+// ======================================================================
+const copiloto = { sessao: null, trocas: [] };
+
+rota(/^#\/copilot/, async () => {
+  const st = await api('/api/ia/status');
+  if (!st.habilitada || !st.papeis?.reflexivo?.pronto) {
+    app.innerHTML = `
+      <p class="kicker">Sala de reflexão · copilot local</p>
+      <h1>Refletir</h1>
+      <div class="cartao" style="margin-top:16px">
+        <p><b>O copilot está ${st.habilitada ? 'ligado, mas o modelo local não respondeu' : 'desligado'}.</b></p>
+        <p class="sub">O Percurso funciona por inteiro sem ele — o copilot é uma camada opcional que roda
+           num modelo local (nada sai da máquina). Para ligar: suba o modelo com
+           <code>ai/scripts/start-llama.sh</code> e inicie o servidor com <code>AI_ENABLED=1</code>.
+           Em operação real com educadoras, ligar depende do resultado da PoC (docs/POC-COPILOT.md).</p>
+        <button class="btn secundario" data-acao="recarregar" style="margin-top:10px">Verificar de novo</button>
+      </div>`;
+    return;
+  }
+  app.innerHTML = `
+    <p class="kicker">Sala de reflexão · modelo local · nada sai da máquina</p>
+    <h1>Refletir</h1>
+    <div class="cartao" style="margin-top:12px">
+      <p class="sub" style="margin:0">Descreva a <b>situação</b>, não a criança: nomes do cadastro viram
+        pseudônimos antes do modelo, mas apelidos e descrições que identificam não são cobertos.
+        Hipóteses não são fatos; a decisão pedagógica é sua. Situação de violência, saúde ou risco:
+        o caminho é a coordenação, fora daqui.</p>
+    </div>
+    <div id="copilot-fio" class="pilha" style="margin-top:12px">${copiloto.trocas.map(pintarTroca).join('')}</div>
+    <div class="cartao" style="margin-top:12px">
+      <textarea id="copilot-texto" rows="3" placeholder="Ex.: metade da turma se dispersa na roda depois de dez minutos…"
+        style="width:100%;resize:vertical"></textarea>
+      <div class="linha" style="margin-top:10px">
+        <button class="btn cresce" data-acao="copilot-enviar">Refletir junto</button>
+        <button class="btn secundario" data-acao="copilot-apagar" title="Apaga a memória desta sessão — nada dela é persistido">Apagar sessão</button>
+      </div>
+    </div>`;
+  const fio = document.getElementById('copilot-fio');
+  if (fio && fio.lastElementChild) fio.lastElementChild.scrollIntoView({ block: 'end' });
+});
+
+function pintarTroca(t, i) {
+  if (t.carregando) return `
+    <div class="cartao"><p class="sub" style="margin:0">✷ pensando… (o modelo roda local; pode levar alguns segundos)</p></div>`;
+  const cab = `<div class="cartao" style="background:var(--tinta,#2b2620);color:#f6f1e7">
+      <p style="margin:0">${esc(t.pergunta)}</p>
+      ${t.nomes_substituidos ? `<p class="sub" style="margin:6px 0 0;opacity:.8">${t.nomes_substituidos} nome(s) viraram pseudônimo antes do modelo</p>` : ''}
+    </div>`;
+  if (t.tipo === 'encaminhamento') return cab + `
+    <div class="cartao" style="border-left:4px solid var(--red,#b3402a)">
+      <b>Tem algo aqui que não entra no sistema</b>
+      <p class="sub">${esc(t.mensagem || '')}</p>
+      ${(t.trechos || []).map(x => `<div class="trecho"><b>${esc(x.categoria)}</b>${esc(x.trecho)}</div>`).join('')}
+    </div>`;
+  if (t.tipo === 'recusa') return cab + `
+    <div class="cartao" style="border-left:4px solid var(--red,#b3402a)">
+      <b>Isso o copilot não faz (${esc(t.motivo || 'recusa')})</b>
+      <p class="sub" style="margin-bottom:0">${esc(t.mensagem || '')}</p>
+    </div>`;
+  const r = t.resposta || {};
+  const bloco = (titulo, html) => `<div style="margin-top:12px"><p class="kicker" style="margin:0 0 4px">${titulo}</p>${html}</div>`;
+  return cab + `
+    <div class="cartao">
+      ${bloco('O que entendi', `<p style="margin:0">${esc(r.entendi || '')}</p>`)}
+      ${bloco('Perguntas para pensar', `<ul style="margin:0;padding-left:18px">${(r.perguntas || []).map(p => `<li>${esc(p)}</li>`).join('')}</ul>`)}
+      ${bloco('Hipóteses — para debate, não diagnóstico', (r.hipoteses || []).map(h =>
+        `<p style="margin:0 0 6px"><span class="sintetico">${esc(h.rotulo)}</span> ${esc(h.texto)}</p>`).join(''))}
+      ${bloco('Alternativas', (r.alternativas || []).map(a =>
+        `<div style="margin:0 0 8px"><b>→ ${esc(a.acao)}</b><p class="sub" style="margin:2px 0 0">limites: ${esc(a.limites)}</p></div>`).join(''))}
+      ${bloco('Contraponto', `<p style="margin:0">${esc(r.contraponto || '')}</p>`)}
+      ${bloco('Próximo passo seguro', `<p style="margin:0">${esc(r.proximo_passo || '')}</p>`)}
+      ${r.escalonamento ? `<div style="margin-top:12px;border-left:4px solid var(--red,#b3402a);padding-left:10px"><b>Escalonamento humano</b><p class="sub" style="margin:2px 0 0">${esc(r.escalonamento)}</p></div>` : ''}
+      ${bloco('Fontes do corpus aprovado', r.sem_fonte_no_corpus
+        ? '<p class="sub" style="margin:0">Nenhum trecho do corpus sustentou esta resposta — leia como opinião do modelo, não como material documentado.</p>'
+        : (r.fontes || []).map(f => `<span class="sintetico" title="${esc(f.secao)}">[fonte:${esc(f.id)}] ${esc(f.titulo)}</span> `).join(''))}
+      ${t.decisao ? `<p class="sub" style="margin-top:12px"><b>${t.decisao === 'aceita' ? '✓ Você marcou: vai testar uma das alternativas' : '✕ Você rejeitou esta reflexão'}</b> — registro só desta tela; nada foi gravado.</p>` : ''}
+      <div class="linha" style="margin-top:14px;flex-wrap:wrap">
+        <button class="btn pequeno secundario" data-acao="copilot-aceitar" data-i="${i}"
+          title="Marca que a reflexão ajudou e você vai testar algo — a decisão pedagógica continua sua">Aceitar</button>
+        <button class="btn pequeno secundario" data-acao="copilot-rejeitar" data-i="${i}"
+          title="Marca que não ajudou — peça outra perspectiva ou siga seu caminho">Rejeitar</button>
+        <button class="btn pequeno secundario" data-acao="copilot-outra" data-i="${i}">Outra perspectiva</button>
+        <button class="btn pequeno secundario" data-acao="copilot-escalar"
+          title="Situação de violência, saúde ou risco: o caminho é humano, fora daqui">Escalar</button>
+        <button class="btn pequeno fantasma" data-acao="copilot-doar" data-i="${i}"
+          title="Doa esta interação (anonimizada) para o futuro dataset de ajuste do modelo — ato seu, revogável">Doar interação</button>
+      </div>
+      <p class="sub" style="margin-top:10px">${esc(t.aviso || '')}</p>
+    </div>`;
+}
+
+async function copilotEnviar(texto) {
+  const original = (texto || '').trim();
+  if (!original) return;
+  // Um envio por vez: envios cruzados embaralhariam a ordem local vs. a sessão
+  // do servidor (e o índice de doação junto).
+  if (copiloto.trocas.some(t => t.carregando)) {
+    toast('Aguarde a resposta anterior chegar.', 'ruim');
+    return;
+  }
+  const idx = copiloto.trocas.push({ carregando: true }) - 1;
+  const fio = document.getElementById('copilot-fio');
+  if (fio) { fio.innerHTML = copiloto.trocas.map(pintarTroca).join(''); fio.lastElementChild?.scrollIntoView({ block: 'end' }); }
+  try {
+    const r = await post('/api/copilot/chat', { message: original, session_id: copiloto.sessao });
+    copiloto.sessao = r.session_id;
+    copiloto.trocas[idx] = {
+      pergunta: original, tipo: r.tipo, mensagem: r.mensagem, motivo: r.motivo,
+      trechos: r.trechos, resposta: r.resposta, aviso: r.aviso,
+      nomes_substituidos: r.nomes_substituidos,
+      indice_servidor: r.indice ?? null,   // índice DESTA reflexão na sessão do servidor (doação)
+    };
+  } catch (e) {
+    copiloto.trocas.splice(idx, 1);
+    toast(e.message, 'ruim');
+  }
+  if (location.hash.startsWith('#/copilot')) navegar();
+}
+
+function limparEstadoLocal() {
+  // Aparelho compartilhado: trocar de pessoa não pode herdar a conversa de
+  // reflexão nem os valores do SROI da pessoa anterior.
+  copiloto.sessao = null; copiloto.trocas = [];
+  sroi.resultado = null; sroi.explicacao = null;
+  sroi.n = sroi.inv = sroi.anos = sroi.proxy_ids = undefined;
+}
+
+document.addEventListener('click', comErro(async (ev) => {
+  const alvo = ev.target.closest('[data-acao]');
+  if (!alvo) return;
+  const a = alvo.dataset.acao;
+  if (a === 'copilot-enviar') {
+    const campo = document.getElementById('copilot-texto');
+    const v = campo?.value ?? '';
+    if (campo) campo.value = '';
+    await copilotEnviar(v);
+  }
+  if (a === 'copilot-apagar') {
+    if (copiloto.sessao) await api('/api/copilot/sessao', { method: 'DELETE', body: JSON.stringify({ session_id: copiloto.sessao }) });
+    copiloto.sessao = null; copiloto.trocas = [];
+    toast('Sessão apagada. Nada dela foi persistido.', 'bom');
+    navegar();
+  }
+  if (a === 'copilot-outra') {
+    const t = copiloto.trocas[Number(alvo.dataset.i)];
+    if (t?.pergunta) await copilotEnviar(`Me dê OUTRA perspectiva, diferente da anterior, sobre: ${t.pergunta}`);
+  }
+  if (a === 'copilot-aceitar' || a === 'copilot-rejeitar') {
+    const t = copiloto.trocas[Number(alvo.dataset.i)];
+    if (t) { t.decisao = a === 'copilot-aceitar' ? 'aceita' : 'rejeitada'; navegar(); }
+  }
+  if (a === 'copilot-escalar') {
+    modalEncaminhamento([{ categoria: 'escalonamento pedido por você',
+      trecho: 'Nenhum conteúdo foi enviado a lugar nenhum — este aviso só reforça o caminho humano.' }]);
+  }
+  if (a === 'copilot-doar') {
+    const t = copiloto.trocas[Number(alvo.dataset.i)];
+    if (!t || t.tipo !== 'reflexao') return;
+    // O índice vem do SERVIDOR na resposta do chat — posições recontadas no
+    // cliente doariam a interação errada se a sessão expirasse no meio.
+    const indice = t.indice_servidor;
+    if (indice == null) { toast('Esta interação não está mais na sessão do servidor.', 'ruim'); return; }
+    const previa = await post('/api/copilot/doacao/previa', { session_id: copiloto.sessao, indice });
+    modalDoacao(previa, async () => {
+      const r = await post('/api/copilot/doar', { session_id: copiloto.sessao, indice });
+      toast(`Interação doada (id ${r.id.slice(0, 8)}…). Você pode revogar depois.`, 'bom');
+    });
+  }
+}));
+
+// Pre-visualizacao EXATA do que sera' gravado — a doacao e' ato consciente.
+function modalDoacao(previa, aoConfirmar) {
+  const veu = document.createElement('div');
+  veu.className = 'veu';
+  veu.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="md">
+      <h2 id="md">Doar esta interação?</h2>
+      <p class="sub">Isto — e somente isto — será gravado localmente (anonimizado) para compor, no futuro,
+         o dataset de ajuste do modelo. Doação é sua escolha, por interação, e revogável.</p>
+      <div class="trecho" style="max-height:200px;overflow:auto"><b>pergunta (pseudonimizada)</b>${esc(previa.pergunta)}</div>
+      <div class="trecho" style="max-height:160px;overflow:auto"><b>resposta</b>${esc(JSON.stringify(previa.resposta).slice(0, 800))}…</div>
+      <div class="linha" style="margin-top:16px">
+        <button class="btn cresce" data-acao="doacao-ok">Doar</button>
+        <button class="btn secundario cresce" data-acao="doacao-cancelar">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(veu);
+  prenderFoco(veu);
+  veu.querySelector('[data-acao="doacao-ok"]').focus();
+  veu.addEventListener('click', async (e) => {
+    if (e.target.dataset.acao === 'doacao-ok') { veu.remove(); await aoConfirmar(); }
+    if (e.target.dataset.acao === 'doacao-cancelar' || e.target === veu) veu.remove();
+  });
+}
+
+// ======================================================================
 // MODAL DO FILTRO DE PROTECAO
 // ======================================================================
+// A-15: focus-trap generico — Tab e Shift+Tab circulam DENTRO do dialogo
+// enquanto ele estiver aberto; o foco nao escapa para a pagina por tras.
+function prenderFoco(veu) {
+  veu.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const focaveis = [...veu.querySelectorAll(
+      'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])')]
+      .filter(el => !el.disabled && el.offsetParent !== null);
+    if (!focaveis.length) return;
+    const primeiro = focaveis[0], ultimo = focaveis[focaveis.length - 1];
+    if (e.shiftKey && document.activeElement === primeiro) { e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primeiro.focus(); }
+  });
+}
+
 // Modal com um campo — usado no registro de consentimento.
 // Substitui o prompt() nativo: mesma linguagem visual, foco gerenciado e Esc funciona.
 function modalCampo({ titulo, texto, rotulo, dica, confirmar }, aoConfirmar) {
@@ -1595,6 +1967,7 @@ function modalCampo({ titulo, texto, rotulo, dica, confirmar }, aoConfirmar) {
       </div>
     </div>`;
   document.body.appendChild(veu);
+  prenderFoco(veu);
   const campo = veu.querySelector('#campo-modal');
   const erro  = veu.querySelector('#erro-modal');
   campo.focus();
@@ -1629,6 +2002,7 @@ function modalEncaminhamento(trechos) {
       </div>
     </div>`;
   document.body.appendChild(veu);
+  prenderFoco(veu);
   veu.querySelector('[data-acao="encaminhamento-ok"]').focus();
   veu.addEventListener('click', (e) => {
     if (e.target.dataset.acao === 'encaminhamento-ok' || e.target === veu) veu.remove();
@@ -1649,6 +2023,7 @@ document.addEventListener('click', comErro(async (ev) => {
 
   if (a === 'entrar') {
     const { usuario } = await post('/api/sessao', { educador_id: Number(alvo.dataset.id) });
+    limparEstadoLocal();
     sessao = usuario;
     location.hash = usuario.papel === 'coordenacao' ? '#/painel'
                   : usuario.papel === 'diretoria' ? '#/relatorio' : '#/hoje';
@@ -1662,7 +2037,9 @@ document.addEventListener('click', comErro(async (ev) => {
   }
 
   if (a === 'sair') {
+    if (copiloto.sessao) { try { await api('/api/copilot/sessao', { method: 'DELETE', body: JSON.stringify({ session_id: copiloto.sessao }) }); } catch {} }
     await post('/api/sair');
+    limparEstadoLocal();
     sessao = null; location.hash = '#/entrar'; navegar();
     return;
   }
@@ -2101,9 +2478,9 @@ document.addEventListener('input', (ev) => {
   clearTimeout(buscaTimer);
   const termo = ev.target.value;
   buscaTimer = setTimeout(comErro(async () => {
-    const { criancas } = await api(`/api/criancas?q=${encodeURIComponent(termo)}`);
+    const r = await api(`/api/criancas?q=${encodeURIComponent(termo)}`);
     const alvo = document.getElementById('resultado');
-    if (alvo) alvo.innerHTML = listaCriancas(criancas);
+    if (alvo) alvo.innerHTML = listaCriancas(r);
   }), 220);
 });
 

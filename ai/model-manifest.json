@@ -1,0 +1,36 @@
+{
+  "versao": 1,
+  "atualizado_em": "2026-08-25",
+  "nota_proveniencia": "A Qwen publica GGUF oficial do Qwen3-4B (abril/2025, modo thinking) em Qwen/Qwen3-4B-GGUF, mas NÃO publica GGUF da variante Instruct 2507 recomendada pela análise de arquitetura (ANALISE-SLM-E-SROI.md §1.2). O Q4_K_M usado aqui vem do repositório comunitário unsloth (quantização do peso oficial Qwen/Qwen3-4B-Instruct-2507, Apache-2.0). Divergência declarada em relação ao card citado na análise; o SHA-256 abaixo é a âncora de integridade.",
+  "modelos": [
+    {
+      "id": "qwen3-4b-instruct-2507-q4km",
+      "papel": "reflexivo",
+      "descricao": "Copilot reflexivo (Modo B): perguntas socráticas, hipóteses rotuladas, alternativas, contraponto, citações.",
+      "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+      "peso_original": "Qwen/Qwen3-4B-Instruct-2507",
+      "arquivo": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+      "url": "https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+      "bytes": 2497281120,
+      "sha256": "3605803b982cb64aead44f6c1b2ae36e3acdb41d8e46c8a94c6533bc4c67e597",
+      "licenca": "Apache-2.0",
+      "contexto_nativo": 32768,
+      "porta_padrao": 8081
+    },
+    {
+      "id": "qwen3-1.7b-q8",
+      "papel": "estruturado",
+      "descricao": "Modo A econômico (opcional): extração em catálogos fechados sob json_schema. O extrator lexical determinístico continua sendo o caminho padrão e o fallback obrigatório.",
+      "repo": "Qwen/Qwen3-1.7B-GGUF",
+      "peso_original": "Qwen/Qwen3-1.7B",
+      "arquivo": "Qwen3-1.7B-Q8_0.gguf",
+      "url": "https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q8_0.gguf",
+      "bytes": 1834426016,
+      "sha256": "061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a",
+      "licenca": "Apache-2.0",
+      "contexto_nativo": 32768,
+      "porta_padrao": 8082
+    }
+  ],
+  "decisao_de_papeis": "No MVP um único llama-server com o 4B pode atender os dois papéis: o cliente (src/ai-client.js) roteia por papel e, se a porta do estruturado (8082) não responder, cai para a do reflexivo (8081). Subir o 1.7B em 8082 é otimização de custo por máquina, não requisito."
+}

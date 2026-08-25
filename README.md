@@ -10,6 +10,14 @@ não pontuam a criança; pauta de segunda como devolução; e o relatório do ci
 revisa e envia a quem financia. O que mudou, feature a feature, está em
 [`docs/O-QUE-VEIO-DA-V2.md`](docs/O-QUE-VEIO-DA-V2.md).
 
+**Versão 3** (25/08/2026): a camada de IA local do plano de arquitetura, inteira e desligável —
+RAG com corpus governado por manifest (`#/copilot` cita a fonte), copilot reflexivo num Qwen3 4B
+rodando **na própria máquina** (nada sai dela), SROI exploratório determinístico (`#/impacto`),
+PWA, calibração entre educadoras no painel e a infraestrutura da Fase 4 (LoRA) com os gates
+declarados. Com `AI_ENABLED` desligada — o padrão — o produto é exatamente a v2. Plano auditado e
+execução: [`docs/revisao/04-PLANO-COMPLEMENTACAO-IA.md`](docs/revisao/04-PLANO-COMPLEMENTACAO-IA.md);
+mapa da camada: [`ai/README.md`](ai/README.md).
+
 > Todos os dados desta aplicação são **sintéticos**. Nenhum dado real de criança atendida foi
 > usado em nenhuma etapa (regra 1 do bloco 6 do dossiê).
 
@@ -17,8 +25,10 @@ revisa e envia a quem financia. O que mudou, feature a feature, está em
 
 ## Como rodar
 
-Requisito único: **Node.js 22.5 ou superior** ([nodejs.org](https://nodejs.org) — instalador padrão).
-Não há `npm install`, não há build, não há conta em plataforma, não há mensalidade.
+Requisito único: **Node.js 22.13 ou superior** — recomendado o **24 LTS**, fixado no `.nvmrc`
+([nodejs.org](https://nodejs.org) — instalador padrão). Entre 22.5 e 22.12 o `node:sqlite` exigia
+flag experimental e o servidor não subia; a exigência antiga de "22.5+" estava errada e foi
+corrigida. Não há `npm install`, não há build, não há conta em plataforma, não há mensalidade.
 
 ```bash
 node server.js
@@ -47,14 +57,37 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **242 asserções de fluxo** e **55 testes unitários**. As duas baterias também rodam
-automaticamente a cada push (`.github/workflows/ci.yml`).
+São **246 asserções de fluxo** e **63 testes unitários** — mais a avaliação do RAG
+(`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização) e a bateria da
+camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
+modelo). As quatro baterias rodam a cada push (`.github/workflows/ci.yml`), sempre com
+`AI_ENABLED=false` — os gates que exigem modelo real são locais (`ai/README.md`).
 
 Para usar outra porta:
 
 ```bash
 PORT=8080 node server.js
 ```
+
+### Ligar a camada de IA local (opcional)
+
+```bash
+ai/scripts/setup-model.sh        # baixa e valida os modelos (~4,3 GB, uma vez)
+ai/scripts/start-llama.sh        # terminal 1: Qwen3 4B em 127.0.0.1:8081
+AI_ENABLED=1 node server.js      # terminal 2: Percurso com “Refletir” e explicação do SROI
+```
+
+Nada sai da máquina: o modelo escuta só em `127.0.0.1` e toda mensagem passa pelo filtro de
+perímetro e pela pseudonimização ANTES de chegar a ele. Em operação real com educadoras, ligar
+é condicionado ao go da PoC (`docs/POC-COPILOT.md`). Detalhes: [`ai/README.md`](ai/README.md).
+
+### PWA e acesso pelo celular
+
+Em `localhost` e no deploy HTTPS (Render), o Percurso instala como aplicativo (manifest + service
+worker network-first, com fallback offline do shell). **Pelo IP da rede local**
+(`HOST=0.0.0.0 node server.js` → `http://IP-DO-NOTEBOOK:3000`) a página funciona normal no
+celular, mas **sem instalação nem offline** — service worker exige contexto seguro, e prometer o
+contrário seria falso. Caminho futuro (mkcert/túnel) registrado na decisão técnica nº 24.
 
 ---
 
@@ -75,6 +108,13 @@ operação real, mantenha cópia periódica do banco fora do serviço e teste a 
 disco também pressupõe uma única instância do Web Service; não habilite escala horizontal sem
 migrar o banco para um serviço compartilhado.
 
+> **Aviso de segurança do deploy público:** o MVP não tem autenticação — qualquer visitante do
+> link escolhe um perfil, inclusive coordenação e diretoria (dívida declarada, decisão 8). Isso é
+> tolerável **apenas** porque todos os dados são sintéticos. Nunca aponte este deploy para dado
+> real sem antes pagar as três dívidas bloqueantes (autenticação, HTTPS, auditoria de acesso).
+> A camada de IA fica **fora** do Render de propósito: o plano Starter (512 MB) não comporta o
+> modelo (o GGUF sozinho tem 2,5 GB) — análise em `docs/ANALISE-SLM-E-SROI.md` §1.7.
+
 ### E o `vercel.json`?
 
 O repositório também versiona [`vercel.json`](vercel.json), usado para uma **demonstração
@@ -92,12 +132,14 @@ O MVP não guarda senha — o controle de acesso real é uma decisão da coorden
 
 | Perfil | Papel | Vê |
 |---|---|---|
-| **Maria Silvia** | Professora (a persona) | Hoje, Chamada, Pauta, Turma, Crianças |
-| **Rita Amaral** | Coordenação | Painel, Scores, Safras, Síntese, Consentimentos |
+| **Maria Silvia** | Professora (a persona) | Hoje, Chamada, Pauta, Turma, Crianças, Refletir* |
+| **Rita Amaral** | Coordenação | Painel, Scores, Safras, Síntese, Consentimentos, Refletir* |
 | **Cleide Nunes** | Professora | As demais turmas |
-| **Solange Ribeiro** | Diretoria | Relatório do ciclo e consulta agregada — **e nada individual** |
+| **Solange Ribeiro** | Diretoria | Relatório do ciclo, Impacto (SROI exploratório) e consulta agregada — **e nada individual** |
 
-A diretoria recebe **403** nas rotas de ficha e lista de crianças, por decisão de desenho: quem
+\* Refletir é a sala de reflexão do copilot local — só responde com `AI_ENABLED=1` (camada opcional).
+
+A diretoria recebe **403** nas rotas de ficha, lista de crianças e no chat do copilot, por decisão de desenho: quem
 presta contas trabalha sobre a camada agregada, então não precisa de acesso individual e não tem
 (decisão técnica nº 16).
 
@@ -161,6 +203,17 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 | F14 | Carta do trimestre — mesmo pipeline, template curto | `#/relatorio` |
 | F15 | Consulta em linguagem natural sobre a camada agregada | `#/consulta` |
 
+### A camada de IA da v3 (opcional, `AI_ENABLED=1`)
+
+| Peça | O que faz | Onde está |
+|---|---|---|
+| RAG governado | busca com citação num corpus aprovado por manifest (leis, BNCC, material interno) | `GET /api/rag/search`, `src/rag/`, `docs/GOVERNANCA-FONTES-RAG.md` |
+| Copilot reflexivo (Modo B) | 7 blocos por gramática: perguntas socráticas, hipóteses rotuladas, ≥3 alternativas, contraponto, fontes verificadas, escalonamento | `#/copilot` (“Refletir”), `src/copilot.js` |
+| Modo A por modelo (opt-in extra) | extração da fala sob os MESMOS catálogos fechados, fallback lexical em toda falha | `AI_EXTRATOR=1`, `extrairComModelo` |
+| SROI exploratório | 3 cenários e faixa, motor determinístico, dupla contagem bloqueada, premissas com fonte | `#/impacto` (diretoria), `src/sroi/`, `docs/SROI-METODOLOGIA.md` |
+| Calibração entre educadoras | borda 2 da doutrina, determinística — pauta de reunião, nunca ranking | `#/painel` |
+| LoRA (Fase 4) | infraestrutura, funil de doação explícita e gates — **treino não executado por gate** | `ai/training/` |
+
 ---
 
 ## Estrutura do repositório
@@ -175,12 +228,23 @@ src/relatorio.js          saída para o doador em sete blocos e consulta agregad
 src/ingestao.js           ingestão retroativa das planilhas antigas (v2)
 src/seed.js               geração dos dados sintéticos
 src/api.js                rotas HTTP/JSON
-public/                   interface (HTML + CSS + JS, sem build; fila offline em fila.js)
+src/ai-client.js          cliente do modelo local (fetch nativo, json_schema, timeouts) (v3)
+src/copilot.js            copilot reflexivo, recusas, pseudonimização, doação de interação (v3)
+src/rag/                  preparação de fontes, ingestão FTS5, busca e anonimizador (v3)
+src/sroi/calculator.js    motor SROI determinístico versionado (v3)
+ai/                       manifest de modelos, scripts do llama.cpp, prompts, treino (v3)
+data/rag/                 manifest de fontes, corpus canônico versionado (o .db é derivado)
+data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
+models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
+public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    242 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     55 testes unitários das regras críticas (banco temporário)
+scripts/smoke-test.mjs    246 asserções do fluxo principal (contra o servidor no ar)
+scripts/unit-test.mjs     63 testes unitários das regras críticas (banco temporário)
+scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
+scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
+scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)
 data/percurso.db          o banco (um arquivo — copie para fazer backup)
-docs/                     modelo de dados, decisões técnicas, testes, matriz da v2
+docs/                     modelo de dados, decisões técnicas, testes, matriz da v2, IA e SROI
 render.yaml               deploy canônico no Render com disco persistente
 prototipo-figma/          protótipo mobile fiel ao Figma (standalone)
 ```
@@ -220,10 +284,16 @@ cd prototipo-figma && python3 -m http.server 8765
 - [`docs/MODELO-DE-DADOS.md`](docs/MODELO-DE-DADOS.md) — entidades, relações e atributos
 - [`docs/DECISOES-TECNICAS.md`](docs/DECISOES-TECNICAS.md) — o que foi decidido e por quê
 - [`docs/TESTES.md`](docs/TESTES.md) — o que foi testado, como reproduzir
+- [`ai/README.md`](ai/README.md) — a camada de IA local: modelos, gates, o que ela nunca faz
+- [`docs/GOVERNANCA-FONTES-RAG.md`](docs/GOVERNANCA-FONTES-RAG.md) — admissão de fontes ao corpus
+- [`docs/SROI-METODOLOGIA.md`](docs/SROI-METODOLOGIA.md) — o que a tela Impacto pode e não pode afirmar
+- [`docs/POC-COPILOT.md`](docs/POC-COPILOT.md) — protocolo da PoC com pedagogos (condição para ligar a IA em operação)
+- [`docs/VALIDACAO-USUARIO.md`](docs/VALIDACAO-USUARIO.md) — protocolo da validação com usuária real (pendência humana)
+- [`docs/PENDENCIAS-DE-ENTREGA.md`](docs/PENDENCIAS-DE-ENTREGA.md) — o que depende de gente até 09/10
 - [`docs/EVIDENCIAS-DE-TESTE.txt`](docs/EVIDENCIAS-DE-TESTE.txt) — saída da última execução
 - [`docs/ROTEIRO-DO-VIDEO.md`](docs/ROTEIRO-DO-VIDEO.md) — o roteiro do vídeo
 - [`video/percurso-demonstracao.mp4`](video/percurso-demonstracao.mp4) — vídeo demonstrativo, 6m14s, 1080p, legendado e sem áudio ([como foi gerado](video/README.md)). **Atenção: grava a v1** — não mostra voz, pauta nem relatório do doador. Regravar é item aberto da entrega.
-- [`docs/revisao/`](docs/revisao/) — revisão arquitetural completa (22/08/2026): baseline de requisitos, matriz de rastreabilidade arquitetura → implementação → teste, relatório de achados priorizados e a [auditoria adversarial da v2](docs/revisao/03-AUDITORIA-V2.md) (28 achados levantados, 19 confirmados após refutação, 19 corrigidos com teste)
+- [`docs/revisao/`](docs/revisao/) — revisão arquitetural completa (22/08/2026): baseline de requisitos, matriz de rastreabilidade arquitetura → implementação → teste, relatório de achados priorizados e a [auditoria adversarial da v2](docs/revisao/03-AUDITORIA-V2.md) (28 achados levantados, 19 confirmados após refutação, 19 corrigidos com teste); da v3 (25/08/2026): o [plano de complementação auditado](docs/revisao/04-PLANO-COMPLEMENTACAO-IA.md) (painel de 4 lentes, 29 achados incorporados antes da execução) e a [revisão adversarial da implementação](docs/revisao/05-REVISAO-IMPLEMENTACAO-IA.md) (35 achados confirmados, 35 tratados)
 
 ---
 
@@ -240,4 +310,4 @@ rastreada no git.
 
 ## Atualização
 
-Última sincronização deste repositório: **22 de agosto de 2026**.
+Última sincronização deste repositório: **25 de agosto de 2026**.

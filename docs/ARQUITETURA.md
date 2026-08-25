@@ -70,7 +70,7 @@ navegador (public/ — HTML+CSS+JS puro, hash routing, sem build)
     ▼
 server.js        HTTP puro (node:http) — estáticos + despacho de /api/*
     ▼
-src/api.js       43 rotas — sessão por perfil; RBAC educadora / coordenação /
+src/api.js       53 rotas — sessão por perfil; RBAC educadora / coordenação /
     │            diretoria (a diretoria não abre registro individual)
     ▼
     ├── src/domain.js     núcleo: elegibilidade, perímetro, alertas, safras,
@@ -87,8 +87,9 @@ data/percurso.db local ou /var/data/percurso.db no Render
                    (WAL; disco persistente; backup externo obrigatório)
 
 src/seed.js      dados 100% sintéticos, PRNG com semente fixa (regra 1 do bloco 6)
-scripts/         reset.mjs · smoke-test.mjs (242 asserções) · unit-test.mjs (55)
-.github/ci.yml   as duas baterias a cada push
+scripts/         reset.mjs · smoke-test.mjs (246 asserções) · unit-test.mjs (63)
+                 rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
+.github/workflows/ci.yml   as quatro baterias a cada push (AI_ENABLED=false)
 ```
 
 **Por que o domínio deixou de ser um arquivo só.** A revisão de 22/08 recomendava extrair por área
@@ -150,7 +151,7 @@ handover, vídeo). O que resta é fechar as duas pendências P1 da revisão arqu
 | # | Item | Por quê | Critério de aceite |
 |---|---|---|---|
 | ~~1.1~~ | ~~**Fecho de ciclo com descarte do campo livre**~~ | **FEITO (22/08)** — o campo livre saiu do produto (decisão 15) e `fecharCiclo` apaga qualquer valor legado | Teste unitário "fecharCiclo: executa a retenção declarada e apaga texto legado" e smoke §18 |
-| 1.2 | **Escopo de turma no RBAC** | Educadora hoje enxerga crianças além das suas turmas; o acesso declarado na governança é "educador da criança + coordenação". A v2 fechou o perfil da diretoria (decisão 16), mas o escopo entre educadoras continua aberto | Rotas de leitura individual filtram por turma do educador logado; smoke test cobre o acesso negado |
+| ~~1.2~~ | ~~**Escopo de turma no RBAC**~~ **FEITO 25/08** (decisão 22) | O acesso declarado na governança é "educador da criança + coordenação"; a v2 fechou a diretoria (decisão 16) e a v3 fechou o escopo entre educadoras | Rotas de leitura individual filtram por turma do educador logado; smoke bloco 12 cobre o acesso negado (403) |
 | 1.6 | **Regravar o vídeo demonstrativo** | O vídeo em `video/` grava a v1: não mostra voz, confirmação, pauta nem relatório do doador. O handover da semana 10 exige vídeo demonstrativo do que está entregue | Vídeo cobrindo os três perfis e o fluxo de voz de ponta a ponta |
 | 1.3 | **Validação com usuário real** | Exigência da semana 5 que permanece pendente e será cobrada na 10 | Registro de quem validou, roteiro usado e aprendizados, anexado em `docs/` |
 | 1.4 | **Insumos de arquitetura para o business case** | O pitch da semana 10 exige custo total (incl. assinaturas) e plano de sustentação | Uma página: custo de licença R$ 0, requisito de máquina, quem opera, tempo estimado/semana — extraída deste documento |
@@ -246,6 +247,34 @@ nomeado na tabela do Horizonte 3. Curto prazo ante qualquer ocorrência: ampliar
 arquitetural, seção 7). Esta pesquisa registra o caminho estrutural pré-aprovado para quando o
 gatilho dispara.
 
+### 6.2. Camada de IA local implementada (v3, 25/08/2026) — e o que ela NÃO substitui
+
+A revisão de 25/08/2026 implementou o plano da pasta de arquitetura
+(`PLANO-IMPLEMENTACAO-RAG-COPILOT-SROI-LORA.md`) como **camada adicional opt-in** — coisa diferente
+da linha "SLM local de verdade" da tabela acima, que segue esperando o gatilho dela:
+
+- **As três bordas continuam determinísticas.** Filtro de perímetro, síntese em template e revisor
+  de sobre-alegação não foram substituídos por modelo — o gatilho (falso-negativo documentado em
+  operação real) não disparou. A **borda 2** (consistência entre observadores) ganhou implementação
+  determinística: a leitura de calibração no painel da coordenação.
+- **O que entrou, atrás de `AI_ENABLED` (padrão: desligada):** RAG com corpus governado
+  (`src/rag/`, `docs/GOVERNANCA-FONTES-RAG.md`), copilot reflexivo Modo B (`#/copilot`,
+  Qwen3 4B local via `llama.cpp` em `127.0.0.1`), Modo A opcional sobre o slot da decisão 13
+  (`AI_EXTRATOR=1`, fallback lexical), SROI exploratório determinístico (`#/impacto`,
+  `docs/SROI-METODOLOGIA.md`) e a infraestrutura da Fase 4 (`ai/training/`, treino não executado
+  por gate). Arquitetura em camadas: `celular/navegador → Node → RAG (SQLite/FTS5) →
+  llama.cpp (127.0.0.1) → GGUF local`.
+- **Invariantes preservados:** o escore nunca nasce de modelo; a IA nunca grava; nome de criança
+  nunca chega a modelo (perímetro antes, pseudonimização depois, limite residual declarado);
+  fallback determinístico em 100% das falhas; ligar em operação real depende do go da PoC
+  (`docs/POC-COPILOT.md`). Mapa completo: `ai/README.md`; plano auditado e registro da execução:
+  `docs/revisao/04-PLANO-COMPLEMENTACAO-IA.md`.
+- **Nota sobre a recomendação 6.1:** ela permanece válida para o caso dela (classificador de
+  borda, Gemma 270M + LoRA). O copilot usa modelo maior (4B) porque o uso é outro — diálogo
+  reflexivo, que a análise (`ANALISE-SLM-E-SROI.md` §2.1) mostrou exigir mais escala. A camada
+  atual fala com o `llama-server` por HTTP local SEM dependência npm — o trade-off do
+  `node-llama-cpp` registrado em 6.1 não foi consumido.
+
 #### O que não usar
 
 - **APIs em nuvem** (Sabiá, Maritaca, Gemini) — viola *dado não sai da organização*; o perímetro
@@ -274,10 +303,11 @@ gatilho dispara.
   arquitetura de quatro camadas com o domínio dividido por área, zero dependência, e o perímetro
   ético do bloco 6 imposto por esquema de banco — com os desvios do material de aula (no-code, SLM)
   e do pack (transcrição no navegador, extrator determinístico) assumidos e justificados por escrito.
-- **Até 09/10**: nenhuma feature nova; fechar o escopo de turma no RBAC das rotas herdadas de
-  leitura individual, regravar o vídeo demonstrativo sobre a v2, validar com usuário real e
-  alimentar o business case com os números de sustentação. O descarte do campo livre e a retenção
-  declarada já foram fechados (achado A-05, decisão 15).
+- **Até 09/10**: o escopo de turma no RBAC das rotas herdadas foi fechado em 25/08 (decisão 22),
+  e a v3 acrescentou a camada de IA opt-in (seção 6.2) com o produto intacto quando desligada.
+  Continuam pendentes de gente: regravar o vídeo sobre a versão atual, validar com usuário real e
+  alimentar o business case com os números de sustentação (`docs/PENDENCIAS-DE-ENTREGA.md`).
+  O descarte do campo livre e a retenção declarada já foram fechados (achado A-05, decisão 15).
 - **No piloto real**: as oito medidas do Horizonte 2 deixam de ser dívida aceitável e viram
   pré-requisito; a troca de dado sintético por real é evento de governança com checklist.
 - **Depois**: cada evolução (M2, M4, B4, variantes, SLM) tem gatilho externo nomeado e encaixe

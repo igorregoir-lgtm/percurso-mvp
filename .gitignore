@@ -1,5 +1,14 @@
 data/*.db
 data/*.db-journal
+
+# Camada de IA local: pesos de modelo nunca entram no git (ver ai/model-manifest.json);
+# o corpus.db do RAG é reconstruível por `node src/rag/ingest.mjs`; doações de interação
+# para o dataset LoRA são dado local, nunca versionado.
+models/
+*.gguf
+data/rag/private/
+data/rag/*.db*
+data/*.jsonl
 node_modules/
 .DS_Store
 *.log

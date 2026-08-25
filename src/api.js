@@ -5,6 +5,69 @@ import * as V from './voz.js';
 import * as S from './scores.js';
 import * as R from './relatorio.js';
 import * as G from './ingestao.js';
+import { statusIA } from './ai-client.js';
+import { buscar as buscarRag, infoCorpus } from './rag/search.js';
+import { anonimizarTexto } from './rag/anonimizar.js';
+import * as C from './copilot.js';
+import * as SROI from './sroi/calculator.js';
+import { conversar, AI_ENABLED } from './ai-client.js';
+const { nomesParaAnonimizar } = C;
+
+const RESSALVA_LITERAL = 'A leitura é de associação: fatores externos não foram isolados.';
+
+/** Explicação determinística das premissas — o fallback que sempre existe. */
+function explicacaoDeterministica(r) {
+  const linhas = [
+    `Este é um cenário exploratório de valor social potencial: a faixa vai de R$ ${r.faixa_sroi.minimo.toFixed(2).replace('.', ',')} a R$ ${r.faixa_sroi.maximo.toFixed(2).replace('.', ',')} por R$ 1 investido, conforme o conjunto de premissas de cada cenário.`,
+    ...r.proxies_usadas.map(p =>
+      `Premissa "${p.nome}": R$ ${p.valor.toLocaleString('pt-BR')} (${p.unidade}, ano-base ${p.ano_base}, fonte ${p.fonte}). ${p.ressalva}`),
+    'Os três cenários variam efeito incremental, deadweight, atribuição, deslocamento, drop-off e desconto — cada valor está exposto no relatório e pode ser revisto.',
+    RESSALVA_LITERAL,
+  ];
+  return linhas.join('\n\n');
+}
+
+async function explicarSROI(resultado) {
+  const fallback = () => ({
+    texto: explicacaoDeterministica(resultado),
+    origem: 'deterministico',
+    rotulo: null,
+  });
+  if (!AI_ENABLED) return fallback();
+  try {
+    // Mesma fila do copilot: o llama-server tem 2 slots; pedido por fora
+    // degradaria as reflexões em voo (revisão de 25/08, CORRECAO-10).
+    const { texto } = await C.comVaga(() => conversar({
+      papel: 'reflexivo',
+      maxTokens: 700,
+      temperatura: 0.4,
+      mensagens: [
+        {
+          role: 'system',
+          content: 'Você explica premissas de um cálculo exploratório de retorno social (SROI) para gestores de uma organização social, em português do Brasil. REGRAS: não invente número, fonte nem premissa — use SOMENTE o que vier no contexto; nunca afirme causalidade (proibido "causou", "gerou", "provou", "comprova", "garante", "contribuiu para"); trate tudo como associação e potencial; não escolha coeficiente nem recomende valor; termine com a frase literal: "A leitura é de associação: fatores externos não foram isolados."',
+        },
+        {
+          role: 'user',
+          content: `Explique em até 4 parágrafos as premissas e limitações deste cenário exploratório:\n${JSON.stringify({
+            faixa_sroi: resultado.faixa_sroi,
+            entradas: resultado.entradas,
+            proxies: resultado.proxies_usadas.map(p => ({ nome: p.nome, valor: p.valor, unidade: p.unidade, ano_base: p.ano_base, fonte: p.fonte, ressalva: p.ressalva })),
+            cenarios: resultado.cenarios.map(c => ({ cenario: c.cenario, parametros: c.parametros, sroi: c.sroi })),
+            ressalvas: resultado.ressalvas,
+          })}`,
+        },
+      ],
+    }));
+    let corpo = (texto || '').trim();
+    if (!corpo) return fallback();
+    if (!/fatores externos n[aã]o foram isolados/i.test(corpo)) corpo += `\n\n${RESSALVA_LITERAL}`;
+    const revisor = D.revisarSobreAlegacao(corpo);
+    if (revisor.status !== 'aprovado') return { ...fallback(), revisor_barrou: revisor.notas };
+    return { texto: corpo, origem: 'modelo', rotulo: 'texto gerado por modelo local — não revisado por humano; fora do relatório exportado por padrão', revisor_status: 'aprovado' };
+  } catch {
+    return fallback();
+  }
+}
 
 const COOKIE = 'percurso_uid';
 
@@ -55,10 +118,11 @@ function exigeEducadorOuCoordenacao(req) {
  * papel sozinho nao cumpre o "da crianca". Coordenacao passa sempre; a diretoria
  * nunca (ela nao abre nada individual); educadora so na propria turma.
  *
- * Aplicado nas rotas que a v2 criou e na chamada. As rotas herdadas de leitura
- * individual (ficha, lista, observacao) seguem como item 1.2 do horizonte 1 —
- * fechar todas de uma vez exigiria decidir com a coordenacao o caso da educadora
- * substituta, que hoje nao tem representacao no modelo.
+ * Desde 25/08/2026 (item 1.2 do horizonte 1, decisao 22) o escopo cobre TAMBEM
+ * as rotas herdadas de leitura individual (ficha, lista, observacao, alertas) —
+ * via exigeAcessoCrianca e filtros por educador. Limitacao declarada: a
+ * educadora substituta nao tem representacao no modelo; o caminho dela e' a
+ * coordenacao.
  */
 /** A turma ativa da criança — usada para dar escopo a rota que recebe crianca_id. */
 function turmaDaCrianca(criancaId) {
@@ -73,6 +137,24 @@ function exigeAcessoTurma(req, turmaId) {
   if (!t) throw D.erro(404, 'Turma não encontrada.');
   if (t.educador_id !== u.id)
     throw D.erro(403, 'Esta turma é de outra educadora. O acesso é do educador da criança e da coordenação.');
+  return u;
+}
+
+/** Escopo por criança (A4): coordenação passa; educadora só se a criança tem
+ *  matrícula ativa em turma DELA. Usado nas rotas de leitura individual. */
+function exigeAcessoCrianca(req, criancaId) {
+  const u = semAcessoIndividual(exigeUsuario(req));
+  // Criança que não existe é 404 para qualquer papel — o 403 de escopo só faz
+  // sentido sobre uma criança real (e não vira oráculo de existência: a lista
+  // da educadora já é restrita às turmas dela).
+  if (!get(`SELECT 1 x FROM crianca WHERE id = ?`, criancaId))
+    throw D.erro(404, 'Criança não encontrada.');
+  if (u.papel === 'coordenacao') return u;
+  const vinculo = get(
+    `SELECT 1 x FROM matricula m JOIN turma t ON t.id = m.turma_id
+      WHERE m.crianca_id = ? AND m.status='ativa' AND t.educador_id = ?`, criancaId, u.id);
+  if (!vinculo)
+    throw D.erro(403, 'Esta criança é de outra turma. O acesso é do educador da criança e da coordenação.');
   return u;
 }
 const num = (v, campo) => {
@@ -162,6 +244,7 @@ export const rotas = {
     const criancaId = num(q.get('crianca_id'), 'crianca_id');
     const c = get(`SELECT id, codigo, nome FROM crianca WHERE id = ?`, criancaId);
     if (!c) throw D.erro(404, 'Criança não encontrada.');
+    exigeAcessoCrianca(req, criancaId);
     return {
       ciclo, crianca: c,
       elegibilidade: D.elegibilidade(criancaId, ciclo.id),
@@ -211,27 +294,40 @@ export const rotas = {
   },
 
   // ---- Criancas ----------------------------------------------------------
+  // Escopo de turma nas rotas de leitura individual (A4, fecho do item 1.2 do
+  // horizonte 1): a governança declara acesso "educador DA CRIANÇA + coordenação".
+  // A educadora substituta não tem representação no modelo — limitação declarada
+  // em DECISOES-TECNICAS.md; o caminho dela é a coordenação.
   'GET /api/criancas': (req, _b, q) => {
-    exigeEducadorOuCoordenacao(req);
+    const u = exigeEducadorOuCoordenacao(req);
+    return D.listarCriancas({
+      q: q.get('q') || '',
+      turmaId: q.get('turma_id') ? Number(q.get('turma_id')) : null,
+      programaId: q.get('programa_id') ? Number(q.get('programa_id')) : null,
+      educadorId: u.papel === 'educador' ? u.id : null,
+    });
+  },
+
+  'GET /api/crianca': (req, _b, q) => {
+    const id = num(q.get('id'), 'id');
+    exigeAcessoCrianca(req, id);
+    return D.fichaCrianca(id);
+  },
+
+  'GET /api/alertas': (req) => {
+    const u = exigeEducadorOuCoordenacao(req);
     return {
-      criancas: D.listarCriancas({
-        q: q.get('q') || '',
-        turmaId: q.get('turma_id') ? Number(q.get('turma_id')) : null,
-        programaId: q.get('programa_id') ? Number(q.get('programa_id')) : null,
-      }),
+      alertas: D.alertas(null, u.papel === 'educador' ? u.id : null),
+      faltas_para_lista: D.PARAMS.AUSENCIAS_ALERTA,
     };
   },
 
-  'GET /api/crianca': (req, _b, q) => { exigeEducadorOuCoordenacao(req); return D.fichaCrianca(num(q.get('id'), 'id')); },
-
-  'GET /api/alertas': (req) => {
-    exigeEducadorOuCoordenacao(req);
-    return { alertas: D.alertas(), faltas_para_lista: D.PARAMS.AUSENCIAS_ALERTA };
-  },
-
   'POST /api/alerta': (req, body) => {
-    exigeEducadorOuCoordenacao(req);
-    return D.atualizarAlerta(num(body.id, 'id'), body.status, body.tratativa);
+    const id = num(body.id, 'id');
+    const a = get(`SELECT crianca_id FROM alerta WHERE id = ?`, id);
+    if (!a) throw D.erro(404, 'Alerta não encontrado.');
+    exigeAcessoCrianca(req, a.crianca_id);
+    return D.atualizarAlerta(id, body.status, body.tratativa);
   },
 
   // ---- Coordenacao -------------------------------------------------------
@@ -251,6 +347,9 @@ export const rotas = {
       olhares_registrados: get(
         `SELECT COUNT(*) AS n FROM observacao WHERE status = 'concluida' AND ciclo_id = ?`,
         cicloCorrente().id).n,
+      // Borda 2 da doutrina de IA, em versao deterministica: consistencia
+      // entre observadores como leitura de calibracao — nunca ranking.
+      calibracao: D.calibracaoEntreObservadores(cicloCorrente().id),
     };
   },
   'GET /api/safras': (req) => { exigeCoordenacao(req); return D.safras(); },
@@ -287,6 +386,90 @@ export const rotas = {
   'GET /api/inventario': (req) => { exigeUsuario(req); return D.inventario(); },
 
   // ======================================================================
+  // Camada de IA local (Fase 0+) — opt-in por AI_ENABLED; padrao DESLIGADA.
+  // ======================================================================
+  'GET /api/ia/status': async (req) => { exigeUsuario(req); return statusIA(); },
+
+  // RAG (Fase 1) — busca lexical no corpus aprovado. Papeis internos
+  // (educador/coordenacao). A query passa pela pseudonimizacao ANTES da busca;
+  // nomes de crianca nunca alcancam o indice. Politica de log: NENHUMA query
+  // e' logada (nem anonimizada) — privacidade por ausencia, nao por confianca.
+  'GET /api/rag/search': (req, _b, q) => {
+    const u = exigeEducadorOuCoordenacao(req);
+    const nomes = nomesParaAnonimizar(u);
+    const { texto: consulta, substituicoes } = anonimizarTexto(q.get('q') || '', nomes);
+    const resultados = buscarRag({
+      q: consulta,
+      k: Number.isFinite(Number(q.get('k'))) && q.get('k') !== '' && q.get('k') !== null
+        ? Math.trunc(Number(q.get('k'))) : 5,
+      source_id: q.get('source_id') || null,
+      tema: q.get('tema') || null,
+      faixa_etaria: q.get('faixa_etaria') || null,
+    }).map(({ conteudo, ...resto }) => resto);
+    return {
+      consulta_executada: consulta,
+      nomes_substituidos: substituicoes,
+      resultados,
+      corpus: infoCorpus(),
+    };
+  },
+
+  // Copilot (Fase 2, Modo B) — sala de reflexao pedagogica. Educador e
+  // coordenacao; a DIRETORIA nao entra (decisao 16: quem presta contas nao
+  // conversa sobre crianca — o canal dela e' o /api/sroi/explicar, fechado).
+  'POST /api/copilot/chat': (req, body) =>
+    C.chat(exigeEducadorOuCoordenacao(req), {
+      mode: body.mode, message: body.message, session_id: body.session_id,
+    }),
+
+  'DELETE /api/copilot/sessao': (req, body) =>
+    C.apagarSessao(exigeEducadorOuCoordenacao(req), String(body.session_id || '')),
+
+  // Doacao explicita de interacao (funil licito do dataset LoRA): pre-via
+  // exata, validacao de anonimizacao ANTES de gravar, revogavel pelo id.
+  'POST /api/copilot/doacao/previa': (req, body) =>
+    C.preverDoacao(exigeEducadorOuCoordenacao(req), String(body.session_id || ''), Number(body.indice ?? -1)),
+  'POST /api/copilot/doar': (req, body) =>
+    C.doarInteracao(exigeEducadorOuCoordenacao(req), String(body.session_id || ''), Number(body.indice ?? -1)),
+  'DELETE /api/copilot/doacao': (req, body) => {
+    const u = exigeEducadorOuCoordenacao(req);
+    return C.revogarDoacao(u, String(body.id || ''));
+  },
+
+  // ======================================================================
+  // SROI exploratorio (Fase 3) — motor DETERMINISTICO, zero LLM no numero.
+  // Coordenacao e diretoria (camada agregada; nada individual passa aqui).
+  // ======================================================================
+  'GET /api/sroi/premissas': (req) => { exigeGestao(req); return SROI.premissas(); },
+
+  'POST /api/sroi/calcular': (req, body) => {
+    exigeGestao(req);
+    return SROI.calcular({
+      criancas: body.criancas,
+      investimento_anual: body.investimento_anual,
+      proxy_ids: body.proxy_ids,
+      horizonte_anos: body.horizonte_anos,
+      cenarios: body.cenarios ?? null,
+    });
+  },
+
+  // Papel do SLM no SROI (§3.5): EXPLICAR premissas e limites — nunca escolher
+  // coeficiente nem gerar numero. Endpoint proprio, prompt fechado, SEM sessao
+  // de chat e SEM RAG de casos — e' o canal da diretoria (que continua 403 no
+  // copilot/chat, decisao 16). Toda saida passa pelo revisor de sobre-alegacao;
+  // texto reprovado nao aparece — entra a explicacao deterministica.
+  'POST /api/sroi/explicar': async (req, body) => {
+    exigeGestao(req);
+    const resultado = SROI.calcular({
+      criancas: body.criancas,
+      investimento_anual: body.investimento_anual,
+      proxy_ids: body.proxy_ids,
+      horizonte_anos: body.horizonte_anos,
+    });
+    return explicarSROI(resultado);
+  },
+
+  // ======================================================================
   // v2 — folha do dia, voz, pauta, scores, relatorio, consulta e ingestao.
   // ======================================================================
 
@@ -318,15 +501,21 @@ export const rotas = {
   // O audio nunca chega ao servidor: a transcricao acontece no navegador e o
   // arquivo e' descartado la. A transcricao entra, e' usada em memoria e sai
   // desta funcao sem tocar disco nem log.
-  'POST /api/voz/extrair': (req, body) => {
+  'POST /api/voz/extrair': async (req, body) => {
     const turmaId = num(body.turma_id, 'turma_id');
     exigeAcessoTurma(req, turmaId);
     const texto = String(body.transcricao ?? '');
     if (texto.length > 4000) throw D.erro(422, 'Transcrição longa demais para uma fala de 40 segundos.');
     const nomes = D.criancasDaTurma(turmaId).map(c => c.nome);
-    const { extracao, perimetro, invalido } = V.extrairDaFala(texto, nomes);
+    // Modo A com modelo e' OPT-IN (AI_EXTRATOR=1) e cai para o extrator lexical
+    // em qualquer falha — o contrato da decisao 13 continua o mesmo: saida
+    // valida contra o schema fechado, confirmacao humana, nada gravado aqui.
+    const { extracao, perimetro, invalido, origem } = C.AI_EXTRATOR
+      ? await C.extrairComModelo(texto, nomes, C.nomesParaAnonimizar(exigeUsuario(req)))
+      : { ...V.extrairDaFala(texto, nomes), origem: 'regras' };
     return {
       extracao,
+      origem: origem ?? 'regras',
       // Fato de ter havido exclusao + a categoria, para a tela devolver o
       // encaminhamento humano. O trecho volta so para a pessoa que falou ver o
       // que nao entra; nao e' persistido em lugar nenhum.

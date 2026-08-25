@@ -1,0 +1,15 @@
+{
+  "name": "Percurso · Instituto Ebenézer",
+  "short_name": "Percurso",
+  "description": "Monitoramento de impacto socioemocional — registro rápido, agregado protegido, decisão sempre humana.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#e9e3d6",
+  "theme_color": "#e9e3d6",
+  "icons": [
+    { "src": "/icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icone-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#e9e3d6">
 <title>Percurso · Instituto Ebenézer</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>📈</text></svg>">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icone.svg">
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -17,5 +19,13 @@
   <nav class="barra-nav" id="nav" hidden></nav>
   <div class="toasts" id="toasts"></div>
   <script type="module" src="/app.js"></script>
+  <script>
+    // PWA: registra o service worker onde o contexto permite (localhost/HTTPS).
+    // Pelo IP da rede local o navegador ignora — a página funciona normal,
+    // sem offline/instalação (limitação declarada; ver README).
+    if ('serviceWorker' in navigator) {
+      addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+    }
+  </script>
 </body>
 </html>

@@ -14,10 +14,10 @@ Em outro:
 node scripts/smoke-test.mjs
 ```
 
-Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **242 passaram,
+Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **246 passaram,
 0 falharam**.
 
-Há também uma bateria de **55 testes unitários** das regras críticas de domínio (filtro de
+Há também uma bateria de **63 testes unitários** das regras críticas de domínio (filtro de
 perímetro, validação do schema do extrator, determinismo do agente, os três scores, supressão com
 agrupamento, deduplicação da ingestão, revisor de sobre-alegação, consentimento, imutabilidade da
 síntese, fecho de ciclo), que roda sem servidor, contra um banco temporário descartável:
@@ -26,7 +26,7 @@ síntese, fecho de ciclo), que roda sem servidor, contra um banco temporário de
 node scripts/unit-test.mjs
 ```
 
-As duas baterias rodam a cada push via [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
+As quatro baterias (unitária, RAG, IA com stub e smoke) rodam a cada push via [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
 Os testes **alteram o banco** (concluem observações, aprovam a síntese, revogam consentimento).
 Para voltar ao estado de demonstração — pode rodar com o servidor no ar, é só recarregar a página:
@@ -105,3 +105,22 @@ crianças em risco apareciam com o mesmo número (decisão técnica nº 18).
 - Não há teste de navegador antigo. Verificado em navegador baseado em Chromium atual.
 - A validação com usuário real (a educadora) é a etapa seguinte — o registro dessa validação
   pertence à documentação da semana 5.
+
+---
+
+## Baterias da camada de IA (v3, 25/08/2026)
+
+| Bateria | Comando | O que cobre | Onde roda |
+|---|---|---|---|
+| Avaliação do RAG | `npm run test:rag` | reconstrói o índice do zero e mede **hit@5 ≥ 14/20**, 100% das citações apontando para chunk real, cobertura pt-BR ≥ 90% e pseudonimização da consulta | CI e local |
+| Camada de IA com stub | `npm run test:ia` | contrato dos 7 blocos por schema, verificador de citações (fonte inventada é descartada), perímetro/recusas SEM chamada de modelo, fallbacks (saída inválida, HTTP 500, timeout), fila de 2 com teto → 503, Modo A com pseudonimização reversível e fallback lexical — 17 asserções, sem GGUF | CI e local |
+| Modo A com modelo real | bateria manual (`ai/README.md`) | 100% de saída válida contra `validarExtracao` e zero regressão frente ao extrator lexical — executada em 25/08/2026: **6/6, 0 regressões** | só local |
+| Modo B com modelo real | sessão manual | 7 blocos, citações reais do corpus, recusa de diagnóstico/score, encaminhamento de perímetro, pseudonimização (nome nunca aparece na resposta) — validada em 25/08/2026 | só local |
+
+Os testes unitários somam **63** (os 55 originais + escopo de turma, aviso de corte da lista,
+denominador da cobertura só com programas em escopo, e o motor SROI: 3 cenários determinísticos,
+dupla contagem bloqueada, benchmark recusado no cálculo, rastreabilidade das premissas,
+parâmetro fora de 0..1 recusado).
+
+O CI (`.github/workflows/ci.yml`) roda tudo com `AI_ENABLED=false` explícito — o produto tem que
+ser exatamente o mesmo sem modelo; os gates que exigem modelo real são gates de máquina local.

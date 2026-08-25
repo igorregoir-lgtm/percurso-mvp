@@ -1,12 +1,19 @@
 # Percurso — validação contínua mínima.
-# A cada push/PR: testes unitários de domínio + bateria smoke contra o servidor no ar.
+# A cada push/PR: testes unitários de domínio + bateria smoke contra o servidor
+# no ar + avaliação do RAG (índice reconstruído das fontes versionadas) + camada
+# de IA com stub (sem modelo: os GGUFs nunca entram no git).
 # Sem npm install: o projeto não tem dependência externa (decisão técnica nº 1).
+# AI_ENABLED fica explicitamente DESLIGADA nos passos do produto — os gates que
+# exigem modelo real são gates de máquina local (ai/README.md).
 name: ci
 
 on:
   push:
     branches: [main]
   pull_request:
+
+env:
+  AI_ENABLED: "false"
 
 jobs:
   testes:
@@ -20,6 +27,12 @@ jobs:
 
       - name: Testes unitários de domínio (banco temporário)
         run: node scripts/unit-test.mjs
+
+      - name: Avaliação do RAG (reconstrói o índice e mede hit@5, citações, pt-BR, pseudonimização)
+        run: node scripts/rag-test.mjs
+
+      - name: Camada de IA com stub (contrato de 7 blocos, recusas, fila, fallbacks, Modo A)
+        run: node scripts/ai-stub-test.mjs
 
       - name: Subir servidor com dados sintéticos
         run: |
