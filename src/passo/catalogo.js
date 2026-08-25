@@ -28,8 +28,17 @@ import { PARAMS } from '../domain.js';
 // --------------------------------------------------------------------------
 // O lint de cobrança. Sugestão que acusa não é parceria — é chefe.
 // --------------------------------------------------------------------------
-const COBRANCA = /\b(voc[êe]\s+(n[ãa]o|ainda n[ãa]o|deixou|esqueceu|falhou|precisa|deveria|tem que|est[áa]\s+atrasad)|em atraso|pend[êe]ncia\s+sua|sua responsabilidade|falta\s+voc[êe]|est[áa]\s+devendo|n[ãa]o deixe acumular|vamos correr|ficou para tr[áa]s)\b/i;
-export const semCobranca = (t) => !COBRANCA.test(String(t ?? ''));
+// DUAS armadilhas que este regex já teve, e por isso ele é assim:
+//  1. O `\b` que fechava o grupo ANULAVA duas alternativas. Em "está atrasada"
+//     o caractere seguinte é `a` (não há fronteira); em "falta você" a última
+//     letra é `ê`, que não é `\w` sem a flag `u`. Resultado: "Você está
+//     atrasada com a folha" PASSAVA no lint que existe para barrá-la.
+//  2. Sem normalizar acento, "voce esta atrasado" (teclado sem acento, celular
+//     com corretor desligado) escapava de todas as alternativas.
+// Por isso: comparação sobre texto SEM acento e sem `\b` no fecho.
+const semAcento = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const COBRANCA = /(voce\s+(nao|ainda nao|deixou|esqueceu|falhou|precisa|deveria|tem que|esta\s+atrasad)|em atraso|pendencia\s+sua|sua responsabilidade|falta\s+voce|esta\s+devendo|nao deixe acumular|vamos correr|ficou para tras|ficando para tras)/;
+export const semCobranca = (t) => !COBRANCA.test(semAcento(t));
 
 // Contagem de crianças abaixo do mínimo de célula vira qualitativa.
 const criancas = (n) => n >= PARAMS.MINIMO_CELULA ? `${n} crianças` : 'algumas crianças';
@@ -239,8 +248,38 @@ const EDUCADOR = [
     nucleo: false, base: 40, telas: ['#/crianca', '#/criancas'], suprimidoEm: [],
     gatilho: SEMPRE,
     rotulo: 'Por que uma ficha não abre?',
-    texto: () => 'A ficha só abre para quem convive com a criança e respeita o consentimento registrado. Se estiver fechada, o caminho é a coordenação — eu não enxergo o motivo de nenhum caso.',
+    texto: () => 'A ficha só abre para quem convive com a criança e respeita o consentimento registrado. Se estiver fechada, o caminho é a coordenação — eu não abro a ficha de nenhum caso.',
     porque: () => 'é o que mais confunde nesta tela',
+    acao: null,
+  },
+  // A tela #/hoje é onde ela mais abre o Passo — e é a que já pinta seis
+  // cartões. Sem entradas próprias, o painel caía nos chips estáticos de
+  // sempre justamente ali. Estas três dizem o que a TELA NÃO diz.
+  {
+    id: 'edu.duvida.datas_nao_expiram', tipo: 'duvida', classe: 'saber', sujeito: 'sistema',
+    nucleo: false, base: 50, telas: ['#/hoje'], suprimidoEm: [],
+    gatilho: (e) => e.datas_abertas > 0,
+    rotulo: 'O que acontece com data em aberto?',
+    texto: () => 'Nada. Data em aberto não expira, não vira pendência e não some: ela fica esperando o dia em que sobrar tempo. O sistema é que se adapta ao encontro, não o contrário.',
+    porque: () => 'há data de chamada em aberto',
+    acao: null,
+  },
+  {
+    id: 'edu.pergunta.o_que_muda', tipo: 'pergunta', classe: 'saber', sujeito: 'instituto',
+    nucleo: false, base: 47, telas: ['#/hoje'], suprimidoEm: [],
+    gatilho: (e) => e.folhas_total >= 3,
+    rotulo: 'Para onde vai o que eu registro?',
+    texto: () => 'O que você registra vira a leitura do ciclo da turma, a pauta de segunda e — em forma agregada, sem nome nenhum — o relatório de quem financia o instituto. Nenhuma criança aparece isolada em nada disso.',
+    porque: () => 'é o que costuma faltar explicar sobre o registro',
+    acao: 'turma',
+  },
+  {
+    id: 'edu.duvida.privacidade', tipo: 'duvida', classe: 'saber', sujeito: 'sistema',
+    nucleo: false, base: 45, telas: ['#/hoje', '#/turma'], suprimidoEm: [],
+    gatilho: SEMPRE,
+    rotulo: 'Quem enxerga o que eu escrevo?',
+    texto: () => 'A coordenação enxerga o agregado da turma e as fichas do escopo dela; a diretoria só vê número agregado, nunca criança. Eu, o Passo, não abro ficha nenhuma — só sei contar quantas coisas estão em aberto, nunca quem.',
+    porque: () => 'é a dúvida mais comum de quem começa a registrar',
     acao: null,
   },
 ];
@@ -374,6 +413,46 @@ const COORDENACAO = [
     porque: () => 'é a dúvida mais comum sobre os números publicados',
     acao: null,
   },
+  // Sem alívio, o painel da Rita só sabia falar do que está quebrado: no caso
+  // típico, uma pendência e um aprimoramento — dois itens, ambos problema.
+  // Quem faz a varredura precisa poder ouvir que a varredura deu limpo.
+  {
+    id: 'coo.tranquila', tipo: 'aprimoramento', classe: 'alivio', sujeito: 'instituto',
+    nucleo: false, base: 72, telas: '*', suprimidoEm: [],
+    gatilho: (e) => e.alertas_parados === 0 && e.ciclo_vencido_dias === 0
+      && e.consentimentos_bloqueando === 0 && e.sintese_estado !== 'rascunho_reprovado',
+    rotulo: 'A varredura desta semana deu limpo',
+    texto: () => 'Nenhum alerta parado sem tratativa, nenhum ciclo vencido, nenhum consentimento travando observação. Está tudo andando — e isso também é resultado do trabalho.',
+    porque: () => 'nenhum dos sinais de atenção da coordenação está aceso',
+    acao: 'painel',
+  },
+  {
+    id: 'coo.pergunta.risco', tipo: 'pergunta', classe: 'saber', sujeito: 'instituto',
+    nucleo: false, base: 50, telas: ['#/painel', '#/scores', '#/safras'], suprimidoEm: [],
+    gatilho: (e) => e.alertas_abertos > 0,
+    rotulo: 'Como o risco de evasão é calculado?',
+    texto: () => 'O risco cruza faltas consecutivas com a própria linha de base da criança — nunca com a média das outras. Ele nomeia para a coordenação agir, e o alerta abre antes de virar evasão.',
+    porque: () => 'há alerta de ausência aberto',
+    acao: 'scores',
+  },
+  {
+    id: 'coo.pergunta.sintese', tipo: 'pergunta', classe: 'saber', sujeito: 'instrumento',
+    nucleo: false, base: 48, telas: ['#/sintese', '#/painel'], suprimidoEm: [],
+    gatilho: (e) => e.sintese_estado !== 'inexistente',
+    rotulo: 'O que o revisor da síntese verifica?',
+    texto: () => 'Ele lê o texto procurando verbo causal forte e a ressalva metodológica. Nada sai daqui dizendo que o instituto causou um resultado — nem quando o número é bom.',
+    porque: () => 'há síntese em jogo neste ciclo',
+    acao: 'sintese',
+  },
+  {
+    id: 'coo.duvida.escopo', tipo: 'duvida', classe: 'saber', sujeito: 'sistema',
+    nucleo: false, base: 44, telas: ['#/criancas', '#/consentimentos'], suprimidoEm: [],
+    gatilho: SEMPRE,
+    rotulo: 'Por que a educadora não vê tudo?',
+    texto: () => 'A educadora enxerga as crianças das turmas dela — o acesso é do educador da criança mais a coordenação. Papel sozinho não abre ficha: é o escopo que cumpre a governança declarada.',
+    porque: () => 'é a dúvida mais comum sobre quem vê o quê',
+    acao: null,
+  },
 ];
 
 // --------------------------------------------------------------------------
@@ -471,6 +550,16 @@ const DIRETORIA = [
     texto: () => 'A diretoria trabalha sobre a camada agregada por decisão de desenho: quem presta contas não precisa de acesso individual, e doar não pode virar caminho até a criança. É proteção, não limitação de perfil.',
     porque: () => 'é a dúvida mais comum deste perfil',
     acao: null,
+  },
+  {
+    id: 'dir.tranquila', tipo: 'aprimoramento', classe: 'alivio', sujeito: 'instituto',
+    nucleo: false, base: 70, telas: '*', suprimidoEm: [],
+    gatilho: (e) => e.relatorio_estado === 'publicado' && e.periodos_sem_relatorio === 0
+      && e.dias_desde_publicacao >= 0 && e.dias_desde_publicacao <= 120,
+    rotulo: 'A prestação de contas está em dia',
+    texto: () => 'O período mais recente já foi publicado e nenhum período sugerido ficou descoberto. Quem financia tem o que ler, e o texto passou pelo revisor antes de sair.',
+    porque: () => 'não há período descoberto nem rascunho parado',
+    acao: 'relatorio',
   },
   ...PERGUNTAS_DIRETORIA.map(([codigo, rotulo, consulta], i) => ({
     id: `dir.pergunta.${codigo}`, tipo: 'pergunta', classe: 'saber', sujeito: 'instituto',

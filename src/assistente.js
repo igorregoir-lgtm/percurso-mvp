@@ -10,9 +10,19 @@
 //      fala que contenha pseudônimo ou nome do roster é descartada no servidor.
 //   4. Ação é um catálogo FECHADO de navegação (enum na gramática) e sempre
 //      OFERTA — quem navega é o toque da pessoa, nunca o Passo.
-//   5. O Passo NÃO enxerga dado nenhum: pergunta sobre estado de dados recebe
-//      o limite declarado + oferta de ir à tela que mostra, nunca um motivo
-//      inventado.
+//   5′. DOIS CANAIS, DUAS PERMISSÕES (substitui a doutrina 5 antiga, que dizia
+//      "o Passo não enxerga dado nenhum" e virou mentira no instante em que a
+//      sugestão passou a nascer de estado real — e limite declarado que virou
+//      mentira é pior do que a mudança):
+//      · CONVERSA (assistente(), este arquivo) continua CEGA: nada do banco
+//        entra no prompt de uma resposta a pergunta. Pergunta sobre um caso
+//        específico recebe o limite declarado, nunca um motivo inventado.
+//      · SUGESTÃO (src/passo/) enxerga CONTADORES do próprio dia da pessoa —
+//        quantos, quantas datas, quantos dias. Nunca um nome, nunca uma ficha,
+//        nunca um nível, nunca um escore individual. Conta quantos, nunca quem.
+//      A exceção declarada: coordenação e diretoria recebem, no portão 3.5,
+//      o número AGREGADO vindo de SQL — verbatim, sem modelo e sem entrar na
+//      memória da sessão.
 //   6. Fila cheia não é erro: cai no guia determinístico (origem 'guia').
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -129,9 +139,9 @@ export const GUIA = [
     id: 'ciclo', papeis: ['educador'],
     oQueE: 'A Agenda do ciclo lista quem já foi observado neste ciclo, quem falta, e quem está bloqueado — sempre com o motivo explícito.',
     chips: ['O que é o ciclo de observação?', 'Por que uma criança aparece bloqueada?'],
-    naoEnxergo: 'Eu não enxergo os dados de nenhuma criança — o motivo exato de um bloqueio aparece na própria agenda, ao lado do nome.',
+    naoEnxergo: 'Eu não abro a ficha de ninguém: eu conto quantas estão bloqueadas, nunca quem. O motivo exato aparece na própria agenda, ao lado do nome.',
     tarefas: [
-      { intencoes: ['bloquead', 'nao consigo observar', 'nao deixa observar'], resposta: 'Eu não enxergo os dados de ninguém, então não sei o motivo deste caso — mas a Agenda do ciclo mostra o motivo escrito ao lado de cada criança bloqueada. Os dois motivos possíveis são: consentimento do responsável pendente ou revogado, ou a janela mínima de convívio (4 encontros antes de observar — é protocolo, não falha sua). Quer ir até lá ver?', acao: 'ciclo' },
+      { intencoes: ['bloquead', 'nao consigo observar', 'nao deixa observar'], resposta: 'Eu não abro a ficha de ninguém, então não sei o motivo deste caso — mas a Agenda do ciclo mostra o motivo escrito ao lado de cada criança bloqueada. Os dois motivos possíveis são: consentimento do responsável pendente ou revogado, ou a janela mínima de convívio (4 encontros antes de observar — é protocolo, não falha sua). Quer ir até lá ver?', acao: 'ciclo' },
       { intencoes: ['observa', 'rubrica', 'ancora', 'como avalio', 'niveis'], resposta: 'A observação é uma rubrica de 5 dimensões com âncoras de comportamento observável — você marca o que VIU no ciclo, nível 1 a 4, nunca uma interpretação. Na dúvida entre dois níveis, marque o menor. A própria tela tem o guia "Como calibrar o olhar".', acao: 'ciclo' },
     ],
   },
@@ -153,7 +163,7 @@ export const GUIA = [
     id: 'criancas', papeis: ['educador', 'coordenacao'],
     oQueE: 'A lista de Crianças abre a ficha viva de cada uma: matrículas, presença, trajetória categórica e consentimentos. Educadora vê as crianças das próprias turmas.',
     chips: ['Como encontro uma criança?', 'O que tem na ficha?'],
-    naoEnxergo: 'Eu não enxergo a ficha de ninguém — eu só te levo até a lista.',
+    naoEnxergo: 'Eu não abro a ficha de ninguém — eu só te levo até a lista.',
     tarefas: [
       { intencoes: ['buscar', 'busca', 'encontrar', 'encontro uma', 'encontro a crianca', 'procur', 'achar', 'acho', 'lista de crianca'], resposta: 'Na tela Crianças, use a busca por nome ou código — a lista mostra as crianças das suas turmas. Toque no nome para abrir a ficha viva.', acao: 'criancas' },
     ],
@@ -276,10 +286,10 @@ export const GUIA = [
   {
     id: 'crianca', papeis: ['educador', 'coordenacao'],
     oQueE: 'A ficha viva mostra o percurso de uma criança — presença, observações e evolução — sempre dentro do escopo das suas turmas e do consentimento registrado.',
-    naoEnxergo: 'Eu não enxergo o conteúdo de nenhuma ficha — só sei explicar o que a tela mostra e por que algo pode estar fechado.',
+    naoEnxergo: 'Eu não abro o conteúdo de nenhuma ficha — só sei explicar o que a tela mostra e por que algo pode estar fechado.',
     chips: ['O que é esta tela?', 'Por que uma ficha não abre?', 'O que significa bloqueada?'],
     tarefas: [
-      { intencoes: ['nao abre', 'não abre', 'bloquead', 'sem acesso', 'fechada'], resposta: 'A ficha só abre para quem convive com a criança (escopo de turma) e respeita o consentimento registrado. Se estiver bloqueada, o caminho é a coordenação — eu não enxergo o motivo de nenhum caso.', acao: null },
+      { intencoes: ['nao abre', 'não abre', 'bloquead', 'sem acesso', 'fechada'], resposta: 'A ficha só abre para quem convive com a criança (escopo de turma) e respeita o consentimento registrado. Se estiver bloqueada, o caminho é a coordenação — eu não abro a ficha de nenhum caso.', acao: null },
     ],
   },
 ];
@@ -408,6 +418,20 @@ const REDIRECIONAMENTO = {
 
 let PROMPT_PASSO = null;
 
+// Import tardio de propósito: relatorio.js importa domain/scores/db, e o topo
+// deste arquivo é lido por módulos que não querem esse peso. `consultar` lança
+// 422 em texto vazio — aqui isso é "não é pergunta agregada", nunca um erro.
+let _consultar = null;
+function consultarAgregado(pergunta) {
+  try {
+    if (!_consultar) return null;
+    const r = _consultar(pergunta);
+    return r?.reconhecida ? r : null;
+  } catch { return null; }
+}
+/** Ligado por src/api.js no boot — evita ciclo de import com relatorio.js. */
+export function ligarConsultaAgregada(fn) { _consultar = fn; }
+
 // ---------------------------------------------------------------------------
 // O pipeline do Passo.
 // ---------------------------------------------------------------------------
@@ -456,6 +480,34 @@ export async function assistente(u, { message, session_id, tela }) {
   }
 
   const pergunta = anon.texto;
+
+  // 3.5. PERGUNTA AGREGADA (só coordenação e diretoria — é o mesmo perímetro da
+  // rota /api/consulta). Quem pergunta "quantas crianças estão em risco de
+  // sair?" quer o NÚMERO, e o número existe em SQL. Antes deste portão, três
+  // dessas perguntas caíam em "eu só sei do Percurso" e as outras três
+  // devolviam a descrição genérica da tela — o chip prometia dado e entregava
+  // texto de ajuda.
+  //
+  // DUAS TRAVAS, e elas são o motivo de o portão viver aqui e não depois:
+  //  · a resposta é o retorno VERBATIM de consultar() — SQL puro. Nenhum modelo
+  //    vê, reescreve ou confere este número.
+  //  · nada disso entra em `sessao.trocas`. Sem esta linha, o número voltaria ao
+  //    prompt do modelo no turno seguinte, pelo histórico — escore chegando ao
+  //    modelo pela porta de trás, exatamente o que a doutrina proíbe.
+  //  · `fala: null` sempre: contagem agregada não é coisa para o aparelho ler
+  //    em voz alta numa sala.
+  if (u.papel === 'coordenacao' || u.papel === 'diretoria') {
+    const ag = consultarAgregado(pergunta);
+    if (ag) {
+      const acao = validarAcao('consulta', u.papel);
+      return {
+        session_id: sessaoId, origem: 'banco', tipo: 'resposta', fala: null,
+        resposta: ag.resposta, fonte: ag.fonte, doutrina: ag.doutrina,
+        acao: acao ? { id: acao.id, rotulo: acao.rotulo, hash: acao.hash } : null,
+        ...extraPerimetro,
+      };
+    }
+  }
 
   // 4. porta lateral fechada. Dois casos distintos, duas respostas distintas:
   //    (a) pergunta REFLEXIVA (precedência sobre o vocabulário) → o lugar é o

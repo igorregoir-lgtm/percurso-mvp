@@ -11,6 +11,9 @@ import { anonimizarTexto } from './rag/anonimizar.js';
 import * as C from './copilot.js';
 import * as A from './assistente.js';
 import * as PP from './passo/painel.js';
+// O Passo responde pergunta agregada com número do banco; a ligação é feita
+// aqui para evitar ciclo de import (relatorio.js → domain/scores/db).
+A.ligarConsultaAgregada(R.consultar);
 import { invalidarSinais } from './passo/sinais.js';
 import * as SROI from './sroi/calculator.js';
 import { conversar, AI_ENABLED } from './ai-client.js';

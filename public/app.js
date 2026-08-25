@@ -2701,7 +2701,7 @@ async function abrirPasso() {
   veu.addEventListener('click', (e) => { if (e.target === veu) fecharPasso(); });
   if (!passo.trocas.length) {
     passo.trocas.push({ quem: 'passo', resposta:
-      'Oi! Eu sou o Passo, seu parceiro aqui no Percurso. Eu conheço as telas e as tarefas do app — não enxergo dado de ninguém. Pergunte, por exemplo: "como faço a chamada?"' });
+      'Oi! Eu sou o Passo, seu parceiro aqui no Percurso. Eu conheço as telas e as tarefas do app, e sei contar quantas coisas estão em aberto — nunca quem. Não abro a ficha de ninguém. Pergunte, por exemplo: "como faço a chamada?"' });
   }
   pintarPassoFio();
   const campo = document.getElementById('passo-texto');

@@ -39,14 +39,15 @@ export function pontuar(c, pesos = {}, prefs = {}) {
     const afinTipo  = clamp((ta - Math.max(0, tm - ta)) / 6, -1, 1);
     const novidade  = m === 0 ? 1 : 1 / (1 + Math.log(1 + m));  // decai, nunca zera
     const fadiga    = (m >= 5 && a === 0) ? -1 : 0;
-    const declarada = prefs.prefere_tipo === c.tipo ? 1 : 0;
 
-    // AS PENALIDADES ENTRAM DENTRO DO CLAMP. Fora dele o clamp seria decorativo:
-    // os termos positivos já cabem na faixa e só as penalidades a estouram — era
-    // assim que uma base 0,20 vencia uma base 0,90.
-    ajuste = clamp(
-      0.45 * afinidade + 0.20 * afinTipo + 0.20 * novidade + 0.25 * fadiga + 0.30 * declarada,
-      -TETO_PESSOAL, TETO_PESSOAL);
+    // NORMALIZAR ANTES DE ESCALAR. A versão anterior somava termos com pesos
+    // que estouravam o teto sozinhos (novidade 0,20 já satura ±0,15), e o clamp
+    // achatava TUDO no mesmo valor: afinidade e afinidade-de-tipo viravam termos
+    // MORTOS e o "aprende com o uso" era inerte na prática. Com Σ|w| = 1, o
+    // resultado do somatório vive em [-1, 1] e cada termo tem efeito
+    // proporcional — o teto continua valendo, agora sem achatar.
+    const bruto = 0.45 * afinidade + 0.20 * afinTipo + 0.10 * novidade + 0.25 * fadiga;
+    ajuste = TETO_PESSOAL * clamp(bruto, -1, 1);
   }
 
   let pontos = clamp(base + ajuste, 0, 1);
@@ -61,7 +62,7 @@ export function pontuar(c, pesos = {}, prefs = {}) {
  * cobrança diária — cada item pode ser gentil e o conjunto ser uma lista de
  * dívida. Teto de UMA pendência por painel; o alívio pode vencer o painel.
  */
-export function compor(ordenados, { slots = SLOTS } = {}) {
+export function compor(ordenados, { slots = SLOTS, prefereTipo = null } = {}) {
   const saida = [];
   const usados = { pendencia: 0, duvida: 0, porTipo: {} };
   const anota = (c) => {
@@ -69,18 +70,28 @@ export function compor(ordenados, { slots = SLOTS } = {}) {
     if (c.tipo === 'duvida') usados.duvida++;
     usados.porTipo[c.tipo] = (usados.porTipo[c.tipo] ?? 0) + 1;
   };
+  const cabe = (c) => !saida.includes(c)
+    && !(c.classe === 'pendencia' && usados.pendencia >= 1)
+    && !(c.tipo === 'duvida' && usados.duvida >= 1)
+    && (usados.porTipo[c.tipo] ?? 0) < 2;
 
   // Dia sem pendência nenhuma: o alívio abre o painel. É o único caso em que
   // uma base menor passa na frente — e é deliberado.
   const alivio = ordenados.find(c => c.classe === 'alivio');
   if (alivio && !ordenados.some(c => c.classe === 'pendencia')) { saida.push(alivio); anota(alivio); }
 
+  // PREFERÊNCIA DECLARADA na composição, não no escore. No escore ela era
+  // engolida pelo teto; aqui ela reserva uma vaga e a pessoa VÊ o efeito no
+  // primeiro dia, sem nenhuma telemetria — que é a única alavanca de
+  // personalização demonstrável num piloto de três pessoas.
+  if (prefereTipo) {
+    const favorito = ordenados.find(c => c.tipo === prefereTipo && cabe(c));
+    if (favorito) { saida.push(favorito); anota(favorito); }
+  }
+
   for (const c of ordenados) {
     if (saida.length >= slots) break;
-    if (saida.includes(c)) continue;
-    if (c.classe === 'pendencia' && usados.pendencia >= 1) continue;
-    if (c.tipo === 'duvida' && usados.duvida >= 1) continue;
-    if ((usados.porTipo[c.tipo] ?? 0) >= 2) continue;
+    if (!cabe(c)) continue;
     saida.push(c); anota(c);
   }
   return saida;
@@ -99,10 +110,15 @@ export function ordenar(candidatos, pesos = {}, prefs = {}, silenciadas = new Se
  * última vaga vai para algo que a pessoa nunca viu. Sem isso, quem tem um
  * estado estável nunca descobre o resto do produto.
  */
-export function explorar(saida, ordenados, pesos, diaDoAno) {
+export function explorar(saida, ordenados, pesos, diaDoAno, opcoes = {}) {
   if (diaDoAno == null || diaDoAno % 3 !== 0 || saida.length < SLOTS) return saida;
   const inedita = ordenados.find(c =>
     !saida.includes(c) && (pesos[`sugestao:${c.id}:mostrada`] ?? 0) === 0);
   if (!inedita) return saida;
-  return [...saida.slice(0, SLOTS - 1), inedita];
+  // A inédita entra pelo MESMO caminho de todos: recompor com ela na frente.
+  // Atribuir por índice (`saida[SLOTS-1] = inedita`) pulava as travas — num dia
+  // de exploração em três, uma pendência inédita entrava junto com outra e o
+  // painel saía com DUAS pendências, quebrando o teto de forma dependente do
+  // calendário (o teste passava ou falhava conforme a data).
+  return compor([inedita, ...saida.slice(0, SLOTS - 1), ...ordenados], opcoes);
 }
