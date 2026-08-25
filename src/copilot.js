@@ -130,30 +130,15 @@ export function apagarSessao(u, sessaoId) {
 }
 
 // ---------------------------------------------------------------------------
-// Fila de geração: no máx. 2 no modelo, espera limitada (teto 4) → 503.
+// Fila de geração: mora em src/fila-modelo.js (módulo PURO, sem banco) para que
+// o orquestrador do Passo possa usá-la sem alcançar o domínio nem
+// transitivamente. Reexportada aqui: quem já importava `comVaga` do copilot
+// (api.js, assistente.js) continua funcionando sem uma linha alterada.
 // ---------------------------------------------------------------------------
-const MAX_CONCORRENTES = 2;
-const MAX_ESPERA = 4;
-let emVoo = 0;
-const fila = [];
-
-// Exportada: TODA chamada ao modelo passa por aqui — inclusive o
-// /api/sroi/explicar. O llama-server tem --parallel 2; chamada por fora da
-// fila degradaria todo mundo (timeouts em cascata).
-export async function comVaga(fn) {
-  if (emVoo >= MAX_CONCORRENTES) {
-    if (fila.length >= MAX_ESPERA)
-      throw erro(503, 'O copilot está ocupado agora. Tente de novo em instantes — o registro manual continua funcionando.');
-    await new Promise(res => fila.push(res));
-  }
-  emVoo++;
-  try { return await fn(); }
-  finally {
-    emVoo--;
-    const proximo = fila.shift();
-    if (proximo) proximo();
-  }
-}
+// `import` + `export` separados de propósito: `export { x } from '…'` NÃO cria
+// binding local, e o `chat()` deste arquivo chama `comVaga` internamente.
+import { comVaga } from './fila-modelo.js';
+export { comVaga };
 
 /** Nomes que a pseudonimização precisa cobrir. SEMPRE o roster completo de
  *  crianças ativas, para QUALQUER papel: o escopo de papel governa o que a

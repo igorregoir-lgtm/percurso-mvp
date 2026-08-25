@@ -51,6 +51,9 @@ export const CATALOGO_ACOES = [
   { id: 'ciclo', rotulo: 'Agenda do ciclo', hash: '#/ciclo', papeis: ['educador'] },
   { id: 'turma', rotulo: 'Painel da turma', hash: '#/turma', papeis: ['educador'] },
   { id: 'criancas', rotulo: 'Crianças', hash: '#/criancas', papeis: ['educador', 'coordenacao'] },
+  // A entrada de GUIA 'alertas' existia sem par aqui: validarAcao('alertas')
+  // devolvia null e a oferta "Ir para Alertas" sumia em silêncio.
+  { id: 'alertas', rotulo: 'Alertas de ausência', hash: '#/alertas', papeis: ['educador', 'coordenacao'] },
   { id: 'copilot', rotulo: 'Refletir (copilot)', hash: '#/copilot', papeis: ['educador', 'coordenacao'] },
   { id: 'painel', rotulo: 'Painel da coordenação', hash: '#/painel', papeis: ['coordenacao'] },
   { id: 'scores', rotulo: 'Scores', hash: '#/scores', papeis: ['coordenacao'] },

@@ -2857,8 +2857,8 @@ document.addEventListener('click', comErro(async (ev) => {
 }));
 
 const PASSO_ROTAS_POR_PAPEL = {
-  educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/pauta', '#/ciclo', '#/turma', '#/criancas', '#/copilot'],
-  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/criancas', '#/copilot'],
+  educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/pauta', '#/ciclo', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
+  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/criancas', '#/alertas', '#/copilot'],
   diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
 };
 

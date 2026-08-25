@@ -72,7 +72,10 @@ export async function statusIA() {
  * @throws {Error} com .causa ('desligada'|'fora_do_ar'|'timeout'|'http'|'saida_invalida')
  *                 — quem chama decide o fallback determinístico.
  */
-export async function conversar({ papel = 'reflexivo', mensagens, schema = null, maxTokens = 1024, temperatura = 0.7 }) {
+// `timeoutMs` sobrepõe o teto do papel: o painel do Passo é trabalho de FUNDO e
+// desiste em poucos segundos — sem isso ele prenderia um slot da fila por até
+// 90 s esperando uma melhoria de rótulo que ninguém está olhando.
+export async function conversar({ papel = 'reflexivo', mensagens, schema = null, maxTokens = 1024, temperatura = 0.7, timeoutMs = null }) {
   if (!AI_ENABLED) throw Object.assign(new Error('Camada de IA desligada (AI_ENABLED=false).'), { causa: 'desligada' });
 
   let base = null;
@@ -87,7 +90,7 @@ export async function conversar({ papel = 'reflexivo', mensagens, schema = null,
   };
 
   const ac = new AbortController();
-  const t = setTimeout(() => ac.abort(), TIMEOUT_MS[papel] || 60_000);
+  const t = setTimeout(() => ac.abort(), Number(timeoutMs) > 0 ? Number(timeoutMs) : (TIMEOUT_MS[papel] || 60_000));
   // O timeout cobre a resposta INTEIRA (headers + corpo): um servidor que manda
   // headers e trava o corpo também é timeout — senão o slot da fila fica preso
   // para sempre e o copilot morre em 503 até reiniciar.

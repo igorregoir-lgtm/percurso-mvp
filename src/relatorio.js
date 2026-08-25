@@ -427,6 +427,29 @@ export function redigirCarta(n) {
   }];
 }
 
+// Periodos que a diretoria costuma pedir, calculados sobre o calendario.
+// Morava em src/api.js como funcao privada; passou para ca (exportada) porque o
+// painel do Passo precisa saber quais periodos existem para dizer qual ainda
+// nao tem relatorio publicado — e api.js nao e' lugar de regra de dominio.
+export function periodosSugeridos(ref = hoje()) {
+  const h = ref;
+  const ano = Number(h.slice(0, 4));
+  const mes = Number(h.slice(5, 7));
+  const semestre = mes <= 6
+    ? { rotulo: `1º semestre de ${ano}`, inicio: `${ano}-01-01`, fim: `${ano}-06-30` }
+    : { rotulo: `2º semestre de ${ano}`, inicio: `${ano}-07-01`, fim: `${ano}-12-31` };
+  const tri = Math.ceil(mes / 3);
+  const iniTri = String((tri - 1) * 3 + 1).padStart(2, '0');
+  const fimTri = String(tri * 3).padStart(2, '0');
+  const ultimoDia = new Date(Date.UTC(ano, tri * 3, 0)).getUTCDate();
+  return [
+    semestre,
+    { rotulo: `${tri}º trimestre de ${ano}`, inicio: `${ano}-${iniTri}-01`, fim: `${ano}-${fimTri}-${ultimoDia}` },
+    { rotulo: `Ano de ${ano}`, inicio: `${ano}-01-01`, fim: `${ano}-12-31` },
+    { rotulo: 'Últimos 180 dias', inicio: addDias(h, -180), fim: h },
+  ];
+}
+
 // --------------------------------------------------------------------------
 // Geracao, revisao e publicacao.
 // --------------------------------------------------------------------------

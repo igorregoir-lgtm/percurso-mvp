@@ -10,6 +10,8 @@ import { buscar as buscarRag, infoCorpus } from './rag/search.js';
 import { anonimizarTexto } from './rag/anonimizar.js';
 import * as C from './copilot.js';
 import * as A from './assistente.js';
+import * as PP from './passo/painel.js';
+import { invalidarSinais } from './passo/sinais.js';
 import * as SROI from './sroi/calculator.js';
 import { conversar, AI_ENABLED } from './ai-client.js';
 const { nomesParaAnonimizar } = C;
@@ -450,6 +452,14 @@ export const rotas = {
   'GET /api/assistente/chips': (req, _b, q) =>
     A.chipsDe(exigeUsuario(req), String(q.get('tela') || '')),
 
+  // O painel proativo: sugestões ancoradas no estado REAL da pessoa, por papel
+  // e por tela. DETERMINÍSTICO PURO — nunca chama o modelo, nunca escreve em
+  // banco nenhum. O refinamento por modelo é rota separada e opcional.
+  'GET /api/passo/painel': (req, _b, q) => {
+    const u = exigeUsuario(req);
+    return PP.painelDoPasso(u, A.telaSegura(String(q.get('tela') || '')));
+  },
+
   'DELETE /api/assistente/sessao': (req, body) =>
     A.apagarSessaoAssistente(exigeUsuario(req), String(body.session_id || '')),
 
@@ -646,7 +656,7 @@ export const rotas = {
     return {
       tipo,
       lista: R.relatorios(),
-      periodos: periodosSugeridos(),
+      periodos: R.periodosSugeridos(),
       relatorio: periodo ? R.relatorioDe(tipo, periodo) : null,
       previa: janela ? R.numerosDoPeriodo({ inicio: janela[0], fim: janela[1] }) : null,
       minimo_celula: D.PARAMS.MINIMO_CELULA,
@@ -690,22 +700,3 @@ export const rotas = {
   },
 };
 
-// Periodos que a diretoria costuma pedir, calculados sobre o calendario.
-function periodosSugeridos() {
-  const h = D.hoje();
-  const ano = Number(h.slice(0, 4));
-  const mes = Number(h.slice(5, 7));
-  const semestre = mes <= 6
-    ? { rotulo: `1º semestre de ${ano}`, inicio: `${ano}-01-01`, fim: `${ano}-06-30` }
-    : { rotulo: `2º semestre de ${ano}`, inicio: `${ano}-07-01`, fim: `${ano}-12-31` };
-  const tri = Math.ceil(mes / 3);
-  const iniTri = String((tri - 1) * 3 + 1).padStart(2, '0');
-  const fimTri = String(tri * 3).padStart(2, '0');
-  const ultimoDia = new Date(Date.UTC(ano, tri * 3, 0)).getUTCDate();
-  return [
-    semestre,
-    { rotulo: `${tri}º trimestre de ${ano}`, inicio: `${ano}-${iniTri}-01`, fim: `${ano}-${fimTri}-${ultimoDia}` },
-    { rotulo: `Ano de ${ano}`, inicio: `${ano}-01-01`, fim: `${ano}-12-31` },
-    { rotulo: 'Últimos 180 dias', inicio: D.addDias(h, -180), fim: h },
-  ];
-}
