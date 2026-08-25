@@ -99,13 +99,24 @@ function iniciarDitado(botao, campo, estadoEl) {
   };
   // iOS/Safari encerra o reconhecimento sozinho depois de uma pausa — religar
   // enquanto a pessoa não tocou em parar é o que faz o ditado parecer contínuo.
-  rec.onend = () => {
-    if (ativo && ditadoAtivo?.botao === botao && religadas < 40) {
-      religadas++;
-      try { rec.start(); return; } catch {}
-    }
+  // Com RESPIRO (250ms) e teto baixo: religar síncrono em loop era um jeito de
+  // congelar o Safari; com o app em segundo plano, nem tenta.
+  const desligarUI = () => {
     if (ditadoAtivo?.botao === botao) ditadoAtivo = null;
     ui(false);
+  };
+  rec.onend = () => {
+    if (ativo && ditadoAtivo?.botao === botao && !document.hidden && religadas < 12) {
+      religadas++;
+      setTimeout(() => {
+        if (!ativo || ditadoAtivo?.botao !== botao || document.hidden) { desligarUI(); return; }
+        try { rec.start(); } catch { desligarUI(); }
+      }, 250);
+      return;
+    }
+    const pausouSozinho = ativo && religadas >= 12;
+    desligarUI();
+    if (pausouSozinho && estadoEl) estadoEl.textContent = 'O microfone pausou — toque para falar de novo.';
   };
 
   const parar = () => { ativo = false; try { rec.stop(); } catch {} ui(false); };
@@ -122,17 +133,36 @@ function toast(msg, tipo = '') {
   setTimeout(() => el.remove(), tipo === 'ruim' ? 6000 : 3500);
 }
 
+// TODA chamada tem timeout (25s por padrão; o copilot pede mais). Sem isto,
+// uma conexão que cai no meio — celular no 5G atravessando túnel — deixava a
+// tela "pensando…" PARA SEMPRE, e o app parecia travado até recarregar.
+// Timeout conta como falha de REDE (e.rede): a fila offline enfileira e o
+// registro não se perde. `signal` externo permite o botão Cancelar.
 async function api(caminho, opcoes = {}) {
+  const { timeoutMs = 25000, signal: sinalExterno, ...resto } = opcoes;
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort('timeout'), timeoutMs);
+  if (sinalExterno) {
+    if (sinalExterno.aborted) ctl.abort('cancelado');
+    else sinalExterno.addEventListener('abort', () => ctl.abort('cancelado'), { once: true });
+  }
   let r;
   try {
     r = await fetch(caminho, {
-      ...opcoes,
-      headers: { 'Content-Type': 'application/json', ...(opcoes.headers || {}) },
+      ...resto,
+      signal: ctl.signal,
+      headers: { 'Content-Type': 'application/json', ...(resto.headers || {}) },
     });
   } catch {
-    const e = new Error('Sem conexao com o servidor. Verifique se o Percurso esta rodando.');
-    e.rede = true; throw e;
-  }
+    const cancelado = !!sinalExterno?.aborted;
+    const estourou = ctl.signal.aborted && !cancelado;
+    const e = new Error(
+      cancelado ? 'Cancelado.'
+      : estourou ? 'A conexão demorou demais. Tente de novo — nada foi perdido.'
+      : 'Sem conexao com o servidor. Verifique se o Percurso esta rodando.');
+    e.rede = !cancelado; e.timeout = estourou; e.cancelado = cancelado;
+    throw e;
+  } finally { clearTimeout(t); }
   let corpo = {};
   try { corpo = await r.json(); } catch { /* resposta sem corpo */ }
   if (!r.ok) {
@@ -142,7 +172,7 @@ async function api(caminho, opcoes = {}) {
   }
   return corpo;
 }
-const post = (c, dados) => api(c, { method: 'POST', body: JSON.stringify(dados || {}) });
+const post = (c, dados, opts = {}) => api(c, { ...opts, method: 'POST', body: JSON.stringify(dados || {}) });
 
 // --------------------------------------------------------------------------
 // Fila offline. A regra mora em `fila.js`, com armazenamento e envio injetados,
@@ -175,6 +205,8 @@ function pintarFila() {
   if (el) el.textContent = n ? `${n} na fila` : '';
 }
 window.addEventListener('online', drenarFila);
+// Microfone nunca fica aberto com o app em segundo plano.
+document.addEventListener('visibilitychange', () => { if (document.hidden) pararDitado(); });
 
 function comErro(fn) {
   return async (...args) => {
@@ -2192,9 +2224,12 @@ document.addEventListener('click', comErro(async (ev) => {
     navegar();
   }
   if (alvo.dataset.acao === 'sroi-explicar') {
-    sroi.explicacao = await post('/api/sroi/explicar', {
-      criancas: sroi.n, investimento_anual: sroi.inv, horizonte_anos: sroi.anos, proxy_ids: sroi.proxy_ids,
-    });
+    alvo.disabled = true;
+    try {
+      sroi.explicacao = await post('/api/sroi/explicar', {
+        criancas: sroi.n, investimento_anual: sroi.inv, horizonte_anos: sroi.anos, proxy_ids: sroi.proxy_ids,
+      }, { timeoutMs: 75000 });
+    } finally { alvo.disabled = false; }
     navegar();
   }
 }));
@@ -2235,7 +2270,7 @@ rota(/^#\/copilot/, async () => {
       ${(() => { const d = blocoDitado('copilot-texto', 'copilot-ditado-estado'); return `
       <div class="linha" style="align-items:flex-end;flex-wrap:nowrap">
         <textarea id="copilot-texto" class="cresce" rows="3" placeholder="Ex.: metade da turma se dispersa na roda depois de dez minutos…"
-          style="resize:vertical"></textarea>
+          style="resize:vertical">${esc(copiloto.rascunho || '')}</textarea>
         ${d.botao}
       </div>
       ${d.estado}`; })()}
@@ -2250,7 +2285,12 @@ rota(/^#\/copilot/, async () => {
 
 function pintarTroca(t, i) {
   if (t.carregando) return `
-    <div class="cartao"><p class="sub" style="margin:0">✷ pensando… (o modelo roda local; pode levar alguns segundos)</p></div>`;
+    <div class="cartao">
+      <div class="linha" style="justify-content:space-between">
+        <p class="sub" style="margin:0">✷ pensando… (modelo local; costuma levar 10–20 s)</p>
+        <button class="btn pequeno fantasma" data-acao="copilot-cancelar" data-i="${i}">Cancelar</button>
+      </div>
+    </div>`;
   const cab = `<div class="cartao" style="background:var(--ink);color:var(--bg);border-color:var(--ink)">
       <p style="margin:0">${esc(t.pergunta)}</p>
       ${t.nomes_substituidos ? `<p style="margin:6px 0 0;opacity:.75;font-size:13.5px">${t.nomes_substituidos} nome(s) viraram pseudônimo antes do modelo</p>` : ''}
@@ -2306,14 +2346,18 @@ async function copilotEnviar(texto) {
   // Um envio por vez: envios cruzados embaralhariam a ordem local vs. a sessão
   // do servidor (e o índice de doação junto).
   if (copiloto.trocas.some(t => t.carregando)) {
-    toast('Aguarde a resposta anterior chegar.', 'ruim');
+    toast('Aguarde a resposta anterior — ou toque em Cancelar nela.', 'ruim');
     return;
   }
-  const idx = copiloto.trocas.push({ carregando: true }) - 1;
+  // Cada envio tem o próprio abort: o Cancelar do cartão "pensando…" e o
+  // timeout de 75s garantem que a tela NUNCA fica presa num pedido pendurado.
+  const ctl = new AbortController();
+  const idx = copiloto.trocas.push({ carregando: true, abortar: () => ctl.abort() }) - 1;
   const fio = document.getElementById('copilot-fio');
   if (fio) { fio.innerHTML = copiloto.trocas.map(pintarTroca).join(''); fio.lastElementChild?.scrollIntoView({ block: 'end' }); }
   try {
-    const r = await post('/api/copilot/chat', { message: original, session_id: copiloto.sessao });
+    const r = await post('/api/copilot/chat', { message: original, session_id: copiloto.sessao },
+      { timeoutMs: 75000, signal: ctl.signal });
     copiloto.sessao = r.session_id;
     copiloto.trocas[idx] = {
       pergunta: original, tipo: r.tipo, mensagem: r.mensagem, motivo: r.motivo,
@@ -2323,7 +2367,11 @@ async function copilotEnviar(texto) {
     };
   } catch (e) {
     copiloto.trocas.splice(idx, 1);
-    toast(e.message, 'ruim');
+    // O que a pessoa falou/escreveu volta para o campo — cancelar ou cair a
+    // conexão nunca perde a pergunta.
+    copiloto.rascunho = original;
+    if (e.cancelado) toast('Cancelado. Sua pergunta voltou para o campo.');
+    else toast(e.message, 'ruim');
   }
   if (location.hash.startsWith('#/copilot')) navegar();
 }
@@ -2331,7 +2379,7 @@ async function copilotEnviar(texto) {
 function limparEstadoLocal() {
   // Aparelho compartilhado: trocar de pessoa não pode herdar a conversa de
   // reflexão nem os valores do SROI da pessoa anterior.
-  copiloto.sessao = null; copiloto.trocas = [];
+  copiloto.sessao = null; copiloto.trocas = []; copiloto.rascunho = '';
   sroi.resultado = null; sroi.explicacao = null;
   sroi.n = sroi.inv = sroi.anos = sroi.proxy_ids = undefined;
 }
@@ -2345,7 +2393,12 @@ document.addEventListener('click', comErro(async (ev) => {
     const campo = document.getElementById('copilot-texto');
     const v = campo?.value ?? '';
     if (campo) campo.value = '';
+    copiloto.rascunho = '';
     await copilotEnviar(v);
+  }
+  if (a === 'copilot-cancelar') {
+    copiloto.trocas[Number(alvo.dataset.i)]?.abortar?.();
+    return;
   }
   if (a === 'copilot-apagar') {
     if (copiloto.sessao) await api('/api/copilot/sessao', { method: 'DELETE', body: JSON.stringify({ session_id: copiloto.sessao }) });
