@@ -59,8 +59,22 @@ const servidor = createServer(async (req, res) => {
     let conteudo;
     if (ultima.includes('__stub_invalido__')) conteudo = 'isto não é JSON {';
     else if (pedido.response_format?.json_schema) {
-      const nome = pedido.response_format.json_schema.name || '';
-      conteudo = JSON.stringify(nome.startsWith('extracao') ? EXTRACAO : REFLEXIVA);
+      const js = pedido.response_format.json_schema;
+      const nome = js.name || '';
+      if (nome.startsWith('extracao')) conteudo = JSON.stringify(EXTRACAO);
+      else if (nome.startsWith('assistente')) {
+        // Assistente: devolve a PRIMEIRA ação do enum RECEBIDO no pedido — o
+        // teste controla o enum e pode verificar o descarte de ação inválida.
+        const enumAcao = js.schema?.properties?.acao?.anyOf?.find(x => x.enum)?.enum ?? [];
+        conteudo = JSON.stringify({
+          resposta: 'Resposta canônica do Passo pelo stub: esta tela mostra o essencial do dia.',
+          fala: ultima.includes('__stub_fala_pseudonimo__') ? 'Sobre a Criança A: tudo certo.'
+              : ultima.includes('__stub_fala_nula__') ? null
+              : 'Esta tela mostra o essencial do dia.',
+          acao: ultima.includes('__stub_sem_acao__') ? null : (enumAcao[0] ?? null),
+        });
+      }
+      else conteudo = JSON.stringify(REFLEXIVA);
     } else conteudo = 'Resposta curta do stub em português.';
 
     res.writeHead(200, { 'Content-Type': 'application/json' });

@@ -235,7 +235,8 @@ const NAV_DIRETORIA = [
 ];
 
 function pintarNav(rotaAtual) {
-  if (!sessao) { navEl.hidden = true; return; }
+  if (!sessao) { navEl.hidden = true; pintarPassoFab(false); return; }
+  pintarPassoFab(!rotaAtual.startsWith('#/entrar'));
   const itens = sessao.papel === 'coordenacao' ? NAV_COORDENACAO
               : sessao.papel === 'diretoria' ? NAV_DIRETORIA : NAV_EDUCADOR;
   navEl.hidden = false;
@@ -288,11 +289,14 @@ async function navegar() {
             app.innerHTML = '<div class="carregando">Carregando…</div>';
           }, 240);
           try {
-            // Overlay esquecido não atravessa navegação: modal, festa, magia e
-            // ditado são fechados (com cleanup) antes da rota nova.
+            // Overlay esquecido não atravessa navegação: modal, festa, magia,
+            // ditado e o Passo são fechados (com cleanup) antes da rota nova.
+            if (document.querySelector('.passo-veu')) fecharPasso({ foco: false });
             document.querySelectorAll('.veu').forEach(v => v.remove());
             pararFesta();
             pararDitado();
+            pararVoz();       // gravação da folha não sobrevive à troca de rota
+            cancelarFala();
             document.querySelectorAll('.magia').forEach(mg => mg._cancelarPelaRota?.());
             pintarNav(hash);
             await tela(...m.slice(1));
@@ -2382,6 +2386,7 @@ function limparEstadoLocal() {
   copiloto.sessao = null; copiloto.trocas = []; copiloto.rascunho = '';
   sroi.resultado = null; sroi.explicacao = null;
   sroi.n = sroi.inv = sroi.anos = sroi.proxy_ids = undefined;
+  passo.sessao = null; passo.trocas = []; passo.rascunho = '';
 }
 
 document.addEventListener('click', comErro(async (ev) => {
@@ -2537,6 +2542,294 @@ function modalEncaminhamento(trechos) {
 }
 
 // ======================================================================
+// PASSO — assistente-parceiro que flutua em todas as telas
+// ======================================================================
+// A persona e TODOS os limites moram no servidor (src/assistente.js): aqui é
+// só a concha — botão flutuante, painel, fio de conversa, chips da tela, voz
+// de entrada (o MESMO blocoDitado de sempre) e voz de saída (speechSynthesis,
+// desligada por padrão, nunca por cima do microfone aberto). A ação que o
+// Passo sugere é uma OFERTA: vira botão "Ir para…", e é a pessoa quem toca.
+const passo = {
+  sessao: null, trocas: [], rascunho: '',
+  som: localStorage.getItem('percurso_passo_som') === '1',
+  ocupado: false, ctl: null, vozTts: null, ttsDestravado: false, falaGen: 0,
+};
+
+function vozDoPasso() {
+  if (passo.vozTts) return passo.vozTts;
+  const vozes = speechSynthesis.getVoices();
+  passo.vozTts = vozes.find(v => /pt[-_]BR/i.test(v.lang) && v.localService)
+              || vozes.find(v => /pt[-_]BR/i.test(v.lang))
+              || vozes.find(v => /^pt/i.test(v.lang)) || null;
+  return passo.vozTts;
+}
+if ('speechSynthesis' in window) {
+  speechSynthesis.addEventListener?.('voiceschanged', () => { passo.vozTts = null; });
+}
+
+function cancelarFala() {
+  passo.falaGen++;
+  try { window.speechSynthesis?.cancel(); } catch {}
+}
+
+// iOS só solta a síntese depois de um speak() DENTRO de um gesto — destravar
+// no toque (ligar o som, enviar, chip) libera a fala que chega assíncrona.
+function destravarTts() {
+  if (passo.ttsDestravado || !('speechSynthesis' in window)) return;
+  try {
+    const u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0;
+    speechSynthesis.speak(u);
+    passo.ttsDestravado = true;
+  } catch {}
+}
+
+function falar(texto) {
+  if (!passo.som || !texto || !('speechSynthesis' in window)) return;
+  // Nunca por cima de microfone aberto (eco): nem o ditado compartilhado,
+  // nem a gravação de 40s da folha (#/voz), que tem reconhecimento próprio.
+  if (ditadoAtivo || ctx.voz?.gravando) return;
+  cancelarFala();
+  const gen = passo.falaGen;
+  const u = new SpeechSynthesisUtterance(texto);
+  u.lang = 'pt-BR';
+  u.rate = 0.97;
+  const voz = vozDoPasso();
+  if (voz) u.voice = voz;
+  // Respiro pós-cancel (iOS engasga com speak colado no cancel). Se nesse
+  // meio tempo a pessoa navegou, ligou o mic ou pediu outra fala, não fala.
+  setTimeout(() => {
+    if (gen !== passo.falaGen || ditadoAtivo || ctx.voz?.gravando || document.hidden) return;
+    try { speechSynthesis.speak(u); } catch {}
+  }, 120);
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) cancelarFala(); });
+
+function pintarPassoFab(visivel) {
+  let fab = document.getElementById('passo-fab');
+  if (!visivel) { fab?.remove(); document.getElementById('passo-bolha')?.remove(); return; }
+  if (fab) return;
+  fab = document.createElement('button');
+  fab.id = 'passo-fab';
+  fab.className = 'passo-fab';
+  fab.type = 'button';
+  fab.dataset.acao = 'passo-abrir';
+  fab.setAttribute('aria-label', 'Abrir o Passo, guia do Percurso');
+  fab.innerHTML = '<span aria-hidden="true">❋</span>';
+  document.body.appendChild(fab);
+  // Primeira vez: um balão de apresentação, uma vez só, que some sozinho.
+  if (!localStorage.getItem('percurso_passo_apresentado')) {
+    localStorage.setItem('percurso_passo_apresentado', '1');
+    const b = document.createElement('div');
+    b.id = 'passo-bolha';
+    b.className = 'passo-bolha';
+    b.dataset.acao = 'passo-abrir';
+    b.textContent = 'Oi! Eu sou o Passo — toque aqui quando tiver uma dúvida sobre o app.';
+    document.body.appendChild(b);
+    setTimeout(() => b.remove(), 9000);
+  }
+}
+
+function fecharPasso({ foco = true } = {}) {
+  const veu = document.querySelector('.passo-veu');
+  if (!veu) return;
+  pararDitado();
+  cancelarFala();
+  const campo = document.getElementById('passo-texto');
+  if (campo) passo.rascunho = campo.value;
+  veu.remove();
+  if (foco) document.getElementById('passo-fab')?.focus();
+}
+
+async function abrirPasso() {
+  if (document.querySelector('.passo-veu')) return;
+  document.getElementById('passo-bolha')?.remove();
+  const dit = blocoDitado('passo-texto', 'passo-ditado-estado');
+  const veu = document.createElement('div');
+  veu.className = 'veu passo-veu';
+  veu.innerHTML = `
+    <div class="passo-sheet" role="dialog" aria-modal="true" aria-labelledby="passo-titulo">
+      <div class="passo-cabeca">
+        <div>
+          <h2 id="passo-titulo">Passo</h2>
+          <p class="sub" id="passo-sub">seu parceiro no Percurso</p>
+        </div>
+        <div class="linha" style="gap:8px;flex-wrap:nowrap">
+          <button type="button" class="passo-som" data-acao="passo-som" aria-pressed="${passo.som}"
+                  aria-label="${passo.som ? 'Desligar a voz do Passo' : 'Ligar a voz do Passo'}">voz</button>
+          <button type="button" class="passo-fechar" data-acao="passo-fechar" aria-label="Fechar o Passo">×</button>
+        </div>
+      </div>
+      <div class="passo-fio" id="passo-fio"></div>
+      <p class="oculto-acessivel" id="passo-vivo" aria-live="polite"></p>
+      <div class="passo-chips" id="passo-chips"></div>
+      <div class="passo-entrada">
+        <textarea id="passo-texto" rows="1" maxlength="500" placeholder="Pergunte aqui…"
+                  aria-label="Sua pergunta para o Passo"></textarea>
+        ${dit.botao}
+        <button type="button" class="btn passo-enviar" data-acao="passo-enviar" ${passo.ocupado ? 'disabled' : ''}>Enviar</button>
+      </div>
+      ${dit.estado}
+    </div>`;
+  document.body.appendChild(veu);
+  prenderFoco(veu);
+  veu.addEventListener('click', (e) => { if (e.target === veu) fecharPasso(); });
+  if (!passo.trocas.length) {
+    passo.trocas.push({ quem: 'passo', resposta:
+      'Oi! Eu sou o Passo, seu parceiro aqui no Percurso. Eu conheço as telas e as tarefas do app — não enxergo dado de ninguém. Pergunte, por exemplo: "como faço a chamada?"' });
+  }
+  pintarPassoFio();
+  const campo = document.getElementById('passo-texto');
+  campo.value = passo.rascunho || '';
+  campo.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      document.querySelector('[data-acao="passo-enviar"]')?.click();
+    }
+  });
+  campo.focus();
+  try {
+    const r = await api(`/api/assistente/chips?tela=${encodeURIComponent(location.hash || '#/hoje')}`);
+    const el = document.getElementById('passo-chips');
+    if (el) el.innerHTML = (r.chips || []).map(c =>
+      `<button type="button" class="passo-chip" data-acao="passo-chip">${esc(c)}</button>`).join('');
+    if (!r.com_modelo) {
+      const s = document.getElementById('passo-sub');
+      if (s) s.textContent = 'seu parceiro no Percurso · respostas do guia';
+    }
+  } catch { /* sem chips não é erro: o campo continua lá */ }
+}
+
+function pintarPassoFio() {
+  const fio = document.getElementById('passo-fio');
+  if (!fio) return;
+  fio.innerHTML = passo.trocas.map(t => {
+    if (t.quem === 'voce') return `<div class="passo-msg voce">${esc(t.texto)}</div>`;
+    if (t.pensando) return `<div class="passo-msg passo">✷ pensando…
+        <button type="button" class="btn pequeno fantasma" data-acao="passo-cancelar" style="margin-left:8px">Cancelar</button></div>`;
+    // A oferta some quando a pessoa JÁ está na tela oferecida — "Ir para Hoje"
+    // dentro do Hoje seria botão morto.
+    const oferta = t.acao && !(location.hash || '#/hoje').startsWith(t.acao.hash);
+    return `<div class="passo-msg passo">${esc(t.resposta)}${(t.trechos || []).map(x =>
+        `<div class="trecho"><b>${esc(x.categoria)}</b>${esc(x.trecho)}</div>`).join('')}${oferta
+      ? `<div style="margin-top:10px"><button type="button" class="btn secundario pequeno" data-acao="passo-ir"
+           data-href="${esc(t.acao.hash)}">Ir para ${esc(t.acao.rotulo)}</button></div>` : ''}</div>`;
+  }).join('');
+  fio.scrollTop = fio.scrollHeight;
+  // aria-live num nó próprio com SÓ a última fala do Passo: reescrever o fio
+  // inteiro dentro de uma região viva fazia o leitor de tela reanunciar a
+  // conversa toda a cada troca.
+  const vivo = document.getElementById('passo-vivo');
+  if (vivo) {
+    const ultima = [...passo.trocas].reverse().find(t => t.quem === 'passo');
+    vivo.textContent = ultima ? (ultima.pensando ? 'Pensando…' : ultima.resposta) : '';
+  }
+}
+
+async function passoEnviar(texto) {
+  const t = String(texto || '').trim();
+  if (!t || passo.ocupado) return;
+  passo.ocupado = true;
+  passo.rascunho = '';
+  passo.trocas.push({ quem: 'voce', texto: t });
+  const pensando = { quem: 'passo', pensando: true };
+  passo.trocas.push(pensando);
+  pintarPassoFio();
+  document.querySelector('.passo-enviar')?.setAttribute('disabled', '');
+  const ctl = new AbortController();
+  passo.ctl = ctl;
+  try {
+    const r = await post('/api/assistente',
+      { message: t, session_id: passo.sessao, tela: location.hash || '#/hoje' },
+      { timeoutMs: 75000, signal: ctl.signal });
+    passo.sessao = r.session_id;
+    // Perímetro (total ou parcial): os trechos retidos e o aviso do caminho
+    // humano aparecem no fio — retenção nunca é silenciosa.
+    if (r.aviso_perimetro) {
+      passo.trocas.splice(passo.trocas.indexOf(pensando), 0, { quem: 'passo', resposta: r.aviso_perimetro, trechos: r.trechos_excluidos || null });
+    }
+    Object.assign(pensando, { pensando: false, resposta: r.resposta, acao: r.acao || null, trechos: r.trechos || null });
+    // Só fala com o painel aberto: resposta que chega depois de fechar não
+    // pode virar uma voz saindo do nada no meio da sala.
+    if (r.fala && document.querySelector('.passo-veu')) falar(r.fala);
+  } catch (e) {
+    passo.trocas.splice(passo.trocas.indexOf(pensando), 1);
+    if (e.cancelado) {
+      // Rascunho devolvido: cancelar não come a pergunta.
+      passo.rascunho = t;
+      const campo = document.getElementById('passo-texto');
+      if (campo && !campo.value.trim()) campo.value = t;
+    } else if (e.rede) {
+      passo.trocas.push({ quem: 'passo', resposta:
+        'Estou sem conexão com o servidor agora — mas o Percurso segue: registro feito sem internet entra na fila e sobe sozinho quando a conexão voltar. Me chama de novo daqui a pouco?' });
+    } else {
+      passo.trocas.push({ quem: 'passo', resposta: e.message });
+    }
+  } finally {
+    passo.ocupado = false;
+    passo.ctl = null;
+    document.querySelector('.passo-enviar')?.removeAttribute('disabled');
+    pintarPassoFio();
+    // A repintura destrói o botão Cancelar: se o foco caiu no body (fora do
+    // focus-trap), ele volta para o campo de pergunta.
+    const veu = document.querySelector('.passo-veu');
+    if (veu && !veu.contains(document.activeElement)) document.getElementById('passo-texto')?.focus();
+  }
+}
+
+document.addEventListener('click', comErro(async (ev) => {
+  const alvo = ev.target.closest('[data-acao]');
+  if (!alvo) return;
+  const a = alvo.dataset.acao;
+
+  if (a === 'passo-abrir') {
+    if (document.querySelector('.passo-veu')) fecharPasso();
+    else await abrirPasso();
+    return;
+  }
+  if (a === 'passo-fechar') { fecharPasso(); return; }
+  if (a === 'passo-som') {
+    passo.som = !passo.som;
+    localStorage.setItem('percurso_passo_som', passo.som ? '1' : '0');
+    alvo.setAttribute('aria-pressed', String(passo.som));
+    alvo.setAttribute('aria-label', passo.som ? 'Desligar a voz do Passo' : 'Ligar a voz do Passo');
+    if (passo.som) destravarTts(); else cancelarFala();
+    return;
+  }
+  if (a === 'passo-enviar') {
+    pararDitado();   // fala pendente já entrou no campo; mic desliga antes do envio
+    destravarTts();
+    const campo = document.getElementById('passo-texto');
+    const v = campo?.value ?? '';
+    if (campo) campo.value = '';
+    await passoEnviar(v);
+    return;
+  }
+  if (a === 'passo-chip') {
+    destravarTts();
+    await passoEnviar(alvo.textContent);
+    return;
+  }
+  if (a === 'passo-cancelar') { passo.ctl?.abort(); return; }
+  if (a === 'passo-ir') {
+    // Defesa em profundidade (plano rev 2): o hash vem do servidor já filtrado
+    // por papel, mas o clique revalida contra o mapa local antes de navegar.
+    const destino = alvo.dataset.href;
+    const permitidas = PASSO_ROTAS_POR_PAPEL[sessao?.papel] ?? [];
+    if (!permitidas.includes(destino)) return;
+    fecharPasso({ foco: false });
+    location.hash = destino;
+    return;
+  }
+}));
+
+const PASSO_ROTAS_POR_PAPEL = {
+  educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/pauta', '#/ciclo', '#/turma', '#/criancas', '#/copilot'],
+  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/criancas', '#/copilot'],
+  diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
+};
+
+// ======================================================================
 // ACOES — delegacao unica de eventos
 // ======================================================================
 document.addEventListener('click', comErro(async (ev) => {
@@ -2565,6 +2858,9 @@ document.addEventListener('click', comErro(async (ev) => {
 
   if (a === 'sair') {
     pararDitado();
+    cancelarFala();
+    passo.ctl?.abort();
+    if (passo.sessao) { try { await api('/api/assistente/sessao', { method: 'DELETE', body: JSON.stringify({ session_id: passo.sessao }) }); } catch {} }
     if (copiloto.sessao) { try { await api('/api/copilot/sessao', { method: 'DELETE', body: JSON.stringify({ session_id: copiloto.sessao }) }); } catch {} }
     await post('/api/sair');
     limparEstadoLocal();
@@ -2657,7 +2953,11 @@ document.addEventListener('click', comErro(async (ev) => {
     const estadoEl = document.getElementById(alvo.dataset.estado);
     if (!campo) return;
     if (ditadoAtivo?.botao === alvo) { pararDitado(); return; }  // segundo toque = parar
+    // Dois reconhecimentos ao mesmo tempo derrubam um ao outro no Chrome: com
+    // a gravação de 40s da folha aberta, o ditado espera a pessoa decidir.
+    if (ctx.voz?.gravando) { toast('A gravação do relato está aberta — pause-a antes de ditar em outro campo.'); return; }
     pararDitado();
+    cancelarFala();   // o Passo cala quando o microfone abre (anti-eco)
     iniciarDitado(alvo, campo, estadoEl);
     return;
   }
@@ -3048,7 +3348,11 @@ document.addEventListener('input', (ev) => {
 document.addEventListener('keydown', (ev) => {
   if (ev.key !== 'Escape') return;
   const veu = document.querySelector('.veu');
-  if (veu) { veu.remove(); return; }
+  if (veu) {
+    if (veu.classList.contains('passo-veu')) fecharPasso();
+    else veu.remove();
+    return;
+  }
   if (document.querySelector('.magia')) { pularMagia(); return; }
   pararFesta();
 });
@@ -3068,6 +3372,9 @@ window.addEventListener('hashchange', navegar);
     return;
   }
   if (!sessao && location.hash !== '#/entrar') location.hash = '#/entrar';
+  // Reabertura sem hash: normaliza para a rota real — senão chips, "tela
+  // atual" do Passo e a checagem de oferta trabalham com '' a sessão inteira.
+  else if (sessao && !location.hash) location.hash = '#/hoje';
   navegar();
   if (sessao) drenarFila();
 })();

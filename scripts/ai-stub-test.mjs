@@ -118,6 +118,37 @@ const educadora = { id: 1, papel: 'educador' };
     r2.origem === 'regras' && validarExtracao(r2.extracao).valido);
 }
 
+// 6 · Passo (assistente) com modelo: schema, scrub da fala, ação validada ----
+{
+  const A = await import('../src/assistente.js');
+  const r = await A.assistente(educadora, { message: 'o que é esta tela do percurso?', tela: '#/hoje' });
+  T('Passo com modelo: origem modelo e forma {resposta, fala, acao}',
+    r.origem === 'modelo' && typeof r.resposta === 'string' && 'fala' in r && 'acao' in r);
+  T('Passo: ação devolvida pelo modelo é do catálogo do papel',
+    r.acao === null || !!A.validarAcao(r.acao.id, 'educador'), JSON.stringify(r.acao));
+
+  const r2 = await A.assistente(educadora, { message: 'me fala do percurso __stub_fala_pseudonimo__', tela: '#/hoje' });
+  T('Passo: fala com pseudônimo é DESCARTADA pelo scrub do servidor',
+    r2.origem === 'modelo' && r2.fala === null, `fala=${JSON.stringify(r2.fala)}`);
+
+  const r2b = await A.assistente(educadora, { message: 'me fala do percurso __stub_fala_nula__', tela: '#/hoje' });
+  T('Passo: fala:null deliberada do modelo FICA nula (não vira a resposta de tela)',
+    r2b.origem === 'modelo' && r2b.fala === null, `fala=${JSON.stringify(r2b.fala)}`);
+
+  const r3 = await A.assistente(educadora, { message: 'como lidar com uma criança que bate nos colegas?', tela: '#/hoje' });
+  T('Passo: pergunta reflexiva NÃO vai ao modelo — redireciona ao copilot',
+    r3.origem === 'guia' && r3.tipo === 'redirecionamento' && r3.acao?.id === 'copilot');
+
+  const nomes2 = all(`SELECT nome FROM crianca WHERE ativo = 1 LIMIT 1`).map(x => x.nome);
+  const r4 = await A.assistente({ id: 4, papel: 'diretoria' },
+    { message: `quantas faltas a ${nomes2[0].split(' ')[0]} teve no percurso?`, tela: '#/relatorio' });
+  T('Passo: diretoria + nome de criança = recusa determinística, sem modelo',
+    r4.origem === 'guia' && r4.tipo === 'recusa' && r4.fala === null);
+
+  const r5 = await A.assistente(educadora, { message: 'sobre o percurso __stub_trava__', tela: '#/hoje' });
+  T('Passo: timeout do modelo cai no guia (nunca 503)', r5.origem === 'guia' && !!r5.resposta);
+}
+
 stub.kill();
 closeDb();
 rmSync(dirTemp, { recursive: true, force: true });

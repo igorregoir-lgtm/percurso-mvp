@@ -885,5 +885,45 @@ secao('12 · Escopo de turma nas rotas de leitura individual (decisão 22)');
   T('educadora NÃO abre observação de criança de outra turma (403)', obs.status === 403, `(${obs.status})`);
 }
 
+// ------------------------------------------------ 13. Passo (assistente)
+// Só os caminhos que NUNCA chegam ao modelo — o Passo com modelo é coberto
+// pelo ai-stub-test. Assim o bloco passa igual com AI_ENABLED ligado ou não.
+secao('13 · Passo — assistente-parceiro (limites no servidor)');
+{
+  const anon = await POST('anon-passo', '/api/assistente', { message: 'oi', tela: '#/hoje' });
+  T('sem sessão, o Passo responde 401', anon.status === 401, `(${anon.status})`);
+
+  const vazio = await POST('maria', '/api/assistente', { message: '   ', tela: '#/hoje' });
+  T('pergunta vazia responde 422', vazio.status === 422, `(${vazio.status})`);
+
+  const reflexiva = await POST('maria', '/api/assistente',
+    { message: 'como lidar com uma criança que morde os colegas?', tela: '#/hoje' });
+  T('pergunta reflexiva redireciona ao copilot, sem passar por modelo',
+    reflexiva.status === 200 && reflexiva.corpo.tipo === 'redirecionamento'
+    && reflexiva.corpo.origem === 'guia' && reflexiva.corpo.acao?.id === 'copilot');
+  T('redirecionamento nunca tem fala', reflexiva.corpo.fala === null);
+
+  const fora = await POST('maria', '/api/assistente', { message: 'qual é a capital da França?', tela: '#/hoje' });
+  T('fora do produto: o Passo declara o próprio limite, sem ação',
+    fora.status === 200 && fora.corpo.tipo === 'redirecionamento' && fora.corpo.acao === null);
+
+  const criancas = (await GET('maria', '/api/criancas')).corpo.criancas;
+  const dir = await POST('solange', '/api/assistente',
+    { message: `quantas faltas a ${criancas[0].nome.split(' ')[0]} teve neste percurso?`, tela: '#/relatorio' });
+  T('diretoria + nome de criança = recusa determinística (decisão 16)',
+    dir.status === 200 && dir.corpo.tipo === 'recusa' && dir.corpo.origem === 'guia' && dir.corpo.fala === null);
+
+  const chips = await GET('maria', `/api/assistente/chips?tela=${encodeURIComponent('#/chamada')}`);
+  T('chips da tela vêm em 3 sugestões', chips.status === 200 && chips.corpo.chips.length === 3);
+
+  const chipsDir = await GET('solange', `/api/assistente/chips?tela=${encodeURIComponent('#/chamada')}`);
+  T('chips não vazam a tela de outro papel',
+    chipsDir.status === 200 && !/presença|cronômetro/i.test(chipsDir.corpo.chips.join(' ')));
+
+  const del = await req('maria', '/api/assistente/sessao',
+    { method: 'DELETE', body: JSON.stringify({ session_id: reflexiva.corpo.session_id }) });
+  T('apagar a sessão do Passo responde 200', del.status === 200, `(${del.status})`);
+}
+
 console.log(`\n\x1b[1m${ok} passaram · ${falhas} falharam\x1b[0m\n`);
 process.exit(falhas ? 1 : 0);

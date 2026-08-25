@@ -57,7 +57,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **246 asserções de fluxo** e **63 testes unitários** — mais a avaliação do RAG
+São **255 asserções de fluxo** e **77 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização) e a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo). As quatro baterias rodam a cada push (`.github/workflows/ci.yml`), sempre com
@@ -226,6 +226,7 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 | RAG governado | busca com citação num corpus aprovado por manifest (leis, BNCC, material interno) | `GET /api/rag/search`, `src/rag/`, `docs/GOVERNANCA-FONTES-RAG.md` |
 | Copilot reflexivo (Modo B) | 7 blocos por gramática: perguntas socráticas, hipóteses rotuladas, ≥3 alternativas, contraponto, fontes verificadas, escalonamento | `#/copilot` (“Refletir”), `src/copilot.js` |
 | Modo A por modelo (opt-in extra) | extração da fala sob os MESMOS catálogos fechados, fallback lexical em toda falha | `AI_EXTRATOR=1`, `extrairComModelo` |
+| Passo, o assistente-parceiro | guia de navegação presente em todas as telas: tira dúvidas do produto, oferece "Ir para…", fala (opt-in) — responde SÓ sobre o Percurso, com fallback determinístico do guia | botão ❋, `src/assistente.js`, decisão 26 |
 | SROI exploratório | 3 cenários e faixa, motor determinístico, dupla contagem bloqueada, premissas com fonte | `#/impacto` (diretoria), `src/sroi/`, `docs/SROI-METODOLOGIA.md` |
 | Calibração entre educadoras | borda 2 da doutrina, determinística — pauta de reunião, nunca ranking | `#/painel` |
 | LoRA (Fase 4) | infraestrutura, funil de doação explícita e gates — **treino não executado por gate** | `ai/training/` |
@@ -246,6 +247,8 @@ src/seed.js               geração dos dados sintéticos
 src/api.js                rotas HTTP/JSON
 src/ai-client.js          cliente do modelo local (fetch nativo, json_schema, timeouts) (v3)
 src/copilot.js            copilot reflexivo, recusas, pseudonimização, doação de interação (v3)
+src/assistente.js         Passo, o assistente-parceiro de navegação (guia + modelo, decisão 26)
+src/sessoes.js            sessões de conversa em memória com TTL (copilot e Passo)
 src/rag/                  preparação de fontes, ingestão FTS5, busca e anonimizador (v3)
 src/sroi/calculator.js    motor SROI determinístico versionado (v3)
 ai/                       manifest de modelos, scripts do llama.cpp, prompts, treino (v3)
@@ -254,8 +257,8 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    246 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     63 testes unitários das regras críticas (banco temporário)
+scripts/smoke-test.mjs    255 asserções do fluxo principal (contra o servidor no ar)
+scripts/unit-test.mjs     77 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
 scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)

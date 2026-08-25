@@ -291,5 +291,16 @@ Alvo: http://localhost:3000
   ✓ educadora NÃO abre ficha de criança de outra turma (403)
   ✓ educadora NÃO abre observação de criança de outra turma (403)
 
-246 passaram · 0 falharam
+13 · Passo — assistente-parceiro (limites no servidor)
+  ✓ sem sessão, o Passo responde 401
+  ✓ pergunta vazia responde 422
+  ✓ pergunta reflexiva redireciona ao copilot, sem passar por modelo
+  ✓ redirecionamento nunca tem fala
+  ✓ fora do produto: o Passo declara o próprio limite, sem ação
+  ✓ diretoria + nome de criança = recusa determinística (decisão 16)
+  ✓ chips da tela vêm em 3 sugestões
+  ✓ chips não vazam a tela de outro papel
+  ✓ apagar a sessão do Passo responde 200
+
+255 passaram · 0 falharam
 

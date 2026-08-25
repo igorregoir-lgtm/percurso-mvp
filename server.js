@@ -35,7 +35,12 @@ async function lerCorpo(req) {
     if (dados.length > 1_000_000) throw Object.assign(new Error('Corpo da requisição grande demais.'), { status: 413 });
   }
   if (!dados) return {};
-  try { return JSON.parse(dados); }
+  // `JSON.parse('null')` (ou número/string/array) passa no parse mas não é um
+  // corpo utilizável — vira {} para o handler nunca estourar TypeError em 500.
+  try {
+    const corpo = JSON.parse(dados);
+    return (corpo && typeof corpo === 'object' && !Array.isArray(corpo)) ? corpo : {};
+  }
   catch { throw Object.assign(new Error('JSON inválido no corpo da requisição.'), { status: 400 }); }
 }
 

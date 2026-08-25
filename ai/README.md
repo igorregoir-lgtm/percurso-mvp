@@ -15,6 +15,7 @@ desta pasta roda, nenhuma rota de IA responde, nenhum byte sai da máquina.
 | Cliente | `src/ai-client.js` | fetch nativo em `/v1/chat/completions`, AbortController, health por papel, `json_schema` |
 | Copilot (Modo B) | `src/copilot.js` + `ai/prompts/copilot-reflexivo.md` | sala de reflexão: 7 blocos por gramática, citações verificadas |
 | Modo A opcional | `src/copilot.js` (`extrairComModelo`) + `ai/prompts/copilot-estruturado.md` | extração sob os catálogos fechados de `src/voz.js`, fallback lexical |
+| Passo (assistente) | `src/assistente.js` + `ai/prompts/assistente-passo.md` | parceiro de navegação: responde SÓ pelo GUIA do produto, ação como oferta, fala com scrub — fallback determinístico em toda falha (decisão 26) |
 | RAG | `src/rag/` + `data/rag/` | FTS5 sobre corpus aprovado por manifest |
 | Treino (Fase 4) | `ai/training/` | infraestrutura e gates — treino NÃO executado (leia o README de lá) |
 | Stub de teste | `scripts/ai-stub.mjs` | imita o llama-server para CI (sem GGUF) |

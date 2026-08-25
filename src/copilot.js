@@ -20,6 +20,7 @@ import { all } from './db.js';
 import { filtrarPerimetro, erro, PARAMS } from './domain.js';
 import { conversar, AI_ENABLED } from './ai-client.js';
 import { anonimizarTexto, nomeDoToken } from './rag/anonimizar.js';
+import { criarSessoes } from './sessoes.js';
 import { buscar, corpusDisponivel } from './rag/search.js';
 import { validarExtracao, extrairDaFala } from './voz.js';
 
@@ -97,7 +98,7 @@ function podarResposta(r) {
 // ---------------------------------------------------------------------------
 // Recusas determinísticas — antes de qualquer modelo. Explicáveis linha a linha.
 // ---------------------------------------------------------------------------
-const RECUSAS = [
+export const RECUSAS = [
   {
     motivo: 'pedido de diagnóstico',
     re: /\b(diagn[óo]stic\w*|tdah|autis(mo|ta)\w*|dislexia|transtorno\w*|laudo)\b/i,
@@ -116,24 +117,15 @@ const RECUSAS = [
 ];
 
 // ---------------------------------------------------------------------------
-// Memória só de sessão — RAM com TTL; nada persiste por padrão.
+// Memória só de sessão — RAM com TTL; nada persiste por padrão. A política
+// vive em src/sessoes.js, compartilhada com o assistente (Passo).
 // ---------------------------------------------------------------------------
-const TTL_MS = 60 * 60 * 1000;
 const MAX_TROCAS = 8;
-const sessoes = new Map(); // `${educadorId}:${sessaoId}` → { trocas: [], tocadaEm }
-
-function sessaoDe(u, sessaoId) {
-  const chave = `${u.id}:${sessaoId}`;
-  const agora = Date.now();
-  for (const [k, s] of sessoes) if (agora - s.tocadaEm > TTL_MS) sessoes.delete(k);
-  if (!sessoes.has(chave)) sessoes.set(chave, { trocas: [], tocadaEm: agora });
-  const s = sessoes.get(chave);
-  s.tocadaEm = agora;
-  return s;
-}
+const memoria = criarSessoes();
+const sessaoDe = (u, sessaoId) => memoria.sessaoDe(u, sessaoId);
 
 export function apagarSessao(u, sessaoId) {
-  sessoes.delete(`${u.id}:${sessaoId}`);
+  memoria.apagar(u, sessaoId);
   return { ok: true, aviso: 'Sessão apagada. Nada dela foi persistido.' };
 }
 
@@ -308,7 +300,8 @@ export async function chat(u, { mode = 'reflexivo', message, session_id }) {
 // pré-visualização e revogação.
 // ---------------------------------------------------------------------------
 export function preverDoacao(u, sessaoId, indice) {
-  const s = sessoes.get(`${u.id}:${sessaoId}`);
+  // Lookup puro: uma prévia não pode criar sessão vazia nem renovar o TTL.
+  const s = memoria.obter(u, sessaoId);
   const troca = s?.trocas?.[indice];
   if (!troca) throw erro(404, 'Interação não encontrada na sessão (sessões expiram e nada fica gravado).');
   return { pergunta: troca.pergunta, resposta: troca.resposta, quando: troca.quando };

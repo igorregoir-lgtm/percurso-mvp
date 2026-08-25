@@ -9,6 +9,7 @@ import { statusIA } from './ai-client.js';
 import { buscar as buscarRag, infoCorpus } from './rag/search.js';
 import { anonimizarTexto } from './rag/anonimizar.js';
 import * as C from './copilot.js';
+import * as A from './assistente.js';
 import * as SROI from './sroi/calculator.js';
 import { conversar, AI_ENABLED } from './ai-client.js';
 const { nomesParaAnonimizar } = C;
@@ -435,6 +436,22 @@ export const rotas = {
     const u = exigeEducadorOuCoordenacao(req);
     return C.revogarDoacao(u, String(body.id || ''));
   },
+
+  // ======================================================================
+  // Passo — assistente-parceiro de navegacao (todos os papeis; responde SO
+  // sobre o produto — plano auditado em docs/revisao/07-PLANO-ASSISTENTE.md).
+  // Sempre responde: com modelo (AI_ASSISTENTE) ou pelo guia deterministico.
+  // ======================================================================
+  'POST /api/assistente': (req, body) =>
+    A.assistente(exigeUsuario(req), {
+      message: body.message, session_id: body.session_id, tela: String(body.tela || ''),
+    }),
+
+  'GET /api/assistente/chips': (req, _b, q) =>
+    A.chipsDe(exigeUsuario(req), String(q.get('tela') || '')),
+
+  'DELETE /api/assistente/sessao': (req, body) =>
+    A.apagarSessaoAssistente(exigeUsuario(req), String(body.session_id || '')),
 
   // ======================================================================
   // SROI exploratorio (Fase 3) — motor DETERMINISTICO, zero LLM no numero.

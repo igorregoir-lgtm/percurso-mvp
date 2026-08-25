@@ -145,6 +145,7 @@ a URL é pública e efêmera, e os dados devem ser os sintéticos.
 | `node: command not found` | Node não instalado (ou Terminal aberto antes da instalação) | Instale o LTS em nodejs.org e abra um Terminal NOVO |
 | O navegador não abre localhost:3000 | O servidor não está rodando | Volte ao Terminal e rode `node server.js` na pasta certa |
 | Tela "Refletir" diz que a IA está desligada | É o padrão — a IA é opcional | Parte 2 acima; ou simplesmente ignore: o produto inteiro funciona sem ela |
+| O assistente ❋ (Passo) responde "pelo guia" | Normal sem IA ligada: ele responde pelo guia do produto, sempre | Com a IA ligada (Parte 2), as respostas ficam mais naturais — o conteúdo é o mesmo |
 
 Para voltar aos dados de demonstração a qualquer momento (pode rodar com o
 servidor no ar; recarregue a página depois): `node scripts/reset.mjs`.

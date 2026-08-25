@@ -551,3 +551,73 @@ nav.barra-nav a[aria-current="page"]{color:var(--red)}
   .bloco-relatorio{page-break-inside:avoid}
   h1, .kicker, .sub{display:block}
 }
+
+/* ---------- Passo (assistente-parceiro) ---------- */
+/* Camadas: FAB a 60 — acima da nav (50), abaixo do véu (80) e da festa (90).
+   Toasts e o respiro do body sobem junto: nada fica escondido atrás do botão. */
+body{padding-bottom:calc(124px + env(safe-area-inset-bottom))}
+.toasts{bottom:calc(168px + env(safe-area-inset-bottom))}
+.passo-fab{
+  position:fixed; right:16px; bottom:calc(98px + env(safe-area-inset-bottom));
+  z-index:60; width:54px; height:54px; border-radius:50%;
+  background:var(--ink); color:var(--bg); border:1px solid var(--ink);
+  font-size:22px; line-height:1; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 6px 18px rgba(46,42,36,.28); cursor:pointer;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  transition:transform .24s cubic-bezier(.34,1.56,.64,1);
+}
+.passo-fab:active{transform:scale(.92); transition-duration:60ms}
+.passo-bolha{
+  position:fixed; right:16px; bottom:calc(162px + env(safe-area-inset-bottom));
+  z-index:60; max-width:232px; background:var(--card); color:var(--ink);
+  border:1px solid var(--line); border-radius:14px 14px 4px 14px;
+  padding:10px 12px; font-size:14px; line-height:1.45;
+  box-shadow:0 6px 18px rgba(46,42,36,.18); cursor:pointer;
+  animation:sobe .3s cubic-bezier(.2,.8,.2,1) backwards .6s;
+}
+.passo-veu{display:flex; align-items:flex-end; justify-content:center; padding:0}
+.passo-sheet{
+  width:100%; max-width:560px; display:flex; flex-direction:column;
+  max-height:82vh; max-height:82dvh;   /* vh primeiro: aparelho antigo sem dvh mantém o teto */
+  background:var(--card); border:1px solid var(--line); border-bottom:none;
+  border-radius:18px 18px 0 0;
+  padding:14px 16px calc(12px + env(safe-area-inset-bottom));
+  animation:sobe .28s cubic-bezier(.2,.8,.2,1);
+}
+.passo-cabeca{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:6px}
+.passo-cabeca h2{margin:0; font-size:19px}
+.passo-cabeca .sub{margin:2px 0 0; font-size:13px}
+.passo-som{
+  min-height:36px; padding:6px 12px; border-radius:999px; font-size:13px; cursor:pointer;
+  border:1px solid var(--line); background:var(--card); color:var(--muted);
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+}
+.passo-som[aria-pressed="true"]{background:var(--ok-bg); color:var(--ok); border-color:var(--ok-bg)}
+.passo-fechar{
+  width:36px; height:36px; border-radius:50%; font-size:20px; line-height:1; cursor:pointer;
+  border:1px solid var(--line); background:var(--card); color:var(--muted);
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+}
+.passo-fio{
+  flex:1; min-height:96px; overflow:auto;
+  max-height:44vh; max-height:44dvh;
+  display:flex; flex-direction:column; gap:8px; padding:6px 2px;
+}
+.passo-msg{max-width:90%; padding:9px 12px; border-radius:14px; font-size:15px; line-height:1.5}
+.passo-msg.voce{align-self:flex-end; background:var(--ink); color:var(--bg); border-radius:14px 14px 4px 14px}
+.passo-msg.passo{align-self:flex-start; background:var(--bg); border:1px solid var(--line); border-radius:14px 14px 14px 4px}
+.passo-chips{display:flex; flex-wrap:wrap; gap:8px; padding:8px 0 10px}
+.passo-chips:empty{padding:0}
+.passo-chip{
+  min-height:40px; padding:8px 14px; border-radius:999px; font-size:14px; cursor:pointer;
+  border:1px solid var(--line); background:var(--card-2); color:var(--ink);
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+}
+.passo-entrada{display:flex; gap:8px; align-items:flex-end}
+.passo-entrada textarea{flex:1; resize:none; min-height:46px; max-height:120px}
+.passo-entrada .mic-ditado{flex:none}
+@media print{ .passo-fab, .passo-bolha, .passo-veu{display:none !important} }
+
+/* Só para leitores de tela — a região viva do Passo anuncia a última fala. */
+.oculto-acessivel{position:absolute; width:1px; height:1px; overflow:hidden;
+  clip-path:inset(50%); white-space:nowrap}

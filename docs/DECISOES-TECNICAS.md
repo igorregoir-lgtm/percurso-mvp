@@ -395,6 +395,36 @@ KeepAlive) — autonomia de operação para uma organização sem TI — e o
 
 ---
 
+### 26. Passo — assistente-parceiro que responde SÓ sobre o produto e fala menos do que mostra
+
+**Origem:** demanda de um assistente presente em toda a navegação, que tira dúvidas sobre o
+artefato, ajuda na chamada e nas tarefas, e fala — usando o mesmo Qwen local open source.
+
+O **Passo** (`src/assistente.js` + bloco do cliente em `public/app.js`) é um guia do produto,
+não um chat aberto. As decisões que o mantêm dentro da doutrina:
+
+- **Fonte única = GUIA versionado no código** (telas, tarefas, limites por papel). O modelo
+  refina a linguagem por cima do guia; qualquer falha (fora do ar, timeout, fila cheia, saída
+  ruim) cai na resposta determinística do guia — o Passo **nunca responde 503**.
+- **Mesmo funil de proteção do copilot, na mesma ordem**: `filtrarPerimetro` no texto original →
+  recusas → pseudonimização com roster completo. Diretoria + nome de criança = recusa
+  (decisão 16). Pergunta pedagógico-reflexiva não é dele: redireciona ao Refletir (copilot);
+  pergunta fora do produto ganha o limite declarado ("eu só sei do Percurso"), sem empurrar
+  para o copilot.
+- **A fala em voz alta é MAIS restrita que a tela** (`limparFala`): pseudônimo, nome real ou
+  fala longa → o Passo simplesmente não fala aquela resposta. Encaminhamento, recusa e
+  redirecionamento nunca têm fala. O som é **desligado por padrão** (toggle "voz" por pessoa,
+  em `localStorage`) — um aparelho numa sala com crianças não fala sozinho.
+- **Ação = OFERTA**: o modelo só escolhe um id do catálogo do papel (enum na gramática +
+  `validarAcao` no servidor); o cliente mostra um botão "Ir para…" — o Passo nunca navega
+  sozinho, coerente com "IA nunca grava, pessoa confirma".
+- **Sessão só em memória com TTL** (`src/sessoes.js`, factory compartilhada com o copilot),
+  apagada no sair; pergunta e resposta nunca tocam o banco.
+- **Entrada por voz** reusa o `blocoDitado` (transcrição no aparelho, nada de áudio no
+  servidor); a saída de voz usa `speechSynthesis` do navegador — zero dependência nova.
+
+---
+
 ## Dívidas técnicas conhecidas
 
 | Dívida | Impacto | Quando pagar |
