@@ -2568,6 +2568,7 @@ const passo = {
   sessao: null, trocas: [], rascunho: '',
   som: localStorage.getItem('percurso_passo_som') === '1',
   ocupado: false, ctl: null, vozTts: null, ttsDestravado: false, falaGen: 0,
+  bolhaNestaAbertura: false,   // balão de saudação: uma vez por abertura do app
 };
 
 function vozDoPasso() {
@@ -2632,16 +2633,25 @@ function pintarPassoFab(visivel) {
   fab.setAttribute('aria-label', 'Abrir o Passo, guia do Percurso');
   fab.innerHTML = '<span aria-hidden="true">❋</span>';
   document.body.appendChild(fab);
-  // Primeira vez: um balão de apresentação, uma vez só, que some sozinho.
-  if (!localStorage.getItem('percurso_passo_apresentado')) {
-    localStorage.setItem('percurso_passo_apresentado', '1');
+  // O balão aparece UMA vez por abertura do app (flag em memória — reabrir a
+  // página traz o Passo se apresentando de novo) e some sozinho. Na primeira
+  // vez de todas, o texto é a apresentação completa; nas voltas, uma saudação
+  // curta pelo horário — o mesmo tom do "Bom dia, Maria" da tela Hoje.
+  if (!passo.bolhaNestaAbertura) {
+    passo.bolhaNestaAbertura = true;
+    const primeira = !localStorage.getItem('percurso_passo_apresentado');
+    if (primeira) localStorage.setItem('percurso_passo_apresentado', '1');
+    const h = new Date().getHours();
+    const saudacao = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
     const b = document.createElement('div');
     b.id = 'passo-bolha';
     b.className = 'passo-bolha';
     b.dataset.acao = 'passo-abrir';
-    b.textContent = 'Oi! Eu sou o Passo — toque aqui quando tiver uma dúvida sobre o app.';
+    b.textContent = primeira
+      ? 'Oi! Eu sou o Passo — toque aqui quando tiver uma dúvida sobre o app.'
+      : `${saudacao}! Eu sou o Passo — qualquer dúvida no caminho, toque aqui.`;
     document.body.appendChild(b);
-    setTimeout(() => b.remove(), 9000);
+    setTimeout(() => b.remove(), 12000);
   }
 }
 
