@@ -12,6 +12,7 @@
 
 | # | Item do guia | Estado | Onde está |
 |---|---|---|---|
+| 0 | Protótipo navegável, fidelidade média/alta, **em Figma** | ✅ | https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL |
 | 1 | Persona (usuário principal) | ✅ | §1 deste documento |
 | 2 | Jornadas do usuário (atual e futura) | ✅ | §2 · íntegra em [`JORNADAS.md`](JORNADAS.md) |
 | 3 | User Stories (3 a 5) | ✅ | §3 — as cinco, com a tela e o teste que prova cada uma |
@@ -22,9 +23,14 @@ O item 5 é o único furo, e ele **não se fabrica**. O que o §5 traz é o que 
 preparado para a sessão. Ver também [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md), que classifica
 esta ausência como o maior risco da avaliação acadêmica.
 
-Sobre o formato do protótipo (Figma × HTML), a divergência está declarada em
-[`PENDENCIAS-DE-ENTREGA.md`](PENDENCIAS-DE-ENTREGA.md) §6 (CFL-03) e depende de aceite do
-professor/mentor.
+**O protótipo, em Figma:** https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL
+
+Nove telas de 375×812 numa fileira, três papéis, ponto de partida em `#/entrar` e **12 ligações de
+clique** — dá play e percorre. As cores não são valores soltos: são a coleção de variáveis
+`Percurso — cores`, nos modos **Claro** e **Escuro**, com os mesmos tokens declarados em
+`public/styles.css` do MVP. Com isso o item CFL-03 (protótipo entregue em HTML em vez de Figma)
+**deixa de ser uma divergência a declarar** — ver [`PENDENCIAS-DE-ENTREGA.md`](PENDENCIAS-DE-ENTREGA.md) §6.
+O protótipo HTML em `prototipo-figma/` continua no repositório como registro da etapa anterior.
 
 ---
 
