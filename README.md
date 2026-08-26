@@ -306,6 +306,8 @@ cd prototipo-figma && python3 -m http.server 8765
 
 - [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) — **plano de arquitetura**: restrições do dossiê → respostas de desenho, arquitetura atual, invariantes e os três horizontes de evolução (entrega 09/10 → piloto real → módulos condicionados)
 - [`docs/LEAN-INCEPTION.md`](docs/LEAN-INCEPTION.md) — a análise que originou o escopo
+- [`docs/ARTEFATO-SEMANA-5.md`](docs/ARTEFATO-SEMANA-5.md) — **documentação de suporte do artefato de tecnologia da semana 5**: persona, jornadas atual e futura, as 5 User Stories com a tela e o teste que prova cada uma, fluxo de navegação por papel — e o registro da validação, que fica em branco até a sessão acontecer
+- [`docs/JORNADAS.md`](docs/JORNADAS.md) — jornadas atual e futura das três personas, com ganhos **e custos**
 - [`docs/O-QUE-VEIO-DA-V2.md`](docs/O-QUE-VEIO-DA-V2.md) — **matriz de adoção do `percurso-v2-pack`**: as 15 features, as 11 telas, os tokens de design, o que foi adaptado com justificativa e o que foi recusado
 - [`docs/ANALISE-BUSSOLA.md`](docs/ANALISE-BUSSOLA.md) — análise comparativa com o app Bússola: o que foi adotado (cronômetro de registro, reconciliação, plano da semana, supressão n<5, aspiração, impressão) e o que foi rejeitado, com justificativa
 - [`docs/MODELO-DE-DADOS.md`](docs/MODELO-DE-DADOS.md) — entidades, relações e atributos
