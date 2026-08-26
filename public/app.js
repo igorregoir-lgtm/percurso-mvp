@@ -924,7 +924,10 @@ rota(/^#\/criancas/, async () => {
     <div class="cartao" style="margin-top:16px">
       <input type="text" id="busca" data-acao="buscar" placeholder="Buscar por nome ou código…" autocomplete="off">
       <div class="pilha" id="resultado" style="margin-top:12px">${listaCriancas(r)}</div>
-    </div>`;
+    </div>
+    ${sessao.papel === 'coordenacao' ? `<div class="linha" style="margin-top:12px">
+      <button class="btn pequeno secundario" data-acao="ir" data-href="#/pessoas">Cadastrar criança</button>
+    </div>` : ''}`;
 });
 
 // A-13: o corte da lista deixa de ser silencioso — quando ha' mais criancas do
@@ -1114,6 +1117,7 @@ rota(/^#\/painel/, async () => {
         <button class="btn pequeno fantasma" data-acao="ir" data-href="#/consulta">Perguntar à base</button>
         <button class="btn pequeno fantasma" data-acao="ir" data-href="#/criancas">Buscar criança</button>
         <button class="btn pequeno fantasma" data-acao="ir" data-href="#/importar">Importar planilha antiga</button>
+        <button class="btn pequeno fantasma" data-acao="ir" data-href="#/pessoas">Cadastrar pessoas</button>
       </div>
     </div>
 
@@ -2114,6 +2118,176 @@ rota(/^#\/consulta/, async () => {
 // ======================================================================
 // INGESTÃO RETROATIVA (F7) — coordenação.
 // ======================================================================
+// ======================================================================
+// PESSOAS — cadastro de equipe e de crianças (coordenação).
+// A porta manual do item 2.8 do horizonte de ARQUITETURA.md: até aqui toda
+// pessoa do Percurso nascia da seed ou de planilha. Uma por vez, com as
+// guardas do domínio à vista em vez de escondidas atrás de um "salvo".
+// ======================================================================
+const cadastro = { trocaPendente: null };   // aviso do 409 de troca de turma
+
+// `hoje()` do servidor não vale no `max` dos campos de data: o limite é o
+// relógio de quem está com o celular na mão.
+const hojeIso = () => {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+};
+
+rota(/^#\/pessoas/, async () => {
+  const d = await api('/api/cadastro');
+  // O aviso de troca vale para UMA tentativa. Consumido aqui, ele não
+  // reaparece quando a coordenação voltar à tela outro dia.
+  const troca = cadastro.trocaPendente;
+  cadastro.trocaPendente = null;
+
+  app.innerHTML = `
+    <p class="kicker">Cadastro · quem entra no Percurso</p>
+    <h1>Pessoas</h1>
+    <p class="sub">Professora, coordenação, diretoria e criança entram por aqui. Quem cadastra é a coordenação:
+      papel e matrícula são exatamente o que decide, no resto do produto, quem enxerga a ficha de quem.</p>
+
+    <div class="cartao" style="margin-top:16px">
+      <h2>Nova pessoa na equipe</h2>
+      <p class="sub">O apelido é o que aparece no cabeçalho e em cada registro — em branco, sai do próprio nome.</p>
+      <label class="rot-campo" for="p-nome">Nome</label>
+      <input type="text" id="p-nome" placeholder="Nome completo" autocomplete="off">
+      <label class="rot-campo" for="p-apelido">Apelido <span class="sub">(opcional)</span></label>
+      <input type="text" id="p-apelido" placeholder="Ex.: Maria S." autocomplete="off">
+      <label class="rot-campo" for="p-papel">Papel</label>
+      <select id="p-papel">${d.papeis.map(p =>
+        `<option value="${p.id}">${esc(p.rotulo)}</option>`).join('')}</select>
+      <p class="sub" id="p-nota" style="margin-top:6px"></p>
+      <div id="p-turma-bloco">
+        <label class="rot-campo" for="p-turma">Turma <span class="sub">(opcional)</span></label>
+        <select id="p-turma">
+          <option value="">Sem turma por enquanto</option>
+          ${d.turmas.map(t => `<option value="${t.id}">${esc(t.nome)} · ${esc(t.programa)} — ${
+            t.educador ? `hoje de ${esc(t.educador)}` : 'sem professora'}</option>`).join('')}
+        </select>
+      </div>
+      ${troca ? `<div class="aviso" style="margin-top:12px">
+        <h3>Essa turma já tem professora</h3>
+        <p>${esc(troca.mensagem)}</p>
+        <label style="display:flex;gap:8px;align-items:flex-start;margin-top:9px;font-size:12.5px;line-height:1.5">
+          <input type="checkbox" id="p-confirma" style="width:auto;min-height:0;margin-top:3px">
+          <span>Confirmo a troca: as crianças dessa turma passam a ser lidas pela pessoa nova.</span>
+        </label></div>` : ''}
+      <button class="btn" data-acao="cadastrar-pessoa" style="margin-top:14px">Cadastrar pessoa</button>
+    </div>
+
+    <div class="cartao" style="margin-top:14px">
+      <h2>Nova criança</h2>
+      <p class="sub">Entra pela presença (legítimo interesse) e sai daqui com a rubrica socioemocional
+        <b>bloqueada</b>: quem libera é o responsável, na tela de Consentimentos.
+        Próximo código: <b>${esc(d.proximo_codigo)}</b>.</p>
+      <label class="rot-campo" for="c-nome">Nome da criança</label>
+      <input type="text" id="c-nome" placeholder="Nome completo" autocomplete="off">
+      <label class="rot-campo" for="c-nasc">Data de nascimento</label>
+      <input type="date" id="c-nasc" max="${hojeIso()}">
+      <label class="rot-campo" for="c-resp">Responsável</label>
+      <input type="text" id="c-resp" placeholder="Quem responde pela criança" autocomplete="off">
+      <label class="rot-campo" for="c-prog">Programa</label>
+      <select id="c-prog">${d.programas.map(p =>
+        `<option value="${p.id}">${esc(p.nome)} · ${esc(p.faixa)}</option>`).join('')}</select>
+      <label class="rot-campo" for="c-turma">Turma</label>
+      <select id="c-turma"></select>
+      <label class="rot-campo" for="c-entrada">Entrada no programa</label>
+      <input type="date" id="c-entrada" value="${hojeIso()}" max="${hojeIso()}">
+      <button class="btn" data-acao="cadastrar-crianca" style="margin-top:14px">Cadastrar criança</button>
+    </div>
+
+    <div class="cartao compacto" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Equipe hoje</h2><span class="sub">${d.equipe.length} pessoas</span></div>
+      <div class="pilha" style="margin-top:10px">
+        ${d.equipe.map(p => `<div class="item" style="cursor:default">
+          <div class="cresce"><div class="nome">${esc(p.nome)}</div>
+            <div class="meta">${esc(PAPEL[p.papel] ?? p.papel)}${p.turmas ? ` · ${esc(p.turmas)}` : ''}</div></div>
+          <span class="selo ${p.papel === 'educador' ? 'ok' : 'pend'}">${esc(p.apelido)}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <p class="rodape">Cadastrar não é apagar: desligar pessoa e encerrar matrícula continuam fora do MVP
+      (item 2.8 de ARQUITETURA.md).<br>Todos os dados desta aplicação são sintéticos.</p>`;
+
+  // Turma só existe para professora — coordenação e diretoria enxergam todas.
+  const papel = document.getElementById('p-papel');
+  const blocoTurma = document.getElementById('p-turma-bloco');
+  const nota = document.getElementById('p-nota');
+  const sincPapel = () => {
+    nota.textContent = d.papeis.find(x => x.id === papel.value)?.nota ?? '';
+    blocoTurma.hidden = papel.value !== 'educador';
+    if (blocoTurma.hidden) document.getElementById('p-turma').value = '';
+  };
+  papel.addEventListener('change', sincPapel);
+  sincPapel();
+
+  // A lista de turmas da criança segue o programa: o domínio recusa turma de
+  // outro programa, e um select que oferece o inválido é uma armadilha.
+  const prog = document.getElementById('c-prog');
+  const turmaC = document.getElementById('c-turma');
+  const sincTurmas = () => {
+    turmaC.innerHTML = '<option value="">Sem turma por enquanto</option>' +
+      d.turmas.filter(t => String(t.programa_id) === prog.value)
+        .map(t => `<option value="${t.id}">${esc(t.nome)} · ${esc(t.turno)}</option>`).join('');
+  };
+  prog.addEventListener('change', sincTurmas);
+  sincTurmas();
+});
+
+document.addEventListener('click', comErro(async (ev) => {
+  const alvo = ev.target.closest('[data-acao]');
+  if (!alvo) return;
+  const a = alvo.dataset.acao;
+
+  if (a === 'cadastrar-pessoa') {
+    const corpo = {
+      nome: document.getElementById('p-nome').value,
+      apelido: document.getElementById('p-apelido').value,
+      papel: document.getElementById('p-papel').value,
+      turma_id: document.getElementById('p-turma').value || null,
+      confirmar_troca: !!document.getElementById('p-confirma')?.checked,
+    };
+    alvo.disabled = true;
+    let r;
+    try { r = await post('/api/equipe', corpo); }
+    catch (e) {
+      // O 409 de troca de turma não é falha: é a pergunta que faltava. Pinta o
+      // aviso, devolve o que a pessoa tinha digitado e espera o novo toque.
+      if (e.dados?.exige_confirmacao !== 'troca_de_turma') throw e;
+      cadastro.trocaPendente = { mensagem: e.message };
+      await navegar();
+      document.getElementById('p-nome').value = corpo.nome;
+      document.getElementById('p-apelido').value = corpo.apelido;
+      document.getElementById('p-papel').value = corpo.papel;
+      document.getElementById('p-papel').dispatchEvent(new Event('change'));
+      document.getElementById('p-turma').value = corpo.turma_id ?? '';
+      return;
+    } finally { alvo.disabled = false; }
+    toast(r.substituiu
+      ? `${r.pessoa.nome} entrou e assumiu a ${r.turma.nome} no lugar de ${r.substituiu}.`
+      : `${r.pessoa.nome} entrou como ${PAPEL[r.pessoa.papel] ?? r.pessoa.papel}.`, 'bom');
+    await navegar();
+  }
+
+  if (a === 'cadastrar-crianca') {
+    const corpo = {
+      nome: document.getElementById('c-nome').value,
+      nascimento: document.getElementById('c-nasc').value,
+      responsavel: document.getElementById('c-resp').value,
+      programa_id: document.getElementById('c-prog').value,
+      turma_id: document.getElementById('c-turma').value || null,
+      entrada: document.getElementById('c-entrada').value || null,
+    };
+    alvo.disabled = true;
+    let r;
+    try { r = await post('/api/criancas', corpo); }
+    finally { alvo.disabled = false; }
+    toast(`${r.crianca.nome} entrou como ${r.crianca.codigo} — consentimento pendente.`, 'bom');
+    await navegar();
+  }
+}));
+
 rota(/^#\/importar/, async () => {
   const [{ importacoes }, { turmas }] = await Promise.all([api('/api/importacoes'), api('/api/turmas')]);
   app.innerHTML = `
@@ -3189,7 +3363,7 @@ document.addEventListener('click', comErro(async (ev) => {
 
 const PASSO_ROTAS_POR_PAPEL = {
   educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/pauta', '#/ciclo', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
-  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/criancas', '#/alertas', '#/copilot'],
+  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/pessoas', '#/criancas', '#/alertas', '#/copilot'],
   diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
 };
 

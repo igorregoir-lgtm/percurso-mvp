@@ -928,5 +928,78 @@ secao('20 · Passo — assistente-parceiro (limites no servidor)');
   T('apagar a sessão do Passo responde 200', del.status === 200, `(${del.status})`);
 }
 
+// ------------------------------------- 21. cadastro de pessoas (equipe/criancas)
+secao('21 · Cadastro de pessoas — equipe e crianças');
+{
+  // Quem cadastra define papel e matricula, e papel+matricula sao o que decide
+  // o escopo de leitura do resto do produto. Por isso a porta e' de coordenacao.
+  const negadoEdu = await GET('maria', '/api/cadastro');
+  T('professora NÃO abre o cadastro (403)', negadoEdu.status === 403, `(${negadoEdu.status})`);
+  const negadoDir = await POST('solange', '/api/criancas',
+    { nome: 'Teste Diretoria', nascimento: '2017-05-04', responsavel: 'X', programa_id: 1 });
+  T('diretoria NÃO cadastra criança (403)', negadoDir.status === 403, `(${negadoDir.status})`);
+
+  const cad = await GET('rita', '/api/cadastro');
+  T('coordenação abre o cadastro com equipe, papéis, programas e turmas',
+    cad.status === 200 && cad.corpo.equipe.length >= 4 && cad.corpo.papeis.length === 3 &&
+    cad.corpo.programas.length >= 1 && cad.corpo.turmas.length >= 1);
+  T('o cadastro anuncia o próximo código da criança', /^EBZ-\d{4}$/.test(cad.corpo.proximo_codigo));
+
+  const nova = await POST('rita', '/api/equipe', { nome: 'Vera Lúcia Antunes', papel: 'educador' });
+  T('coordenação cadastra professora nova', nova.status === 200 && nova.corpo.pessoa.papel === 'educador');
+  T('o apelido sai do nome quando não vem preenchido', nova.corpo.pessoa.apelido === 'Vera A.');
+
+  const repetida = await POST('rita', '/api/equipe', { nome: 'vera lúcia antunes', papel: 'educador' });
+  T('homônimo no mesmo papel é recusado (409)', repetida.status === 409, `(${repetida.status})`);
+
+  const entra = await POST('vera', '/api/sessao', { educador_id: nova.corpo.pessoa.id });
+  T('a pessoa nova entra no Percurso pela porta de sempre',
+    entra.status === 200 && entra.corpo.usuario.nome === 'Vera Lúcia Antunes');
+  T('a pessoa nova aparece na lista da tela de entrada',
+    (await GET('anon2', '/api/sessao')).corpo.usuarios.some(u => u.id === nova.corpo.pessoa.id));
+
+  const turmaOcupada = cad.corpo.turmas.find(t => t.educador);
+  const semConfirmar = await POST('rita', '/api/equipe',
+    { nome: 'Íris Camargo', papel: 'educador', turma_id: turmaOcupada.id });
+  T('turma que já tem professora exige confirmação (409)',
+    semConfirmar.status === 409 && semConfirmar.corpo.exige_confirmacao === 'troca_de_turma');
+  const comConfirmar = await POST('rita', '/api/equipe',
+    { nome: 'Íris Camargo', papel: 'educador', turma_id: turmaOcupada.id, confirmar_troca: true });
+  T('confirmada, a troca de turma acontece e diz quem saiu',
+    comConfirmar.status === 200 && comConfirmar.corpo.substituiu === turmaOcupada.educador);
+
+  const turmaAlvo = cad.corpo.turmas[0];
+  const antes = (await GET('rita', `/api/criancas?turma_id=${turmaAlvo.id}`)).corpo.total;
+  const crianca = await POST('rita', '/api/criancas', {
+    nome: 'Manuela Boaventura', nascimento: '2017-03-14', responsavel: 'Dulce Boaventura',
+    programa_id: turmaAlvo.programa_id, turma_id: turmaAlvo.id,
+  });
+  T('coordenação cadastra criança nova', crianca.status === 200 && /^EBZ-\d{4}$/.test(crianca.corpo.crianca.codigo));
+  T('a criança nova entra na lista da turma',
+    (await GET('rita', `/api/criancas?turma_id=${turmaAlvo.id}`)).corpo.total === antes + 1);
+
+  // A consequencia que importa: entra pela presenca, NAO entra observavel.
+  const ficha = (await GET('rita', `/api/crianca?id=${crianca.corpo.crianca.id}`)).corpo;
+  const rubrica = ficha.consentimentos.find(c => c.campo === 'rubrica_socioemocional');
+  T('a criança nova nasce com a rubrica socioemocional pendente', rubrica.status === 'pendente');
+  const obs = await POST('rita', '/api/observacao',
+    { crianca_id: crianca.corpo.crianca.id, itens: [], nota_livre: '' });
+  T('observar a criança nova é bloqueado enquanto o consentimento não vem',
+    obs.status !== 200, `(${obs.status})`);
+  T('a criança nova aparece na tela que a desbloqueia',
+    (await GET('rita', '/api/consentimentos')).corpo.linhas.some(l => l.id === crianca.corpo.crianca.id));
+
+  const duplicada = await POST('rita', '/api/criancas', {
+    nome: 'manuela boaventura', nascimento: '2017-03-14', responsavel: 'Dulce Boaventura',
+    programa_id: turmaAlvo.programa_id,
+  });
+  T('mesma criança pela chave nome+nascimento é recusada (409)',
+    duplicada.status === 409 && duplicada.corpo.crianca_id === crianca.corpo.crianca.id);
+
+  const futuro = await POST('rita', '/api/criancas', {
+    nome: 'Ainda Não Nasceu', nascimento: '2099-01-01', responsavel: 'X', programa_id: turmaAlvo.programa_id });
+  T('data de nascimento no futuro é recusada (422)', futuro.status === 422, `(${futuro.status})`);
+}
+
 console.log(`\n\x1b[1m${ok} passaram · ${falhas} falharam\x1b[0m\n`);
 process.exit(falhas ? 1 : 0);

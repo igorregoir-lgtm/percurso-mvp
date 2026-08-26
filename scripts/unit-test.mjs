@@ -1311,3 +1311,114 @@ test('redação: sem modelo, síntese e relatório são idênticos ao template d
   assert.equal(s.origem, 'deterministico', 'com AI_ENABLED=false o texto é o template');
   assert.equal(s.texto, esperado);
 });
+
+// ---------------------------------------------------------------------------
+// Cadastro de pessoas — equipe e criancas (item 2.8 de ARQUITETURA.md).
+// ---------------------------------------------------------------------------
+test('código de criança sai do MAX do sufixo, não do COUNT', () => {
+  const antes = D.proximoCodigoCrianca();
+  const maior = get(`SELECT MAX(CAST(substr(codigo,5) AS INTEGER)) AS n FROM crianca`).n;
+  assert.equal(antes, 'EBZ-' + String(maior + 1).padStart(4, '0'));
+  // Uma criança fora do banco fazia COUNT+1 reemitir um código já usado, e
+  // `crianca.codigo` é UNIQUE: era a importação inteira caindo no INSERT.
+  const vitima = get(`SELECT id, codigo FROM crianca ORDER BY id LIMIT 1`);
+  run(`DELETE FROM crianca WHERE id = ?`, vitima.id);
+  assert.equal(D.proximoCodigoCrianca(), antes, 'apagar uma criança não pode reemitir código');
+  assert.equal(get(`SELECT 1 x FROM crianca WHERE codigo = ?`, D.proximoCodigoCrianca()), undefined);
+});
+
+test('criarPessoa: deriva o apelido do nome e devolve a pessoa gravada', () => {
+  const { pessoa } = D.criarPessoa({ nome: '  Joana   Ribeiro  ', papel: 'educador' });
+  assert.equal(pessoa.nome, 'Joana Ribeiro', 'espaço duplicado é normalizado');
+  assert.equal(pessoa.apelido, 'Joana R.');
+  assert.equal(pessoa.papel, 'educador');
+  assert.ok(D.listarEquipe().some(p => p.id === pessoa.id));
+});
+
+test('criarPessoa: papel inválido e nome vazio são recusados', () => {
+  assert.throws(() => D.criarPessoa({ nome: 'X', papel: 'dono' }), /papel/i);
+  assert.throws(() => D.criarPessoa({ nome: '   ', papel: 'educador' }), /obrigatório/i);
+});
+
+test('criarPessoa: homônimo no mesmo papel é 409, não segunda linha', () => {
+  D.criarPessoa({ nome: 'Beatriz Alves', papel: 'coordenacao' });
+  const e = (() => { try { D.criarPessoa({ nome: 'beatriz alves', papel: 'coordenacao' }); } catch (x) { return x; } })();
+  assert.equal(e.status, 409);
+  assert.ok(e.extra.educador_id, 'o erro aponta quem já existe, para a tela poder abrir');
+  // Mesmo nome em OUTRO papel é outra pessoa — nada impede.
+  assert.ok(D.criarPessoa({ nome: 'Beatriz Alves', papel: 'diretoria' }).pessoa.id);
+});
+
+test('criarPessoa: turma é só de professora', () => {
+  assert.throws(() => D.criarPessoa({ nome: 'Carla Dias', papel: 'coordenacao', turmaId: 1 }),
+    /Só professora/i);
+});
+
+test('criarPessoa: turma ocupada exige confirmação — e a troca move o escopo', () => {
+  const turma = get(`SELECT * FROM turma WHERE educador_id IS NOT NULL LIMIT 1`);
+  const dona = get(`SELECT nome FROM educador WHERE id = ?`, turma.educador_id).nome;
+  const e = (() => { try { D.criarPessoa({ nome: 'Nina Prado', papel: 'educador', turmaId: turma.id }); } catch (x) { return x; } })();
+  assert.equal(e.status, 409);
+  assert.equal(e.extra.exige_confirmacao, 'troca_de_turma');
+  assert.match(e.message, new RegExp(dona));
+  assert.equal(get(`SELECT COUNT(*) n FROM educador WHERE nome='Nina Prado'`).n, 0,
+    'o 409 não pode ter gravado a pessoa pela metade');
+
+  const r = D.criarPessoa({ nome: 'Nina Prado', papel: 'educador', turmaId: turma.id, confirmarTroca: true });
+  assert.equal(r.substituiu, dona);
+  assert.equal(get(`SELECT educador_id FROM turma WHERE id = ?`, turma.id).educador_id, r.pessoa.id);
+});
+
+test('criarCrianca: grava criança, matrícula ativa e os dois consentimentos PENDENTES', () => {
+  const turma = get(`SELECT * FROM turma LIMIT 1`);
+  const antes = D.listarCriancas({ turmaId: turma.id }).total;
+  const r = D.criarCrianca({
+    nome: 'Alice Tavares', nascimento: D.addDias(D.hoje(), -9 * 365),
+    responsavel: 'Sônia Tavares', programaId: turma.programa_id, turmaId: turma.id,
+  });
+  assert.match(r.crianca.codigo, /^EBZ-\d{4}$/);
+  const m = get(`SELECT * FROM matricula WHERE crianca_id = ?`, r.crianca.id);
+  assert.equal(m.status, 'ativa');
+  assert.equal(m.turma_id, turma.id);
+  assert.equal(m.entrada, D.hoje());
+  assert.equal(D.listarCriancas({ turmaId: turma.id }).total, antes + 1);
+
+  const cons = all(`SELECT campo, status FROM consentimento WHERE crianca_id = ? ORDER BY campo`, r.crianca.id)
+    .map(c => `${c.campo}:${c.status}`);
+  assert.deepEqual(cons, ['campo_livre:pendente', 'rubrica_socioemocional:pendente']);
+  // A consequência que importa: entra observável? Não. E dá para desbloquear? Sim.
+  const el = D.elegibilidade(r.crianca.id, D.cicloAberto().id);
+  assert.equal(el.pode, false);
+  assert.equal(el.motivo, 'consentimento');
+  assert.ok(D.painelConsentimentos().linhas.some(l => l.id === r.crianca.id),
+    'sem as linhas pendentes a criança sumiria da tela que a desbloqueia');
+});
+
+test('criarCrianca: mesma chave forte da ingestão (nome + nascimento) é 409', () => {
+  const nascimento = D.addDias(D.hoje(), -8 * 365);
+  const base = { nome: 'Théo Marques', nascimento, responsavel: 'Lia Marques', programaId: 1 };
+  const primeira = D.criarCrianca(base);
+  const e = (() => { try { D.criarCrianca({ ...base, nome: 'théo  marques' }); } catch (x) { return x; } })();
+  assert.equal(e.status, 409);
+  assert.equal(e.extra.crianca_id, primeira.crianca.id);
+  // Irmão no mesmo endereço, outra data de nascimento: passa.
+  assert.ok(D.criarCrianca({ ...base, nascimento: D.addDias(nascimento, -400) }).crianca.id);
+});
+
+test('criarCrianca: turma de outro programa, data no futuro e idade absurda são recusadas', () => {
+  const t = get(`SELECT * FROM turma WHERE programa_id = 1 LIMIT 1`);
+  const outro = get(`SELECT id FROM programa WHERE id <> 1 LIMIT 1`).id;
+  const base = { nome: 'Rui Sales', nascimento: D.addDias(D.hoje(), -9 * 365), responsavel: 'Ana Sales' };
+  assert.throws(() => D.criarCrianca({ ...base, programaId: outro, turmaId: t.id }), /não é do programa/i);
+  assert.throws(() => D.criarCrianca({ ...base, programaId: 1, nascimento: D.addDias(D.hoje(), 1) }), /futuro/i);
+  assert.throws(() => D.criarCrianca({ ...base, programaId: 1, nascimento: '1970-01-01' }), /anos/i);
+  assert.throws(() => D.criarCrianca({ ...base, programaId: 1, nascimento: '12/03/2015' }), /dia\/mês\/ano/i);
+  // Date.parse aceita 30/02 e rola para 02/03 — a data inexistente não entra.
+  assert.throws(() => D.criarCrianca({ ...base, programaId: 1, nascimento: '2015-02-30' }), /calendário/i);
+  assert.throws(() => D.criarCrianca({ ...base, programaId: 1, entrada: D.addDias(D.hoje(), 3) }), /futuro/i);
+  assert.throws(() => D.criarCrianca({ ...base, programaId: 1, responsavel: ' ' }), /obrigatório/i);
+  // A Vivência terapêutica é clínica: sigilo da psicóloga, fora do produto.
+  assert.throws(() => D.criarCrianca({ ...base, programaId: 4 }), /fora do escopo/i);
+  assert.equal(get(`SELECT COUNT(*) n FROM crianca WHERE nome = 'Rui Sales'`).n, 0,
+    'nenhuma recusa pode deixar criança órfã no banco');
+});

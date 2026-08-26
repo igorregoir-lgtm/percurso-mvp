@@ -516,6 +516,49 @@ hardware comporta um Qwen 14B/30B) a conta muda, e a reavaliação é uma variá
 Um verificador que confere cada número contra o banco aprova, sem hesitar, um documento em que
 todo número está certo e todas as frases estão erradas.
 
+### 29. Cadastro de pessoas: quem cadastra é a coordenação, e a criança nasce bloqueada
+
+**Origem:** até a sessão de 25/08/2026 toda pessoa do Percurso vinha da seed (a equipe e as 132
+crianças) ou da ingestão de planilha (só crianças, e só em lote). Não havia como incluir uma
+professora nova nem uma criança nova pela interface — o item 2.8 do horizonte 2 de
+`ARQUITETURA.md` previa isso e ele foi aberto agora, na porta manual: `#/pessoas`.
+
+**Três decisões, e nenhuma delas é o caminho mais curto.**
+
+**1 · A porta é de coordenação, não da professora.** É o mesmo motivo de `/api/importar` ser de
+coordenação: papel e matrícula são exatamente o que decide, no resto do produto, quem enxerga a
+ficha de quem (escopo de turma, decisão 22; diretoria sem individual, decisão 16). Deixar o
+cadastro na mão de quem registra a chamada seria pôr o controle de acesso na mão de quem ele
+limita. A diretoria também não cadastra criança — 403, pela mesma regra de sempre.
+
+**2 · O consentimento nasce PENDENTE, e a criança entra bloqueada para observação.** A criança
+entra pela presença (legítimo interesse, LGPD Art. 7º IX) e não fica observável no mesmo gesto:
+quem libera a rubrica socioemocional é o responsável, num segundo ato, em `#/consentimentos`.
+O detalhe que quase passou: `painelConsentimentos` faz JOIN **interno** com `consentimento`, e
+uma criança sem linha nenhuma ficaria bloqueada de fato e **invisível na única tela que a
+desbloqueia**. Por isso as duas linhas `pendente` são gravadas na mesma transação da matrícula.
+`conteudo_clinico` também exige consentimento e **não** ganha linha: ele está declarado fora do
+sistema por construção, e abrir uma pendência sugeriria que um dia vai ser coletado.
+
+**3 · Homônimo é recusado com 409, não gravado.** O erro caro deste banco não é faltar criança —
+é a MESMA criança virar duas, porque aí a série de presença se parte e nenhum número do relatório
+fecha. A chave é a mesma da ingestão (nome completo + nascimento, R2-05 de `03-AUDITORIA-V2`) e o
+erro devolve o `id` do registro que já existe, para a tela poder oferecer a ficha em vez de um
+beco. Trocar a professora de uma turma que já tem dona exige `confirmar_troca`: a troca **move o
+escopo de leitura** das crianças daquela turma de uma pessoa para outra, e isso é decisão, não
+efeito colateral de um `select` mal tocado.
+
+**Um defeito latente pago de passagem.** `src/ingestao.js` gerava o código da criança com
+`COUNT(*) + 1`. `crianca.codigo` é UNIQUE: bastava uma criança sair do banco para o contador
+reemitir um código já usado e derrubar a importação inteira no INSERT. O gerador virou
+`proximoCodigoCrianca()` (MAX do sufixo), único para os dois caminhos — se cada porta tivesse o
+seu, elas colidiriam entre si.
+
+**O que fica fora, e é declarado:** o cadastro só CRIA. Desligar pessoa e encerrar matrícula
+continuam fora do MVP — o `UPDATE` existe no banco, o gesto não existe no produto.
+
+---
+
 ---
 
 ## Dívidas técnicas conhecidas

@@ -71,6 +71,7 @@ export const CATALOGO_ACOES = [
   { id: 'sintese', rotulo: 'Síntese do ciclo', hash: '#/sintese', papeis: ['coordenacao'] },
   { id: 'consentimentos', rotulo: 'Consentimentos', hash: '#/consentimentos', papeis: ['coordenacao'] },
   { id: 'importar', rotulo: 'Importar planilha', hash: '#/importar', papeis: ['coordenacao'] },
+  { id: 'pessoas', rotulo: 'Cadastrar pessoas', hash: '#/pessoas', papeis: ['coordenacao'] },
   { id: 'relatorio', rotulo: 'Relatório do doador', hash: '#/relatorio', papeis: ['diretoria'] },
   { id: 'impacto', rotulo: 'Impacto (SROI)', hash: '#/impacto', papeis: ['diretoria'] },
   { id: 'consulta', rotulo: 'Perguntar à base', hash: '#/consulta', papeis: ['diretoria'] },
@@ -222,6 +223,16 @@ export const GUIA = [
     oQueE: 'Importar planilha traz o histórico antigo (CSV de qualquer jeito) com deduplicação por nome+nascimento — toda decisão aparece num relatório antes de gravar.',
     chips: ['Como importo uma planilha antiga?'],
     tarefas: [],
+  },
+  {
+    id: 'pessoas', papeis: ['coordenacao'],
+    oQueE: 'A tela Pessoas cadastra a equipe (professora, coordenação, diretoria) e criança nova com a matrícula que a põe numa turma. É de coordenação: papel e matrícula decidem quem enxerga a ficha de quem.',
+    chips: ['Como cadastro uma professora?', 'Como cadastro uma criança nova?'],
+    tarefas: [
+      { intencoes: ['cadastr', 'nova professora', 'nova educadora', 'nova pessoa', 'nova crianc', 'incluir crianc', 'adicionar crianc', 'matricular'],
+        resposta: 'Em Pessoas. Criança pede nome, nascimento, responsável e programa — a turma segue o programa escolhido. Ela entra com a rubrica socioemocional BLOQUEADA: quem libera é o responsável, na tela de Consentimentos. Professora pode já assumir uma turma; se a turma já tem professora, a troca precisa de confirmação, porque move o acesso às crianças dela.',
+        acao: 'pessoas' },
+    ],
   },
   {
     id: 'relatorio', papeis: ['diretoria'],

@@ -219,6 +219,13 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 | F14 | Carta do trimestre — mesmo pipeline, template curto | `#/relatorio` |
 | F15 | Consulta em linguagem natural sobre a camada agregada | `#/consulta` |
 
+### Cadastro de pessoas
+
+| # | Funcionalidade | Onde está |
+|---|---|---|
+| C1 | Cadastro da equipe — professora, coordenação e diretoria, com apelido derivado do nome e turma opcional (troca de turma exige confirmação) | `#/pessoas`, `POST /api/equipe` |
+| C2 | Cadastro de criança — matrícula ativa no mesmo ato, dedup por nome+nascimento, rubrica socioemocional nascendo **pendente** | `#/pessoas`, `POST /api/criancas` |
+
 ### A camada de IA da v3 (opcional, `AI_ENABLED=1`)
 
 | Peça | O que faz | Onde está |

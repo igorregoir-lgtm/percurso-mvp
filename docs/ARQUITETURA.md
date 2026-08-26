@@ -177,7 +177,7 @@ aceitáveis apenas porque o dado é sintético.
 | 2.5 | Consentimento de verdade | Termo impresso por campo (a tabela `consentimento` já modela), assinado pelo responsável, arquivado fisicamente; o registro no sistema aponta para o termo |
 | 2.6 | Encarregado LGPD | Nomeação formal pela coordenação; canal de requisição do titular (acesso, correção, eliminação) — a eliminação já é viável por SQL, precisa virar procedimento |
 | 2.7 | Operação no Render | O Web Service canônico usa disco persistente e uma única instância; backup externo continua obrigatório. Escala horizontal exige migrar do SQLite para banco compartilhado |
-| 2.8 | Troca da seed | Cadastro real substitui a seed **depois** de 2.1–2.6 prontos; `reset.mjs` passa a ser proibido em produção (guarda por variável de ambiente) |
+| 2.8 | Troca da seed | **Porta manual entregue** (`#/pessoas`, `POST /api/equipe`, `POST /api/criancas`): coordenação cadastra equipe e criança uma a uma, com dedup por nome+nascimento e consentimento nascendo pendente. Falta para fechar o item: **desligar** pessoa e **encerrar** matrícula (o cadastro só cria), e a troca da seed por dado real — que continua condicionada a 2.1–2.6 prontos; `reset.mjs` passa a ser proibido em produção (guarda por variável de ambiente) |
 
 Critério de saída do horizonte: uma educadora real registra uma chamada real, com consentimento
 real arquivado, num banco que sobreviveria à perda da máquina.

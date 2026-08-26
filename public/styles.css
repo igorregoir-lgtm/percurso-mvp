@@ -228,6 +228,10 @@ input[type=text],input[type=date],input[type=number],select{
   background:var(--card-2); border:1px solid var(--line); border-radius:var(--r-s);
   padding:11px 12px; font-size:16px; min-height:44px; width:100%;
 }
+/* rotulo de campo de formulario — o cadastro de pessoas empilha uma duzia
+   deles e repetir o style inline em cada um so' escondia o padrao */
+.rot-campo{display:block; font-size:12.5px; font-weight:600; margin:14px 0 6px}
+.rot-campo .sub{font-weight:400}
 
 /* contador de "pediram ajuda" */
 .step{display:inline-flex; align-items:center; gap:10px}

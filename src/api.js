@@ -781,6 +781,45 @@ export const rotas = {
 
   'GET /api/importacoes': (req) => { exigeCoordenacao(req); return { importacoes: G.importacoes() }; },
 
+  // ---- Cadastro de pessoas (equipe e criancas) ---------------------------
+  // A porta manual do item 2.8 de ARQUITETURA.md: ate aqui toda pessoa vinha
+  // da seed ou de planilha. TUDO aqui e' de coordenacao, pelo mesmo motivo que
+  // /api/importar e': quem cadastra define papel e matricula, e papel+matricula
+  // sao exatamente o que decide o escopo de leitura de todo o resto do produto.
+  // Professora nao cadastra a propria turma; diretoria nao toca em individual.
+  'GET /api/cadastro': (req) => {
+    exigeCoordenacao(req);
+    return {
+      equipe: D.listarEquipe(),
+      papeis: D.PAPEIS,
+      programas: all(`SELECT id, nome, faixa, cadencia FROM programa WHERE no_escopo = 1 ORDER BY id`),
+      turmas: all(
+        `SELECT t.id, t.nome, t.turno, t.programa_id, p.nome AS programa, e.nome AS educador
+           FROM turma t JOIN programa p ON p.id = t.programa_id
+           LEFT JOIN educador e ON e.id = t.educador_id ORDER BY t.id`),
+      proximo_codigo: D.proximoCodigoCrianca(),
+    };
+  },
+
+  'POST /api/equipe': (req, body) => {
+    exigeCoordenacao(req);
+    return D.criarPessoa({
+      nome: body.nome, apelido: body.apelido, papel: String(body.papel ?? ''),
+      turmaId: body.turma_id ? num(body.turma_id, 'turma_id') : null,
+      confirmarTroca: !!body.confirmar_troca,
+    });
+  },
+
+  'POST /api/criancas': (req, body) => {
+    exigeCoordenacao(req);
+    return D.criarCrianca({
+      nome: body.nome, nascimento: body.nascimento, responsavel: body.responsavel,
+      programaId: num(body.programa_id, 'programa_id'),
+      turmaId: body.turma_id ? num(body.turma_id, 'turma_id') : null,
+      entrada: body.entrada || null,
+    });
+  },
+
   // Fecho de ciclo — executa a retencao declarada na governanca.
   'POST /api/ciclo/fechar': (req, body) => {
     const u = exigeCoordenacao(req);

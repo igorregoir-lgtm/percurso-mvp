@@ -1131,3 +1131,197 @@ export function planoDaTurma(turmaId) {
     radar, foco, ganchos,
   };
 }
+
+// --------------------------------------------------------------------------
+// CADASTRO DE PESSOAS — equipe e criancas.
+//
+// Ate aqui, toda pessoa do Percurso nascia da seed (equipe e 132 criancas) ou
+// da ingestao de planilha (so criancas, e so em lote). Item 2.8 do horizonte
+// de ARQUITETURA.md: "cadastro real substitui a seed". Isto e' a porta manual
+// desse item — uma pessoa por vez, com as mesmas guardas que a ingestao ja
+// tinha que respeitar.
+//
+// TRES DECISOES QUE VALEM O COMENTARIO:
+//
+//  1. Quem cadastra e' a COORDENACAO, nao a professora. Nao e' burocracia: o
+//     papel decide o que a pessoa enxerga (escopo de turma, A4) e a matricula
+//     decide de quem e' a ficha que abre. Deixar isso na mao de quem registra
+//     a chamada seria deixar o controle de acesso na mao de quem ele limita.
+//
+//  2. Consentimento nasce PENDENTE, sempre. A crianca entra no sistema pela
+//     presenca (legitimo interesse) e NAO fica observavel no mesmo ato: quem
+//     libera a rubrica socioemocional e' o responsavel, num segundo gesto, na
+//     tela de consentimentos. Sem as duas linhas 'pendente' aqui, a crianca
+//     nova ficaria invisivel naquela tela (o JOIN e' interno) — bloqueada de
+//     fato e sem caminho para desbloquear, que e' o pior dos dois mundos.
+//
+//  3. Homonimo e' recusado, nao gravado. O erro mais caro deste banco nao e'
+//     faltar crianca: e' a MESMA crianca virar duas, porque dai a serie de
+//     presenca se parte em duas e nenhum numero do relatorio fecha. A ingestao
+//     ja paga esse preco com deduplicacao por nome+nascimento (03-AUDITORIA-V2,
+//     R2-05); o cadastro manual usa a mesma chave e devolve 409 com o id do
+//     que ja existe, para a tela poder oferecer "abrir a ficha dela".
+// --------------------------------------------------------------------------
+
+/** Rotulos dos papeis — a mesma tabela que o cliente pinta, servida daqui
+ *  para nao existirem duas listas de papel valido no produto. */
+export const PAPEIS = [
+  { id: 'educador',    rotulo: 'Professora',  nota: 'Registra chamada e observação das próprias turmas — e só delas.' },
+  { id: 'coordenacao', rotulo: 'Coordenação', nota: 'Vê todas as turmas, cadastra pessoas e trata consentimento.' },
+  { id: 'diretoria',   rotulo: 'Diretoria',   nota: 'Só a camada agregada — não abre ficha individual de criança.' },
+];
+const PAPEL_VALIDO = new Set(PAPEIS.map(p => p.id));
+
+/** Campos que exigem consentimento E são coletados pelo Percurso. `conteudo_clinico`
+ *  também exige, mas está declarado FORA do sistema por construção — abrir linha
+ *  'pendente' para ele sugeriria que um dia vai ser coletado. Não vai. */
+const CONSENTIMENTOS_DA_MATRICULA = ['rubrica_socioemocional', 'campo_livre'];
+
+function textoObrigatorio(v, campo, max = 120) {
+  const t = String(v ?? '').trim().replace(/\s+/g, ' ');
+  if (!t) throw erro(422, `${campo} é obrigatório.`);
+  if (t.length > max) throw erro(422, `${campo} passa de ${max} caracteres.`);
+  return t;
+}
+
+function dataObrigatoria(v, campo) {
+  const t = String(v ?? '').trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(t))
+    throw erro(422, `${campo} precisa vir no formato dia/mês/ano.`);
+  // Ida e volta, e não só `Date.parse`: ele ACEITA 2026-02-30 e o rola para
+  // 02/03 em silêncio. A data inexistente entraria no banco e a idade passaria
+  // a ser calculada de um dia que a pessoa não digitou.
+  const d = new Date(t + 'T12:00:00Z');
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== t)
+    throw erro(422, `${campo} não existe no calendário.`);
+  return t;
+}
+
+/** Próximo `EBZ-NNNN`. MAX do sufixo, não COUNT: o código é UNIQUE e uma
+ *  criança removida do banco faria COUNT+1 repetir um código já emitido. */
+export function proximoCodigoCrianca() {
+  const r = get(
+    `SELECT MAX(CAST(substr(codigo, 5) AS INTEGER)) AS n FROM crianca WHERE codigo LIKE 'EBZ-____'`);
+  return 'EBZ-' + String((r?.n ?? 0) + 1).padStart(4, '0');
+}
+
+/** "Maria Silvia" -> "Maria S." — o apelido é o que aparece no cabeçalho e em
+ *  todo registro; ninguém precisa inventar um na hora de cadastrar. */
+function apelidoDe(nome) {
+  const [primeiro, ...resto] = nome.split(' ');
+  return resto.length ? `${primeiro} ${resto.at(-1)[0].toUpperCase()}.` : primeiro;
+}
+
+export function listarEquipe() {
+  return all(
+    `SELECT e.id, e.nome, e.apelido, e.papel,
+            (SELECT GROUP_CONCAT(t.nome, ' · ') FROM turma t WHERE t.educador_id = e.id) AS turmas
+       FROM educador e
+      ORDER BY CASE e.papel WHEN 'diretoria' THEN 0 WHEN 'coordenacao' THEN 1 ELSE 2 END, e.nome`);
+}
+
+/**
+ * Cadastra alguém da equipe. `turmaId` só vale para professora.
+ * Turma que já tem professora só troca com `confirmarTroca` — a troca move o
+ * escopo de leitura das crianças daquela turma de uma pessoa para outra, e isso
+ * é decisão, não efeito colateral de um `select` mal clicado.
+ */
+export function criarPessoa({ nome, apelido = '', papel, turmaId = null, confirmarTroca = false }) {
+  const n = textoObrigatorio(nome, 'O nome');
+  if (!PAPEL_VALIDO.has(papel))
+    throw erro(422, 'Escolha o papel: professora, coordenação ou diretoria.');
+  const a = String(apelido ?? '').trim().replace(/\s+/g, ' ').slice(0, 60) || apelidoDe(n);
+
+  const igual = get(
+    `SELECT id, nome FROM educador WHERE lower(nome) = lower(?) AND papel = ?`, n, papel);
+  if (igual)
+    throw erro(409, `${igual.nome} já está cadastrada com este papel.`, { educador_id: igual.id });
+
+  let turma = null;
+  if (turmaId != null) {
+    if (papel !== 'educador')
+      throw erro(422, 'Só professora fica responsável por turma. Coordenação e diretoria enxergam todas.');
+    turma = get(
+      `SELECT t.id, t.nome, t.educador_id, e.nome AS educador_atual
+         FROM turma t LEFT JOIN educador e ON e.id = t.educador_id WHERE t.id = ?`, turmaId);
+    if (!turma) throw erro(404, 'Turma não encontrada.');
+    if (turma.educador_id && !confirmarTroca)
+      throw erro(409,
+        `A turma ${turma.nome} é de ${turma.educador_atual}. Confirmar a troca passa as crianças dessa turma para ${n} — e tira de ${turma.educador_atual}.`,
+        { exige_confirmacao: 'troca_de_turma', turma_id: turma.id, educador_atual: turma.educador_atual });
+  }
+
+  return tx(() => {
+    const id = Number(run(
+      `INSERT INTO educador (nome, apelido, papel) VALUES (?,?,?)`, n, a, papel).lastInsertRowid);
+    if (turma) run(`UPDATE turma SET educador_id = ? WHERE id = ?`, id, turma.id);
+    return {
+      pessoa: get(`SELECT * FROM educador WHERE id = ?`, id),
+      turma: turma ? { id: turma.id, nome: turma.nome } : null,
+      substituiu: turma?.educador_atual ?? null,
+    };
+  });
+}
+
+/**
+ * Cadastra uma criança e a matrícula ativa que a põe numa turma. Os dois num
+ * `tx` só: criança sem matrícula não aparece em lista nenhuma (todo `listar`
+ * deste domínio faz JOIN com matrícula ativa) — seria um registro fantasma.
+ */
+export function criarCrianca({ nome, nascimento, responsavel, programaId, turmaId = null, entrada = null }) {
+  const n = textoObrigatorio(nome, 'O nome da criança');
+  const resp = textoObrigatorio(responsavel, 'O responsável');
+  const nasc = dataObrigatoria(nascimento, 'A data de nascimento');
+  const hj = hoje();
+  if (nasc > hj) throw erro(422, 'A data de nascimento está no futuro.');
+  const idade = Math.floor(diasEntre(nasc, hj) / 365.25);
+  if (idade > 21)
+    throw erro(422, `A data de nascimento dá ${idade} anos. Confira — o Percurso atende crianças e adolescentes.`);
+
+  const programa = get(`SELECT * FROM programa WHERE id = ?`, programaId);
+  if (!programa) throw erro(404, 'Programa não encontrado.');
+  // A Vivência terapêutica está declarada FORA do escopo de medição (o
+  // percentual de cobertura a exclui de propósito). Matricular por aqui criaria
+  // criança num programa que nenhuma tela deste produto sabe ler.
+  if (!programa.no_escopo)
+    throw erro(422, `${programa.nome} está fora do escopo do Percurso. ${programa.nota ?? ''}`.trim());
+
+  let turma = null;
+  if (turmaId != null) {
+    turma = get(`SELECT * FROM turma WHERE id = ?`, turmaId);
+    if (!turma) throw erro(404, 'Turma não encontrada.');
+    if (turma.programa_id !== programa.id)
+      throw erro(422, `A turma ${turma.nome} não é do programa ${programa.nome}.`);
+  }
+
+  const ent = entrada ? dataObrigatoria(entrada, 'A data de entrada') : hj;
+  if (ent > hj) throw erro(422, 'A data de entrada está no futuro.');
+  if (ent < nasc) throw erro(422, 'A data de entrada é anterior ao nascimento.');
+
+  // Mesma chave forte da ingestão: primeiro nome + nascimento não bastava lá e
+  // não basta aqui — o nome inteiro mais a data é o que separa dois irmãos.
+  const igual = get(
+    `SELECT id, codigo, nome FROM crianca WHERE lower(nome) = lower(?) AND nascimento = ?`, n, nasc);
+  if (igual)
+    throw erro(409, `${igual.nome} (${igual.codigo}) já está no cadastro com essa data de nascimento.`,
+      { crianca_id: igual.id, codigo: igual.codigo });
+
+  return tx(() => {
+    const codigo = proximoCodigoCrianca();
+    const id = Number(run(
+      `INSERT INTO crianca (codigo, nome, nascimento, responsavel, ativo, criado_em)
+       VALUES (?,?,?,?,1,?)`, codigo, n, nasc, resp, hj).lastInsertRowid);
+    run(`INSERT INTO matricula (crianca_id, programa_id, turma_id, entrada, saida, status)
+         VALUES (?,?,?,?,NULL,'ativa')`, id, programa.id, turma?.id ?? null, ent);
+    for (const campo of CONSENTIMENTOS_DA_MATRICULA)
+      run(`INSERT INTO consentimento (crianca_id, campo, status, responsavel, data_registro)
+           VALUES (?,?, 'pendente', NULL, NULL)`, id, campo);
+    return {
+      crianca: get(`SELECT * FROM crianca WHERE id = ?`, id),
+      programa: { id: programa.id, nome: programa.nome },
+      turma: turma ? { id: turma.id, nome: turma.nome } : null,
+      consentimentos_pendentes: CONSENTIMENTOS_DA_MATRICULA.length,
+      aviso: 'Presença já pode ser registrada. A rubrica socioemocional fica bloqueada até o responsável consentir — a criança já aparece na tela de Consentimentos.',
+    };
+  });
+}

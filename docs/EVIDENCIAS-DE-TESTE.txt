@@ -302,5 +302,25 @@ Alvo: http://localhost:3000
   ✓ chips não vazam a tela de outro papel
   ✓ apagar a sessão do Passo responde 200
 
-255 passaram · 0 falharam
+21 · Cadastro de pessoas — equipe e crianças
+  ✓ professora NÃO abre o cadastro (403)
+  ✓ diretoria NÃO cadastra criança (403)
+  ✓ coordenação abre o cadastro com equipe, papéis, programas e turmas
+  ✓ o cadastro anuncia o próximo código da criança
+  ✓ coordenação cadastra professora nova
+  ✓ o apelido sai do nome quando não vem preenchido
+  ✓ homônimo no mesmo papel é recusado (409)
+  ✓ a pessoa nova entra no Percurso pela porta de sempre
+  ✓ a pessoa nova aparece na lista da tela de entrada
+  ✓ turma que já tem professora exige confirmação (409)
+  ✓ confirmada, a troca de turma acontece e diz quem saiu
+  ✓ coordenação cadastra criança nova
+  ✓ a criança nova entra na lista da turma
+  ✓ a criança nova nasce com a rubrica socioemocional pendente
+  ✓ observar a criança nova é bloqueado enquanto o consentimento não vem
+  ✓ a criança nova aparece na tela que a desbloqueia
+  ✓ mesma criança pela chave nome+nascimento é recusada (409)
+  ✓ data de nascimento no futuro é recusada (422)
+
+273 passaram · 0 falharam
 
