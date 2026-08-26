@@ -509,8 +509,16 @@ verdadeiros e frases falsas.
 
 **A conclusão honesta:** neste porte de modelo, prosa segura e prosa útil não coexistem nestes
 dois documentos. `AI_REDATOR` fica **desligado por padrão** — ligar hoje só adiciona latência
-para cair no mesmo template. A infraestrutura e os testes ficam prontos: num modelo maior (o
-hardware comporta um Qwen 14B/30B) a conta muda, e a reavaliação é uma variável de ambiente.
+para cair no mesmo template. A infraestrutura e os testes ficam prontos, e a reavaliação é uma
+variável de ambiente.
+
+**Adendo de 25/08/2026 — subir o porte do modelo está fora.** A conclusão original apontava um
+Qwen 14B/30B como próximo passo, porque a máquina de desenvolvimento comporta. Está descartado
+por decisão de produto: a arquitetura do Percurso exige rodar **no notebook comum de uma
+organização social**, e um modelo dimensionado para a máquina de desenvolvimento não é o produto
+— é uma demonstração que o Instituto não conseguiria operar. O porte é restrição de desenho, não
+variável livre. O caminho de ganho aqui é **modelo melhor no mesmo porte**, ou portões e prompt
+melhores; o template determinístico segue sendo a resposta correta, não um degrau provisório.
 
 **O que isto ensinou, e vale além deste caso:** fidelidade numérica não é fidelidade semântica.
 Um verificador que confere cada número contra o banco aprova, sem hesitar, um documento em que
