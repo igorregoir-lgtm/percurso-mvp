@@ -567,6 +567,73 @@ continuam fora do MVP — o `UPDATE` existe no banco, o gesto não existe no pro
 
 ---
 
+### 30. Ninguém é apagado: quem sai do pipeline vai para o arquivo
+
+**Origem:** decisão do usuário em 25/08/2026, sobre a lacuna declarada na decisão 29 (o cadastro
+só criava). A formulação foi literal: *"nunca se exclui pessoa; se uma pessoa sai do pipeline ela
+deve ir para o arquivo"*.
+
+**Não existe `DELETE` de pessoa neste produto — e a ausência é a decisão**, não um esquecimento.
+Um teste de fumaça verifica que `DELETE /api/equipe` e `DELETE /api/criancas` respondem 404, para
+que a ausência não possa ser reintroduzida por engano.
+
+**Três razões, e nenhuma é sentimental.**
+
+1. **O registro fica em pé e assinado.** `observacao.educador_id` e `encontro.registrado_por` são
+   chaves estrangeiras. Apagar a professora arrastaria (ou orfanaria) tudo que ela registrou — e o
+   relatório do doador é construído em cima desses registros. Quem escreveu continua sendo quem
+   escreveu; o arquivo mostra quantas chamadas e observações a pessoa deixou, e é justamente esse
+   número o argumento contra o botão de apagar.
+2. **A criança que sai É o dado.** Safra, permanência e evasão (F6) medem exatamente a saída. Uma
+   criança apagada não evade: ela nunca existiu, e a curva de permanência mentiria **para cima**.
+3. **A criança arquivada continua protegida.** `nomesParaAnonimizar` não filtra por `ativo`, de
+   propósito (SEGURANCA-IA-02): evasão é justamente pauta de conversa, e o nome de quem saiu não
+   pode chegar ao modelo. Arquivar não pode virar uma porta lateral para isso.
+
+**A mecânica.** A criança já tinha metade dela desde a v1 (`crianca.ativo` mais `matricula.saida`,
+que a seed usa nas 26 que saíram) — faltava o **gesto**. A equipe não tinha nem a coluna:
+`educador.arquivado_em` é nova (data, não booleano: para pessoa da equipe *quando* saiu é a
+pergunta que se faz depois). A mudança de DDL recria o banco pela assinatura, como a decisão 14
+prevê.
+
+**O ponto de aplicação é `usuarioDa`, não o login.** O cookie de sessão não é assinado e vale 24 h
+(dívida nº 1). Se a checagem de arquivada estivesse só em `POST /api/sessao`, arquivar alguém não
+faria efeito nenhum sobre quem já estava dentro — por um dia inteiro. A checagem está na resolução
+da sessão, que toda rota atravessa: a sessão aberta morre no ato.
+
+**Duas recusas para o sistema não se trancar por fora.** Ninguém arquiva a si mesma (a pessoa
+perderia a sessão no mesmo ato, sem ninguém para desfazer), e a **última coordenação na ativa não
+sai** — sem ela não há quem cadastre a substituta nem quem traga alguém de volta. E turma órfã não
+é detalhe: `exigeAcessoTurma` lê `turma.educador_id`, então arquivar a professora ou passa as
+turmas a uma sucessora escolhida na hora, ou as libera e **diz quais ficaram sem professora**.
+
+**Voltar, para a criança, é matrícula NOVA.** Reabrir a matrícula antiga apagaria a saída, e a
+saída é o dado. O modelo deste banco já dizia isso desde a v1: criança é entidade, matrícula é
+relação. **O consentimento volta a `pendente`** — a base legal caducou com a saída, e retomar o
+processamento de dado sensível em silêncio, depois de um intervalo, é o pior dos dois erros. O
+preço está declarado: este banco não tem histórico de consentimento, então quem consentiu antes se
+perde no ato.
+
+**Dois defeitos que a tela de arquivo expôs** — ambos invisíveis enquanto nenhuma tela mostrava
+data de saída:
+
+- **A seed produzia matrícula ENCERRADA com saída no futuro.** `entrada + duração` passava de hoje
+  para parte das 26 crianças que saíram. Na tela: *"saiu em 29/10/2026"* num 25/08/2026. A duração
+  passou a ser limitada ao que já passou, e há teste unitário fixando a regra.
+- **A curva de permanência podia SUBIR.** `safras()` recalculava os elegíveis a cada marco, então
+  os quatro pontos vinham de **populações diferentes** — e a tela os liga com uma `polyline`, como
+  se fossem uma curva só. Medido depois da correção da seed: 80% aos 9 meses e **82% aos 12**,
+  porque os 28 que já tiveram tempo de chegar aos 12 meses eram uma turma melhor que os 49 que
+  chegaram aos 9. O denominador passou a ser **fixo por safra** (quem já teve tempo de alcançar o
+  marco mais profundo), e a monotonia vale por construção: quem ficou 12 meses ficou 9. O preço é
+  declarado na tela — a safra recente perde os matriculados novos do ponto de 3 meses.
+
+**O que isto ensinou:** dado que nenhuma tela mostra não é dado verificado. Os dois defeitos
+estavam no banco e nos testes há semanas; o que os encontrou não foi leitura de código, foi
+**pintar a data numa tela e olhar**.
+
+---
+
 ---
 
 ## Dívidas técnicas conhecidas

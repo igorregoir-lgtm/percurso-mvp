@@ -1,8 +1,8 @@
 # Handoff — 25/08/2026, fim da sessão
 
-> **Atualizado no mesmo dia:** duas mudanças depois da redação original — o **cadastro de
-> pessoas** entrou (§2) e a reavaliação do redator **num modelo maior foi descartada** por
-> decisão de produto (§4). Os gates da §1 foram refeitos: 124 unit · 273 smoke.
+> **Atualizado depois da redação original:** o **cadastro de pessoas** e o **arquivo** entraram
+> (§2), e a reavaliação do redator **num modelo maior foi descartada** por decisão de produto
+> (§4). Os gates da §1 foram refeitos: 136 unit · 294 smoke.
 
 Para quem retomar. Este documento diz **onde o artefato está**, **o que decidir a seguir** e
 **as armadilhas que já custaram tempo** — para não custarem de novo.
@@ -23,14 +23,16 @@ Tudo commitado e no `main` de https://github.com/igorregoir-lgtm/percurso-mvp �
 
 | gate | resultado |
 |---|---|
-| `node scripts/unit-test.mjs` | **124 passaram** |
-| `node scripts/smoke-test.mjs` | **273 passaram** (exige `node scripts/reset.mjs` antes **e** o servidor no ar) |
+| `node scripts/unit-test.mjs` | **136 passaram** |
+| `node scripts/smoke-test.mjs` | **294 passaram** (exige `node scripts/reset.mjs` antes **e** o servidor no ar) |
 | `node scripts/ai-stub-test.mjs` | **24 passaram** |
 | `node scripts/rag-test.mjs` | **6 passaram** (hit@5 20/20) |
 
-**Treze commits nesta sessão**, do mais recente ao mais antigo:
+**Quinze commits nesta sessão**, do mais recente ao mais antigo:
 
 ```
+(este)   Arquivo: ninguém é apagado — e os dois defeitos que a tela de saída expôs
+274a86b  Porte do modelo é restrição de desenho, não variável livre
 94eccb6  Cadastro de pessoas: a porta manual do item 2.8, com a criança nascendo bloqueada
 258cf37  Handoff da sessão de 25/08/2026
 9b88918  Qwen redigindo síntese e relatório: infraestrutura pronta, 4B reprovado
@@ -78,6 +80,21 @@ criança virar duas parte a série de presença e nenhum número do relatório f
 latentes pagos junto: o código `EBZ-NNNN` da ingestão saía de `COUNT(*)+1` (reemitia código já
 usado assim que uma criança saísse do banco, contra um `UNIQUE`), e `Date.parse` aceitava
 `2026-02-30` rolando para 02/03 em silêncio.
+
+**Arquivo — ninguém é apagado** (decisão 30). Não existe `DELETE` de pessoa em rota nenhuma, e um
+teste de fumaça guarda a ausência (404). Quem sai vai para `#/arquivo` e volta de lá. O ponto de
+aplicação é `usuarioDa`, **não o login**: o cookie não é assinado e vale 24 h, então a checagem
+mora na resolução da sessão e a sessão aberta de quem foi arquivada morre no ato. Duas recusas
+existem para o sistema não se trancar por fora — ninguém arquiva a si mesma, e a última
+coordenação na ativa não sai. Para a criança, voltar é **matrícula nova** (reabrir a antiga
+apagaria a saída, e a saída é o que a curva de permanência lê) e o consentimento volta a pendente.
+
+**E a tela de arquivo expôs dois defeitos que estavam no banco há semanas**, porque nenhuma tela
+mostrava data de saída: a seed produzia matrícula encerrada com **saída no futuro**, e a curva de
+permanência **podia subir** (80% aos 9 meses, 82% aos 12) porque `safras()` recalculava o
+denominador a cada marco — quatro populações diferentes ligadas por uma `polyline`. Os dois estão
+corrigidos, com teste fixando cada regra. A lição: *dado que nenhuma tela mostra não é dado
+verificado*.
 
 ---
 

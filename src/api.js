@@ -84,7 +84,11 @@ export function usuarioDa(req) {
   const m = raw.split(';').map(s => s.trim()).find(s => s.startsWith(COOKIE + '='));
   const id = m ? Number(m.split('=')[1]) : null;
   if (!id) return null;
-  return get(`SELECT * FROM educador WHERE id = ?`, id) ?? null;
+  // Quem foi para o ARQUIVO não tem sessão, mesmo com o cookie na mão: o
+  // cookie não é assinado (dívida nº 1) e vale 24 h, então arquivar alguém
+  // precisa valer AGORA. Este é o ponto único onde isso é verdade para todas
+  // as rotas — pôr a checagem só no login deixaria a sessão aberta em pé.
+  return get(`SELECT * FROM educador WHERE id = ? AND arquivado_em IS NULL`, id) ?? null;
 }
 
 function exigeUsuario(req) {
@@ -176,12 +180,15 @@ const cicloCorrente = () =>
 export const rotas = {
   'GET /api/sessao': (req) => ({
     usuario: usuarioDa(req),
-    usuarios: all(`SELECT id, nome, apelido, papel FROM educador ORDER BY id`),
+    usuarios: all(
+      `SELECT id, nome, apelido, papel FROM educador WHERE arquivado_em IS NULL ORDER BY id`),
   }),
 
   'POST /api/sessao': (req, body) => {
     const u = get(`SELECT * FROM educador WHERE id = ?`, num(body.educador_id, 'educador_id'));
     if (!u) throw D.erro(404, 'Usuário não encontrado.');
+    if (u.arquivado_em)
+      throw D.erro(403, `${u.nome} está no arquivo desde ${D.dataBR(u.arquivado_em)} e não entra no Percurso. A coordenação pode trazer de volta.`);
     return { usuario: u, _cookie: `${COOKIE}=${u.id}; Path=/; Max-Age=86400; SameSite=Lax` };
   },
 
@@ -814,6 +821,38 @@ export const rotas = {
     exigeCoordenacao(req);
     return D.criarCrianca({
       nome: body.nome, nascimento: body.nascimento, responsavel: body.responsavel,
+      programaId: num(body.programa_id, 'programa_id'),
+      turmaId: body.turma_id ? num(body.turma_id, 'turma_id') : null,
+      entrada: body.entrada || null,
+    });
+  },
+
+  // ---- Arquivo — ninguem e' apagado (decisao 30) -------------------------
+  // Nao existe DELETE de pessoa em rota nenhuma deste produto, e a ausencia e'
+  // a decisao. Arquivar tira das listas vivas; o registro fica de pe'.
+  'GET /api/arquivo': (req) => { exigeCoordenacao(req); return D.listarArquivo(); },
+
+  'POST /api/equipe/arquivar': (req, body) => {
+    const u = exigeCoordenacao(req);
+    return D.arquivarPessoa(num(body.id, 'id'), {
+      porUsuarioId: u.id,
+      assumidaPor: body.assumida_por ? num(body.assumida_por, 'assumida_por') : null,
+    });
+  },
+
+  'POST /api/equipe/reativar': (req, body) => {
+    exigeCoordenacao(req);
+    return D.reativarPessoa(num(body.id, 'id'));
+  },
+
+  'POST /api/criancas/arquivar': (req, body) => {
+    exigeCoordenacao(req);
+    return D.arquivarCrianca(num(body.id, 'id'), { saida: body.saida || null });
+  },
+
+  'POST /api/criancas/rematricular': (req, body) => {
+    exigeCoordenacao(req);
+    return D.rematricularCrianca(num(body.id, 'id'), {
       programaId: num(body.programa_id, 'programa_id'),
       turmaId: body.turma_id ? num(body.turma_id, 'turma_id') : null,
       entrada: body.entrada || null,

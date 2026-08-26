@@ -20,6 +20,7 @@ const V = await import('../src/voz.js');
 const S = await import('../src/scores.js');
 const R = await import('../src/relatorio.js');
 const G = await import('../src/ingestao.js');
+const COP = await import('../src/copilot.js');
 const { criarFila, CHAVE } = await import('../public/fila.js');
 
 semear();
@@ -1421,4 +1422,161 @@ test('criarCrianca: turma de outro programa, data no futuro e idade absurda são
   assert.throws(() => D.criarCrianca({ ...base, programaId: 4 }), /fora do escopo/i);
   assert.equal(get(`SELECT COUNT(*) n FROM crianca WHERE nome = 'Rui Sales'`).n, 0,
     'nenhuma recusa pode deixar criança órfã no banco');
+});
+
+// ---------------------------------------------------------------------------
+// Arquivo — ninguem e' apagado (decisao 30).
+// ---------------------------------------------------------------------------
+test('arquivo: a pessoa sai das listas vivas e NÃO sai do banco', () => {
+  const { pessoa } = D.criarPessoa({ nome: 'Alzira Bonfim', papel: 'educador' });
+  D.arquivarPessoa(pessoa.id, { porUsuarioId: 2 });
+  assert.equal(D.listarEquipe().some(p => p.id === pessoa.id), false);
+  assert.ok(get(`SELECT id FROM educador WHERE id = ?`, pessoa.id), 'a linha continua no banco');
+  assert.ok(D.listarArquivo().pessoas.some(p => p.id === pessoa.id));
+  // E volta.
+  D.reativarPessoa(pessoa.id);
+  assert.ok(D.listarEquipe().some(p => p.id === pessoa.id));
+  assert.equal(D.listarArquivo().pessoas.some(p => p.id === pessoa.id), false);
+});
+
+test('arquivo: o registro da professora arquivada continua de pé e assinado', () => {
+  // É o motivo de não existir DELETE: observacao.educador_id e
+  // encontro.registrado_por são FK, e o relatório é construído em cima deles.
+  const dona = get(
+    `SELECT e.id, e.nome FROM educador e JOIN observacao o ON o.educador_id = e.id
+      WHERE e.papel='educador' AND e.arquivado_em IS NULL LIMIT 1`);
+  const antes = get(`SELECT COUNT(*) n FROM observacao WHERE educador_id = ?`, dona.id).n;
+  assert.ok(antes > 0);
+  D.arquivarPessoa(dona.id, { porUsuarioId: 2 });
+  assert.equal(get(`SELECT COUNT(*) n FROM observacao WHERE educador_id = ?`, dona.id).n, antes);
+  assert.equal(D.listarArquivo().pessoas.find(p => p.id === dona.id).observacoes, antes);
+  D.reativarPessoa(dona.id);
+});
+
+test('arquivo: ninguém se arquiva, e a última coordenação na ativa não sai', () => {
+  const coord = get(`SELECT * FROM educador WHERE papel='coordenacao' AND arquivado_em IS NULL LIMIT 1`);
+  assert.throws(() => D.arquivarPessoa(coord.id, { porUsuarioId: coord.id }), /não pode ser quem sai/i);
+
+  const outras = all(`SELECT id FROM educador WHERE papel='coordenacao' AND arquivado_em IS NULL AND id <> ?`, coord.id);
+  for (const o of outras) D.arquivarPessoa(o.id, { porUsuarioId: coord.id });
+  // Agora ela é a única: sem ela ninguém cadastra nem traz de volta do arquivo.
+  assert.throws(() => D.arquivarPessoa(coord.id, { porUsuarioId: 999 }), /única coordenação/i);
+  for (const o of outras) D.reativarPessoa(o.id);
+});
+
+test('arquivo: turma da professora que sai não fica pendurada em ninguém', () => {
+  const t = get(`SELECT * FROM turma WHERE educador_id IS NOT NULL LIMIT 1`);
+  const dona = t.educador_id;
+  const r = D.arquivarPessoa(dona, { porUsuarioId: 2 });
+  assert.equal(get(`SELECT educador_id FROM turma WHERE id = ?`, t.id).educador_id, null);
+  assert.match(r.aviso, /SEM professora/);
+  D.reativarPessoa(dona);
+
+  // Com sucessora, a turma troca de mão em vez de ficar órfã.
+  run(`UPDATE turma SET educador_id = ? WHERE id = ?`, dona, t.id);
+  const nova = D.criarPessoa({ nome: 'Solange Peixoto', papel: 'educador' }).pessoa;
+  const r2 = D.arquivarPessoa(dona, { porUsuarioId: 2, assumidaPor: nova.id });
+  assert.equal(get(`SELECT educador_id FROM turma WHERE id = ?`, t.id).educador_id, nova.id);
+  assert.equal(r2.sucessora.nome, 'Solange Peixoto');
+  D.reativarPessoa(dona);
+  run(`UPDATE turma SET educador_id = ? WHERE id = ?`, dona, t.id);
+});
+
+test('arquivo: sucessora não pode ser quem está no arquivo nem quem não é professora', () => {
+  const t = get(`SELECT * FROM turma WHERE educador_id IS NOT NULL LIMIT 1`);
+  const coord = get(`SELECT id FROM educador WHERE papel='coordenacao' AND arquivado_em IS NULL LIMIT 1`).id;
+  assert.throws(() => D.arquivarPessoa(t.educador_id, { porUsuarioId: 2, assumidaPor: coord }),
+    /Só professora assume/i);
+  const fora = D.criarPessoa({ nome: 'Marlene Duarte', papel: 'educador' }).pessoa;
+  D.arquivarPessoa(fora.id, { porUsuarioId: 2 });
+  assert.throws(() => D.arquivarPessoa(t.educador_id, { porUsuarioId: 2, assumidaPor: fora.id }),
+    /está no arquivo/i);
+});
+
+test('arquivo: cadastrar de novo quem está no arquivo aponta o arquivo, não duplica', () => {
+  const p = D.criarPessoa({ nome: 'Neide Vasques', papel: 'educador' }).pessoa;
+  D.arquivarPessoa(p.id, { porUsuarioId: 2 });
+  const e = (() => { try { D.criarPessoa({ nome: 'neide vasques', papel: 'educador' }); } catch (x) { return x; } })();
+  assert.equal(e.status, 409);
+  assert.equal(e.extra.no_arquivo, true);
+  assert.equal(e.extra.educador_id, p.id);
+  assert.match(e.message, /Traga de volta/i);
+});
+
+test('arquivo: criança arquivada encerra matrícula com data, fecha alerta e some das listas', () => {
+  const turma = get(`SELECT * FROM turma LIMIT 1`);
+  const alvo = D.listarCriancas({ turmaId: turma.id }).criancas[0];
+  run(`INSERT INTO alerta (crianca_id,tipo,detalhe,criado_em,status,atualizado_em)
+       VALUES (?,'ausencia','faltou',?, 'aberto', ?)
+       ON CONFLICT DO NOTHING`, alvo.id, D.agora(), D.agora());
+  const r = D.arquivarCrianca(alvo.id, { saida: D.hoje() });
+  assert.equal(r.matriculas_encerradas > 0, true);
+  assert.equal(get(`SELECT COUNT(*) n FROM matricula WHERE crianca_id = ? AND status='ativa'`, alvo.id).n, 0);
+  assert.equal(get(`SELECT saida FROM matricula WHERE crianca_id = ? ORDER BY id DESC LIMIT 1`, alvo.id).saida, D.hoje());
+  assert.equal(D.listarCriancas({ turmaId: turma.id }).criancas.some(c => c.id === alvo.id), false);
+  assert.equal(D.alertas().some(a => a.crianca_id === alvo.id), false,
+    'alerta aberto de criança arquivada cobraria tratativa para sempre');
+  assert.ok(get(`SELECT id FROM crianca WHERE id = ?`, alvo.id), 'a criança continua no banco');
+  assert.ok(D.listarArquivo().criancas.some(c => c.id === alvo.id));
+});
+
+test('arquivo: a criança que saiu continua PROTEGIDA na pseudonimização', () => {
+  // SEGURANCA-IA-02: evasão é justamente pauta de conversa. Arquivar não pode
+  // tirar o nome da lista que o modelo nunca pode ver.
+  const arquivada = D.listarArquivo().criancas[0];
+  assert.ok(COP.nomesParaAnonimizar(null).includes(arquivada.nome));
+});
+
+test('arquivo: voltar é matrícula NOVA — a saída não é apagada', () => {
+  // Arquiva uma criança aqui mesmo: a seed tem saídas em data futura (a curva
+  // de safra é gerada a partir de entrada + duração), e a volta nunca pode ser
+  // anterior à saída registrada.
+  const turma = get(`SELECT * FROM turma LIMIT 1`);
+  const alvo = D.listarCriancas({ turmaId: turma.id }).criancas.at(-1);
+  D.arquivarCrianca(alvo.id);
+  const arquivada = D.listarArquivo().criancas.find(c => c.id === alvo.id);
+  const antes = all(`SELECT * FROM matricula WHERE crianca_id = ?`, arquivada.id);
+  const r = D.rematricularCrianca(arquivada.id, { programaId: turma.programa_id, turmaId: turma.id });
+  const depois = all(`SELECT * FROM matricula WHERE crianca_id = ?`, arquivada.id);
+  assert.equal(depois.length, antes.length + 1, 'a matrícula antiga continua lá, com a saída');
+  assert.equal(depois.filter(m => m.status === 'ativa').length, 1);
+  assert.equal(get(`SELECT ativo FROM crianca WHERE id = ?`, arquivada.id).ativo, 1);
+  assert.ok(antes.every(m => depois.find(d => d.id === m.id).saida === m.saida));
+  // Consentimento caducou com a saída: volta pendente, não observável.
+  const cons = all(`SELECT status FROM consentimento WHERE crianca_id = ?`, arquivada.id).map(c => c.status);
+  assert.deepEqual([...new Set(cons)], ['pendente']);
+  assert.match(r.aviso, /PENDENTE/);
+});
+
+test('arquivo: datas incoerentes e duplo arquivamento são recusados', () => {
+  const c = D.listarCriancas({}).criancas[0];
+  assert.throws(() => D.arquivarCrianca(c.id, { saida: D.addDias(D.hoje(), 2) }), /futuro/i);
+  assert.throws(() => D.arquivarCrianca(c.id, { saida: '2000-01-01' }), /anterior à entrada/i);
+  D.arquivarCrianca(c.id);
+  assert.throws(() => D.arquivarCrianca(c.id), /já está no arquivo/i);
+  const t = get(`SELECT * FROM turma LIMIT 1`);
+  assert.throws(() => D.rematricularCrianca(c.id, { programaId: t.programa_id, entrada: '2000-01-01' }),
+    /anterior à saída/i);
+  D.rematricularCrianca(c.id, { programaId: t.programa_id, turmaId: t.id });
+  assert.throws(() => D.rematricularCrianca(c.id, { programaId: t.programa_id }), /já está na ativa/i);
+});
+
+test('safras: os quatro marcos de uma safra vêm todos da MESMA base', () => {
+  // A monotonia da permanência não é uma coincidência dos dados: ela vale por
+  // construção SE — e só se — o denominador for o mesmo em todos os marcos.
+  // Com base recalculada por marco, a curva subia (80% aos 9 meses, 82% aos 12)
+  // porque os pontos vinham de populações diferentes, ligadas por uma polyline.
+  for (const c of D.safras().curvas) {
+    const bases = new Set(c.pontos.filter(p => p.pct != null).map(p => p.base));
+    assert.ok(bases.size <= 1, `safra ${c.safra}: a base muda entre os marcos (${[...bases]})`);
+    const v = c.pontos.map(p => p.pct).filter(x => x != null);
+    assert.ok(v.every((x, i) => i === 0 || x <= v[i - 1]),
+      `safra ${c.safra}: permanência subiu (${v}) — impossível dentro de uma coorte`);
+  }
+});
+
+test('seed: nenhuma matrícula encerrada tem data de saída no futuro', () => {
+  assert.equal(
+    get(`SELECT COUNT(*) AS n FROM matricula WHERE saida IS NOT NULL AND saida > ?`, D.hoje()).n, 0,
+    'criança "que saiu" com saída no futuro é dado errado — a tela de arquivo mostra essa data');
 });

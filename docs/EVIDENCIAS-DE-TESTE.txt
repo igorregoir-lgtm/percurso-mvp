@@ -322,5 +322,28 @@ Alvo: http://localhost:3000
   ✓ mesma criança pela chave nome+nascimento é recusada (409)
   ✓ data de nascimento no futuro é recusada (422)
 
-273 passaram · 0 falharam
+22 · Arquivo — ninguém é apagado (decisão 30)
+  ✓ não existe DELETE /api/equipe (404)
+  ✓ não existe DELETE /api/criancas (404)
+  ✓ a professora criada na §21 está na equipe viva
+  ✓ a sessão dela funciona antes de arquivar
+  ✓ coordenação arquiva a professora
+  ✓ a sessão aberta dela morre no ato (401)
+  ✓ ela some da lista da tela de entrada
+  ✓ e não consegue entrar de novo (403)
+  ✓ mas continua existindo, no arquivo
+  ✓ a coordenação traz de volta do arquivo
+  ✓ e ela entra outra vez
+  ✓ ninguém arquiva a si mesma (422)
+  ✓ coordenação manda a criança para o arquivo
+  ✓ ela sai da lista viva da turma
+  ✓ a matrícula foi encerrada COM data de saída
+  ✓ a presença dela continua no sistema — é o que a curva de permanência lê
+  ✓ ela aparece no arquivo
+  ✓ educadora não arquiva criança (403)
+  ✓ voltar é matrícula NOVA, e a antiga continua encerrada
+  ✓ e ela volta para a lista viva da turma
+  ✓ o consentimento voltou a PENDENTE — a base legal caducou com a saída
+
+294 passaram · 0 falharam
 

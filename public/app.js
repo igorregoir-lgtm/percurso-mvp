@@ -997,7 +997,18 @@ rota(/^#\/crianca\/(\d+)/, async (id) => {
           <td>${esc(c.rotulo)}</td><td>${esc(c.base_legal)}</td><td>${esc(c.acesso)}</td><td>${esc(c.retencao)}</td>
           <td><span class="selo ${c.status === 'ativo' ? 'ok' : 'bloq'}">${c.dispensado ? 'dispensa consent.' : esc(c.status)}</span></td>
         </tr>`).join('')}</tbody></table></div>
-    </div>`;
+    </div>
+
+    ${sessao.papel === 'coordenacao' && f.crianca.ativo ? `<div class="cartao compacto" style="margin-top:14px">
+      <h2>Saiu do programa</h2>
+      <p class="sub">Arquivar encerra as matrículas ativas com data e tira ${esc(f.crianca.nome.split(' ')[0])} das
+        listas vivas. <b>Nada é apagado</b>: a presença e a trajetória continuam — é o que a curva de
+        permanência e a leitura de evasão precisam ler. Ela volta pelo arquivo, com matrícula nova.</p>
+      <label class="rot-campo" for="saida-crianca">Data da saída</label>
+      <input type="date" id="saida-crianca" value="${hojeIso()}" max="${hojeIso()}">
+      <button class="btn secundario" data-acao="arquivar-crianca" data-id="${f.crianca.id}"
+        style="margin-top:14px">Mandar para o arquivo</button>
+    </div>` : ''}`;
 });
 
 // ======================================================================
@@ -2197,18 +2208,34 @@ rota(/^#\/pessoas/, async () => {
     </div>
 
     <div class="cartao compacto" style="margin-top:14px">
-      <div class="linha"><h2 class="cresce">Equipe hoje</h2><span class="sub">${d.equipe.length} pessoas</span></div>
+      <div class="linha"><h2 class="cresce">Equipe hoje</h2><span class="sub">${d.equipe.length} na ativa</span></div>
       <div class="pilha" style="margin-top:10px">
-        ${d.equipe.map(p => `<div class="item" style="cursor:default">
-          <div class="cresce"><div class="nome">${esc(p.nome)}</div>
-            <div class="meta">${esc(PAPEL[p.papel] ?? p.papel)}${p.turmas ? ` · ${esc(p.turmas)}` : ''}</div></div>
-          <span class="selo ${p.papel === 'educador' ? 'ok' : 'pend'}">${esc(p.apelido)}</span>
+        ${d.equipe.map(p => `<div class="item" style="cursor:default;flex-direction:column;align-items:stretch;gap:9px">
+          <div class="linha">
+            <div class="cresce"><div class="nome">${esc(p.nome)}</div>
+              <div class="meta">${esc(PAPEL[p.papel] ?? p.papel)}${p.turmas ? ` · ${esc(p.turmas)}` : ''}</div></div>
+            <span class="selo ${p.papel === 'educador' ? 'ok' : 'pend'}">${esc(p.apelido)}</span>
+          </div>
+          ${p.id === sessao.id
+            ? '<p class="sub">É você. Quem arquiva não pode ser quem sai.</p>'
+            : `<div class="linha">
+                ${p.turmas ? `<select id="sucessora-${p.id}" style="flex:1;min-width:180px">
+                  <option value="">Deixar a(s) turma(s) sem professora</option>
+                  ${d.equipe.filter(o => o.papel === 'educador' && o.id !== p.id).map(o =>
+                    `<option value="${o.id}">${esc(o.nome)} assume</option>`).join('')}
+                </select>` : ''}
+                <button class="btn pequeno fantasma" data-acao="arquivar-pessoa"
+                  data-id="${p.id}" data-nome="${esc(p.nome)}">Arquivar</button>
+              </div>`}
         </div>`).join('')}
       </div>
+      <p class="sub" style="margin-top:12px">Arquivar não apaga: a pessoa sai das listas vivas e o que ela
+        registrou continua no sistema, com o nome dela.</p>
+      <button class="btn secundario" data-acao="ir" data-href="#/arquivo" style="margin-top:10px">Ver o arquivo</button>
     </div>
 
-    <p class="rodape">Cadastrar não é apagar: desligar pessoa e encerrar matrícula continuam fora do MVP
-      (item 2.8 de ARQUITETURA.md).<br>Todos os dados desta aplicação são sintéticos.</p>`;
+    <p class="rodape">Este produto não apaga pessoa — quem sai do pipeline vai para o arquivo, e volta de lá
+      (decisão 30).<br>Todos os dados desta aplicação são sintéticos.</p>`;
 
   // Turma só existe para professora — coordenação e diretoria enxergam todas.
   const papel = document.getElementById('p-papel');
@@ -2284,6 +2311,134 @@ document.addEventListener('click', comErro(async (ev) => {
     try { r = await post('/api/criancas', corpo); }
     finally { alvo.disabled = false; }
     toast(`${r.crianca.nome} entrou como ${r.crianca.codigo} — consentimento pendente.`, 'bom');
+    await navegar();
+  }
+}));
+
+// ======================================================================
+// ARQUIVO — quem saiu do pipeline. Ninguém é apagado (decisão 30).
+// A tela existe para mostrar as duas coisas ao mesmo tempo: que a pessoa
+// saiu, e o que ela deixou registrado — que é o motivo de não se apagar.
+// ======================================================================
+rota(/^#\/arquivo/, async () => {
+  const [a, d] = await Promise.all([api('/api/arquivo'), api('/api/cadastro')]);
+  const opcoesTurma = (progId) => d.turmas.filter(t => t.programa_id === progId)
+    .map(t => `<option value="${t.id}">${esc(t.nome)} · ${esc(t.turno)}</option>`).join('');
+
+  app.innerHTML = `
+    <p class="kicker">Arquivo · quem saiu do pipeline</p>
+    <h1>Arquivo</h1>
+    <p class="sub">${esc(a.doutrina)}</p>
+
+    <div class="cartao" style="margin-top:16px">
+      <div class="linha"><h2 class="cresce">Equipe</h2><span class="sub">${a.pessoas.length}</span></div>
+      ${a.pessoas.length ? `<div class="pilha" style="margin-top:10px">
+        ${a.pessoas.map(p => `<div class="item" style="cursor:default;flex-direction:column;align-items:stretch;gap:9px">
+          <div class="linha">
+            <div class="cresce"><div class="nome">${esc(p.nome)}</div>
+              <div class="meta">${esc(PAPEL[p.papel] ?? p.papel)} · saiu em ${dataBR(p.arquivado_em)}</div></div>
+            <span class="selo bloq">arquivada</span>
+          </div>
+          <p class="sub">Deixou ${p.chamadas} chamada(s) e ${p.observacoes} observação(ões) no sistema — tudo assinado com o nome dela.</p>
+          <div class="linha">
+            <button class="btn pequeno secundario" data-acao="reativar-pessoa"
+              data-id="${p.id}" data-nome="${esc(p.nome)}">Trazer de volta</button>
+          </div>
+        </div>`).join('')}
+      </div>` : '<p class="vazio">Ninguém da equipe está no arquivo.</p>'}
+    </div>
+
+    <div class="cartao" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Crianças</h2><span class="sub">${a.criancas.length}</span></div>
+      <p class="sub">Voltar é uma matrícula NOVA — a saída não é apagada, porque é ela que a curva de
+        permanência lê. O consentimento volta a pendente: a base legal caducou com a saída.</p>
+      ${a.criancas.length ? `<div class="pilha" style="margin-top:10px">
+        ${a.criancas.map(c => `<details class="item bloco-volta">
+          <summary>
+            <span class="cresce"><span class="nome">${esc(c.nome)}</span>
+              <span class="meta">${esc(c.codigo)} · saiu em ${dataBR(c.saiu_em)} · ${c.presencas} presença(s) · ${esc(c.programas || '—')}</span></span>
+            <span class="selo bloq">arquivada</span>
+          </summary>
+          <div class="pilha" style="margin-top:12px;gap:0">
+            <label class="rot-campo" for="v-prog-${c.id}">Volta em qual programa</label>
+            <select id="v-prog-${c.id}" data-acao="volta-programa" data-id="${c.id}">${d.programas.map(p =>
+              `<option value="${p.id}">${esc(p.nome)} · ${esc(p.faixa)}</option>`).join('')}</select>
+            <label class="rot-campo" for="v-turma-${c.id}">Turma</label>
+            <select id="v-turma-${c.id}">
+              <option value="">Sem turma por enquanto</option>${opcoesTurma(d.programas[0].id)}</select>
+            <label class="rot-campo" for="v-ent-${c.id}">Data da volta</label>
+            <input type="date" id="v-ent-${c.id}" value="${hojeIso()}" max="${hojeIso()}">
+            <button class="btn" data-acao="rematricular" data-id="${c.id}"
+              data-nome="${esc(c.nome)}" style="margin-top:14px">Trazer de volta</button>
+          </div>
+        </details>`).join('')}
+      </div>` : '<p class="vazio">Nenhuma criança no arquivo.</p>'}
+    </div>
+
+    <p class="rodape">Não existe rota que apague pessoa neste produto, e a ausência é a decisão
+      (decisão 30). Todos os dados desta aplicação são sintéticos.</p>`;
+
+  // A turma do formulário de volta segue o programa, como no cadastro: o
+  // domínio recusa turma de outro programa e um select que oferece o inválido
+  // é armadilha.
+  for (const c of a.criancas) {
+    const prog = document.getElementById(`v-prog-${c.id}`);
+    prog?.addEventListener('change', () => {
+      document.getElementById(`v-turma-${c.id}`).innerHTML =
+        '<option value="">Sem turma por enquanto</option>' + opcoesTurma(Number(prog.value));
+    });
+  }
+});
+
+document.addEventListener('click', comErro(async (ev) => {
+  const alvo = ev.target.closest('[data-acao]');
+  if (!alvo) return;
+  const a = alvo.dataset.acao;
+  const id = Number(alvo.dataset.id);
+
+  if (a === 'arquivar-pessoa') {
+    const sucessora = document.getElementById(`sucessora-${id}`)?.value || null;
+    alvo.disabled = true;
+    let r;
+    try { r = await post('/api/equipe/arquivar', { id, assumida_por: sucessora }); }
+    finally { alvo.disabled = false; }
+    toast(r.aviso, 'bom');
+    await navegar();
+  }
+
+  if (a === 'reativar-pessoa') {
+    alvo.disabled = true;
+    let r;
+    try { r = await post('/api/equipe/reativar', { id }); }
+    finally { alvo.disabled = false; }
+    toast(r.aviso, 'bom');
+    await navegar();
+  }
+
+  if (a === 'arquivar-crianca') {
+    alvo.disabled = true;
+    let r;
+    try {
+      r = await post('/api/criancas/arquivar', {
+        id, saida: document.getElementById('saida-crianca')?.value || null,
+      });
+    } finally { alvo.disabled = false; }
+    toast(r.aviso, 'bom');
+    location.hash = '#/arquivo';
+  }
+
+  if (a === 'rematricular') {
+    alvo.disabled = true;
+    let r;
+    try {
+      r = await post('/api/criancas/rematricular', {
+        id,
+        programa_id: document.getElementById(`v-prog-${id}`).value,
+        turma_id: document.getElementById(`v-turma-${id}`).value || null,
+        entrada: document.getElementById(`v-ent-${id}`).value || null,
+      });
+    } finally { alvo.disabled = false; }
+    toast(r.aviso, 'bom');
     await navegar();
   }
 }));
@@ -3363,7 +3518,7 @@ document.addEventListener('click', comErro(async (ev) => {
 
 const PASSO_ROTAS_POR_PAPEL = {
   educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/pauta', '#/ciclo', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
-  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/pessoas', '#/criancas', '#/alertas', '#/copilot'],
+  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/pessoas', '#/arquivo', '#/criancas', '#/alertas', '#/copilot'],
   diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
 };
 

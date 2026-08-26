@@ -580,13 +580,28 @@ export function safras() {
   const anos = [...new Set(linhas.map(l => l.safra))].sort();
   const curvas = anos.map(ano => {
     const coorte = linhas.filter(l => l.safra === ano);
+    // DENOMINADOR FIXO por safra. O cálculo anterior recalculava os elegíveis a
+    // cada marco, e com isso os quatro pontos vinham de POPULAÇÕES diferentes —
+    // ligadas por uma polyline na tela como se fossem uma curva só. O efeito
+    // apareceu no dado: 80% aos 9 meses e **82% aos 12**, porque os 28 que já
+    // tiveram tempo de chegar aos 12 meses eram uma turma melhor que os 49 que
+    // chegaram aos 9. Permanência que SOBE é impossível dentro de uma coorte, e
+    // este produto publica esta curva.
+    //
+    // Com a base fixa em quem já teve tempo de alcançar o marco mais profundo,
+    // a monotonia passa a valer por construção: quem ficou 12 meses ficou 9.
+    // O preço é declarado: a safra recente perde os matriculados novos do ponto
+    // de 3 meses. `base` continua exposto para a tela dizer sobre quantos é.
+    const alcancados = marcos.filter(mes => coorte.some(l => diasEntre(l.entrada, hoje()) >= mes * 30));
+    const maisFundo = alcancados.at(-1) ?? null;
+    const base = maisFundo == null ? []
+      : coorte.filter(l => diasEntre(l.entrada, hoje()) >= maisFundo * 30);
     return {
-      safra: ano, n: coorte.length,
+      safra: ano, n: coorte.length, marco_mais_fundo: maisFundo,
       pontos: marcos.map(mes => {
-        const elegiveis = coorte.filter(l => diasEntre(l.entrada, hoje()) >= mes * 30);
-        if (!elegiveis.length) return { mes, pct: null, base: 0 };
-        const ficaram = elegiveis.filter(l => !l.saida || diasEntre(l.entrada, l.saida) >= mes * 30);
-        return { mes, pct: Math.round((ficaram.length / elegiveis.length) * 100), base: elegiveis.length };
+        if (maisFundo == null || mes > maisFundo || !base.length) return { mes, pct: null, base: 0 };
+        const ficaram = base.filter(l => !l.saida || diasEntre(l.entrada, l.saida) >= mes * 30);
+        return { mes, pct: Math.round((ficaram.length / base.length) * 100), base: base.length };
       }),
     };
   });
@@ -1213,10 +1228,13 @@ function apelidoDe(nome) {
 }
 
 export function listarEquipe() {
+  // Só quem está na ativa. Quem foi para o arquivo continua no banco e some
+  // daqui — é a diferença inteira entre arquivar e apagar.
   return all(
     `SELECT e.id, e.nome, e.apelido, e.papel,
             (SELECT GROUP_CONCAT(t.nome, ' · ') FROM turma t WHERE t.educador_id = e.id) AS turmas
        FROM educador e
+      WHERE e.arquivado_em IS NULL
       ORDER BY CASE e.papel WHEN 'diretoria' THEN 0 WHEN 'coordenacao' THEN 1 ELSE 2 END, e.nome`);
 }
 
@@ -1233,9 +1251,12 @@ export function criarPessoa({ nome, apelido = '', papel, turmaId = null, confirm
   const a = String(apelido ?? '').trim().replace(/\s+/g, ' ').slice(0, 60) || apelidoDe(n);
 
   const igual = get(
-    `SELECT id, nome FROM educador WHERE lower(nome) = lower(?) AND papel = ?`, n, papel);
+    `SELECT id, nome, arquivado_em FROM educador WHERE lower(nome) = lower(?) AND papel = ?`, n, papel);
   if (igual)
-    throw erro(409, `${igual.nome} já está cadastrada com este papel.`, { educador_id: igual.id });
+    throw erro(409, igual.arquivado_em
+      ? `${igual.nome} está no arquivo desde ${dataBR(igual.arquivado_em)}. Traga de volta em vez de cadastrar de novo — assim o que ela registrou continua ligado a ela.`
+      : `${igual.nome} já está cadastrada com este papel.`,
+      { educador_id: igual.id, no_arquivo: !!igual.arquivado_em });
 
   let turma = null;
   if (turmaId != null) {
@@ -1278,21 +1299,7 @@ export function criarCrianca({ nome, nascimento, responsavel, programaId, turmaI
   if (idade > 21)
     throw erro(422, `A data de nascimento dá ${idade} anos. Confira — o Percurso atende crianças e adolescentes.`);
 
-  const programa = get(`SELECT * FROM programa WHERE id = ?`, programaId);
-  if (!programa) throw erro(404, 'Programa não encontrado.');
-  // A Vivência terapêutica está declarada FORA do escopo de medição (o
-  // percentual de cobertura a exclui de propósito). Matricular por aqui criaria
-  // criança num programa que nenhuma tela deste produto sabe ler.
-  if (!programa.no_escopo)
-    throw erro(422, `${programa.nome} está fora do escopo do Percurso. ${programa.nota ?? ''}`.trim());
-
-  let turma = null;
-  if (turmaId != null) {
-    turma = get(`SELECT * FROM turma WHERE id = ?`, turmaId);
-    if (!turma) throw erro(404, 'Turma não encontrada.');
-    if (turma.programa_id !== programa.id)
-      throw erro(422, `A turma ${turma.nome} não é do programa ${programa.nome}.`);
-  }
+  const { programa, turma } = programaETurma(programaId, turmaId);
 
   const ent = entrada ? dataObrigatoria(entrada, 'A data de entrada') : hj;
   if (ent > hj) throw erro(422, 'A data de entrada está no futuro.');
@@ -1324,4 +1331,227 @@ export function criarCrianca({ nome, nascimento, responsavel, programaId, turmaI
       aviso: 'Presença já pode ser registrada. A rubrica socioemocional fica bloqueada até o responsável consentir — a criança já aparece na tela de Consentimentos.',
     };
   });
+}
+
+// --------------------------------------------------------------------------
+// ARQUIVO — ninguem e' apagado deste banco.
+//
+// Quem sai do pipeline (professora que deixa o instituto, crianca que sai do
+// programa) vai para o ARQUIVO: some das listas vivas, continua existindo, e
+// pode voltar. Nao existe DELETE de pessoa em lugar nenhum deste produto.
+//
+// POR QUE NAO E' SO' UMA PREFERENCIA DE INTERFACE:
+//
+//  · O registro fica em pe' e assinado. `observacao.educador_id` e
+//    `encontro.registrado_por` sao NOT NULL / FK: apagar a professora
+//    arrastaria ou orfanaria tudo que ela registrou, e o relatorio do doador
+//    e' construido em cima desses registros. Quem escreveu continua sendo
+//    quem escreveu.
+//  · A crianca que sai E' o dado. Safras, permanencia e evasao (F6) medem
+//    exatamente a saida — uma crianca apagada nao evade, ela nunca existiu, e
+//    a curva de permanencia mentiria para cima.
+//  · A crianca arquivada continua PROTEGIDA. `nomesParaAnonimizar` nao filtra
+//    por `ativo` de proposito (SEGURANCA-IA-02): quem saiu e' justamente
+//    assunto de conversa, e o nome dela nao pode chegar ao modelo.
+//
+// A crianca ja tinha a metade da mecanica desde a v1 (`crianca.ativo` mais
+// `matricula.saida`, que a seed usa nas 26 que sairam). O que faltava era o
+// GESTO — e a equipe, que nao tinha nem a coluna.
+// --------------------------------------------------------------------------
+
+/** Programa e turma de uma matrícula, validados juntos. Extraído porque
+ *  matricular pela primeira vez e rematricular quem voltou têm que recusar
+ *  exatamente as mesmas coisas. */
+function programaETurma(programaId, turmaId) {
+  const programa = get(`SELECT * FROM programa WHERE id = ?`, programaId);
+  if (!programa) throw erro(404, 'Programa não encontrado.');
+  // A Vivência terapêutica está declarada FORA do escopo de medição (o
+  // percentual de cobertura a exclui de propósito). Matricular por aqui criaria
+  // criança num programa que nenhuma tela deste produto sabe ler.
+  if (!programa.no_escopo)
+    throw erro(422, `${programa.nome} está fora do escopo do Percurso. ${programa.nota ?? ''}`.trim());
+
+  let turma = null;
+  if (turmaId != null) {
+    turma = get(`SELECT * FROM turma WHERE id = ?`, turmaId);
+    if (!turma) throw erro(404, 'Turma não encontrada.');
+    if (turma.programa_id !== programa.id)
+      throw erro(422, `A turma ${turma.nome} não é do programa ${programa.nome}.`);
+  }
+  return { programa, turma };
+}
+
+/**
+ * Arquiva alguém da equipe. Duas recusas que existem para o sistema não se
+ * trancar por fora: ninguém se arquiva (senão a pessoa perde a sessão no ato,
+ * sem ninguém para desfazer) e a última coordenação na ativa não sai — sem ela
+ * não há quem cadastre a substituta nem quem traga alguém de volta.
+ */
+export function arquivarPessoa(id, { porUsuarioId = null, assumidaPor = null } = {}) {
+  const p = get(`SELECT * FROM educador WHERE id = ?`, id);
+  if (!p) throw erro(404, 'Pessoa não encontrada.');
+  if (p.arquivado_em)
+    throw erro(409, `${p.nome} já está no arquivo desde ${dataBR(p.arquivado_em)}.`);
+  if (porUsuarioId != null && Number(porUsuarioId) === Number(id))
+    throw erro(422, 'Quem arquiva não pode ser quem sai. Peça a outra pessoa da coordenação — assim ninguém se tranca para fora do próprio sistema.');
+  if (p.papel === 'coordenacao') {
+    const outras = get(
+      `SELECT COUNT(*) AS n FROM educador
+        WHERE papel = 'coordenacao' AND arquivado_em IS NULL AND id <> ?`, id).n;
+    if (!outras)
+      throw erro(422, `${p.nome} é a única coordenação na ativa. Sem ela ninguém cadastra pessoa nem traz alguém de volta do arquivo — cadastre a substituta antes.`);
+  }
+
+  // Turma órfã não é detalhe: `exigeAcessoTurma` lê `turma.educador_id`, e uma
+  // turma apontando para quem saiu é escopo de leitura pendurado em ninguém.
+  const turmas = all(`SELECT id, nome FROM turma WHERE educador_id = ?`, id);
+  let sucessora = null;
+  if (assumidaPor != null) {
+    sucessora = get(`SELECT * FROM educador WHERE id = ?`, assumidaPor);
+    if (!sucessora) throw erro(404, 'A professora que assumiria as turmas não foi encontrada.');
+    if (Number(sucessora.id) === Number(id))
+      throw erro(422, 'A pessoa que sai não pode assumir as próprias turmas.');
+    if (sucessora.arquivado_em)
+      throw erro(422, `${sucessora.nome} está no arquivo. Traga de volta antes de passar turma para ela.`);
+    if (sucessora.papel !== 'educador')
+      throw erro(422, 'Só professora assume turma.');
+  }
+
+  return tx(() => {
+    run(`UPDATE educador SET arquivado_em = ? WHERE id = ?`, hoje(), id);
+    if (turmas.length)
+      run(`UPDATE turma SET educador_id = ? WHERE educador_id = ?`, sucessora?.id ?? null, id);
+    return {
+      pessoa: get(`SELECT * FROM educador WHERE id = ?`, id),
+      turmas: turmas.map(t => t.nome),
+      sucessora: sucessora ? { id: sucessora.id, nome: sucessora.nome } : null,
+      aviso: !turmas.length
+        ? `${p.nome} foi para o arquivo. O que ela registrou continua no sistema, com o nome dela.`
+        : sucessora
+          ? `${p.nome} foi para o arquivo e ${sucessora.nome} assumiu ${turmas.length} turma(s).`
+          : `${p.nome} foi para o arquivo. ${turmas.length} turma(s) ficaram SEM professora: ${turmas.map(t => t.nome).join(', ')}.`,
+    };
+  });
+}
+
+/** Traz alguém da equipe de volta do arquivo. Turma não volta junto — quem
+ *  ficou responsável no intervalo continua responsável até alguém decidir. */
+export function reativarPessoa(id) {
+  const p = get(`SELECT * FROM educador WHERE id = ?`, id);
+  if (!p) throw erro(404, 'Pessoa não encontrada.');
+  if (!p.arquivado_em) throw erro(409, `${p.nome} já está na ativa.`);
+  run(`UPDATE educador SET arquivado_em = NULL WHERE id = ?`, id);
+  return {
+    pessoa: get(`SELECT * FROM educador WHERE id = ?`, id),
+    aviso: `${p.nome} voltou do arquivo como ${p.papel === 'educador' ? 'professora' : p.papel}. Turma não volta junto — atribua em Pessoas se for o caso.`,
+  };
+}
+
+/**
+ * Manda a criança para o arquivo: sai das listas vivas, as matrículas ativas
+ * são encerradas com data e o registro inteiro continua de pé. É o que
+ * alimenta safra, permanência e evasão — apagar seria mentir a curva para cima.
+ */
+export function arquivarCrianca(id, { saida = null } = {}) {
+  const c = get(`SELECT * FROM crianca WHERE id = ?`, id);
+  if (!c) throw erro(404, 'Criança não encontrada.');
+  if (!c.ativo) throw erro(409, `${c.nome} já está no arquivo.`);
+  const hj = hoje();
+  const dt = saida ? dataObrigatoria(saida, 'A data de saída') : hj;
+  if (dt > hj) throw erro(422, 'A data de saída está no futuro.');
+  const ativas = all(`SELECT * FROM matricula WHERE crianca_id = ? AND status = 'ativa'`, id);
+  const ultimaEntrada = ativas.map(m => m.entrada).sort().at(-1);
+  if (ultimaEntrada && dt < ultimaEntrada)
+    throw erro(422, `A data de saída é anterior à entrada no programa (${dataBR(ultimaEntrada)}).`);
+
+  return tx(() => {
+    run(`UPDATE crianca SET ativo = 0 WHERE id = ?`, id);
+    run(`UPDATE matricula SET status = 'encerrada', saida = ?
+          WHERE crianca_id = ? AND status = 'ativa'`, dt, id);
+    // `recalcularAlertas` só varre criança ativa: um alerta de ausência aberto
+    // ficaria para sempre na tela da coordenação, cobrando tratativa de quem
+    // não está mais no programa. O fecho é aqui, e ele fica escrito.
+    const alerta = run(
+      `UPDATE alerta SET status = 'resolvido', atualizado_em = ?,
+              tratativa = COALESCE(tratativa || ' | ', '') || 'Criança foi para o arquivo.'
+        WHERE crianca_id = ? AND status <> 'resolvido'`, agora(), id);
+    return {
+      crianca: get(`SELECT * FROM crianca WHERE id = ?`, id),
+      matriculas_encerradas: ativas.length,
+      alertas_fechados: alerta.changes,
+      saida: dt,
+      aviso: `${c.nome} foi para o arquivo em ${dataBR(dt)}. A presença e a trajetória dela continuam no sistema — é o que a curva de permanência e a leitura de evasão precisam ler.`,
+    };
+  });
+}
+
+/**
+ * Traz a criança de volta com uma matrícula NOVA — porque voltar é matricular
+ * de novo, e o modelo deste banco já diz isso: criança é entidade, matrícula é
+ * relação. Reabrir a matrícula antiga apagaria a saída, e a saída é o dado.
+ *
+ * O consentimento volta a PENDENTE. É a decisão conservadora e ela custa algo:
+ * este banco não tem histórico de consentimento, então quem consentiu antes se
+ * perde no ato. O outro lado seria pior — retomar processamento de dado
+ * sensível, em silêncio, depois de a base legal ter caducado com a saída.
+ */
+export function rematricularCrianca(id, { programaId, turmaId = null, entrada = null }) {
+  const c = get(`SELECT * FROM crianca WHERE id = ?`, id);
+  if (!c) throw erro(404, 'Criança não encontrada.');
+  if (c.ativo) throw erro(409, `${c.nome} já está na ativa — não está no arquivo.`);
+  const { programa, turma } = programaETurma(programaId, turmaId);
+
+  const hj = hoje();
+  const ent = entrada ? dataObrigatoria(entrada, 'A data de entrada') : hj;
+  if (ent > hj) throw erro(422, 'A data de entrada está no futuro.');
+  const ultimaSaida = get(
+    `SELECT MAX(saida) AS d FROM matricula WHERE crianca_id = ?`, id).d;
+  if (ultimaSaida && ent < ultimaSaida)
+    throw erro(422, `A volta é anterior à saída (${dataBR(ultimaSaida)}). Confira a data.`);
+  if (get(`SELECT id FROM matricula WHERE crianca_id = ? AND programa_id = ? AND entrada = ?`,
+          id, programa.id, ent))
+    throw erro(409, `Já existe matrícula de ${c.nome} em ${programa.nome} começando em ${dataBR(ent)}.`);
+
+  return tx(() => {
+    run(`UPDATE crianca SET ativo = 1 WHERE id = ?`, id);
+    run(`INSERT INTO matricula (crianca_id, programa_id, turma_id, entrada, saida, status)
+         VALUES (?,?,?,?,NULL,'ativa')`, id, programa.id, turma?.id ?? null, ent);
+    for (const campo of CONSENTIMENTOS_DA_MATRICULA)
+      run(`INSERT INTO consentimento (crianca_id, campo, status, responsavel, data_registro)
+           VALUES (?,?, 'pendente', NULL, NULL)
+           ON CONFLICT(crianca_id, campo) DO UPDATE SET
+             status = 'pendente', responsavel = NULL, data_registro = NULL`, id, campo);
+    return {
+      crianca: get(`SELECT * FROM crianca WHERE id = ?`, id),
+      programa: { id: programa.id, nome: programa.nome },
+      turma: turma ? { id: turma.id, nome: turma.nome } : null,
+      entrada: ent,
+      aviso: `${c.nome} voltou em ${programa.nome}. O consentimento voltou a PENDENTE: a base legal caducou com a saída e precisa ser pedida de novo ao responsável.`,
+    };
+  });
+}
+
+/** O arquivo inteiro, dos dois lados. Mostra o que a pessoa DEIXOU no sistema —
+ *  é o argumento de por que ela não pode ser apagada. */
+export function listarArquivo() {
+  const pessoas = all(
+    `SELECT e.id, e.nome, e.apelido, e.papel, e.arquivado_em,
+            (SELECT COUNT(*) FROM observacao o WHERE o.educador_id = e.id) AS observacoes,
+            (SELECT COUNT(*) FROM encontro en WHERE en.registrado_por = e.id) AS chamadas
+       FROM educador e
+      WHERE e.arquivado_em IS NOT NULL
+      ORDER BY e.arquivado_em DESC, e.nome`);
+  const criancas = all(
+    `SELECT c.id, c.codigo, c.nome,
+            (SELECT MAX(m.saida) FROM matricula m WHERE m.crianca_id = c.id) AS saiu_em,
+            (SELECT GROUP_CONCAT(DISTINCT p.nome) FROM matricula m
+               JOIN programa p ON p.id = m.programa_id WHERE m.crianca_id = c.id) AS programas,
+            (SELECT COUNT(*) FROM presenca pr WHERE pr.crianca_id = c.id AND pr.status = 'P') AS presencas
+       FROM crianca c
+      WHERE c.ativo = 0
+      ORDER BY saiu_em DESC, c.nome`);
+  return {
+    pessoas, criancas,
+    doutrina: 'Este produto não apaga pessoa. O arquivo guarda quem saiu, com o que a pessoa deixou registrado — a saída da criança é o dado que a curva de permanência lê, e o registro da professora continua assinado com o nome dela.',
+  };
 }

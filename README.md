@@ -225,6 +225,7 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 |---|---|---|
 | C1 | Cadastro da equipe — professora, coordenação e diretoria, com apelido derivado do nome e turma opcional (troca de turma exige confirmação) | `#/pessoas`, `POST /api/equipe` |
 | C2 | Cadastro de criança — matrícula ativa no mesmo ato, dedup por nome+nascimento, rubrica socioemocional nascendo **pendente** | `#/pessoas`, `POST /api/criancas` |
+| C3 | **Arquivo — ninguém é apagado.** Quem sai do pipeline sai das listas vivas e continua no sistema; sessão aberta de pessoa arquivada morre no ato. A volta da criança é matrícula **nova**, com consentimento voltando a pendente | `#/arquivo`, `POST /api/equipe/arquivar`, `POST /api/criancas/arquivar`, `.../reativar`, `.../rematricular` |
 
 ### A camada de IA da v3 (opcional, `AI_ENABLED=1`)
 

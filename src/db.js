@@ -70,7 +70,14 @@ const ESQUEMA_SQL = `
     id       INTEGER PRIMARY KEY,
     nome     TEXT NOT NULL,
     apelido  TEXT NOT NULL,
-    papel    TEXT NOT NULL CHECK (papel IN ('educador','coordenacao','diretoria'))
+    papel    TEXT NOT NULL CHECK (papel IN ('educador','coordenacao','diretoria')),
+    -- Ninguem e' apagado deste banco. Quem sai do pipeline ganha data aqui e
+    -- some das listas vivas; o que ela registrou continua de pe' e assinado
+    -- com o nome dela (decisao 30). NULL = esta' na ativa.
+    -- A crianca ja tinha o equivalente desde a v1: crianca.ativo mais
+    -- matricula.saida. Aqui a coluna e' data, nao booleano, porque para
+    -- pessoa da equipe QUANDO saiu e' a pergunta que se faz depois.
+    arquivado_em TEXT
   );
 
   CREATE TABLE IF NOT EXISTS programa (

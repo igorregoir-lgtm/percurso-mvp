@@ -1001,5 +1001,65 @@ secao('21 · Cadastro de pessoas — equipe e crianças');
   T('data de nascimento no futuro é recusada (422)', futuro.status === 422, `(${futuro.status})`);
 }
 
+// ---------------------------------------- 22. arquivo — ninguem e' apagado
+secao('22 · Arquivo — ninguém é apagado (decisão 30)');
+{
+  // A ausencia E' a feature: nao existe rota que apague pessoa.
+  for (const rota of ['/api/equipe', '/api/criancas']) {
+    const del = await req('rita', rota, { method: 'DELETE' });
+    T(`não existe DELETE ${rota} (404)`, del.status === 404, `(${del.status})`);
+  }
+
+  const vera = (await GET('rita', '/api/cadastro')).corpo.equipe.find(p => /Vera Lúcia/.test(p.nome));
+  T('a professora criada na §21 está na equipe viva', !!vera);
+
+  // Ela tem sessao ABERTA desde a §21 — arquivar precisa valer agora, nao no
+  // proximo login: o cookie nao e' assinado e vale 24 h.
+  T('a sessão dela funciona antes de arquivar', (await GET('vera', '/api/hoje')).status === 200);
+  const arq = await POST('rita', '/api/equipe/arquivar', { id: vera.id });
+  T('coordenação arquiva a professora', arq.status === 200, `(${arq.status})`);
+  T('a sessão aberta dela morre no ato (401)', (await GET('vera', '/api/hoje')).status === 401);
+  T('ela some da lista da tela de entrada',
+    !(await GET('anon3', '/api/sessao')).corpo.usuarios.some(u => u.id === vera.id));
+  const relogin = await POST('vera2', '/api/sessao', { educador_id: vera.id });
+  T('e não consegue entrar de novo (403)', relogin.status === 403, `(${relogin.status})`);
+  T('mas continua existindo, no arquivo',
+    (await GET('rita', '/api/arquivo')).corpo.pessoas.some(p => p.id === vera.id));
+
+  const volta = await POST('rita', '/api/equipe/reativar', { id: vera.id });
+  T('a coordenação traz de volta do arquivo', volta.status === 200);
+  T('e ela entra outra vez', (await POST('vera3', '/api/sessao', { educador_id: vera.id })).status === 200);
+
+  const eu = (await GET('rita', '/api/sessao')).corpo.usuario;
+  const auto = await POST('rita', '/api/equipe/arquivar', { id: eu.id });
+  T('ninguém arquiva a si mesma (422)', auto.status === 422, `(${auto.status})`);
+
+  // Crianca: sai das listas vivas, o registro fica, e a volta e' matricula nova.
+  const turma = (await GET('rita', '/api/cadastro')).corpo.turmas[0];
+  const antes = (await GET('rita', `/api/criancas?turma_id=${turma.id}`)).corpo;
+  const alvo = antes.criancas[0];
+  const arqC = await POST('rita', '/api/criancas/arquivar', { id: alvo.id });
+  T('coordenação manda a criança para o arquivo', arqC.status === 200, `(${arqC.status})`);
+  T('ela sai da lista viva da turma',
+    (await GET('rita', `/api/criancas?turma_id=${turma.id}`)).corpo.total === antes.total - 1);
+  T('a matrícula foi encerrada COM data de saída',
+    (await GET('rita', `/api/crianca?id=${alvo.id}`)).corpo.matriculas.every(m => m.status === 'encerrada' && m.saida));
+  T('a presença dela continua no sistema — é o que a curva de permanência lê',
+    (await GET('rita', `/api/crianca?id=${alvo.id}`)).corpo.presencas.length > 0);
+  T('ela aparece no arquivo', (await GET('rita', '/api/arquivo')).corpo.criancas.some(c => c.id === alvo.id));
+  T('educadora não arquiva criança (403)',
+    (await POST('maria', '/api/criancas/arquivar', { id: alvo.id })).status === 403);
+
+  const rem = await POST('rita', '/api/criancas/rematricular',
+    { id: alvo.id, programa_id: turma.programa_id, turma_id: turma.id });
+  T('voltar é matrícula NOVA, e a antiga continua encerrada', rem.status === 200 &&
+    (await GET('rita', `/api/crianca?id=${alvo.id}`)).corpo.matriculas.filter(m => m.status === 'encerrada').length >= 1);
+  T('e ela volta para a lista viva da turma',
+    (await GET('rita', `/api/criancas?turma_id=${turma.id}`)).corpo.total === antes.total);
+  const fichaVolta = (await GET('rita', `/api/crianca?id=${alvo.id}`)).corpo;
+  T('o consentimento voltou a PENDENTE — a base legal caducou com a saída',
+    fichaVolta.consentimentos.find(c => c.campo === 'rubrica_socioemocional').status === 'pendente');
+}
+
 console.log(`\n\x1b[1m${ok} passaram · ${falhas} falharam\x1b[0m\n`);
 process.exit(falhas ? 1 : 0);
