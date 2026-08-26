@@ -57,7 +57,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **255 asserções de fluxo** e **115 testes unitários** — mais a avaliação do RAG
+São **294 asserções de fluxo** e **136 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização) e a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo). As quatro baterias rodam a cada push (`.github/workflows/ci.yml`), sempre com
