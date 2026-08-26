@@ -31,7 +31,7 @@ Tudo commitado e no `main` de https://github.com/igorregoir-lgtm/percurso-mvp �
 **Quinze commits nesta sessão**, do mais recente ao mais antigo:
 
 ```
-(este)   Arquivo: ninguém é apagado — e os dois defeitos que a tela de saída expôs
+6a3a5de  Arquivo: ninguém é apagado — e os dois defeitos que a tela de saída expôs
 274a86b  Porte do modelo é restrição de desenho, não variável livre
 94eccb6  Cadastro de pessoas: a porta manual do item 2.8, com a criança nascendo bloqueada
 258cf37  Handoff da sessão de 25/08/2026
