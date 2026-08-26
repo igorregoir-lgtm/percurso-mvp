@@ -70,7 +70,7 @@ navegador (public/ — HTML+CSS+JS puro, hash routing, sem build)
     ▼
 server.js        HTTP puro (node:http) — estáticos + despacho de /api/*
     ▼
-src/api.js       53 rotas — sessão por perfil; RBAC educadora / coordenação /
+src/api.js       71 rotas — sessão por perfil; RBAC educadora / coordenação /
     │            diretoria (a diretoria não abre registro individual)
     ▼
     ├── src/domain.js     núcleo: elegibilidade, perímetro, alertas, safras,
@@ -87,7 +87,7 @@ data/percurso.db local ou /var/data/percurso.db no Render
                    (WAL; disco persistente; backup externo obrigatório)
 
 src/seed.js      dados 100% sintéticos, PRNG com semente fixa (regra 1 do bloco 6)
-scripts/         reset.mjs · smoke-test.mjs (246 asserções) · unit-test.mjs (63)
+scripts/         reset.mjs · smoke-test.mjs (294 asserções) · unit-test.mjs (136)
                  rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
 .github/workflows/ci.yml   as quatro baterias a cada push (AI_ENABLED=false)
 ```
