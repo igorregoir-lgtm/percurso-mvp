@@ -265,8 +265,8 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    255 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     115 testes unitários das regras críticas (banco temporário)
+scripts/smoke-test.mjs    294 asserções do fluxo principal (contra o servidor no ar)
+scripts/unit-test.mjs     136 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
 scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)

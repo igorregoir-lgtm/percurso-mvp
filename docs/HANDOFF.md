@@ -70,6 +70,13 @@ sustenta em limites declarados serem verdadeiros, limite que virou mentira é pi
 **Redação por modelo** (decisão 28, `src/redacao-modelo.js`): construída, medida e **desligada**.
 Ver §4.
 
+**Metodologia de validação com usuário real** (`docs/METODOLOGIA-VALIDACAO-PERCURSO.md` +
+`docs/visita-ebenezer/`). Fecha a pendência da mentoria de tecnologia de 26/08 ("critérios e
+métricas quantitativas para os testes com usuários") e o achado D-02 da revisão arquitetural. O
+objeto do estudo é a **v2, com `AI_ENABLED` desligada**: testar a camada opcional antes do fluxo
+principal inverteria a pergunta. A §6 de `VALIDACAO-USUARIO.md` continua **em branco** — e só pode
+ser preenchida com o formulário da sessão, nunca por memória ou inferência.
+
 **Cadastro de pessoas** (decisão 29, `#/pessoas`, `94eccb6`). Até então toda pessoa vinha da seed
 ou da planilha; agora a coordenação inclui professora, coordenação, diretoria e criança uma a uma.
 Três guardas que não são o caminho curto: a porta é de coordenação (papel e matrícula decidem o
@@ -193,6 +200,9 @@ Cada ciclo desta sessão deixou registro, e ler o registro é mais barato que re
 | `docs/revisao/09-PLANO-PASSO-PROATIVO.md` | o plano, de um painel de 4 propostas × 3 juízes |
 | `docs/revisao/10-REVISAO-PASSO-PROATIVO.md` | 28 achados da revisão da implementação + adendo do Qwen |
 | `docs/revisao/07` e `08` | o ciclo anterior do Passo |
+| `docs/METODOLOGIA-VALIDACAO-PERCURSO.md` | hipóteses, limiares com fonte, Protocolo do Lapso, ameaças à validade |
+| `docs/VALIDACAO-USUARIO.md` | o protocolo da sessão e onde o resultado é registrado (§6, em branco) |
+| `docs/visita-ebenezer/` | execução em campo: roteiros e cartões de Igor, do grupo e dos alunos |
 
 **O método que funcionou e vale repetir:** plano → **revisão adversarial do plano** → implementação
 → **revisão adversarial da implementação** → correção. As três revisões acharam 68 problemas
