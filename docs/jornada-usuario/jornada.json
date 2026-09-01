@@ -1,0 +1,183 @@
+{
+ "persona": {
+  "nome": "A psicóloga do Instituto",
+  "papel": "Psicóloga voluntária — conduz os grupos, faz o atendimento individual e é quem escreve o relatório",
+  "descricao": "Seis anos de casa. Este é o primeiro ano em que existe uma remuneração para ela, bancada por um recurso de um ano só, com renovação incerta. É a profissional que consegue acompanhar as crianças durante a semana — quem conduz o sábado não está lá de segunda a sexta. Num mesmo dia atende o grupo, faz atendimento individual, recebe estagiária, atende outra escola e ainda tem os próprios pacientes fora do Instituto. Já conhece metodologia de medição socioemocional (escala 0/1/2 no início e no fim do ano) porque usou em outra ONG — só que lá quem transformava relatório em indicador era uma pessoa de monitoramento, papel que aqui não existe. Já anonimiza por conta própria, trocando o nome por iniciais, antes de qualquer sistema pedir. Ela não tem problema para fazer a atividade: o repertório vem da vivência e do estudo. O gargalo é registrar."
+ },
+ "cenario": "Um sábado de atividade no Instituto Ebenézer e a semana que vem depois. A atividade acontece e é boa — o problema é fazer com que ela exista fora da cabeça de quem estava na sala. O registro tem três destinos ao mesmo tempo: o relatório no padrão que o conselho profissional exige, a prestação de contas semanal aos pais (hoje manual, por WhatsApp, grupo por turma) e a prova de efetividade para quem financia — porque sem captação nada do resto se sustenta. A operação inteira cabe em duas pessoas, falta voluntário para delegar, o sábado é corrido e o domingo é descanso. Jornada levantada na visita de campo de 29/08/2026, a partir das transcrições das gravações 81 a 84.",
+ "expectativas": [
+  "Registrar sem sair da sala e sem parar a atividade — no celular, em segundos, não no notebook depois.",
+  "Que o relatório saia no padrão que o conselho profissional exige: descrevendo o procedimento, de forma não individualizada e sem nome de criança.",
+  "Poder corrigir o texto antes de qualquer coisa valer — o fecho é revisão, nunca redação automática.",
+  "Que o dado não saia do Instituto e que nada que identifique a criança seja gravado.",
+  "Que a técnica e o vocabulário dela sejam respeitados (resistência, resiliência), em vez de um formulário genérico por cima.",
+  "Que o registro devolva alguma coisa: histórico da mesma criança ao longo do tempo, e resposta pronta quando a assistente social do projeto parceiro pergunta como a criança está.",
+  "Que exista o que mostrar a quem financia — hoje o único número consolidado é presença.",
+  "Não perder o que já funciona: o vídeo curto do celular direto para o grupo dos pais, e a chamada exatamente como ela é hoje."
+ ],
+ "fases": [
+  {
+   "numero": "01",
+   "nome": "Chega e monta o encontro sozinha",
+   "emocao": "Confiança alta no ofício, peso do quadro mínimo. A atividade ela sabe fazer; o resto é duas pessoas para tudo.",
+   "emoji": "🙂",
+   "acoes": [
+    "Define a atividade a partir da vivência e do estudo — esse repertório nunca foi o gargalo.",
+    "Faz a chamada em papel ou planilha: é o único registro consolidado que a operação tem, com corte de 75% de presença para a criança seguir no programa.",
+    "Não há a quem delegar: falta voluntário, e quem conduz no sábado não aparece durante a semana.",
+    "ONDE O PRODUTO ENTRA: marcar se hoje tem encontro e contar por voz, em segundos, o que vai acontecer — antes de a sala encher.",
+    "ONDE O PRODUTO NÃO ENTRA: a chamada. Sugerir mexer nela recebeu recusa imediata, justificada por legislação."
+   ],
+   "citacao": "Mas ele tem uma coisa razoavelmente organizada aqui.\nPara só ele e uma pedagoga.\nRazoavelmente organizada.",
+   "tipoCitacao": "atencao",
+   "fonte": "Visita 29/08/2026 · Gravação 81 · observação do entrevistador"
+  },
+  {
+   "numero": "02",
+   "nome": "A coisa boa acontece — e ninguém de fora consegue ler",
+   "emocao": "Pico de valor humano e zero de registro: as mãos e a atenção estão ocupadas conduzindo.",
+   "emoji": "✨",
+   "acoes": [
+    "Conduz o jogo, guarda o placar de cabeça, adia a contagem para o final, e ainda cozinha, arruma a mesa e tira foto.",
+    "Para quem está de fora, a atividade é ilegível enquanto acontece: nem quantas crianças, nem qual atividade — isso só é reconstruído depois, por quem viu.",
+    "O único registro que existe no momento é uma contagem manual improvisada, mostrada no gesto.",
+    "A evidência mais forte da manhã é uma fala dita em voz alta na roda — e ela evapora se ninguém anotar no instante.",
+    "ONDE O PRODUTO ENTRA: nada pode disputar a atenção dela aqui. Ou a captura é de segundos, ou não existe.",
+    "O QUE NÃO PODE SER PERDIDO: o vídeo curto gravado no celular e mandado direto para o grupo dos pais já funciona e é considerado fácil."
+   ],
+   "citacao": "Agora eu já mando um vídeozinho, tá vendo?\nDo que tá acontecendo aqui.\nE você que fez? Pegou seu celular, gravou e fez.\nIsso, é fácil.\nSe você pudesse fazer tudo isso no celular, seria muito mais fácil.\nDo que você parar aí pro notebook.",
+   "tipoCitacao": "confianca",
+   "fonte": "Visita 29/08/2026 · Gravação 82 · fala da liderança"
+  },
+  {
+   "numero": "03",
+   "nome": "A hora em que o registro deveria nascer",
+   "emocao": "Queda. A dor é nomeada em voz alta: fazer, a equipe faz bem — registrar é o que quebra.",
+   "emoji": "😕",
+   "acoes": [
+    "O que existe hoje é um relatório em texto, no padrão do conselho profissional: descreve o procedimento feito durante a atividade, não individualiza, não cita nome de criança.",
+    "A dinâmica que acabou de acontecer não cabe nesse formato — ela mesma diz que não consegue traduzir no relatório o que foi desenvolvido ali.",
+    "Ela já anonimiza por conta própria, trocando o nome pelas iniciais.",
+    "A tradução do episódio concreto para a competência socioemocional já está pronta na cabeça dela, no vocabulário dela (resistência, resiliência).",
+    "ONDE O PRODUTO ENTRA: check-in de perguntas fechadas e contáveis — quantas ajudaram sem ninguém pedir, quantas participaram do começo ao fim — com a opção explícita de não observado.",
+    "ONDE O PRODUTO ENTRA: a fala de cerca de 40 segundos que vira rascunho — o nome dito no meio da frase é apagado sem interromper o relato, e nada é liberado sem o ok dela."
+   ],
+   "citacao": "Eu acho que o maior desafio aqui é registrar o que você fez, né?\nEssa é a maior dificuldade, é o registro.",
+   "tipoCitacao": "atencao",
+   "fonte": "Visita 29/08/2026 · Gravação 82"
+  },
+  {
+   "numero": "04",
+   "nome": "O relatório é a primeira coisa a ser empurrada",
+   "emocao": "Fundo do dia. Não é má vontade: não sobra nem tempo nem energia, e a negativa é dupla e imediata.",
+   "emoji": "😮‍💨",
+   "acoes": [
+    "O dia inteiro foi cheio: grupo, atendimento individual, reunião, estagiária que chega, outra escola atendida.",
+    "Ela ainda tem os próprios pacientes fora do Instituto — o registro compete com atendimento, e perde.",
+    "O relatório só sai quando sobra tempo, e o sábado é corrido, o domingo é descanso.",
+    "O acompanhamento longitudinal continua existindo, mas como pauta falada entre os adultos, todo dia, sem nenhum suporte — um prontuário oral.",
+    "ONDE O PRODUTO ENTRA: se o registro não nasceu durante ou logo depois da atividade, aqui ele não nasce. Qualquer solução que peça uma sessão dedicada de escrita já nasce morta."
+   ],
+   "citacao": "Você depois tem que sair daqui, preencher o relatório...\nNão dá, não dá.",
+   "tipoCitacao": "atencao",
+   "fonte": "Visita 29/08/2026 · Gravação 84"
+  },
+  {
+   "numero": "05",
+   "nome": "Tem massa de vivência, não tem prova",
+   "emocao": "Peso existencial e um susto no meio: entusiasmo com a demo e, logo em seguida, a palavra perigoso sobre gravar.",
+   "emoji": "😟",
+   "acoes": [
+    "A prestação de contas semanal aos pais é feita à mão, por WhatsApp, grupo por turma — inclusive um grupo restrito a quem tem 75% de presença, onde circulam passeios e benefícios.",
+    "O único número consolidado que existe é presença. Sobre evolução socioemocional não há o que mostrar a investidor.",
+    "Sem captação, nada do resto se sustenta: a prestação de contas tem peso de sobrevivência, não de burocracia — inclusive da própria remuneração dela, que vale um ano.",
+    "O medo aparece com nome: gravar áudio ou vídeo da criança é tratado como proibido e perigoso, mesmo que o dado fique dentro da sala.",
+    "ONDE O PRODUTO ENTRA: a demonstração de anonimização — falar sem parar, o nome sumir sozinho, o relatório só sair mediante ok humano — foi recebida com Nossa, que legal.",
+    "O QUE FALTA NA TELA: dizer, no instante em que o botão é apertado, que quem está sendo gravada é a profissional falando sobre a turma, e que o áudio não fica."
+   ],
+   "citacao": "E aí você fica, a gente sempre faz o trabalho com os meninos e a gente já teve um bom trabalho com os meninos aqui, só que a gente não consegue meio que ter um registro pra conseguir, por exemplo, mostrar pros investidores, sabe?",
+   "tipoCitacao": "atencao",
+   "fonte": "Visita 29/08/2026 · Gravação 83 · fala da psicóloga"
+  },
+  {
+   "numero": "06",
+   "nome": "O registro serve para conversar, não para arquivar",
+   "emocao": "Alívio condicional. Interesse real, com uma exigência na frente: poder corrigir depois. Ainda não é vitória.",
+   "emoji": "🤝",
+   "acoes": [
+    "O valor que ela enxerga não é o relatório avulso — é o histórico da mesma criança ao longo do tempo.",
+    "Existe um consumidor externo real e hoje sem resposta: a assistente social do projeto parceiro manda mensagem perguntando como a criança está, e isso é respondido de memória, no WhatsApp.",
+    "A primeira pergunta espontânea dela diante do relato gerado foi sobre poder editar depois — controle editorial é condição de confiança, não recurso extra.",
+    "Ela pede para poder informar a técnica que usa e que o sistema respeite esse formato, em vez de impor um genérico.",
+    "ONDE O PRODUTO ENTRA: devolve médias por dimensão, pauta acionável e relatório para quem financia — a primeira vez que o registro devolve alguma coisa a quem registrou.",
+    "ONDE O PRODUTO AINDA NÃO ENTRA: não existe nenhum canal de profissional para profissional, que é justamente o destino que ela chama de mais rico."
+   ],
+   "citacao": "Que daí seria entre profissionais, que é mais rico ainda.",
+   "tipoCitacao": "confianca",
+   "fonte": "Visita 29/08/2026 · Gravação 84"
+  }
+ ],
+ "momentosDaVerdade": [
+  {
+   "titulo": "A evidência só existe se for capturada na hora",
+   "texto": "O dado socioemocional não se extrai perguntando depois. Formulação literal do campo: \"É que a gente às vezes vem com a percepção de que a gente vai conseguir extrair alguma informação dele. Você tem que, na verdade, observar o que está acontecendo.\" Qualquer fluxo que só peça o registro no fim do dia já perdeu o material — e o fim do dia é exatamente onde ela responde \"Não dá, não dá\"."
+  },
+  {
+   "titulo": "O check-in é respondível: falta captura, não observação",
+   "texto": "Perguntada em números logo depois da atividade, ela respondeu sem hesitar — \"Duas.\" / \"Quanta participou do começo ao fim?\" / \"Seis.\" A observação já está pronta na cabeça dela. O risco é o oposto do esperado, e quem levantou foi o próprio time: \"Se vai ficar longo pra você ou não\". Cada pergunta a mais no check-in é tempo tirado de atendimento."
+  },
+  {
+   "titulo": "\"Aí eu consigo editar depois também?\"",
+   "texto": "Primeira pergunta espontânea dela ao ver o relato gerado pela máquina. Se o texto não for corrigível antes de valer, o registro não é dela — e ela não assina o que não escreveu. O fecho tem de ser revisão, nunca redação automática. Isto é gate de confiança, não refinamento de v2."
+  },
+  {
+   "titulo": "A palavra usada para gravar é \"perigoso\"",
+   "texto": "Sobre captar áudio ou vídeo da criança, mesmo sem o dado sair da sala: \"Mas mesmo que fique aqui dentro este dado, ela não pode fazer? / É perigoso, né?\" O coração do MVP é captura por voz. Ou a tela deixa explícito, no momento da gravação, quem está sendo gravado e que o áudio não persiste, ou o fluxo principal trava aí."
+  },
+  {
+   "titulo": "Celular, nunca notebook",
+   "texto": "A rotina que já funciona é o vídeo curto gravado no celular e mandado direto para o grupo dos pais — classificada por ela mesma como \"Isso, é fácil.\" O contraste levantado na visita foi celular versus \"Do que você parar aí pro notebook.\" O que exigir estação de trabalho não acontece."
+  },
+  {
+   "titulo": "O formato do relatório tem dono, e não é o produto",
+   "texto": "O relatório segue o padrão do conselho profissional: \"Você registra o procedimento que você faz durante a atividade\", e \"De forma não individualizada. Porque não pode ser individualizado.\" Se a saída do sistema não nascer nesse formato, ela continua escrevendo o relatório à mão — e o produto vira trabalho a mais, não a menos."
+  }
+ ],
+ "contradicoes": [
+  {
+   "oQueORepoDiz": "A persona principal é uma pedagoga do reforço escolar, 35 anos, equipe de semana, de segunda a sexta (docs/ARTEFATO-SEMANA-5.md §1, docs/JORNADAS.md §1), com a frase-âncora \"Não consigo transformar em dados os resultados do meu trabalho.\" O próprio JORNADAS.md admite a origem: as personas vêm de dinâmica feita em aula, e a jornada futura vem das telas, não do usuário.",
+   "oQueOCampoMostrou": "Quem nomeia a dor do registro, quem escreve o relatório, quem já anonimiza e quem é procurada pela assistente social do parceiro é a psicóloga: \"Eu acho que o ponto mesmo é você registrar\" e \"Agora o registrar é mais difícil\". E a operação é sabática: \"E a atividade é basicamente no sábado\". O entrevistador admite na fita: \"eu não sabia que você era psicóloga\".",
+   "consequencia": "A jornada principal do produto foi escrita para um papel que o campo não confirmou como dono da dor. Ou o Percurso ganha a jornada da psicóloga, ou o titular real do registro fica de fora do produto. Efeito colateral bom: o §5 do ARTEFATO-SEMANA-5, hoje marcado \"⛔ não aconteceu\", pode sair do branco — começando por registrar que a persona mudou."
+  },
+  {
+   "oQueORepoDiz": "\"A psicóloga não é usuária\" aparece em cinco afirmações independentes (docs/ARTEFATO-SEMANA-5.md:55, docs/LEAN-INCEPTION.md §2, docs/MVP-CANVAS.md:33, docs/ARQUITETURA.md:27, README.md) e está materializado no código: src/seed.js cria a linha de governança conteudo_clinico com titular \"Psicóloga\" e acesso \"Ninguém, no Percurso\"; o filtro de perímetro em src/domain.js bloqueia os termos psicolog, psicólog, terapia, terapeut e atendimento individual.",
+   "oQueOCampoMostrou": "É ela quem tem a dor central, quem produz o único registro escrito que existe hoje e quem já pratica a anonimização que o produto promete automatizar. Diante do protótipo: \"Mas esse aqui, nossa, também ajudaria muito com essas questões práticas\".",
+   "consequencia": "O produto exclui por construção a pessoa que tem o problema. Pior: se ela usasse o fluxo de voz e descrevesse o próprio trabalho, o filtro de perímetro classificaria a fala dela como conteúdo clínico e devolveria encaminhamento humano — o sistema recusaria seu usuário mais provável. Proteger o sigilo do atendimento continua certo; confundir sigilo com \"ela não usa o sistema\" não."
+  },
+  {
+   "oQueORepoDiz": "\"Não expor as crianças\" é tratado como exigência da própria usuária, não como borda de conformidade (docs/ARTEFATO-SEMANA-5.md:48, docs/LEAN-INCEPTION.md:55). E nenhum documento do repositório menciona conselho profissional: grep por CRP, conselho regional e conselho profissional em docs/ e README.md retorna zero.",
+   "oQueOCampoMostrou": "A regra vem de fora e tem dono: \"normalmente é o padrão que o CRP... pede. Você registra o procedimento que você faz durante a atividade\", e a não individualização é imposta — \"De forma não individualizada. Porque não pode ser individualizado.\"",
+   "consequencia": "Não é preferência de usuária que o produto escolheu respeitar: é formato regulado por terceiro. A saída do Percurso precisa nascer nesse padrão (descrição de procedimento, não individualizada, sem nome), senão ela continua escrevendo o relatório à mão e o sistema vira trabalho duplicado. E o repositório perde o argumento mais forte que tinha: a restrição é externa e inegociável, não um capricho de desenho."
+  },
+  {
+   "oQueORepoDiz": "O coração do MVP é a captura por voz (#/voz): fala de cerca de 40 segundos, transcrição no próprio aparelho, áudio descartado; a governança em src/seed.js registra \"Áudio da captura por voz — Não coletado / Não persiste em nenhum momento\".",
+   "oQueOCampoMostrou": "Gravar é tratado como proibido, e a palavra usada é perigoso, mesmo com o dado ficando na sala: \"Mas mesmo que fique aqui dentro este dado, ela não pode fazer? / É perigoso, né?\" Em paralelo, gravar vídeo da atividade e mandar para o grupo dos pais é rotina tranquila e chamada de fácil.",
+   "consequencia": "A fronteira real não é técnica, é sobre quem aparece na gravação: a voz da profissional sobre a turma é aceitável, a captação da criança não. A arquitetura já responde certo e a tela do momento da gravação não diz nada disso. Sem essa frase visível no exato instante do toque, o fluxo principal do MVP esbarra no medo — e a garantia \"o áudio não persiste\" fica escondida num documento que ela nunca vai ler."
+  },
+  {
+   "oQueORepoDiz": "O clímax do produto só dispara ao concluir a última observação pendente da turma (public/app.js, depoisDaObservacao → celebrar, com pendentes === 0) e exibe \"~54 min\" como custo do ciclo, calculado como agenda.observaveis * 3 — três minutos por criança, assumidos, nunca medidos.",
+   "oQueOCampoMostrou": "\"Você depois tem que sair daqui, preencher o relatório... Não dá, não dá.\" A equipe é intermitente (quem conduz o sábado não está na semana), falta voluntário, o sábado é corrido, o domingo é descanso, e ela ainda tem os próprios pacientes: \"E aí eu não consigo dar conta\".",
+   "consequencia": "Um clímax condicionado a observar a turma inteira num ciclo pode simplesmente nunca disparar nesta operação. O produto precisa devolver algo por encontro, não só no fecho de ciclo. E os \"~54 min\" seguem sendo premissa de desenho, agora contra evidência de campo que diz que esse tempo não existe."
+  },
+  {
+   "oQueORepoDiz": "O registro só sobe: educadora → coordenação → diretoria → doador. A diretoria \"não abre registro individual\" e a educadora recebe de volta apenas a pauta de segunda. Nenhuma das 25 rotas de public/app.js prevê um profissional de fora da organização.",
+   "oQueOCampoMostrou": "O destino de maior valor declarado é lateral, não vertical: a assistente social do projeto parceiro manda mensagem perguntando como a criança está, e isso é respondido de memória. O que ela quer do registro é histórico da mesma criança ao longo do tempo. \"Que daí seria entre profissionais, que é mais rico ainda.\"",
+   "consequencia": "Falta um caminho inteiro no produto: troca profissional-a-profissional, com o mesmo cuidado de sigilo do resto. A busca por \"assistente social\", \"Alicerce\" e \"entre profissionais\" em docs/, README.md, src/ e public/app.js retorna zero ocorrências. É o caso de uso que o campo apontou como o mais rico e que o repositório sequer nomeia."
+  },
+  {
+   "oQueORepoDiz": "A família/responsável está fora do MVP como usuário: \"O perfil de acesso digital das famílias não está caracterizado; nada pode pressupor aparelho ou conexão\" (docs/MVP-CANVAS.md:35, docs/LEAN-INCEPTION.md:114).",
+   "oQueOCampoMostrou": "A prestação de contas aos pais já acontece toda semana, por WhatsApp, manualmente, grupo por turma — inclusive um grupo restrito a quem tem 75% de presença. E o pedido partiu da própria liderança: \"Se você tivesse um mecanismo de enviar isso automaticamente para o pai, seria ótimo.\"",
+   "consequencia": "O repositório tirou do MVP o único canal de devolutiva que já funciona e que a casa pediu para automatizar. Os aparelhos existem e o WhatsApp está em uso semanal — a premissa de \"não pressupor aparelho\" foi escrita sem campo, e o campo a derruba. Vale reabrir como escopo de borda, com o cuidado de que o que sai para o grupo é o que já sai hoje (vídeo e recado da turma), nunca dado individual."
+  }
+ ]
+}
