@@ -85,8 +85,8 @@ test('filtrarPerimetro: texto benigno passa intacto', () => {
 });
 
 test('filtrarPerimetro: texto vazio ou nulo não quebra', () => {
-  assert.deepEqual(D.filtrarPerimetro(''), { limpo: '', bloqueado: false, trechos: [] });
-  assert.deepEqual(D.filtrarPerimetro(null), { limpo: '', bloqueado: false, trechos: [] });
+  assert.deepEqual(D.filtrarPerimetro(''), { limpo: '', bloqueado: false, trechos: [], neutralizados: 0 });
+  assert.deepEqual(D.filtrarPerimetro(null), { limpo: '', bloqueado: false, trechos: [], neutralizados: 0 });
 });
 
 test('filtrarPerimetro: limite declarado — paráfrase sem termo da lista passa', () => {
@@ -1700,4 +1700,171 @@ test('planilha: o CSV abre no Excel (BOM + ";"), tem o cabeçalho da aba Avalia�
   assert.equal(linhas.length, PL.linhasDaPlanilha().criancas.length);
   for (const n of new Set(nomes)) assert.ok(!csv.includes(`;${n} `), `nome ${n} vazou no CSV`);
   assert.ok(csv.includes('# Sem nome por construção'));
+});
+
+
+// ---------------------------------------------------------------------------
+// Decisão 31 (02/09/2026) — registro de vivência: check-in de grupo,
+// procedimento em lista fechada, perímetro com contexto, relato e devolução.
+// ---------------------------------------------------------------------------
+const REL = await import('../src/relato.js');
+
+test('vivência: os catálogos novos são fechados e o check-in é só contagem', () => {
+  const c = V.catalogos();
+  assert.ok(c.procedimentos.length >= 6 && c.objetivos.length >= 6 && c.checkin.length === 5);
+  assert.ok(!c.procedimentos.some(p => p.codigo === 'nao_identificado'));
+  for (const k of c.checkin) assert.ok(!/nome|crianca|criança/i.test(k.campo));
+});
+
+test('vivência: validação recusa procedimento/objetivo fora da lista e contagens impossíveis', () => {
+  const base = { atividade: 'roda', area_tematica: 'nenhuma', marcadores_turma: [], pediram_ajuda: 0,
+    faltas_mencionadas: [], confianca: 0.8, conteudo_excluido: false };
+  assert.equal(V.validarExtracao({ ...base, procedimento: 'hipnose' }).valido, false);
+  assert.equal(V.validarExtracao({ ...base, objetivo: 'cura' }).valido, false);
+  assert.equal(V.validarExtracao({ ...base, checkin: { conflitos: 1, conflitos_resolvidos_conversando: 2 } }).valido, false);
+  assert.equal(V.validarExtracao({ ...base, checkin: { ajudaram_sem_pedir: 31 } }).valido, false);
+  assert.equal(V.validarExtracao({ ...base, checkin: { quem_ajudou: 'Ana' } }).valido, false);
+  assert.equal(V.validarExtracao({ ...base, procedimento: 'rede_apoio', objetivo: 'autoestima',
+    checkin: { conflitos: 1, conflitos_resolvidos_conversando: 1, nao_observados: null } }).valido, true);
+});
+
+test('vivência: o extrator lê as contagens que a psicóloga respondeu ao vivo', () => {
+  const fala = 'Hoje fizemos o jogo da rede de apoio, sobre cidadania. Duas ajudaram sem ninguém pedir. ' +
+    'Seis participaram do começo ao fim. Teve um conflito e resolveram conversando. Uma não foi observada.';
+  const { extracao, perimetro } = V.extrairDaFala(fala, [], { vivencia: true });
+  assert.equal(perimetro.bloqueado, false);
+  assert.equal(extracao.procedimento, 'rede_apoio');
+  assert.equal(extracao.objetivo, 'rede_apoio_cidadania');
+  assert.deepEqual(extracao.checkin, { ajudaram_sem_pedir: 2, participaram_inteiro: 6, conflitos: 1,
+    conflitos_resolvidos_conversando: 1, nao_observados: 1 });
+  assert.ok(extracao.confianca >= 0.6);
+  // Sem menção, o campo fica NULO (não informado), nunca zero.
+  const r2 = V.extrairDaFala('Hoje fizemos uma roda de conversa sobre esportes e a turma participou bastante.', []);
+  assert.equal(r2.extracao.checkin.conflitos, null);
+  assert.equal(r2.extracao.procedimento, null);
+  const r3 = V.extrairDaFala('Roda de emoções hoje, sem conflito nenhum, todo mundo foi observado.', [], { vivencia: true });
+  assert.equal(r3.extracao.checkin.conflitos, 0);
+  assert.equal(r3.extracao.checkin.nao_observados, 0);
+});
+
+test('perímetro com contexto: o nome do procedimento passa; o conteúdo sobre criança continua barrado', () => {
+  const pares = [
+    ['Na vivência terapêutica de hoje o grupo fez a roda de emoções.', false],
+    ['Foi uma terapia em grupo sobre regulação emocional.', false],
+    ['A Ana está fazendo terapia individual por causa do diagnóstico.', true],
+    ['Na vivência terapêutica a Ana contou que sofreu abuso em casa.', true],
+    ['O laudo da Ana chegou durante a vivência terapêutica.', true],
+  ];
+  for (const [t, bloqueia] of pares) {
+    const r = D.filtrarPerimetro(t, ['Ana Souza'], { contexto: 'vivencia' });
+    assert.equal(r.bloqueado, bloqueia, `contexto vivência: ${t}`);
+  }
+  // Sem o contexto, a lista de neutralização NÃO se aplica: "terapia" barra como sempre.
+  assert.equal(D.filtrarPerimetro('Na vivência terapêutica o grupo fez a roda.').bloqueado, true);
+  assert.equal(D.filtrarPerimetro('Na vivência terapêutica o grupo fez a roda.', [], { contexto: 'vivencia' }).neutralizados, 1);
+});
+
+test('vivência: salvar a folha exige o procedimento, e a folha de outra turma ignora procedimento', () => {
+  const tv = get(`SELECT id FROM turma WHERE programa_id = 4 LIMIT 1`);
+  const enc = get(`SELECT * FROM encontro WHERE turma_id = ? ORDER BY data DESC LIMIT 1`, tv.id);
+  assert.throws(() => V.salvarFolha({ encontroId: enc.id, educadorId: 5,
+    campos: { atividade: 'roda', procedimento: 'nao_identificado', checkin: {} } }), /procedimento/i);
+  const f = V.salvarFolha({ encontroId: enc.id, educadorId: 5,
+    campos: { atividade: 'roda', procedimento: 'regulacao', objetivo: 'regulacao_emocional',
+      checkin: { ajudaram_sem_pedir: 2, participaram_inteiro: 8, conflitos: 0, conflitos_resolvidos_conversando: 0, nao_observados: null } } });
+  assert.equal(f.procedimento, 'regulacao');
+  assert.equal(f.checkin.participaram_inteiro, 8);
+  assert.equal(f.checkin.nao_observados, null);
+  assert.equal(f.relato_liberado, false, 'editar a folha derruba/mantém sem liberação');
+  const t1 = get(`SELECT e.* FROM encontro e WHERE e.turma_id = 1 ORDER BY data DESC LIMIT 1`);
+  const f1 = V.salvarFolha({ encontroId: t1.id, educadorId: 1, campos: { atividade: 'roda', procedimento: 'oficina', checkin: {} } });
+  assert.equal(f1.procedimento, null, 'fora da vivência o procedimento não se aplica');
+});
+
+test('relato: sai dos campos fechados, sem nome de criança, e só vale depois do OK', () => {
+  const tv = get(`SELECT id FROM turma WHERE programa_id = 4 LIMIT 1`);
+  const enc = get(`SELECT * FROM encontro WHERE turma_id = ? ORDER BY data DESC LIMIT 1`, tv.id);
+  const r = REL.relatoDoProcedimento(tv.id, enc.data);
+  assert.match(r.texto, /REGISTRO DE PROCEDIMENTO/);
+  assert.match(r.texto, /Procedimento realizado: Regulação emocional/);
+  assert.match(r.texto, /Participaram do começo ao fim: 8/);
+  assert.match(r.texto, /RASCUNHO/);
+  assert.match(r.texto, /não individualizado/);
+  const nomes = all(`SELECT nome FROM crianca`).map(c => c.nome.split(' ')[0]);
+  for (const n of new Set(nomes)) assert.ok(!new RegExp('\\b' + n + '\\b').test(r.texto), `nome ${n} no relato`);
+  assert.equal(D.revisarSobreAlegacao(r.texto + ' A leitura é de associação: fatores externos não foram isolados.').status, 'aprovado');
+  // Só quem responde pela turma ou a coordenação libera.
+  assert.throws(() => REL.liberarRelato(tv.id, enc.data, 1), /libera/);
+  const lib = REL.liberarRelato(tv.id, enc.data, 5);
+  assert.equal(lib.liberado, true);
+  assert.match(lib.texto, /Liberado por/);
+  assert.equal(get(`SELECT status FROM folha WHERE encontro_id = ?`, enc.id).status, 'fechada');
+  assert.throws(() => REL.liberarRelato(tv.id, enc.data, 5), /já foi liberado/);
+});
+
+test('devolução por encontro: compara com as últimas folhas; sem 3 anteriores, só os números de hoje', () => {
+  const tv = get(`SELECT id FROM turma WHERE programa_id = 4 LIMIT 1`);
+  const enc = get(`SELECT * FROM encontro WHERE turma_id = ? ORDER BY data DESC LIMIT 1`, tv.id);
+  const dv = V.devolucaoDoEncontro(enc.id);
+  assert.ok(dv.linhas.length >= 3);
+  assert.equal(dv.comparavel, true);
+  const part = dv.linhas.find(l => l.campo === 'participaram_inteiro');
+  assert.equal(part.hoje, 8);
+  assert.ok(['acima', 'abaixo', 'na_media'].includes(part.comparacao));
+  assert.ok(part.media_anteriores != null);
+  // A primeira folha da turma não tem histórico: nada de comparação.
+  const primeiro = get(`SELECT * FROM encontro WHERE turma_id = ? ORDER BY data ASC LIMIT 1`, tv.id);
+  const dv0 = V.devolucaoDoEncontro(primeiro.id);
+  if (dv0) { assert.equal(dv0.comparavel, false); assert.ok(dv0.linhas.every(l => l.comparacao === null)); }
+});
+
+
+// ---------------------------------------------------------------------------
+// Decisão 33 (02/09/2026) — régua de presença do Instituto e recado da turma.
+// ---------------------------------------------------------------------------
+const REC = await import('../src/recado.js');
+
+test('régua: as faixas seguem a política da casa (75% / 80%) e exigem base mínima', () => {
+  assert.equal(D.PARAMS.PRESENCA_MINIMA_PCT, 75);
+  assert.equal(D.faixaDaRegua(74, 10), 'abaixo');
+  assert.equal(D.faixaDaRegua(75, 10), 'atencao');
+  assert.equal(D.faixaDaRegua(79, 10), 'atencao');
+  assert.equal(D.faixaDaRegua(80, 10), 'ok');
+  assert.equal(D.faixaDaRegua(100, 2), 'sem_base');
+  assert.equal(D.faixaDaRegua(null, 10), 'sem_base');
+  assert.equal(D.inicioDoSemestre('2026-09-02'), '2026-07-01');
+  assert.equal(D.inicioDoSemestre('2026-03-15'), '2026-01-01');
+});
+
+test('régua da turma: a Vivência da manhã tem quem está abaixo e quem está em atenção — e soma fecha', () => {
+  const r = D.reguaDaTurma(6);
+  // Testes anteriores arquivam crianças: o total é o da turma AGORA.
+  const n = D.criancasDaTurma(6).length;
+  assert.equal(r.criancas.length, n);
+  const soma = Object.values(r.resumo).reduce((a, b) => a + b, 0);
+  assert.equal(soma, n);
+  assert.ok(r.resumo.abaixo >= 1, 'a seed força uma criança abaixo da régua');
+  for (const c of r.criancas) {
+    assert.ok(c.encontros >= c.presentes);
+    if (c.pct != null) assert.ok(c.pct >= 0 && c.pct <= 100);
+    assert.equal(c.faixa, D.faixaDaRegua(c.pct, c.encontros));
+  }
+  const inst = D.reguaDoInstituto();
+  assert.equal(inst.turmas.length, all(`SELECT COUNT(*) n FROM turma`)[0].n);
+  assert.ok(!JSON.stringify(inst).includes('"nome":"' + r.criancas[0].nome), 'o painel do Instituto não carrega nome de criança');
+});
+
+test('recado da turma: só agregado, nenhum nome, e um link de WhatsApp sem número', () => {
+  const enc = get(`SELECT * FROM encontro WHERE turma_id = 6 ORDER BY data DESC LIMIT 1`);
+  const r = REC.recadoDaTurma(6, enc.data);
+  assert.match(r.texto, /Recado da Vivência · Sábado manhã/);
+  assert.match(r.texto, new RegExp('Presença de hoje: \\d+ de ' + D.criancasDaTurma(6).length + ' crianças'));
+  assert.match(r.texto, /Instituto Ebenézer/);
+  const nomes = all(`SELECT nome FROM crianca`).map(c => c.nome.split(' ')[0]);
+  for (const n of new Set(nomes)) assert.ok(!new RegExp('\\b' + n + '\\b').test(r.texto), `nome ${n} no recado`);
+  assert.ok(r.whatsapp_url.startsWith('https://wa.me/?text='));
+  assert.ok(!/\d{8,}/.test(r.whatsapp_url.split('?')[0]), 'sem número de telefone');
+  assert.equal(REC.proximoEncontro('sabado', '2026-09-02'), '2026-09-05');
+  assert.equal(REC.proximoEncontro('semana', '2026-09-04'), '2026-09-07');
+  assert.throws(() => REC.recadoDaTurma(6, '1999-01-01'), /chamada/);
 });

@@ -84,6 +84,10 @@ const GOVERNANCA = [
   // programa — procedimento em lista fechada e contagens de grupo. É registro
   // de TURMA, como a folha do dia: sem criança nomeada, sem consentimento.
   { campo: 'registro_de_vivencia', rotulo: 'Registro de vivência (procedimento e check-in de grupo)', base_legal: 'Legítimo interesse — execução do programa (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Profissional da turma + coordenação', retencao: '5 anos', exige_consentimento: 0 },
+  // Decisão 33: o recado da turma substitui o que já sai hoje para o grupo dos
+  // responsáveis (atividade e presença em número). Sem criança nomeada; não
+  // persiste — é gerado sob demanda e quem envia é a pessoa.
+  { campo: 'recado_da_turma', rotulo: 'Recado da turma aos responsáveis', base_legal: 'Legítimo interesse — comunicação com responsáveis sobre a turma (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Responsáveis da turma, pelo grupo que já existe; quem envia é a pessoa', retencao: 'Não persiste — gerado sob demanda, só agregado da turma', exige_consentimento: 0 },
 ];
 
 export function semear() {
@@ -311,6 +315,11 @@ export function semear() {
     // atividade, a lacuna que a pauta de segunda e o relatorio publicam.
     const AREAS_SEED = ['educacao','educacao','esporte','artes','tecnologia','outra','nenhuma'];
     const MARCADORES_SEED = ['colaborou','participou','agitado','disperso','alegre','cansado'];
+    // Vivencia (decisao 31): os procedimentos que a visita mostrou — o jogo da
+    // rede de apoio, a roda sobre regulacao/sistema nervoso, a oficina de costura.
+    const PROCEDIMENTOS_SEED = ['rede_apoio','regulacao','roda_emocoes','historia','oficina','jogo_cooperativo'];
+    const OBJETIVO_DO_PROCEDIMENTO = { rede_apoio: 'rede_apoio_cidadania', regulacao: 'regulacao_emocional',
+      roda_emocoes: 'expressao', historia: 'expressao', oficina: 'autoestima', jogo_cooperativo: 'convivencia' };
 
     for (const t of all(`SELECT * FROM turma`)) {
       if (t.id === 4) continue;
@@ -325,14 +334,31 @@ export function semear() {
         // Taxa de correcao alvo ~20%: um extrator lexical que acertasse tudo
         // seria implausivel, e a metrica so serve se for honesta.
         const editados = porVoz ? (rnd() < 0.45 ? 0 : rnd() < 0.75 ? 1 : rnd() < 0.92 ? 2 : 3) : 0;
+        // Check-in de grupo (decisao 31) em TODA folha, sempre pelo gerador da
+        // vivencia: contagens de turma coerentes com os presentes do dia, sem
+        // deslocar a sequencia principal. Na vivencia, procedimento e objetivo.
+        const presentesDia = get(`SELECT COUNT(*) n FROM presenca WHERE encontro_id = ? AND status='P'`, e.id).n;
+        const conflitos = intBetween(0, 2, randVivencia);
+        const ehVivencia = t.programa_id === 4;
+        const proc = ehVivencia ? pick(PROCEDIMENTOS_SEED, randVivencia) : null;
         run(`INSERT INTO folha (encontro_id, atividade, area_tematica, pediram_ajuda, origem,
                                 confianca, campos_sugeridos, campos_editados, conteudo_excluido,
+                                procedimento, objetivo, ajudaram_sem_pedir, participaram_inteiro,
+                                conflitos, conflitos_resolvidos_conversando, nao_observados,
+                                relato_liberado_por, relato_liberado_em,
                                 confirmado_por, confirmado_em, status)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
             e.id, pk(ATIVIDADES_SEED), area, intBetween(0, 5, rnd), porVoz ? 'voz' : 'manual',
             porVoz ? Math.round((0.62 + rnd() * 0.36) * 100) / 100 : null,
             porVoz ? 4 : 0, editados,
             porVoz && rnd() < 0.06 ? 1 : 0,
+            proc, ehVivencia ? OBJETIVO_DO_PROCEDIMENTO[proc] : null,
+            intBetween(0, Math.min(4, presentesDia), randVivencia),
+            Math.max(0, presentesDia - intBetween(0, 3, randVivencia)),
+            conflitos, intBetween(0, conflitos, randVivencia), intBetween(0, 1, randVivencia),
+            // Relatos anteriores da vivencia ja' liberados; o mais recente fica em rascunho.
+            ehVivencia && i < encs.length - 1 ? 5 : null,
+            ehVivencia && i < encs.length - 1 ? e.data + 'T18:00:00.000Z' : null,
             t.educador_id ?? 1, e.data + 'T17:20:00.000Z',
             i === encs.length - 1 ? 'aberta' : 'fechada');
         const fid = get(`SELECT id FROM folha WHERE encontro_id = ?`, e.id).id;

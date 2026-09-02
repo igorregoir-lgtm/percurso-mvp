@@ -19,6 +19,8 @@ import * as PF from './passo/perfil.js';
 import * as PO from './passo/orquestrador.js';
 import * as SROI from './sroi/calculator.js';
 import * as PL from './planilha.js';
+import * as REL from './relato.js';
+import * as REC from './recado.js';
 import { conversar, AI_ENABLED } from './ai-client.js';
 const { nomesParaAnonimizar } = C;
 
@@ -226,6 +228,12 @@ export const rotas = {
       pauta: turma ? S.pautaDaSemana(turma.id) : null,
       folha: turma ? V.folhaDaTurma(turma.id, D.dataDaFolha(turma.id)) : null,
       data_folha: turma ? D.dataDaFolha(turma.id) : null,
+      // E6: a devolucao do ultimo encontro com folha, para a tela de abertura.
+      devolucao: (() => {
+        if (!turma) return null;
+        const enc = D.encontroDe(turma.id, D.dataDaFolha(turma.id));
+        return enc && V.folhaDe(enc.id) ? V.devolucaoDoEncontro(enc.id) : null;
+      })(),
     };
   },
 
@@ -649,6 +657,11 @@ export const rotas = {
       chamada: D.chamada(turmaId, data),
       folha: enc ? V.folhaDe(enc.id) : null,
       catalogos: V.catalogos(),
+      // Decisao 31: na Vivencia a folha e' o registro de procedimento — a tela
+      // mostra procedimento/objetivo e exige o check-in.
+      vivencia: !D.turmaNaRubrica(turmaId),
+      // E6: a devolucao por encontro, quando ja' ha' folha.
+      devolucao: enc && V.folhaDe(enc.id) ? V.devolucaoDoEncontro(enc.id) : null,
     };
   },
 
@@ -662,15 +675,22 @@ export const rotas = {
     const texto = String(body.transcricao ?? '');
     if (texto.length > 4000) throw D.erro(422, 'Transcrição longa demais para uma fala de 40 segundos.');
     const nomes = D.criancasDaTurma(turmaId).map(c => c.nome);
+    const vivencia = !D.turmaNaRubrica(turmaId);
     // Modo A com modelo e' OPT-IN (AI_EXTRATOR=1) e cai para o extrator lexical
     // em qualquer falha — o contrato da decisao 13 continua o mesmo: saida
     // valida contra o schema fechado, confirmacao humana, nada gravado aqui.
     const { extracao, perimetro, invalido, origem } = C.AI_EXTRATOR
       ? await C.extrairComModelo(texto, nomes, C.nomesParaAnonimizar(exigeUsuario(req)))
-      : { ...V.extrairDaFala(texto, nomes), origem: 'regras' };
+      : { ...V.extrairDaFala(texto, nomes, { vivencia }), origem: 'regras' };
+    // E4 (campo): "voce fala o nome, ele apaga". A contagem de nomes que a
+    // fala continha vai para a tela — o nome em si nao volta e nao e' gravado.
+    const { substituicoes } = anonimizarTexto(texto, nomes);
     return {
       extracao,
       origem: origem ?? 'regras',
+      vivencia,
+      nomes_substituidos: substituicoes,
+      procedimento_neutralizado: perimetro.neutralizados ?? 0,
       // Fato de ter havido exclusao + a categoria, para a tela devolver o
       // encaminhamento humano. O trecho volta so para a pessoa que falou ver o
       // que nao entra; nao e' persistido em lugar nenhum.
@@ -694,7 +714,41 @@ export const rotas = {
       encontroId: enc.id, educadorId: u.id, campos: body.campos, origem: body.origem || 'manual',
       sugestao: body.sugestao ?? null, fechar: !!body.fechar,
     });
-    return { ok: true, folha, pauta: S.pautaDaSemana(turmaId) };
+    return { ok: true, folha, pauta: S.pautaDaSemana(turmaId), devolucao: V.devolucaoDoEncontro(enc.id) };
+  },
+
+  // ---- Regua de presenca (decisao 33) -------------------------------------
+  // Quem responde pela turma e a coordenacao veem a crianca com a faixa; a
+  // diretoria so' o total por turma (contagens).
+  'GET /api/turma/presenca': (req, _b, q) => {
+    const turmaId = num(q.get('turma_id'), 'turma_id');
+    exigeAcessoTurma(req, turmaId);
+    return D.reguaDaTurma(turmaId, { desde: q.get('desde') || null });
+  },
+  'GET /api/regua': (req, _b, q) => {
+    exigeGestao(req);
+    return D.reguaDoInstituto({ desde: q.get('desde') || null });
+  },
+
+  // ---- Recado da turma para os responsaveis (decisao 33) ------------------
+  'GET /api/recado': (req, _b, q) => {
+    const turmaId = num(q.get('turma_id'), 'turma_id');
+    exigeAcessoTurma(req, turmaId);
+    return REC.recadoDaTurma(turmaId, q.get('data') || D.dataDaFolha(turmaId));
+  },
+
+  // ---- Relato do procedimento (decisao 31) --------------------------------
+  'GET /api/relato': (req, _b, q) => {
+    const turmaId = num(q.get('turma_id'), 'turma_id');
+    exigeAcessoTurma(req, turmaId);
+    const data = q.get('data') || D.dataDaFolha(turmaId);
+    return { ...REL.relatoDoProcedimento(turmaId, data), historico: REL.relatosDaTurma(turmaId) };
+  },
+  'POST /api/relato/liberar': (req, body) => {
+    const turmaId = num(body.turma_id, 'turma_id');
+    const u = exigeAcessoTurma(req, turmaId);
+    const data = body.data || D.dataDaFolha(turmaId);
+    return { ok: true, ...REL.liberarRelato(turmaId, data, u.id) };
   },
 
   'POST /api/folha/reabrir': (req, body) => {

@@ -39,6 +39,14 @@ export const PARAMS = {
   COBERTURA_ALERTA: 70,
   // Taxa de descarte da pauta acima disto significa agente generico.
   DESCARTE_ALERTA: 30,
+  // --- decisao 33 (campo, 29/08/2026) ------------------------------------
+  // A regua de presenca do Instituto: 75% e' o minimo para permanecer no
+  // programa e entrar no grupo de beneficios; abaixo de 80% a casa ja' marca
+  // "atencao — os pais tem que regular". E' politica existente, absorvida.
+  PRESENCA_MINIMA_PCT: 75,
+  PRESENCA_ATENCAO_PCT: 80,
+  // Com menos encontros que isto no periodo, a regua nao se aplica (sem base).
+  REGUA_MINIMO_ENCONTROS: 4,
 };
 
 export const hoje = () => {
@@ -421,15 +429,41 @@ const semAcento = (t) => String(t ?? '').toLowerCase()
  * @param {string[]} [nomes]  nomes da turma; habilita a categoria 5 (estado
  *                            psiquico de crianca NOMEADA)
  */
-export function filtrarPerimetro(texto, nomes = []) {
+// Decisão 31: na turma da VIVÊNCIA, o nome do procedimento não é conteúdo sobre
+// criança. "Vivência terapêutica" e "terapia em grupo" são o que a psicóloga
+// FAZ, e sem esta lista o filtro recusaria a fala dela sobre o próprio trabalho
+// (a psicóloga era o usuário mais provável a ser barrado — campo, 29/08/2026).
+// Lista FECHADA de sintagmas, comparada sem acento, aplicada só com o contexto
+// 'vivencia'. Tudo o que é sobre criança (diagnóstico, laudo, abuso, estado
+// interno de criança nomeada) continua barrado: a neutralização troca o
+// sintagma por "atividade" e o resto da frase segue para as listas.
+const NEUTRALIZAVEIS_VIVENCIA = [
+  'vivencias terapeuticas', 'vivencia terapeutica', 'terapia em grupo', 'terapia de grupo',
+  'grupo terapeutico', 'trabalho terapeutico', 'atividade terapeutica', 'psicoeducativa',
+  'psicoeducativo', 'psicoeducacao', 'a psicologa conduziu', 'como psicologa',
+];
+function neutralizarProcedimento(norm) {
+  let n = norm, quantos = 0;
+  for (const s of NEUTRALIZAVEIS_VIVENCIA) {
+    if (n.includes(s)) { n = n.split(s).join('atividade'); quantos++; }
+  }
+  return { norm: n, quantos };
+}
+
+export function filtrarPerimetro(texto, nomes = [], { contexto = null } = {}) {
   const bruto = (texto || '').trim();
-  if (!bruto) return { limpo: '', bloqueado: false, trechos: [] };
+  if (!bruto) return { limpo: '', bloqueado: false, trechos: [], neutralizados: 0 };
   const primeiros = [...new Set(nomes.map(n => semAcento(n).split(' ')[0]).filter(n => n.length >= 3))];
   const frases = bruto.split(/(?<=[.!?;\n])\s*/).filter(f => f.trim());
   const trechos = [];
   const mantidas = [];
+  let neutralizados = 0;
   for (const f of frases) {
-    const norm = semAcento(f);
+    let norm = semAcento(f);
+    if (contexto === 'vivencia') {
+      const r = neutralizarProcedimento(norm);
+      norm = r.norm; neutralizados += r.quantos;
+    }
     // O trecho devolvido é o ORIGINAL, com acento: a normalização serve só para
     // comparar. Quem lê o encaminhamento tem que ver o que de fato foi dito.
     let hit = PERIMETRO.find(cat => cat.termos.some(t => norm.includes(semAcento(t))))?.rotulo;
@@ -441,7 +475,7 @@ export function filtrarPerimetro(texto, nomes = []) {
     if (hit) trechos.push({ trecho: f.trim(), categoria: hit });
     else mantidas.push(f.trim());
   }
-  return { limpo: mantidas.join(' ').trim(), bloqueado: trechos.length > 0, trechos };
+  return { limpo: mantidas.join(' ').trim(), bloqueado: trechos.length > 0, trechos, neutralizados };
 }
 
 // --------------------------------------------------------------------------
@@ -1587,4 +1621,66 @@ export function listarArquivo() {
     pessoas, criancas,
     doutrina: 'Este produto não apaga pessoa. O arquivo guarda quem saiu, com o que a pessoa deixou registrado — a saída da criança é o dado que a curva de permanência lê, e o registro da professora continua assinado com o nome dela.',
   };
+}
+
+
+// --------------------------------------------------------------------------
+// Decisao 33 — a regua de presenca do Instituto (75%), por crianca e por turma.
+// E' para DENTRO: quem responde pela turma e a coordenacao veem a crianca com a
+// faixa e o numero (e' a pratica da casa: conversar com a familia). A diretoria
+// ve so' contagens. Nada daqui sai identificado — o recado da turma leva so' o
+// agregado.
+// --------------------------------------------------------------------------
+export function inicioDoSemestre(ref = hoje()) {
+  const ano = ref.slice(0, 4);
+  return Number(ref.slice(5, 7)) >= 7 ? `${ano}-07-01` : `${ano}-01-01`;
+}
+
+export function faixaDaRegua(pct, encontros) {
+  if (pct == null || encontros < PARAMS.REGUA_MINIMO_ENCONTROS) return 'sem_base';
+  if (pct < PARAMS.PRESENCA_MINIMA_PCT) return 'abaixo';
+  if (pct < PARAMS.PRESENCA_ATENCAO_PCT) return 'atencao';
+  return 'ok';
+}
+
+export function reguaDaTurma(turmaId, { desde = null, ref = hoje() } = {}) {
+  const turma = get(`SELECT t.*, p.nome AS programa FROM turma t JOIN programa p ON p.id = t.programa_id WHERE t.id = ?`, turmaId);
+  if (!turma) throw erro(404, 'Turma não encontrada.');
+  const inicio = desde ?? inicioDoSemestre(ref);
+  const criancas = all(
+    `SELECT c.id, c.codigo, c.nome,
+            COUNT(p.id) AS encontros,
+            SUM(CASE WHEN p.status = 'P' THEN 1 ELSE 0 END) AS presentes
+       FROM crianca c
+       JOIN matricula m ON m.crianca_id = c.id AND m.turma_id = ? AND m.status = 'ativa'
+       LEFT JOIN presenca p ON p.crianca_id = c.id
+       LEFT JOIN encontro e ON e.id = p.encontro_id AND e.turma_id = ? AND e.data >= ? AND e.data <= ?
+      WHERE c.ativo = 1 AND (p.id IS NULL OR e.id IS NOT NULL)
+      GROUP BY c.id ORDER BY c.nome`, turmaId, turmaId, inicio, ref)
+    .map(c => {
+      const pct = c.encontros ? Math.round(((c.presentes ?? 0) / c.encontros) * 100) : null;
+      return { ...c, presentes: c.presentes ?? 0, pct, faixa: faixaDaRegua(pct, c.encontros) };
+    });
+  const resumo = { ok: 0, atencao: 0, abaixo: 0, sem_base: 0 };
+  for (const c of criancas) resumo[c.faixa]++;
+  return {
+    turma: { id: turma.id, nome: turma.nome, programa: turma.programa },
+    desde: inicio, ate: ref,
+    minima_pct: PARAMS.PRESENCA_MINIMA_PCT, atencao_pct: PARAMS.PRESENCA_ATENCAO_PCT,
+    minimo_encontros: PARAMS.REGUA_MINIMO_ENCONTROS,
+    criancas, resumo,
+    doutrina: 'A régua é a do Instituto (75% para permanecer e para o grupo de benefícios). Abaixo dela não é erro de ninguém: é protocolo — a conversa é com a família.',
+  };
+}
+
+/** Só contagens por turma — o que a coordenação e a diretoria veem no painel. */
+export function reguaDoInstituto(opcoes = {}) {
+  const turmas = all(`SELECT id FROM turma ORDER BY id`).map(t => {
+    const r = reguaDaTurma(t.id, opcoes);
+    return { turma: r.turma, criancas: r.criancas.length, resumo: r.resumo };
+  });
+  const total = { ok: 0, atencao: 0, abaixo: 0, sem_base: 0 };
+  for (const t of turmas) for (const k of Object.keys(total)) total[k] += t.resumo[k];
+  return { desde: turmas[0]?.desde ?? inicioDoSemestre(), minima_pct: PARAMS.PRESENCA_MINIMA_PCT,
+           atencao_pct: PARAMS.PRESENCA_ATENCAO_PCT, turmas, total };
 }

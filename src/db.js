@@ -275,6 +275,23 @@ const ESQUEMA_SQL = `
     -- Marca que a fala continha material fora do perimetro. Guarda o FATO de
     -- ter havido exclusao, jamais o conteudo excluido.
     conteudo_excluido INTEGER NOT NULL DEFAULT 0,
+    -- Decisao 31 (campo, 29/08/2026): o registro de vivencia. Procedimento e
+    -- objetivo em lista fechada (a psicologa registra O QUE FEZ, no padrao do
+    -- conselho) e o check-in de grupo — CONTAGENS da turma, nunca quem. NULL =
+    -- nao registrado (folha anterior a esta versao, ou campo nao informado).
+    procedimento      TEXT,
+    objetivo          TEXT,
+    ajudaram_sem_pedir               INTEGER CHECK (ajudaram_sem_pedir IS NULL OR ajudaram_sem_pedir BETWEEN 0 AND 30),
+    participaram_inteiro             INTEGER CHECK (participaram_inteiro IS NULL OR participaram_inteiro BETWEEN 0 AND 30),
+    conflitos                        INTEGER CHECK (conflitos IS NULL OR conflitos BETWEEN 0 AND 30),
+    conflitos_resolvidos_conversando INTEGER CHECK (conflitos_resolvidos_conversando IS NULL OR
+                                                    (conflitos_resolvidos_conversando BETWEEN 0 AND 30
+                                                     AND (conflitos IS NULL OR conflitos_resolvidos_conversando <= conflitos))),
+    nao_observados                   INTEGER CHECK (nao_observados IS NULL OR nao_observados BETWEEN 0 AND 30),
+    -- O relato do procedimento so' vale depois do OK da profissional: "ele so'
+    -- vai liberar o relatorio se voce der ok" (campo). Quem liberou e quando.
+    relato_liberado_por INTEGER REFERENCES educador(id),
+    relato_liberado_em  TEXT,
     confirmado_por    INTEGER NOT NULL REFERENCES educador(id),
     confirmado_em     TEXT NOT NULL,
     status            TEXT NOT NULL CHECK (status IN ('aberta','fechada'))

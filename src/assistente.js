@@ -57,6 +57,8 @@ export const CATALOGO_ACOES = [
   { id: 'chamada', rotulo: 'Chamada', hash: '#/chamada', papeis: ['educador', 'profissional'] },
   { id: 'voz', rotulo: 'Contar como foi (voz)', hash: '#/voz', papeis: ['educador', 'profissional'] },
   { id: 'folha', rotulo: 'Folha do dia', hash: '#/folha', papeis: ['educador', 'profissional'] },
+  { id: 'relato', rotulo: 'Relato do procedimento', hash: '#/relato', papeis: ['educador', 'profissional', 'coordenacao'] },
+  { id: 'recado', rotulo: 'Recado da turma (responsáveis)', hash: '#/recado', papeis: ['educador', 'profissional'] },
   { id: 'pauta', rotulo: 'Pauta de segunda', hash: '#/pauta', papeis: ['educador'] },
   { id: 'ciclo', rotulo: 'Agenda do ciclo', hash: '#/ciclo', papeis: ['educador', 'profissional'] },
   { id: 'turma', rotulo: 'Painel da turma', hash: '#/turma', papeis: ['educador', 'profissional'] },
