@@ -1257,7 +1257,7 @@ export const rotuloDoPapel = (papel) => PAPEIS.find(p => p.id === papel)?.rotulo
 /** Campos que exigem consentimento E são coletados pelo Percurso. `conteudo_clinico`
  *  também exige, mas está declarado FORA do sistema por construção — abrir linha
  *  'pendente' para ele sugeriria que um dia vai ser coletado. Não vai. */
-const CONSENTIMENTOS_DA_MATRICULA = ['rubrica_socioemocional', 'campo_livre'];
+const CONSENTIMENTOS_DA_MATRICULA = ['rubrica_socioemocional', 'campo_livre', 'parecer_profissional'];
 
 function textoObrigatorio(v, campo, max = 120) {
   const t = String(v ?? '').trim().replace(/\s+/g, ' ');

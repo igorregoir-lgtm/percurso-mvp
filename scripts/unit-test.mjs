@@ -1407,7 +1407,7 @@ test('criarCrianca: grava criança, matrícula ativa e os dois consentimentos PE
 
   const cons = all(`SELECT campo, status FROM consentimento WHERE crianca_id = ? ORDER BY campo`, r.crianca.id)
     .map(c => `${c.campo}:${c.status}`);
-  assert.deepEqual(cons, ['campo_livre:pendente', 'rubrica_socioemocional:pendente']);
+  assert.deepEqual(cons, ['campo_livre:pendente', 'parecer_profissional:pendente', 'rubrica_socioemocional:pendente']);
   // A consequência que importa: entra observável? Não. E dá para desbloquear? Sim.
   const el = D.elegibilidade(r.crianca.id, D.cicloAberto().id);
   assert.equal(el.pode, false);
@@ -1867,4 +1867,52 @@ test('recado da turma: só agregado, nenhum nome, e um link de WhatsApp sem núm
   assert.equal(REC.proximoEncontro('sabado', '2026-09-02'), '2026-09-05');
   assert.equal(REC.proximoEncontro('semana', '2026-09-04'), '2026-09-07');
   assert.throws(() => REC.recadoDaTurma(6, '1999-01-01'), /chamada/);
+});
+
+
+// ---------------------------------------------------------------------------
+// Decisão 32 (02/09/2026) — parecer profissional-a-profissional.
+// ---------------------------------------------------------------------------
+const PAR = await import('../src/parecer.js');
+
+test('parecer: sem consentimento específico, não é gerado — e o motivo é dito', () => {
+  const c = get(`SELECT c.id FROM crianca c JOIN consentimento co ON co.crianca_id = c.id
+                  WHERE co.campo = 'parecer_profissional' AND co.status = 'pendente' AND c.ativo = 1 LIMIT 1`);
+  assert.ok(c, 'a seed tem consentimento de parecer pendente');
+  const e = (() => { try { PAR.gerarParecer({ criancaId: c.id, destinatario: 'Assistente social — projeto parceiro', usuarioId: 2 }); } catch (x) { return x; } })();
+  assert.equal(e.status, 403);
+  assert.equal(e.extra.motivo, 'consentimento');
+});
+
+test('parecer: com consentimento sai por CÓDIGO, sem nome, sem clínica, aprovado pelo revisor, e só vale liberado', () => {
+  // Criança SÓ da turma 1 (quem também está no Laboratório tem a Cleide como responsável lá).
+  const c = get(`SELECT c.id, c.nome, c.codigo FROM crianca c JOIN matricula m ON m.crianca_id = c.id AND m.status='ativa' AND m.turma_id = 1
+                  WHERE c.ativo = 1 AND (SELECT COUNT(*) FROM matricula x WHERE x.crianca_id = c.id AND x.status='ativa') = 1
+                  ORDER BY c.id LIMIT 1`);
+  D.registrarConsentimento(c.id, 'parecer_profissional', 'ativo', 'Responsável teste');
+  assert.throws(() => PAR.gerarParecer({ criancaId: c.id, destinatario: '', usuarioId: 2 }), /obrigatório/);
+  // Quem responde pela turma 1 AGORA (testes anteriores trocam a professora) gera;
+  // a psicóloga (turmas 6 e 7) é "outra turma"; a diretoria nunca.
+  const dona = get(`SELECT educador_id FROM turma WHERE id = 1`).educador_id;
+  assert.throws(() => PAR.gerarParecer({ criancaId: c.id, destinatario: 'X', usuarioId: 5 }), /outra turma/);
+  assert.throws(() => PAR.gerarParecer({ criancaId: c.id, destinatario: 'X', usuarioId: 4 }), /coordenação/);
+  const p = PAR.gerarParecer({ criancaId: c.id, destinatario: 'Assistente social — projeto parceiro', usuarioId: dona });
+  assert.equal(p.status, 'rascunho');
+  assert.ok(p.texto.includes(`código ${c.codigo}`));
+  assert.ok(!p.texto.includes(c.nome.split(' ')[0]), 'nome no parecer');
+  // O texto DIZ o que não contém ("diagnóstico ou qualquer registro clínico") — o que não pode é detalhe de alerta ou termo de caso.
+  for (const proibido of ['laudo', 'terapia', 'abuso', 'Faltou nos', 'depress']) assert.ok(!p.texto.includes(proibido), proibido);
+  assert.match(p.texto, /Presença: \d+ de \d+ encontros/);
+  assert.match(p.texto, /fatores externos não foram isolados/);
+  assert.equal(D.revisarSobreAlegacao(p.texto).status, 'aprovado');
+  assert.ok(['piorou', 'manteve', 'evoluiu', 'sem par de ciclos'].some(r => p.texto.includes(r)));
+  const lib = PAR.liberarParecer(p.id, 2);
+  assert.equal(lib.status, 'liberado');
+  assert.ok(lib.liberado_por_nome);
+  assert.throws(() => PAR.liberarParecer(p.id, 2), /já foi liberado/);
+  // Revogar o consentimento depois: um novo parecer não sai; a liberação de um rascunho também não.
+  const p2 = PAR.gerarParecer({ criancaId: c.id, destinatario: 'Escola', usuarioId: 2 });
+  D.registrarConsentimento(c.id, 'parecer_profissional', 'revogado', null);
+  assert.throws(() => PAR.liberarParecer(p2.id, 2), /revogado|pendente/);
+  assert.equal(PAR.pareceresDe(c.id).length, 2);
 });

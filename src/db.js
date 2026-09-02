@@ -363,6 +363,26 @@ const ESQUEMA_SQL = `
     executado_em   TEXT NOT NULL
   );
 
+  -- Decisao 32 (campo, 29/08/2026): o parecer profissional-a-profissional. A
+  -- assistente social do projeto parceiro pergunta "como ele esta'" e hoje e'
+  -- respondida de memoria. O parecer sai por CODIGO, so' com consentimento
+  -- especifico do responsavel e com a liberacao registrada — e o registro de
+  -- que saiu, para quem e por quem e' permanente (trilha de auditoria).
+  CREATE TABLE IF NOT EXISTS parecer (
+    id            INTEGER PRIMARY KEY,
+    crianca_id    INTEGER NOT NULL REFERENCES crianca(id) ON DELETE CASCADE,
+    destinatario  TEXT NOT NULL,
+    texto         TEXT NOT NULL,
+    numeros_json  TEXT NOT NULL,
+    revisor_status TEXT NOT NULL,
+    status        TEXT NOT NULL CHECK (status IN ('rascunho','liberado')),
+    gerado_por    INTEGER NOT NULL REFERENCES educador(id),
+    gerado_em     TEXT NOT NULL,
+    liberado_por  INTEGER REFERENCES educador(id),
+    liberado_em   TEXT
+  );
+  CREATE INDEX IF NOT EXISTS ix_parecer_crianca ON parecer(crianca_id, gerado_em);
+
   CREATE INDEX IF NOT EXISTS ix_presenca_crianca ON presenca(crianca_id);
   CREATE INDEX IF NOT EXISTS ix_encontro_turma   ON encontro(turma_id, data);
   CREATE INDEX IF NOT EXISTS ix_matricula_prog   ON matricula(programa_id, status);

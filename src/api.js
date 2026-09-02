@@ -21,6 +21,7 @@ import * as SROI from './sroi/calculator.js';
 import * as PL from './planilha.js';
 import * as REL from './relato.js';
 import * as REC from './recado.js';
+import * as PAR from './parecer.js';
 import { conversar, AI_ENABLED } from './ai-client.js';
 const { nomesParaAnonimizar } = C;
 
@@ -735,6 +736,34 @@ export const rotas = {
     const turmaId = num(q.get('turma_id'), 'turma_id');
     exigeAcessoTurma(req, turmaId);
     return REC.recadoDaTurma(turmaId, q.get('data') || D.dataDaFolha(turmaId));
+  },
+
+  // ---- Parecer profissional-a-profissional (decisao 32) --------------------
+  // O unico dado individual que sai: por codigo, sob consentimento, liberado.
+  // A diretoria nunca chega aqui (decisao 16).
+  'GET /api/parecer': (req, _b, q) => {
+    const criancaId = num(q.get('crianca_id'), 'crianca_id');
+    exigeAcessoCrianca(req, criancaId);
+    return {
+      consentimento: D.consentimentoDe(criancaId, 'parecer_profissional').status,
+      previa: PAR.numerosDoParecer(criancaId),
+      pareceres: PAR.pareceresDe(criancaId),
+    };
+  },
+  'GET /api/parecer/ver': (req, _b, q) => {
+    const p = PAR.parecerDe(num(q.get('id'), 'id'));
+    exigeAcessoCrianca(req, p.crianca_id);
+    return p;
+  },
+  'POST /api/parecer/gerar': (req, body) => {
+    const criancaId = num(body.crianca_id, 'crianca_id');
+    const u = exigeAcessoCrianca(req, criancaId);
+    return { ok: true, parecer: PAR.gerarParecer({ criancaId, destinatario: body.destinatario, usuarioId: u.id }) };
+  },
+  'POST /api/parecer/liberar': (req, body) => {
+    const u = exigeUsuario(req);
+    semAcessoIndividual(u);
+    return { ok: true, parecer: PAR.liberarParecer(num(body.id, 'id'), u.id) };
   },
 
   // ---- Relato do procedimento (decisao 31) --------------------------------

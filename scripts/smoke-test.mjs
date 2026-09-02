@@ -1222,5 +1222,44 @@ secao('27 · Régua de presença do Instituto (75%) e recado da turma aos respon
   T('a professora de outra turma NÃO gera o recado da Vivência (403)', (await GET('maria', `/api/recado?turma_id=${tid}`)).status === 403);
 }
 
+// ----------------------- 28. parecer profissional-a-profissional (decisão 32)
+secao('28 · Parecer a profissional parceiro — por código, sob consentimento, liberado');
+{
+  // A esta altura a turma 1 já trocou de professora (seção 21) — quem responde
+  // por ela agora é outra pessoa; a coordenação passa sempre. Criança SÓ da
+  // turma 1, para a Cleide (turmas 2–5) ser "outra turma".
+  const lista = (await GET('rita', '/api/criancas?turma_id=1')).corpo.criancas;
+  let alvo = null;
+  for (const c of lista) {
+    const f = (await GET('rita', `/api/crianca?id=${c.id}`)).corpo;
+    if (f.matriculas.filter(m => m.status === 'ativa').length === 1) { alvo = c; break; }
+  }
+  T('há criança só da turma 1 para o cenário', !!alvo);
+  const antes = await GET('rita', `/api/parecer?crianca_id=${alvo.id}`);
+  T('a ficha do parecer traz o estado do consentimento e a prévia por indicador de programa',
+    antes.status === 200 && ['ativo', 'pendente', 'revogado'].includes(antes.corpo.consentimento) && antes.corpo.previa.codigo === alvo.codigo);
+  T('a diretoria não chega ao parecer (403)', (await GET('solange', `/api/parecer?crianca_id=${alvo.id}`)).status === 403);
+  T('professora de outra turma não chega ao parecer (403)', (await GET('cleide', `/api/parecer?crianca_id=${alvo.id}`)).status === 403);
+
+  await POST('rita', '/api/consentimento', { crianca_id: alvo.id, campo: 'parecer_profissional', status: 'pendente', responsavel: '' });
+  const semCons = await POST('rita', '/api/parecer/gerar', { crianca_id: alvo.id, destinatario: 'Assistente social — projeto parceiro' });
+  T('sem consentimento específico, o parecer é recusado com o motivo (403)', semCons.status === 403 && semCons.corpo.motivo === 'consentimento');
+  const cons = await POST('rita', '/api/consentimento', { crianca_id: alvo.id, campo: 'parecer_profissional', status: 'ativo', responsavel: 'Responsável 1' });
+  T('a coordenação registra o consentimento para compartilhar', cons.status === 200);
+  T('professora de outra turma NÃO gera o parecer (403)',
+    (await POST('cleide', '/api/parecer/gerar', { crianca_id: alvo.id, destinatario: 'X' })).status === 403);
+  const ger = await POST('rita', '/api/parecer/gerar', { crianca_id: alvo.id, destinatario: 'Assistente social — projeto parceiro' });
+  T('a coordenação gera o parecer em rascunho', ger.status === 200 && ger.corpo.parecer.status === 'rascunho');
+  T('o parecer sai por código e sem nome', ger.corpo.parecer.texto.includes(alvo.codigo) && !ger.corpo.parecer.texto.includes(alvo.nome.split(' ')[0]));
+  T('o parecer não carrega detalhe de alerta nem conteúdo clínico', !/Faltou nos|laudo|terapia|abuso/i.test(ger.corpo.parecer.texto));
+  const lib = await POST('rita', '/api/parecer/liberar', { id: ger.corpo.parecer.id });
+  T('a liberação fica registrada (quem, quando, para quem)', lib.status === 200 && lib.corpo.parecer.status === 'liberado' && !!lib.corpo.parecer.liberado_em);
+  T('a diretoria não libera parecer (403)', (await POST('solange', '/api/parecer/liberar', { id: ger.corpo.parecer.id })).status === 403);
+  const hist = (await GET('rita', `/api/parecer?crianca_id=${alvo.id}`)).corpo;
+  T('o histórico de pareceres da criança fica na ficha', hist.pareceres.length >= 1 && hist.pareceres[0].status === 'liberado');
+  T('a governança declara o parecer com consentimento específico',
+    (await GET('rita', '/api/consentimentos')).corpo.governanca.some(g => g.campo === 'parecer_profissional' && g.exige_consentimento === 1));
+}
+
 console.log(`\n\x1b[1m${ok} passaram · ${falhas} falharam\x1b[0m\n`);
 process.exit(falhas ? 1 : 0);

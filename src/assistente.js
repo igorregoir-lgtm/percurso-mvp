@@ -93,14 +93,14 @@ export function validarAcao(id, papel) {
 // de instrução em mensagem de sistema.
 const ROTAS_CONHECIDAS = new Set([
   ...CATALOGO_ACOES.map(a => a.hash),
-  '#/entrar', '#/alertas', '#/confirmar', '#/observacao', '#/crianca',
+  '#/entrar', '#/alertas', '#/confirmar', '#/observacao', '#/crianca', '#/parecer',
 ]);
 /** Mesmo conjunto, exportado: é o vocabulário fechado de `tela` no perfil. */
 export const ROTAS_CONHECIDAS_PASSO = ROTAS_CONHECIDAS;
 export function telaSegura(tela) {
   const rota = String(tela ?? '').split('?')[0];
   if (ROTAS_CONHECIDAS.has(rota)) return rota;
-  const m = rota.match(/^(#\/(?:crianca|observacao))\/\d+$/);   // fichas com id numérico
+  const m = rota.match(/^(#\/(?:crianca|observacao|parecer))\/\d+$/);   // fichas com id numérico
   return m ? m[1] : '';
 }
 

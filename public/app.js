@@ -1000,7 +1000,31 @@ const listaCriancas = (r) => {
 };
 
 rota(/^#\/crianca\/(\d+)/, async (id) => {
-  const f = await api(`/api/crianca?id=${id}`);
+  const [f, par] = await Promise.all([api(`/api/crianca?id=${id}`), api(`/api/parecer?crianca_id=${id}`).catch(() => null)]);
+  ctx.parecer = { criancaId: Number(id) };
+  // Decisão 32: o parecer para profissional parceiro — o único dado individual
+  // que sai, por código, sob consentimento e liberado. A ficha é a porta.
+  const cartaoParecer = !par ? '' : `
+    <div class="cartao compacto" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Parecer a profissional parceiro</h2>
+        <span class="selo ${par.consentimento === 'ativo' ? 'ok' : 'bloq'}">consentimento ${esc(par.consentimento)}</span></div>
+      <p class="sub">Quando a assistente social do projeto parceiro perguntar "como está", a resposta sai daqui: por <b>código</b>, com presença, régua e evolução por indicador do programa — nunca nome, nunca conteúdo clínico. Só com consentimento específico do responsável, e só vale depois de liberado.</p>
+      ${par.consentimento !== 'ativo' ? `
+        <div class="aviso" style="margin-top:10px"><h3>Sem consentimento específico, não sai</h3>
+          <p>${sessao.papel === 'coordenacao' ? 'Registre abaixo o consentimento do responsável para compartilhar com profissional parceiro.' : 'A coordenação registra o consentimento do responsável na tela de Consentimentos.'}</p>
+          ${sessao.papel === 'coordenacao' ? `<label class="rot-campo" for="par-resp">Responsável que consentiu</label>
+            <input type="text" id="par-resp" placeholder="Nome do responsável" autocomplete="off">
+            <button class="btn pequeno" data-acao="consentir-parecer" style="margin-top:10px">Registrar consentimento</button>` : ''}
+        </div>` : `
+        <label class="rot-campo" for="par-dest">Para quem (profissional e serviço)</label>
+        <input type="text" id="par-dest" placeholder="Ex.: assistente social — projeto parceiro" autocomplete="off">
+        <button class="btn pequeno" data-acao="gerar-parecer" style="margin-top:10px">Gerar o parecer (rascunho)</button>`}
+      ${par.pareceres.length ? `<div class="pilha" style="margin-top:12px">
+        ${par.pareceres.map(p => `<button class="link" data-acao="ir" data-href="#/parecer/${p.id}">
+          <span><span>${esc(p.destinatario)}</span><span class="d">${dataBR(p.gerado_em)} · ${p.status === 'liberado' ? `liberado por ${esc(p.liberado_por_nome ?? '—')}` : 'rascunho'}</span></span>
+          <span class="selo ${p.status === 'liberado' ? 'ok' : 'pend'}">${p.status}</span></button>`).join('')}
+      </div>` : ''}
+    </div>`;
   const pres = f.presencas.map(p =>
     `<span title="${dataBR(p.data)}" style="display:inline-block;width:14px;height:22px;border-radius:4px;margin-right:4px;background:${p.status === 'P' ? 'var(--ok)' : 'var(--red)'};opacity:${p.status === 'P' ? .85 : 1}"></span>`).join('');
 
@@ -1041,6 +1065,8 @@ rota(/^#\/crianca\/(\d+)/, async (id) => {
       <div style="margin-top:10px">${tabelaTrajetoria(f.trajetoria)}</div>
     </div>
 
+    ${cartaoParecer}
+
     <div class="cartao compacto" style="margin-top:14px">
       <h2>Governança dos campos</h2>
       <p class="sub">Regra 3 do bloco 6: cada campo declara base legal, titular, acesso e retenção.</p>
@@ -1062,6 +1088,31 @@ rota(/^#\/crianca\/(\d+)/, async (id) => {
       <button class="btn secundario" data-acao="arquivar-crianca" data-id="${f.crianca.id}"
         style="margin-top:14px">Mandar para o arquivo</button>
     </div>` : ''}`;
+});
+
+// ======================================================================
+// PARECER (decisão 32) — o texto, a liberação e o registro de que saiu.
+// ======================================================================
+rota(/^#\/parecer\/(\d+)/, async (id) => {
+  const p = await api(`/api/parecer/ver?id=${id}`);
+  ctx.parecer = { id: Number(id), criancaId: p.crianca_id };
+  app.innerHTML = `
+    <p class="kicker">Parecer · código ${esc(p.numeros.codigo)}</p>
+    <h1>${p.status === 'liberado' ? 'Parecer liberado' : 'Parecer em rascunho'}</h1>
+    <p class="sub">Para ${esc(p.destinatario)} · gerado por ${esc(p.gerado_por_nome)} em ${dataBR(p.gerado_em)}${p.liberado_em ? ` · liberado por ${esc(p.liberado_por_nome)} em ${dataBR(p.liberado_em)}` : ''}</p>
+    <div class="cartao" style="margin-top:14px">
+      <pre id="parecer-texto" style="white-space:pre-wrap;font:inherit;line-height:1.55;margin:0">${esc(p.texto)}</pre>
+    </div>
+    <div class="aviso calmo" style="margin-top:12px">
+      <h3>O que sai e o que não sai</h3>
+      <p>Sai: código, presença e régua, evolução por indicador do programa (piorou/manteve/evoluiu), o fato de haver ou não acompanhamento. Não sai: nome, alerta em detalhe, qualquer conteúdo clínico. Revisor de sobre-alegação: ${esc(p.revisor_status)}.</p>
+    </div>
+    <div class="pilha">
+      ${p.status === 'liberado' ? '' : `<button class="btn largo" data-acao="liberar-parecer">Revisei — liberar para enviar</button>`}
+      <button class="btn largo secundario" data-acao="copiar-parecer">Copiar o texto</button>
+      <button class="btn largo fantasma" data-acao="ir" data-href="#/crianca/${p.crianca_id}">Voltar à ficha</button>
+    </div>
+    <p class="rodape">O envio é feito por você, no canal que já usa com o serviço parceiro. O registro de que este parecer saiu — para quem, quando, liberado por quem — fica aqui, permanente.</p>`;
 });
 
 // ======================================================================
@@ -3974,6 +4025,32 @@ document.addEventListener('click', comErro(async (ev) => {
       toast('Relato liberado e folha fechada.', 'bom');
       navegar();
     } finally { alvo.disabled = false; }
+    return;
+  }
+  if (a === 'consentir-parecer') {
+    const responsavel = document.getElementById('par-resp')?.value || '';
+    await post('/api/consentimento', { crianca_id: ctx.parecer.criancaId, campo: 'parecer_profissional', status: 'ativo', responsavel });
+    toast('Consentimento registrado.', 'bom'); navegar(); return;
+  }
+  if (a === 'gerar-parecer') {
+    const destinatario = document.getElementById('par-dest')?.value || '';
+    alvo.disabled = true;
+    try {
+      const r = await post('/api/parecer/gerar', { crianca_id: ctx.parecer.criancaId, destinatario });
+      location.hash = `#/parecer/${r.parecer.id}`; navegar();
+    } finally { alvo.disabled = false; }
+    return;
+  }
+  if (a === 'liberar-parecer') {
+    alvo.disabled = true;
+    try { await post('/api/parecer/liberar', { id: ctx.parecer.id }); toast('Parecer liberado.', 'bom'); navegar(); }
+    finally { alvo.disabled = false; }
+    return;
+  }
+  if (a === 'copiar-parecer') {
+    const t = document.getElementById('parecer-texto')?.textContent ?? '';
+    try { await navigator.clipboard.writeText(t); toast('Texto copiado.', 'bom'); }
+    catch { toast('Não deu para copiar automaticamente — selecione o texto e copie.'); }
     return;
   }
   if (a === 'copiar-recado') {

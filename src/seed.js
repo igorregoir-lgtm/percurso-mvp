@@ -87,6 +87,10 @@ const GOVERNANCA = [
   // Decisão 33: o recado da turma substitui o que já sai hoje para o grupo dos
   // responsáveis (atividade e presença em número). Sem criança nomeada; não
   // persiste — é gerado sob demanda e quem envia é a pessoa.
+  // Decisão 32: o parecer para profissional parceiro é o ÚNICO dado que sai
+  // identificável por código — atrás de consentimento específico, liberação
+  // registrada e revisor. Nasce pendente para toda criança, como a rubrica.
+  { campo: 'parecer_profissional', rotulo: 'Parecer a profissional parceiro (por código)', base_legal: 'Consentimento específico do responsável (LGPD Art. 14)', titular: 'Organização', acesso: 'Profissional parceiro nomeado pela coordenação, após liberação', retencao: 'Registro da liberação permanente; o texto é o do parecer liberado', exige_consentimento: 1 },
   { campo: 'recado_da_turma', rotulo: 'Recado da turma aos responsáveis', base_legal: 'Legítimo interesse — comunicação com responsáveis sobre a turma (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Responsáveis da turma, pelo grupo que já existe; quem envia é a pessoa', retencao: 'Não persiste — gerado sob demanda, só agregado da turma', exige_consentimento: 0 },
 ];
 
@@ -220,6 +224,11 @@ export function semear() {
             id, campo, st, st === 'ativo' ? pick(RESPONSAVEIS) : null,
             st === 'ativo' ? addDias(T, -intBetween(30, 400)) : null);
       }
+      // Decisao 32: compartilhar com profissional parceiro e' OUTRO pedido ao
+      // responsavel — nasce pendente para toda crianca, sem consumir o gerador
+      // (senao a sequencia sintetica documentada deslocava inteira).
+      run(`INSERT INTO consentimento (crianca_id,campo,status,responsavel,data_registro) VALUES (?,?,'pendente',NULL,NULL)`,
+          id, 'parecer_profissional');
     }
 
     // Aspiracao declarada — a metodologia do Laboratorio de Sonhos (bloco 3 do
