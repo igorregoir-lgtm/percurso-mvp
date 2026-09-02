@@ -139,18 +139,28 @@ captura por voz, copilot, calibração, SROI nem relatório do doador. O roteiro
 
 ---
 
-## 6. Declaração CFL-03 — protótipo navegável em HTML, não em Figma
+## 6. CFL-03 — resolvido: o protótipo existe em Figma
 
-A semana 5 pedia protótipo navegável em Figma. O que foi entregue é um **protótipo navegável em
-HTML interativo** (`prototipo-figma/` — `index.html`, `app.js`, `styles.css` — e o standalone
-`completo.html`). Ele cumpre a função do artefato: é navegável, tem fidelidade média/alta e
-demonstra as jornadas das personas.
+> **Estado: fechado em 26/08/2026.** O que estava aqui era a decisão de *declarar, não
+> retrabalhar* — entregar o protótipo em HTML e pedir aceite do professor/mentor para a
+> divergência de formato. A decisão foi revertida por escolha do grupo: o guia diz que a entrega
+> **deve** ser feita em Figma, e negociar dispensa custava mais do que construir.
 
-A decisão registrada é **declarar, não retrabalhar**: refazer em Figma um protótipo que já evoluiu
-para MVP funcional não agregaria nada à entrega final — seria retrabalho de forma, não de função.
-A divergência fica declarada aqui e na defesa do desvio no-code (GAP-10, no `README.md`).
+**O protótipo:** https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL
 
-- [ ] Apresentar esta declaração ao professor/mentor e registrar o aceite. **Pendente — humano.**
+Nove telas de 375×812 (`#/entrar`, `#/hoje`, `#/chamada`, `#/ciclo`, `#/observacao/:id`,
+`#/turma`, `#/consentimentos`, `#/painel`, `#/sintese`), três papéis, 12 ligações de clique e
+ponto de partida definido. As cores vêm de uma coleção de variáveis com os modos Claro e Escuro,
+com os tokens verbatim de `public/styles.css` — o protótipo e o MVP não podem divergir de cor por
+acidente. A legenda no próprio arquivo mapeia cada tela à User Story que ela demonstra e ao teste
+automatizado que a prova.
+
+O protótipo HTML em `prototipo-figma/` **continua no repositório**, como registro da etapa em que
+ele foi o artefato. Documentação de suporte da entrega: [`ARTEFATO-SEMANA-5.md`](ARTEFATO-SEMANA-5.md).
+
+- [x] Protótipo navegável em Figma, com fidelidade média/alta.
+- [ ] Validação com pelo menos um usuário real — **continua pendente** (§4). É a última exigência
+      em aberto do artefato de tecnologia da semana 5.
 
 ---
 

@@ -139,8 +139,8 @@ autenticação por senha ou SSO; (b) HTTPS; (c) registro de auditoria de acesso 
 
 ### 9. Dados sintéticos determinísticos
 
-PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 246
-asserções de fluxo e os 63 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
+PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 294
+asserções de fluxo e os 136 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
 a *hoje*, então a demonstração nunca "envelhece".
 
 ---
@@ -509,12 +509,130 @@ verdadeiros e frases falsas.
 
 **A conclusão honesta:** neste porte de modelo, prosa segura e prosa útil não coexistem nestes
 dois documentos. `AI_REDATOR` fica **desligado por padrão** — ligar hoje só adiciona latência
-para cair no mesmo template. A infraestrutura e os testes ficam prontos: num modelo maior (o
-hardware comporta um Qwen 14B/30B) a conta muda, e a reavaliação é uma variável de ambiente.
+para cair no mesmo template. A infraestrutura e os testes ficam prontos, e a reavaliação é uma
+variável de ambiente.
+
+**Adendo de 25/08/2026 — subir o porte do modelo está fora.** A conclusão original apontava um
+Qwen 14B/30B como próximo passo, porque a máquina de desenvolvimento comporta. Está descartado
+por decisão de produto: a arquitetura do Percurso exige rodar **no notebook comum de uma
+organização social**, e um modelo dimensionado para a máquina de desenvolvimento não é o produto
+— é uma demonstração que o Instituto não conseguiria operar. O porte é restrição de desenho, não
+variável livre. O caminho de ganho aqui é **modelo melhor no mesmo porte**, ou portões e prompt
+melhores; o template determinístico segue sendo a resposta correta, não um degrau provisório.
 
 **O que isto ensinou, e vale além deste caso:** fidelidade numérica não é fidelidade semântica.
 Um verificador que confere cada número contra o banco aprova, sem hesitar, um documento em que
 todo número está certo e todas as frases estão erradas.
+
+### 29. Cadastro de pessoas: quem cadastra é a coordenação, e a criança nasce bloqueada
+
+**Origem:** até a sessão de 25/08/2026 toda pessoa do Percurso vinha da seed (a equipe e as 132
+crianças) ou da ingestão de planilha (só crianças, e só em lote). Não havia como incluir uma
+professora nova nem uma criança nova pela interface — o item 2.8 do horizonte 2 de
+`ARQUITETURA.md` previa isso e ele foi aberto agora, na porta manual: `#/pessoas`.
+
+**Três decisões, e nenhuma delas é o caminho mais curto.**
+
+**1 · A porta é de coordenação, não da professora.** É o mesmo motivo de `/api/importar` ser de
+coordenação: papel e matrícula são exatamente o que decide, no resto do produto, quem enxerga a
+ficha de quem (escopo de turma, decisão 22; diretoria sem individual, decisão 16). Deixar o
+cadastro na mão de quem registra a chamada seria pôr o controle de acesso na mão de quem ele
+limita. A diretoria também não cadastra criança — 403, pela mesma regra de sempre.
+
+**2 · O consentimento nasce PENDENTE, e a criança entra bloqueada para observação.** A criança
+entra pela presença (legítimo interesse, LGPD Art. 7º IX) e não fica observável no mesmo gesto:
+quem libera a rubrica socioemocional é o responsável, num segundo ato, em `#/consentimentos`.
+O detalhe que quase passou: `painelConsentimentos` faz JOIN **interno** com `consentimento`, e
+uma criança sem linha nenhuma ficaria bloqueada de fato e **invisível na única tela que a
+desbloqueia**. Por isso as duas linhas `pendente` são gravadas na mesma transação da matrícula.
+`conteudo_clinico` também exige consentimento e **não** ganha linha: ele está declarado fora do
+sistema por construção, e abrir uma pendência sugeriria que um dia vai ser coletado.
+
+**3 · Homônimo é recusado com 409, não gravado.** O erro caro deste banco não é faltar criança —
+é a MESMA criança virar duas, porque aí a série de presença se parte e nenhum número do relatório
+fecha. A chave é a mesma da ingestão (nome completo + nascimento, R2-05 de `03-AUDITORIA-V2`) e o
+erro devolve o `id` do registro que já existe, para a tela poder oferecer a ficha em vez de um
+beco. Trocar a professora de uma turma que já tem dona exige `confirmar_troca`: a troca **move o
+escopo de leitura** das crianças daquela turma de uma pessoa para outra, e isso é decisão, não
+efeito colateral de um `select` mal tocado.
+
+**Um defeito latente pago de passagem.** `src/ingestao.js` gerava o código da criança com
+`COUNT(*) + 1`. `crianca.codigo` é UNIQUE: bastava uma criança sair do banco para o contador
+reemitir um código já usado e derrubar a importação inteira no INSERT. O gerador virou
+`proximoCodigoCrianca()` (MAX do sufixo), único para os dois caminhos — se cada porta tivesse o
+seu, elas colidiriam entre si.
+
+**O que fica fora, e é declarado:** o cadastro só CRIA. Desligar pessoa e encerrar matrícula
+continuam fora do MVP — o `UPDATE` existe no banco, o gesto não existe no produto.
+
+---
+
+### 30. Ninguém é apagado: quem sai do pipeline vai para o arquivo
+
+**Origem:** decisão do usuário em 25/08/2026, sobre a lacuna declarada na decisão 29 (o cadastro
+só criava). A formulação foi literal: *"nunca se exclui pessoa; se uma pessoa sai do pipeline ela
+deve ir para o arquivo"*.
+
+**Não existe `DELETE` de pessoa neste produto — e a ausência é a decisão**, não um esquecimento.
+Um teste de fumaça verifica que `DELETE /api/equipe` e `DELETE /api/criancas` respondem 404, para
+que a ausência não possa ser reintroduzida por engano.
+
+**Três razões, e nenhuma é sentimental.**
+
+1. **O registro fica em pé e assinado.** `observacao.educador_id` e `encontro.registrado_por` são
+   chaves estrangeiras. Apagar a professora arrastaria (ou orfanaria) tudo que ela registrou — e o
+   relatório do doador é construído em cima desses registros. Quem escreveu continua sendo quem
+   escreveu; o arquivo mostra quantas chamadas e observações a pessoa deixou, e é justamente esse
+   número o argumento contra o botão de apagar.
+2. **A criança que sai É o dado.** Safra, permanência e evasão (F6) medem exatamente a saída. Uma
+   criança apagada não evade: ela nunca existiu, e a curva de permanência mentiria **para cima**.
+3. **A criança arquivada continua protegida.** `nomesParaAnonimizar` não filtra por `ativo`, de
+   propósito (SEGURANCA-IA-02): evasão é justamente pauta de conversa, e o nome de quem saiu não
+   pode chegar ao modelo. Arquivar não pode virar uma porta lateral para isso.
+
+**A mecânica.** A criança já tinha metade dela desde a v1 (`crianca.ativo` mais `matricula.saida`,
+que a seed usa nas 26 que saíram) — faltava o **gesto**. A equipe não tinha nem a coluna:
+`educador.arquivado_em` é nova (data, não booleano: para pessoa da equipe *quando* saiu é a
+pergunta que se faz depois). A mudança de DDL recria o banco pela assinatura, como a decisão 14
+prevê.
+
+**O ponto de aplicação é `usuarioDa`, não o login.** O cookie de sessão não é assinado e vale 24 h
+(dívida nº 1). Se a checagem de arquivada estivesse só em `POST /api/sessao`, arquivar alguém não
+faria efeito nenhum sobre quem já estava dentro — por um dia inteiro. A checagem está na resolução
+da sessão, que toda rota atravessa: a sessão aberta morre no ato.
+
+**Duas recusas para o sistema não se trancar por fora.** Ninguém arquiva a si mesma (a pessoa
+perderia a sessão no mesmo ato, sem ninguém para desfazer), e a **última coordenação na ativa não
+sai** — sem ela não há quem cadastre a substituta nem quem traga alguém de volta. E turma órfã não
+é detalhe: `exigeAcessoTurma` lê `turma.educador_id`, então arquivar a professora ou passa as
+turmas a uma sucessora escolhida na hora, ou as libera e **diz quais ficaram sem professora**.
+
+**Voltar, para a criança, é matrícula NOVA.** Reabrir a matrícula antiga apagaria a saída, e a
+saída é o dado. O modelo deste banco já dizia isso desde a v1: criança é entidade, matrícula é
+relação. **O consentimento volta a `pendente`** — a base legal caducou com a saída, e retomar o
+processamento de dado sensível em silêncio, depois de um intervalo, é o pior dos dois erros. O
+preço está declarado: este banco não tem histórico de consentimento, então quem consentiu antes se
+perde no ato.
+
+**Dois defeitos que a tela de arquivo expôs** — ambos invisíveis enquanto nenhuma tela mostrava
+data de saída:
+
+- **A seed produzia matrícula ENCERRADA com saída no futuro.** `entrada + duração` passava de hoje
+  para parte das 26 crianças que saíram. Na tela: *"saiu em 29/10/2026"* num 25/08/2026. A duração
+  passou a ser limitada ao que já passou, e há teste unitário fixando a regra.
+- **A curva de permanência podia SUBIR.** `safras()` recalculava os elegíveis a cada marco, então
+  os quatro pontos vinham de **populações diferentes** — e a tela os liga com uma `polyline`, como
+  se fossem uma curva só. Medido depois da correção da seed: 80% aos 9 meses e **82% aos 12**,
+  porque os 28 que já tiveram tempo de chegar aos 12 meses eram uma turma melhor que os 49 que
+  chegaram aos 9. O denominador passou a ser **fixo por safra** (quem já teve tempo de alcançar o
+  marco mais profundo), e a monotonia vale por construção: quem ficou 12 meses ficou 9. O preço é
+  declarado na tela — a safra recente perde os matriculados novos do ponto de 3 meses.
+
+**O que isto ensinou:** dado que nenhuma tela mostra não é dado verificado. Os dois defeitos
+estavam no banco e nos testes há semanas; o que os encontrou não foi leitura de código, foi
+**pintar a data numa tela e olhar**.
+
+---
 
 ---
 

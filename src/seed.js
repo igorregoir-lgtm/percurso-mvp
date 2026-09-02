@@ -146,12 +146,18 @@ export function semear() {
       const entrada = entradaAleatoria();
       matricular(novaCrianca(3, 5, entrada), 3, 5, entrada);
     }
-    // Criancas que sairam — dao sinal de evasao para as safras (F6)
+    // Criancas que sairam — dao sinal de evasao para as safras (F6).
+    // A duracao e' limitada ao que ja' passou: sem o teto, entrada + duracao
+    // caia depois de hoje e a seed produzia matricula ENCERRADA com data de
+    // saida no futuro. Passou despercebido enquanto nenhuma tela mostrava a
+    // saida; a tela de arquivo (decisao 30) mostra, e "saiu em 29/10/2026"
+    // num 25/08/2026 e' dado errado, nao detalhe de apresentacao.
     for (let i = 0; i < 26; i++) {
       const entrada = addDias(T, -intBetween(300, 900));
       const id = novaCrianca(7, 11, entrada);
       run(`UPDATE crianca SET ativo = 0 WHERE id = ?`, id);
-      matricular(id, rand() < 0.5 ? 1 : 2, null, entrada, addDias(entrada, intBetween(45, 400)));
+      const duracao = Math.max(1, Math.min(intBetween(45, 400), diasEntre(entrada, T)));
+      matricular(id, rand() < 0.5 ? 1 : 2, null, entrada, addDias(entrada, duracao));
     }
 
     // --- Consentimentos ------------------------------------------------------

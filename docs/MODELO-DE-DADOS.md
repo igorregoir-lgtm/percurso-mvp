@@ -50,11 +50,11 @@ cada criança fez não entra aqui, esta folha é da turma"* virando esquema. Nã
 
 | Tabela | O que é | Campos-chave |
 |---|---|---|
-| `crianca` | A pessoa atendida. Entidade única. | `codigo` (EBZ-0001), `nome`, `nascimento`, `responsavel`, `ativo` |
+| `crianca` | A pessoa atendida. Entidade única. | `codigo` (EBZ-0001), `nome`, `nascimento`, `responsavel`, `ativo` (0 = no arquivo) |
 | `matricula` | Relação criança × programa × turma × período | `crianca_id`, `programa_id`, `turma_id`, `entrada`, `saida`, `status` |
 | `programa` | Os quatro programas do Instituto | `nome`, `faixa`, `cadencia`, `no_escopo`, `nota` |
 | `turma` | Recorte operacional do programa, com educador responsável | `programa_id`, `nome`, `turno`, `educador_id` |
-| `educador` | Quem opera o sistema | `nome`, `apelido`, `papel` (`educador` \| `coordenacao` \| `diretoria`) |
+| `educador` | Quem opera o sistema | `nome`, `apelido`, `papel` (`educador` \| `coordenacao` \| `diretoria`), `arquivado_em` (NULL = na ativa) |
 | `encontro` | Um dia de aula de uma turma | `turma_id`, `data`, `registrado_por`, `registrado_em` |
 | `presenca` | Uma criança em um encontro | `encontro_id`, `crianca_id`, `status` (`P` \| `F`) |
 | `ciclo` | Janela de observação (2–3×/ano) | `nome`, `ano`, `ordem`, `inicio`, `fim`, `status` |
@@ -79,6 +79,15 @@ cada criança fez não entra aqui, esta folha é da turma"* virando esquema. Nã
 | `pauta` | A sugestão da semana e a decisão da educadora. O **descarte** é o dado que mede o agente. | `turma_id`, `semana`, `sugestao_codigo`, `decisao` (`aceita` \| `descartada`), `decidido_por` |
 | `relatorio` | O artefato do doador: blocos, texto, supressões aplicadas e publicação | `tipo` (`ciclo` \| `carta`), `periodo`, `blocos_json`, `texto`, `revisor_status`, `supressoes_json`, `status`, `publicado_por` |
 | `importacao` | Log da ingestão retroativa: quantas crianças, quantas grafias unificadas, o que foi descartado e por quê | `origem`, `linhas`, `criancas_novas`, `reconhecidas`, `duplicatas`, `relatorio_json`, `executado_por` |
+
+**O que NÃO existe como operação, e é o ponto: DELETE de pessoa.** Não há rota, função de domínio
+nem gesto de interface que apague alguém deste banco — nem da equipe, nem criança. Quem sai do
+pipeline vai para o **arquivo**: `educador.arquivado_em` ganha data, `crianca.ativo` vai a 0 e as
+matrículas ativas são encerradas com `matricula.saida`. Os três campos são a mesma decisão
+(nº 30), e ela não é estética: `observacao.educador_id` e `encontro.registrado_por` são chaves
+estrangeiras — apagar a professora arrastaria ou orfanaria tudo que ela registrou, e o relatório
+do doador é construído em cima desses registros. A criança que saiu **é** o dado: safra,
+permanência e evasão medem exatamente a saída.
 
 **O que NÃO existe como tabela, e é o ponto:** áudio, transcrição e score individual de
 desenvolvimento. O áudio nunca sai do navegador; a transcrição vive em memória durante uma

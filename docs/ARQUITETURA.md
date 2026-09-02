@@ -70,7 +70,7 @@ navegador (public/ — HTML+CSS+JS puro, hash routing, sem build)
     ▼
 server.js        HTTP puro (node:http) — estáticos + despacho de /api/*
     ▼
-src/api.js       53 rotas — sessão por perfil; RBAC educadora / coordenação /
+src/api.js       71 rotas — sessão por perfil; RBAC educadora / coordenação /
     │            diretoria (a diretoria não abre registro individual)
     ▼
     ├── src/domain.js     núcleo: elegibilidade, perímetro, alertas, safras,
@@ -87,7 +87,7 @@ data/percurso.db local ou /var/data/percurso.db no Render
                    (WAL; disco persistente; backup externo obrigatório)
 
 src/seed.js      dados 100% sintéticos, PRNG com semente fixa (regra 1 do bloco 6)
-scripts/         reset.mjs · smoke-test.mjs (246 asserções) · unit-test.mjs (63)
+scripts/         reset.mjs · smoke-test.mjs (294 asserções) · unit-test.mjs (136)
                  rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
 .github/workflows/ci.yml   as quatro baterias a cada push (AI_ENABLED=false)
 ```
@@ -177,7 +177,7 @@ aceitáveis apenas porque o dado é sintético.
 | 2.5 | Consentimento de verdade | Termo impresso por campo (a tabela `consentimento` já modela), assinado pelo responsável, arquivado fisicamente; o registro no sistema aponta para o termo |
 | 2.6 | Encarregado LGPD | Nomeação formal pela coordenação; canal de requisição do titular (acesso, correção, eliminação) — a eliminação já é viável por SQL, precisa virar procedimento |
 | 2.7 | Operação no Render | O Web Service canônico usa disco persistente e uma única instância; backup externo continua obrigatório. Escala horizontal exige migrar do SQLite para banco compartilhado |
-| 2.8 | Troca da seed | Cadastro real substitui a seed **depois** de 2.1–2.6 prontos; `reset.mjs` passa a ser proibido em produção (guarda por variável de ambiente) |
+| 2.8 | Troca da seed | **Porta manual entregue** (`#/pessoas`, `POST /api/equipe`, `POST /api/criancas`): coordenação cadastra equipe e criança uma a uma, com dedup por nome+nascimento e consentimento nascendo pendente. Desligar pessoa e encerrar matrícula também entraram, como **arquivo** e não como exclusão (`#/arquivo`, decisão 30). Falta para fechar o item: a troca da seed por dado real — que continua condicionada a 2.1–2.6 prontos; `reset.mjs` passa a ser proibido em produção (guarda por variável de ambiente) |
 
 Critério de saída do horizonte: uma educadora real registra uma chamada real, com consentimento
 real arquivado, num banco que sobreviveria à perda da máquina.

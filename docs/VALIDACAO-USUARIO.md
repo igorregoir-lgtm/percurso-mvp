@@ -3,6 +3,11 @@
 > **Estado: a validação NÃO aconteceu.** Este documento é o protocolo da sessão, escrito antes
 > dela. A seção 6 (resultados) fica em branco até a sessão ocorrer e só pode ser preenchida com o
 > formulário da seção 5, preenchido durante a sessão — nunca por memória ou inferência.
+>
+> **Método por trás deste protocolo:** [`METODOLOGIA-VALIDACAO-PERCURSO.md`](METODOLOGIA-VALIDACAO-PERCURSO.md)
+> — hipóteses em teste, limiares com fonte, Protocolo do Lapso, ameaças à validade e o que a sessão
+> não prova. **Execução em campo:** [`visita-ebenezer/ROTEIRO-IGOR.md`](visita-ebenezer/ROTEIRO-IGOR.md)
+> (pessoal) e [`visita-ebenezer/ROTEIRO-GRUPO.md`](visita-ebenezer/ROTEIRO-GRUPO.md) (grupo, Trilhas A e B).
 
 ---
 
@@ -14,7 +19,7 @@ avaliação acadêmica". A exigência vem da semana 5, está admitida como pende
 [`TESTES.md`](TESTES.md) ("a validação com usuário real é a etapa seguinte") e aparece como item
 1.3 do Horizonte 1 em [`ARQUITETURA.md`](ARQUITETURA.md).
 
-O motivo é simples. O MVP tem 246 asserções de fluxo e 63 testes unitários — mas teste
+O motivo é simples. O MVP tem 294 asserções de fluxo e 136 testes unitários — mas teste
 automatizado prova que o sistema faz o que o código diz, não que a educadora consegue usá-lo. O
 produto inteiro está ancorado em uma frase da persona (*"Não consigo transformar em dados os
 resultados do meu trabalho"*, [`LEAN-INCEPTION.md`](LEAN-INCEPTION.md) §2) e em promessas

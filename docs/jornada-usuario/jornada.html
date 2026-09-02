@@ -1,0 +1,299 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root{
+  --bg:#F4EFE5; --card:#FFFFFF; --card2:#F7F3EA; --ink:#2E2A24; --muted:#8B8478;
+  --line:#E6DFD0; --red:#B0392C; --redsoft:#F4DCD7; --ok:#4A6B2A; --okbg:#DCE9CA;
+  --amb:#8A6316; --ambbg:#FBF1DC; --chip:#F0EBE0;
+  --disp:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
+     -webkit-font-smoothing:antialiased;padding:52px 60px 44px}
+.topo{background:var(--ink);border-radius:16px;padding:30px 38px;display:flex;
+      align-items:center;gap:30px;color:#F4EFE5}
+.marca{width:70px;height:70px;border-radius:50%;background:var(--red);display:grid;
+       place-items:center;font-family:var(--disp);font-weight:700;font-size:27px;flex:none}
+.topo h1{font-family:var(--disp);font-weight:700;font-size:46px;letter-spacing:-.02em;line-height:1.05}
+.topo .sub{font-size:19px;color:#C9C0B2;margin-top:7px}
+.selo{margin-left:auto;background:var(--red);border-radius:999px;padding:11px 22px;
+      font-family:var(--disp);font-weight:600;font-size:16px;letter-spacing:.06em;text-align:right}
+.selo small{display:block;font-weight:500;font-size:12.5px;letter-spacing:.04em;opacity:.85;margin-top:2px}
+
+.lens{display:grid;grid-template-columns:640px 1fr 900px;gap:0;background:var(--card);
+      border:1px solid var(--line);border-top:none;border-radius:0 0 16px 16px;overflow:hidden}
+.lens>div{padding:26px 30px}
+.lens>div+div{border-left:1px solid var(--line)}
+.rot{font-family:var(--disp);font-weight:600;font-size:13px;letter-spacing:.14em;
+     text-transform:uppercase;color:var(--red);margin-bottom:11px}
+.pessoa{display:flex;gap:18px;align-items:flex-start}
+.av{width:64px;height:64px;border-radius:50%;background:var(--okbg);color:var(--ok);
+    display:grid;place-items:center;font-size:30px;flex:none;border:2px solid var(--ok)}
+.pessoa h3{font-family:var(--disp);font-weight:700;font-size:23px;line-height:1.2}
+.pessoa .papel{font-size:15px;color:var(--muted);margin-top:5px;line-height:1.45}
+.desc{font-size:14.5px;line-height:1.55;color:var(--ink);margin-top:14px}
+.cen{font-size:16px;line-height:1.6}
+.exp ul{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:8px 22px}
+.exp li{font-size:14.5px;line-height:1.45;padding-left:17px;position:relative}
+.exp li::before{content:"";position:absolute;left:0;top:8px;width:7px;height:7px;
+                border-radius:50%;background:var(--ok)}
+
+.grade{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-top:22px}
+.col{background:var(--card);border:1px solid var(--line);border-radius:14px;
+     overflow:hidden;display:flex;flex-direction:column}
+.col-h{background:var(--ink);color:#F4EFE5;padding:16px 18px 14px;text-align:center}
+.num{display:block;font-family:var(--disp);font-weight:600;font-size:13px;
+     letter-spacing:.16em;color:var(--red);filter:brightness(1.7)}
+.cnome{display:block;font-family:var(--disp);font-weight:700;font-size:19.5px;
+       line-height:1.22;margin-top:5px;text-wrap:balance}
+.emo{background:var(--card2);border-bottom:1px solid var(--line);padding:14px 18px;
+     display:flex;gap:12px;align-items:flex-start;min-height:104px}
+.emoji{font-size:31px;line-height:1;flex:none}
+.etxt{font-size:13px;line-height:1.42;color:var(--muted)}
+.acoes{list-style:none;padding:16px 18px;display:flex;flex-direction:column;gap:11px;flex:1}
+.b{font-size:13.4px;line-height:1.46}
+.b.hoje{padding-left:15px;position:relative;color:var(--ink)}
+.b.hoje::before{content:"";position:absolute;left:0;top:7px;width:6px;height:6px;
+                border-radius:50%;background:var(--line)}
+.chip{display:inline-block;font-family:var(--disp);font-weight:600;font-size:10.5px;
+      letter-spacing:.07em;text-transform:uppercase;padding:3px 8px;border-radius:5px;
+      margin-right:7px;vertical-align:1px;white-space:nowrap}
+.chip.entra{background:var(--okbg);color:var(--ok)}
+.chip.falta,.chip.nao{background:var(--redsoft);color:var(--red)}
+.chip.guarda{background:var(--ambbg);color:var(--amb)}
+.b.entra{background:#F3F8EC;border-left:3px solid var(--ok);padding:9px 11px;border-radius:0 7px 7px 0}
+.b.falta,.b.nao{background:#FCF4F2;border-left:3px solid var(--red);padding:9px 11px;border-radius:0 7px 7px 0}
+.b.guarda{background:#FDF8EE;border-left:3px solid var(--amb);padding:9px 11px;border-radius:0 7px 7px 0}
+.quote{margin:0 18px 18px;padding:14px 16px;border-radius:10px;font-style:italic;
+       font-size:13.4px;line-height:1.5}
+.quote.conf{background:var(--okbg);border:1px solid var(--ok);color:#33501C}
+.quote.aten{background:var(--redsoft);border:1px solid var(--red);color:#7E2A20}
+.quote .fonte{display:block;font-style:normal;font-size:10.5px;letter-spacing:.03em;
+              margin-top:9px;opacity:.75;font-family:var(--disp);font-weight:500}
+
+.legenda{background:var(--ink);color:#C9C0B2;border-radius:12px;margin-top:18px;
+         padding:15px 30px;display:flex;align-items:center;gap:30px;font-size:14px}
+.pt{display:inline-flex;align-items:center;gap:9px}
+.pt i{width:11px;height:11px;border-radius:50%;display:block}
+.dir{margin-left:auto;font-family:var(--disp);font-weight:500}
+
+.insights{margin-top:26px}
+.ih{font-family:var(--disp);font-weight:700;font-size:27px;margin-bottom:5px}
+.isub{font-size:15.5px;color:var(--muted);margin-bottom:17px}
+.mvs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.mv{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--amb);
+    border-radius:0 12px 12px 0;padding:19px 22px}
+.mv-n{font-family:var(--disp);font-weight:600;font-size:12px;letter-spacing:.14em;color:var(--amb)}
+.mv h4{font-family:var(--disp);font-weight:700;font-size:18px;line-height:1.28;margin:6px 0 9px}
+.mv p{font-size:13.6px;line-height:1.52;color:#4A443B}
+
+.rodape{margin-top:24px;font-size:13px;color:var(--muted);line-height:1.55;
+        border-top:1px solid var(--line);padding-top:16px;display:flex;gap:40px}
+.rodape b{color:var(--ink);font-weight:600}
+</style></head><body>
+
+<div class="topo">
+  <div class="marca">P</div>
+  <div>
+    <h1>Jornada de Usuário — o registro do trabalho socioemocional</h1>
+    <div class="sub">Instituto Ebenézer · Desafio B (Monitoramento de Impacto) · Produto: <b>Percurso</b> · Grupo 06</div>
+  </div>
+  <div class="selo">JORNADA ATUAL<small>levantada em campo · 29/08/2026</small></div>
+</div>
+
+<div class="lens">
+  <div>
+    <div class="rot">Quem</div>
+    <div class="pessoa">
+      <div class="av">◔</div>
+      <div>
+        <h3>A psicóloga do Instituto</h3>
+        <div class="papel">Psicóloga voluntária — conduz os grupos, faz o atendimento individual e é quem escreve o relatório</div>
+      </div>
+    </div>
+    <div class="desc">Seis anos de casa. Este é o primeiro ano em que existe uma remuneração para ela, bancada por um recurso de um ano só, com renovação incerta. É a profissional que consegue acompanhar as crianças durante a semana — quem conduz o sábado não está lá de segunda a sexta. Num mesmo dia atende o grupo, faz atendimento individual, recebe estagiária, atende outra escola e ainda tem os próprios pacientes fora do Instituto. Já conhece metodologia de medição socioemocional (escala 0/1/2 no início e no fim do ano) porque usou em outra ONG — só que lá quem transformava relatório em indicador era uma pessoa de monitoramento, papel que aqui não existe. Já anonimiza por conta própria, trocando o nome por iniciais, antes de qualquer sistema pedir. Ela não tem problema para fazer a atividade: o repertório vem da vivência e do estudo. O gargalo é registrar.</div>
+  </div>
+  <div>
+    <div class="rot">Cenário</div>
+    <div class="cen">Um sábado de atividade no Instituto Ebenézer e a semana que vem depois. A atividade acontece e é boa — o problema é fazer com que ela exista fora da cabeça de quem estava na sala. O registro tem três destinos ao mesmo tempo: o relatório no padrão que o conselho profissional exige, a prestação de contas semanal aos pais (hoje manual, por WhatsApp, grupo por turma) e a prova de efetividade para quem financia — porque sem captação nada do resto se sustenta. A operação inteira cabe em duas pessoas, falta voluntário para delegar, o sábado é corrido e o domingo é descanso. Jornada levantada na visita de campo de 29/08/2026, a partir das transcrições das gravações 81 a 84.</div>
+  </div>
+  <div class="exp">
+    <div class="rot">O que ela espera de qualquer solução</div>
+    <ul><li>Registrar sem sair da sala e sem parar a atividade — no celular, em segundos, não no notebook depois.</li>
+<li>Que o relatório saia no padrão que o conselho profissional exige: descrevendo o procedimento, de forma não individualizada e sem nome de criança.</li>
+<li>Poder corrigir o texto antes de qualquer coisa valer — o fecho é revisão, nunca redação automática.</li>
+<li>Que o dado não saia do Instituto e que nada que identifique a criança seja gravado.</li>
+<li>Que a técnica e o vocabulário dela sejam respeitados (resistência, resiliência), em vez de um formulário genérico por cima.</li>
+<li>Que o registro devolva alguma coisa: histórico da mesma criança ao longo do tempo, e resposta pronta quando a assistente social do projeto parceiro pergunta como a criança está.</li>
+<li>Que exista o que mostrar a quem financia — hoje o único número consolidado é presença.</li>
+<li>Não perder o que já funciona: o vídeo curto do celular direto para o grupo dos pais, e a chamada exatamente como ela é hoje.</li></ul>
+  </div>
+</div>
+
+<div class="grade">
+    <div class="col">
+      <div class="col-h">
+        <span class="num">01</span>
+        <span class="cnome">Chega e monta o encontro sozinha</span>
+      </div>
+      <div class="emo">
+        <span class="emoji">🙂</span>
+        <span class="etxt">Confiança alta no ofício, peso do quadro mínimo. A atividade ela sabe fazer; o resto é duas pessoas para tudo.</span>
+      </div>
+      <ul class="acoes"><li class="b hoje">Define a atividade a partir da vivência e do estudo — esse repertório nunca foi o gargalo.</li>
+<li class="b hoje">Faz a chamada em papel ou planilha: é o único registro consolidado que a operação tem, com corte de 75% de presença para a criança seguir no programa.</li>
+<li class="b hoje">Não há a quem delegar: falta voluntário, e quem conduz no sábado não aparece durante a semana.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>marcar se hoje tem encontro e contar por voz, em segundos, o que vai acontecer — antes de a sala encher.</li>
+<li class="b nao"><span class="chip nao">o produto não entra</span>a chamada. Sugerir mexer nela recebeu recusa imediata, justificada por legislação.</li></ul>
+      <div class="quote aten">
+        <p>“Mas ele tem uma coisa razoavelmente organizada aqui. Para só ele e uma pedagoga. Razoavelmente organizada.”</p>
+        <span class="fonte">Visita 29/08/2026 · Gravação 81 · observação do entrevistador</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="col-h">
+        <span class="num">02</span>
+        <span class="cnome">A coisa boa acontece — e ninguém de fora consegue ler</span>
+      </div>
+      <div class="emo">
+        <span class="emoji">✨</span>
+        <span class="etxt">Pico de valor humano e zero de registro: as mãos e a atenção estão ocupadas conduzindo.</span>
+      </div>
+      <ul class="acoes"><li class="b hoje">Conduz o jogo, guarda o placar de cabeça, adia a contagem para o final, e ainda cozinha, arruma a mesa e tira foto.</li>
+<li class="b hoje">Para quem está de fora, a atividade é ilegível enquanto acontece: nem quantas crianças, nem qual atividade — isso só é reconstruído depois, por quem viu.</li>
+<li class="b hoje">O único registro que existe no momento é uma contagem manual improvisada, mostrada no gesto.</li>
+<li class="b hoje">A evidência mais forte da manhã é uma fala dita em voz alta na roda — e ela evapora se ninguém anotar no instante.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>nada pode disputar a atenção dela aqui. Ou a captura é de segundos, ou não existe.</li>
+<li class="b guarda"><span class="chip guarda">não pode ser perdido</span>o vídeo curto gravado no celular e mandado direto para o grupo dos pais já funciona e é considerado fácil.</li></ul>
+      <div class="quote conf">
+        <p>“Agora eu já mando um vídeozinho, tá vendo? Do que tá acontecendo aqui. E você que fez? Pegou seu celular, gravou e fez. Isso, é fácil. Se você pudesse fazer tudo isso no celular, seria muito mais fácil. Do que você parar aí pro notebook.”</p>
+        <span class="fonte">Visita 29/08/2026 · Gravação 82 · fala da liderança</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="col-h">
+        <span class="num">03</span>
+        <span class="cnome">A hora em que o registro deveria nascer</span>
+      </div>
+      <div class="emo">
+        <span class="emoji">😕</span>
+        <span class="etxt">Queda. A dor é nomeada em voz alta: fazer, a equipe faz bem — registrar é o que quebra.</span>
+      </div>
+      <ul class="acoes"><li class="b hoje">O que existe hoje é um relatório em texto, no padrão do conselho profissional: descreve o procedimento feito durante a atividade, não individualiza, não cita nome de criança.</li>
+<li class="b hoje">A dinâmica que acabou de acontecer não cabe nesse formato — ela mesma diz que não consegue traduzir no relatório o que foi desenvolvido ali.</li>
+<li class="b hoje">Ela já anonimiza por conta própria, trocando o nome pelas iniciais.</li>
+<li class="b hoje">A tradução do episódio concreto para a competência socioemocional já está pronta na cabeça dela, no vocabulário dela (resistência, resiliência).</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>check-in de perguntas fechadas e contáveis — quantas ajudaram sem ninguém pedir, quantas participaram do começo ao fim — com a opção explícita de não observado.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>a fala de cerca de 40 segundos que vira rascunho — o nome dito no meio da frase é apagado sem interromper o relato, e nada é liberado sem o ok dela.</li></ul>
+      <div class="quote aten">
+        <p>“Eu acho que o maior desafio aqui é registrar o que você fez, né? Essa é a maior dificuldade, é o registro.”</p>
+        <span class="fonte">Visita 29/08/2026 · Gravação 82</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="col-h">
+        <span class="num">04</span>
+        <span class="cnome">O relatório é a primeira coisa a ser empurrada</span>
+      </div>
+      <div class="emo">
+        <span class="emoji">😮‍💨</span>
+        <span class="etxt">Fundo do dia. Não é má vontade: não sobra nem tempo nem energia, e a negativa é dupla e imediata.</span>
+      </div>
+      <ul class="acoes"><li class="b hoje">O dia inteiro foi cheio: grupo, atendimento individual, reunião, estagiária que chega, outra escola atendida.</li>
+<li class="b hoje">Ela ainda tem os próprios pacientes fora do Instituto — o registro compete com atendimento, e perde.</li>
+<li class="b hoje">O relatório só sai quando sobra tempo, e o sábado é corrido, o domingo é descanso.</li>
+<li class="b hoje">O acompanhamento longitudinal continua existindo, mas como pauta falada entre os adultos, todo dia, sem nenhum suporte — um prontuário oral.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>se o registro não nasceu durante ou logo depois da atividade, aqui ele não nasce. Qualquer solução que peça uma sessão dedicada de escrita já nasce morta.</li></ul>
+      <div class="quote aten">
+        <p>“Você depois tem que sair daqui, preencher o relatório... Não dá, não dá.”</p>
+        <span class="fonte">Visita 29/08/2026 · Gravação 84</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="col-h">
+        <span class="num">05</span>
+        <span class="cnome">Tem massa de vivência, não tem prova</span>
+      </div>
+      <div class="emo">
+        <span class="emoji">😟</span>
+        <span class="etxt">Peso existencial e um susto no meio: entusiasmo com a demo e, logo em seguida, a palavra perigoso sobre gravar.</span>
+      </div>
+      <ul class="acoes"><li class="b hoje">A prestação de contas semanal aos pais é feita à mão, por WhatsApp, grupo por turma — inclusive um grupo restrito a quem tem 75% de presença, onde circulam passeios e benefícios.</li>
+<li class="b hoje">O único número consolidado que existe é presença. Sobre evolução socioemocional não há o que mostrar a investidor.</li>
+<li class="b hoje">Sem captação, nada do resto se sustenta: a prestação de contas tem peso de sobrevivência, não de burocracia — inclusive da própria remuneração dela, que vale um ano.</li>
+<li class="b hoje">O medo aparece com nome: gravar áudio ou vídeo da criança é tratado como proibido e perigoso, mesmo que o dado fique dentro da sala.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>a demonstração de anonimização — falar sem parar, o nome sumir sozinho, o relatório só sair mediante ok humano — foi recebida com Nossa, que legal.</li>
+<li class="b falta"><span class="chip falta">falta na tela</span>dizer, no instante em que o botão é apertado, que quem está sendo gravada é a profissional falando sobre a turma, e que o áudio não fica.</li></ul>
+      <div class="quote aten">
+        <p>“E aí você fica, a gente sempre faz o trabalho com os meninos e a gente já teve um bom trabalho com os meninos aqui, só que a gente não consegue meio que ter um registro pra conseguir, por exemplo, mostrar pros investidores, sabe?”</p>
+        <span class="fonte">Visita 29/08/2026 · Gravação 83 · fala da psicóloga</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="col-h">
+        <span class="num">06</span>
+        <span class="cnome">O registro serve para conversar, não para arquivar</span>
+      </div>
+      <div class="emo">
+        <span class="emoji">🤝</span>
+        <span class="etxt">Alívio condicional. Interesse real, com uma exigência na frente: poder corrigir depois. Ainda não é vitória.</span>
+      </div>
+      <ul class="acoes"><li class="b hoje">O valor que ela enxerga não é o relatório avulso — é o histórico da mesma criança ao longo do tempo.</li>
+<li class="b hoje">Existe um consumidor externo real e hoje sem resposta: a assistente social do projeto parceiro manda mensagem perguntando como a criança está, e isso é respondido de memória, no WhatsApp.</li>
+<li class="b hoje">A primeira pergunta espontânea dela diante do relato gerado foi sobre poder editar depois — controle editorial é condição de confiança, não recurso extra.</li>
+<li class="b hoje">Ela pede para poder informar a técnica que usa e que o sistema respeite esse formato, em vez de impor um genérico.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>devolve médias por dimensão, pauta acionável e relatório para quem financia — a primeira vez que o registro devolve alguma coisa a quem registrou.</li>
+<li class="b falta"><span class="chip falta">ainda não entra</span>não existe nenhum canal de profissional para profissional, que é justamente o destino que ela chama de mais rico.</li></ul>
+      <div class="quote conf">
+        <p>“Que daí seria entre profissionais, que é mais rico ainda.”</p>
+        <span class="fonte">Visita 29/08/2026 · Gravação 84</span>
+      </div>
+    </div></div>
+
+<div class="legenda">
+  <span class="pt"><i style="background:#B5D48C"></i> momento de confiança / o que já funciona</span>
+  <span class="pt"><i style="background:#E4796A"></i> ponto de atenção / onde trava</span>
+  <span class="pt"><i style="background:#DCE9CA;border:1px solid #4A6B2A"></i> onde o Percurso entra</span>
+  <span class="pt"><i style="background:#F4DCD7;border:1px solid #B0392C"></i> onde ele ainda não entra</span>
+  <span class="dir">Modelo de 3 zonas (Lens · Experience · Insights) — NN/g</span>
+</div>
+
+<div class="insights">
+  <div class="ih">Momentos da verdade</div>
+  <div class="isub">Os pontos em que a solução é aprovada ou reprovada na prática — cada um ancorado numa fala da visita.</div>
+  <div class="mvs"><div class="mv">
+      <span class="mv-n">01</span>
+      <h4>A evidência só existe se for capturada na hora</h4>
+      <p>O dado socioemocional não se extrai perguntando depois. Formulação literal do campo: &quot;É que a gente às vezes vem com a percepção de que a gente vai conseguir extrair alguma informação dele. Você tem que, na verdade, observar o que está acontecendo.&quot; Qualquer fluxo que só peça o registro no fim do dia já perdeu o material — e o fim do dia é exatamente onde ela responde &quot;Não dá, não dá&quot;.</p>
+    </div><div class="mv">
+      <span class="mv-n">02</span>
+      <h4>O check-in é respondível: falta captura, não observação</h4>
+      <p>Perguntada em números logo depois da atividade, ela respondeu sem hesitar — &quot;Duas.&quot; / &quot;Quanta participou do começo ao fim?&quot; / &quot;Seis.&quot; A observação já está pronta na cabeça dela. O risco é o oposto do esperado, e quem levantou foi o próprio time: &quot;Se vai ficar longo pra você ou não&quot;. Cada pergunta a mais no check-in é tempo tirado de atendimento.</p>
+    </div><div class="mv">
+      <span class="mv-n">03</span>
+      <h4>&quot;Aí eu consigo editar depois também?&quot;</h4>
+      <p>Primeira pergunta espontânea dela ao ver o relato gerado pela máquina. Se o texto não for corrigível antes de valer, o registro não é dela — e ela não assina o que não escreveu. O fecho tem de ser revisão, nunca redação automática. Isto é gate de confiança, não refinamento de v2.</p>
+    </div><div class="mv">
+      <span class="mv-n">04</span>
+      <h4>A palavra usada para gravar é &quot;perigoso&quot;</h4>
+      <p>Sobre captar áudio ou vídeo da criança, mesmo sem o dado sair da sala: &quot;Mas mesmo que fique aqui dentro este dado, ela não pode fazer? / É perigoso, né?&quot; O coração do MVP é captura por voz. Ou a tela deixa explícito, no momento da gravação, quem está sendo gravado e que o áudio não persiste, ou o fluxo principal trava aí.</p>
+    </div><div class="mv">
+      <span class="mv-n">05</span>
+      <h4>Celular, nunca notebook</h4>
+      <p>A rotina que já funciona é o vídeo curto gravado no celular e mandado direto para o grupo dos pais — classificada por ela mesma como &quot;Isso, é fácil.&quot; O contraste levantado na visita foi celular versus &quot;Do que você parar aí pro notebook.&quot; O que exigir estação de trabalho não acontece.</p>
+    </div><div class="mv">
+      <span class="mv-n">06</span>
+      <h4>O formato do relatório tem dono, e não é o produto</h4>
+      <p>O relatório segue o padrão do conselho profissional: &quot;Você registra o procedimento que você faz durante a atividade&quot;, e &quot;De forma não individualizada. Porque não pode ser individualizado.&quot; Se a saída do sistema não nascer nesse formato, ela continua escrevendo o relatório à mão — e o produto vira trabalho a mais, não a menos.</p>
+    </div></div>
+</div>
+
+<div class="rodape">
+  <div style="flex:1"><b>Fonte.</b> Visita de campo ao Instituto Ebenézer em 29/08/2026, das 11h às 13h. Quatro gravações (97 min), transcritas e consolidadas. As seis falas citadas nesta jornada foram <b>conferidas uma a uma contra as transcrições originais</b> — todas literais.</div>
+  <div style="flex:1"><b>Proteção.</b> Nenhum nome de criança e nenhum caso individual identificável aparece aqui. A persona é nomeada pelo papel, não pelo nome próprio — como a norma do conselho profissional exige dos relatórios da própria psicóloga.</div>
+</div>
+
+</body></html>

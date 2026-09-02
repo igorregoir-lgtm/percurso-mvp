@@ -14,13 +14,13 @@ Em outro:
 node scripts/smoke-test.mjs
 ```
 
-Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **255 passaram,
+Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **294 passaram,
 0 falharam**.
 
-Há também uma bateria de **115 testes unitários** das regras críticas de domínio (filtro de
+Há também uma bateria de **136 testes unitários** das regras críticas de domínio (filtro de
 perímetro, validação do schema do extrator, determinismo do agente, os três scores, supressão com
 agrupamento, deduplicação da ingestão, revisor de sobre-alegação, consentimento, imutabilidade da
-síntese, fecho de ciclo), que roda sem servidor, contra um banco temporário descartável:
+síntese, fecho de ciclo, cadastro e arquivo de pessoas, base fixa da curva de permanência), que roda sem servidor, contra um banco temporário descartável:
 
 ```bash
 node scripts/unit-test.mjs
@@ -63,6 +63,8 @@ node scripts/reset.mjs
 | **18 · Fecho de ciclo (achado A-05)** | 5 | educadora não fecha (403); coordenação fecha; abre o próximo; **reporta quantas anotações legadas foram descartadas**; ciclo fechado não fecha de novo |
 | **19 · Escopo de turma (decisão 22)** | 4 | lista escopada da outra educadora; existe criança exclusiva de outra turma; **ficha e observação de criança alheia recusadas (403)** |
 | **20 · Passo — assistente (decisão 26)** | 9 | 401 sem sessão; 422 vazia; **pergunta reflexiva redireciona ao copilot sem modelo**; redirecionamento sem fala; fora do produto = limite declarado; **diretoria + nome = recusa (decisão 16)**; chips por tela e por papel; sessão apagada |
+| **21 · Cadastro de pessoas (decisão 29)** | 18 | professora não abre o cadastro e diretoria não cadastra criança (403); equipe, papéis, programas e turmas na mesma resposta; apelido derivado do nome; **homônimo no mesmo papel recusado (409)**; a pessoa nova entra pela porta de sempre e aparece na tela de entrada; **turma ocupada exige confirmação — e a troca diz quem saiu**; criança nova entra na lista da turma; **nasce com a rubrica pendente, é bloqueada para observação e aparece na tela que a desbloqueia**; **mesma chave nome+nascimento recusada (409)**; nascimento no futuro recusado (422) |
+| **22 · Arquivo (decisão 30)** | 21 | **não existe `DELETE` de pessoa em rota nenhuma (404)**; coordenação arquiva a professora e **a sessão ABERTA dela morre no ato (401)**; ela some da tela de entrada e não entra de novo (403); **continua existindo, no arquivo**, com a contagem do que registrou; volta e entra outra vez; **ninguém arquiva a si mesma (422)**; criança arquivada sai da lista viva com **matrícula encerrada e data de saída**, e a presença dela fica; educadora não arquiva criança (403); **voltar é matrícula NOVA e a antiga continua encerrada**; o consentimento volta a pendente |
 
 ---
 

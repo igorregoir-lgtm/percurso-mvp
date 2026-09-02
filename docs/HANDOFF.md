@@ -1,5 +1,9 @@
 # Handoff — 25/08/2026, fim da sessão
 
+> **Atualizado depois da redação original:** o **cadastro de pessoas** e o **arquivo** entraram
+> (§2), e a reavaliação do redator **num modelo maior foi descartada** por decisão de produto
+> (§4). Os gates da §1 foram refeitos: 136 unit · 294 smoke.
+
 Para quem retomar. Este documento diz **onde o artefato está**, **o que decidir a seguir** e
 **as armadilhas que já custaram tempo** — para não custarem de novo.
 
@@ -19,14 +23,18 @@ Tudo commitado e no `main` de https://github.com/igorregoir-lgtm/percurso-mvp �
 
 | gate | resultado |
 |---|---|
-| `node scripts/unit-test.mjs` | **115 passaram** |
-| `node scripts/smoke-test.mjs` | **255 passaram** (exige `node scripts/reset.mjs` antes **e** o servidor no ar) |
+| `node scripts/unit-test.mjs` | **136 passaram** |
+| `node scripts/smoke-test.mjs` | **294 passaram** (exige `node scripts/reset.mjs` antes **e** o servidor no ar) |
 | `node scripts/ai-stub-test.mjs` | **24 passaram** |
 | `node scripts/rag-test.mjs` | **6 passaram** (hit@5 20/20) |
 
-**Onze commits nesta sessão**, do mais recente ao mais antigo:
+**Quinze commits nesta sessão**, do mais recente ao mais antigo:
 
 ```
+6a3a5de  Arquivo: ninguém é apagado — e os dois defeitos que a tela de saída expôs
+274a86b  Porte do modelo é restrição de desenho, não variável livre
+94eccb6  Cadastro de pessoas: a porta manual do item 2.8, com a criança nascendo bloqueada
+258cf37  Handoff da sessão de 25/08/2026
 9b88918  Qwen redigindo síntese e relatório: infraestrutura pronta, 4B reprovado
 00fd838  O refinamento pelo Qwen falhava 100% em silêncio — e a guarda que faltava
 6ce0e15  As duas pendências da revisão: controle de tipo e resumo do dia
@@ -62,6 +70,39 @@ sustenta em limites declarados serem verdadeiros, limite que virou mentira é pi
 **Redação por modelo** (decisão 28, `src/redacao-modelo.js`): construída, medida e **desligada**.
 Ver §4.
 
+**Metodologia de validação com usuário real** (`docs/METODOLOGIA-VALIDACAO-PERCURSO.md` +
+`docs/visita-ebenezer/`). Fecha a pendência da mentoria de tecnologia de 26/08 ("critérios e
+métricas quantitativas para os testes com usuários") e o achado D-02 da revisão arquitetural. O
+objeto do estudo é a **v2, com `AI_ENABLED` desligada**: testar a camada opcional antes do fluxo
+principal inverteria a pergunta. A §6 de `VALIDACAO-USUARIO.md` continua **em branco** — e só pode
+ser preenchida com o formulário da sessão, nunca por memória ou inferência.
+
+**Cadastro de pessoas** (decisão 29, `#/pessoas`, `94eccb6`). Até então toda pessoa vinha da seed
+ou da planilha; agora a coordenação inclui professora, coordenação, diretoria e criança uma a uma.
+Três guardas que não são o caminho curto: a porta é de coordenação (papel e matrícula decidem o
+escopo de leitura do resto do produto); o consentimento nasce **pendente** e a criança entra
+bloqueada para observação — com as duas linhas gravadas na mesma transação, senão ela sumiria da
+única tela que a desbloqueia; e homônimo é **409 com o id do que já existe**, porque a mesma
+criança virar duas parte a série de presença e nenhum número do relatório fecha. Dois defeitos
+latentes pagos junto: o código `EBZ-NNNN` da ingestão saía de `COUNT(*)+1` (reemitia código já
+usado assim que uma criança saísse do banco, contra um `UNIQUE`), e `Date.parse` aceitava
+`2026-02-30` rolando para 02/03 em silêncio.
+
+**Arquivo — ninguém é apagado** (decisão 30). Não existe `DELETE` de pessoa em rota nenhuma, e um
+teste de fumaça guarda a ausência (404). Quem sai vai para `#/arquivo` e volta de lá. O ponto de
+aplicação é `usuarioDa`, **não o login**: o cookie não é assinado e vale 24 h, então a checagem
+mora na resolução da sessão e a sessão aberta de quem foi arquivada morre no ato. Duas recusas
+existem para o sistema não se trancar por fora — ninguém arquiva a si mesma, e a última
+coordenação na ativa não sai. Para a criança, voltar é **matrícula nova** (reabrir a antiga
+apagaria a saída, e a saída é o que a curva de permanência lê) e o consentimento volta a pendente.
+
+**E a tela de arquivo expôs dois defeitos que estavam no banco há semanas**, porque nenhuma tela
+mostrava data de saída: a seed produzia matrícula encerrada com **saída no futuro**, e a curva de
+permanência **podia subir** (80% aos 9 meses, 82% aos 12) porque `safras()` recalculava o
+denominador a cada marco — quatro populações diferentes ligadas por uma `polyline`. Os dois estão
+corrigidos, com teste fixando cada regra. A lição: *dado que nenhuma tela mostra não é dado
+verificado*.
+
 ---
 
 ## 3. As decisões de desenho que não são óbvias
@@ -83,17 +124,24 @@ o defeito:
 
 ---
 
-## 4. A decisão que está na sua mão
+## 4. A decisão que estava na sua mão — e foi tomada
 
 **O Qwen3-4B foi reprovado como redator da síntese e do relatório: 0 aceitações em 16 chamadas**
 (6 por uso de número, 10 por apagar/inventar declaração obrigatória). A infraestrutura, os quatro
 portões e 5 testes estão prontos; `AI_REDATOR` está **desligado por padrão** porque ligar hoje só
 adiciona ~8 s de latência para cair no mesmo template.
 
-**O gargalo é o porte do modelo, não o desenho.** A máquina (M5 Max, 128 GB) roda um Qwen3-14B ou
-30B-A3B com folga. Refazer a medição é: baixar o GGUF, apontar `ai/model-manifest.json`, subir o
-`llama-server` e rodar com `AI_REDATOR=1`. **É o próximo passo de maior valor** — ele responde se
-"o Qwen redige os documentos" é limitação da ideia ou deste modelo.
+**Subir o porte do modelo está FORA — decisão do produto, 25/08/2026.** Esta máquina (M5 Max,
+128 GB) rodaria um Qwen3-14B ou 30B-A3B com folga, e essa era a recomendação anterior deste
+handoff. Ela caiu: a arquitetura do Percurso exige rodar **no notebook comum de uma organização
+social**, e um modelo que só cabe nesta máquina não é o produto — é uma demonstração que a
+Ebenézer não conseguiria operar. O porte do modelo é restrição de desenho, não variável livre.
+
+**O que isso deixa em pé:** `AI_REDATOR` fica desligado, e a síntese e o relatório continuam
+saindo do template determinístico — que é o comportamento correto, não um degrau. A
+infraestrutura, os quatro portões e os 5 testes ficam como estão: se um dia um modelo do PORTE
+do 4B (ou menor) passar nos portões, a reavaliação é uma variável de ambiente. O caminho de
+ganho aqui é modelo melhor no mesmo porte, ou prompt/portões melhores — nunca modelo maior.
 
 > **A lição que vale além deste caso:** *fidelidade numérica não é fidelidade semântica.* Um
 > verificador que confere cada número contra o banco aprova, sem hesitar, um documento em que
@@ -152,6 +200,9 @@ Cada ciclo desta sessão deixou registro, e ler o registro é mais barato que re
 | `docs/revisao/09-PLANO-PASSO-PROATIVO.md` | o plano, de um painel de 4 propostas × 3 juízes |
 | `docs/revisao/10-REVISAO-PASSO-PROATIVO.md` | 28 achados da revisão da implementação + adendo do Qwen |
 | `docs/revisao/07` e `08` | o ciclo anterior do Passo |
+| `docs/METODOLOGIA-VALIDACAO-PERCURSO.md` | hipóteses, limiares com fonte, Protocolo do Lapso, ameaças à validade |
+| `docs/VALIDACAO-USUARIO.md` | o protocolo da sessão e onde o resultado é registrado (§6, em branco) |
+| `docs/visita-ebenezer/` | execução em campo: roteiros e cartões de Igor, do grupo e dos alunos |
 
 **O método que funcionou e vale repetir:** plano → **revisão adversarial do plano** → implementação
 → **revisão adversarial da implementação** → correção. As três revisões acharam 68 problemas

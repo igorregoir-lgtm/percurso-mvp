@@ -57,7 +57,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **255 asserções de fluxo** e **115 testes unitários** — mais a avaliação do RAG
+São **294 asserções de fluxo** e **136 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização) e a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo). As quatro baterias rodam a cada push (`.github/workflows/ci.yml`), sempre com
@@ -219,6 +219,14 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 | F14 | Carta do trimestre — mesmo pipeline, template curto | `#/relatorio` |
 | F15 | Consulta em linguagem natural sobre a camada agregada | `#/consulta` |
 
+### Cadastro de pessoas
+
+| # | Funcionalidade | Onde está |
+|---|---|---|
+| C1 | Cadastro da equipe — professora, coordenação e diretoria, com apelido derivado do nome e turma opcional (troca de turma exige confirmação) | `#/pessoas`, `POST /api/equipe` |
+| C2 | Cadastro de criança — matrícula ativa no mesmo ato, dedup por nome+nascimento, rubrica socioemocional nascendo **pendente** | `#/pessoas`, `POST /api/criancas` |
+| C3 | **Arquivo — ninguém é apagado.** Quem sai do pipeline sai das listas vivas e continua no sistema; sessão aberta de pessoa arquivada morre no ato. A volta da criança é matrícula **nova**, com consentimento voltando a pendente | `#/arquivo`, `POST /api/equipe/arquivar`, `POST /api/criancas/arquivar`, `.../reativar`, `.../rematricular` |
+
 ### A camada de IA da v3 (opcional, `AI_ENABLED=1`)
 
 | Peça | O que faz | Onde está |
@@ -257,8 +265,8 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    255 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     115 testes unitários das regras críticas (banco temporário)
+scripts/smoke-test.mjs    294 asserções do fluxo principal (contra o servidor no ar)
+scripts/unit-test.mjs     136 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
 scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)
@@ -298,6 +306,8 @@ cd prototipo-figma && python3 -m http.server 8765
 
 - [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) — **plano de arquitetura**: restrições do dossiê → respostas de desenho, arquitetura atual, invariantes e os três horizontes de evolução (entrega 09/10 → piloto real → módulos condicionados)
 - [`docs/LEAN-INCEPTION.md`](docs/LEAN-INCEPTION.md) — a análise que originou o escopo
+- [`docs/ARTEFATO-SEMANA-5.md`](docs/ARTEFATO-SEMANA-5.md) — **documentação de suporte do artefato de tecnologia da semana 5**: persona, jornadas atual e futura, as 5 User Stories com a tela e o teste que prova cada uma, fluxo de navegação por papel — e o registro da validação, que fica em branco até a sessão acontecer
+- [`docs/JORNADAS.md`](docs/JORNADAS.md) — jornadas atual e futura das três personas, com ganhos **e custos**
 - [`docs/O-QUE-VEIO-DA-V2.md`](docs/O-QUE-VEIO-DA-V2.md) — **matriz de adoção do `percurso-v2-pack`**: as 15 features, as 11 telas, os tokens de design, o que foi adaptado com justificativa e o que foi recusado
 - [`docs/ANALISE-BUSSOLA.md`](docs/ANALISE-BUSSOLA.md) — análise comparativa com o app Bússola: o que foi adotado (cronômetro de registro, reconciliação, plano da semana, supressão n<5, aspiração, impressão) e o que foi rejeitado, com justificativa
 - [`docs/MODELO-DE-DADOS.md`](docs/MODELO-DE-DADOS.md) — entidades, relações e atributos
