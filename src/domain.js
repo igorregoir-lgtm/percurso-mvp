@@ -1647,6 +1647,9 @@ export function reguaDaTurma(turmaId, { desde = null, ref = hoje() } = {}) {
   const turma = get(`SELECT t.*, p.nome AS programa FROM turma t JOIN programa p ON p.id = t.programa_id WHERE t.id = ?`, turmaId);
   if (!turma) throw erro(404, 'Turma não encontrada.');
   const inicio = desde ?? inicioDoSemestre(ref);
+  // O filtro de encontro fica DENTRO do join: uma crianca com presenca so' em
+  // outra turma (Laboratorio) e ainda sem presenca nesta nao pode sumir da lista
+  // — ela e' exatamente o "sem base" que a regua precisa mostrar.
   const criancas = all(
     `SELECT c.id, c.codigo, c.nome,
             COUNT(p.id) AS encontros,
@@ -1654,8 +1657,8 @@ export function reguaDaTurma(turmaId, { desde = null, ref = hoje() } = {}) {
        FROM crianca c
        JOIN matricula m ON m.crianca_id = c.id AND m.turma_id = ? AND m.status = 'ativa'
        LEFT JOIN presenca p ON p.crianca_id = c.id
-       LEFT JOIN encontro e ON e.id = p.encontro_id AND e.turma_id = ? AND e.data >= ? AND e.data <= ?
-      WHERE c.ativo = 1 AND (p.id IS NULL OR e.id IS NOT NULL)
+         AND p.encontro_id IN (SELECT id FROM encontro WHERE turma_id = ? AND data >= ? AND data <= ?)
+      WHERE c.ativo = 1
       GROUP BY c.id ORDER BY c.nome`, turmaId, turmaId, inicio, ref)
     .map(c => {
       const pct = c.encontros ? Math.round(((c.presentes ?? 0) / c.encontros) * 100) : null;

@@ -137,6 +137,9 @@ export function numerosDoPeriodo({ inicio, fim, custoPeriodo = null }) {
     cobertura: {
       criancas_unicas: inv.criancasUnicas,
       matriculas: inv.matriculas,
+      // Decisao 31: a Vivencia e' programa ADICIONAL — entra na tabela por
+      // programa, mas nao nos 120, senao a soma da tabela desmente o texto.
+      matriculas_adicionais: inv.foraDaRubrica?.matriculas ?? 0,
       multi_programa: inv.multi,
       programas: supProgramas.publicaveis,
       programas_suprimidos: supProgramas.suprimidos,
@@ -337,7 +340,7 @@ export function redigirRelatorio(n) {
           + `Este é o retrato de ${n.periodo.rotulo}.` });
 
   b.push({ numero: 2, titulo: 'Quem você ajudou a receber',
-    texto: `Foram ${n.cobertura.criancas_unicas} crianças únicas e ${n.cobertura.matriculas} matrículas ativas, em ${n.cobertura.encontros} encontros ao longo do período. `
+    texto: `Foram ${n.cobertura.criancas_unicas} crianças únicas e ${n.cobertura.matriculas} matrículas ativas nos programas de matrícula${n.cobertura.matriculas_adicionais ? ` (mais ${n.cobertura.matriculas_adicionais} na Vivência terapêutica, programa adicional de quem já está no Laboratório)` : ''}, em ${n.cobertura.encontros} encontros ao longo do período. `
       + `Os dois números são diferentes de propósito: ${n.cobertura.multi_programa} crianças participam de mais de um programa e aparecem duas vezes na conta de matrículas. `
       + `Daria para somar tudo e dizer que alcançamos cerca de ${n.cobertura.diferenca_pct}% a mais de gente. Preferimos não fazer isso. `
       + `Quando você lê "criança" neste documento, é uma criança, contada uma vez só.`,

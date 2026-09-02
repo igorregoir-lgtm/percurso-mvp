@@ -226,7 +226,10 @@ export const rotas = {
             a.crianca_id, turma.id))
         : [],
       // "Para esta semana": o sistema deixa de cobrar e passa a devolver.
-      pauta: turma ? S.pautaDaSemana(turma.id) : null,
+      // Turma fora da rubrica: a pauta de segunda nao e' dela (sem sugestao de
+      // atividade nem lacuna de exposicao); o risco de sair continua valendo.
+      pauta: turma ? (D.turmaNaRubrica(turma.id) ? S.pautaDaSemana(turma.id)
+                      : { ...S.pautaDaSemana(turma.id), exposicao: null, sugestao: null }) : null,
       folha: turma ? V.folhaDaTurma(turma.id, D.dataDaFolha(turma.id)) : null,
       data_folha: turma ? D.dataDaFolha(turma.id) : null,
       // E6: a devolucao do ultimo encontro com folha, para a tela de abertura.
@@ -338,7 +341,9 @@ export const rotas = {
     const ciclo = D.cicloAberto();
     return {
       turma, agregado: agg, leitura: D.leituraDoCiclo(agg),
-      agenda: ciclo ? D.agendaDoCiclo(turmaId, ciclo.id) : null,
+      // Turma fora da rubrica (Vivencia, decisao 31): sem agenda de ciclo aqui tambem.
+      agenda: ciclo && D.turmaNaRubrica(turmaId) ? D.agendaDoCiclo(turmaId, ciclo.id) : null,
+      na_rubrica: D.turmaNaRubrica(turmaId),
       plano: D.planoDaTurma(turmaId),
       tempo: D.tempoDeRegistro({ turmaId }),
     };

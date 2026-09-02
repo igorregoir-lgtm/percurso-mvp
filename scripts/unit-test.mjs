@@ -1916,3 +1916,18 @@ test('parecer: com consentimento sai por CÓDIGO, sem nome, sem clínica, aprova
   assert.throws(() => PAR.liberarParecer(p2.id, 2), /revogado|pendente/);
   assert.equal(PAR.pareceresDe(c.id).length, 2);
 });
+
+// Revisão pós-visita (12-REVISAO, R-01): criança matriculada na turma e ainda
+// sem presença NELA (só em outra) não pode sumir da régua — é o "sem base".
+test('régua: criança sem presença nesta turma aparece como sem_base, não some', () => {
+  const t = get(`SELECT id FROM turma WHERE programa_id = 4 ORDER BY id DESC LIMIT 1`).id;
+  const c = get(`SELECT c.id FROM crianca c JOIN matricula m ON m.crianca_id = c.id AND m.status='ativa' AND m.turma_id = ?
+                  WHERE c.ativo = 1 ORDER BY c.id LIMIT 1`, t);
+  run(`DELETE FROM presenca WHERE crianca_id = ? AND encontro_id IN (SELECT id FROM encontro WHERE turma_id = ?)`, c.id, t);
+  const r = D.reguaDaTurma(t);
+  const linha = r.criancas.find(x => x.id === c.id);
+  assert.ok(linha, 'a criança sumiu da régua');
+  assert.equal(linha.encontros, 0);
+  assert.equal(linha.faixa, 'sem_base');
+  assert.equal(r.criancas.length, D.criancasDaTurma(t).length);
+});
