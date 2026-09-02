@@ -30,6 +30,27 @@ process.on('exit', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Invariantes da seed (decisão 31, 02/09/2026) — ANTES de qualquer teste que
+// cadastre, arquive ou rematricule: os números exatos só valem no banco
+// recém-semeado.
+// ---------------------------------------------------------------------------
+test('inventario: os 120 do dossiê continuam 120/106/14 — a Vivência é contada à parte', () => {
+  const inv = D.inventario();
+  assert.equal(inv.matriculas, 120);
+  assert.equal(inv.criancasUnicas, 106);
+  assert.equal(inv.multi, 14);
+  assert.equal(inv.foraDaRubrica.matriculas, 24);
+  assert.equal(inv.foraDaRubrica.criancas, 24);
+  // Toda criança da Vivência já está num programa do dossiê: nenhuma entra só por ela.
+  const soVivencia = get(
+    `SELECT COUNT(*) AS n FROM (
+       SELECT m.crianca_id FROM matricula m JOIN programa p ON p.id = m.programa_id
+        WHERE m.status='ativa' GROUP BY m.crianca_id HAVING SUM(p.no_escopo) = 0)`).n;
+  assert.equal(soVivencia, 0);
+});
+
+
+// ---------------------------------------------------------------------------
 // Filtro de perímetro (bloco 6) — nada clínico chega ao banco.
 // ---------------------------------------------------------------------------
 test('filtrarPerimetro: barra frase clínica e preserva o restante', () => {
@@ -1486,7 +1507,7 @@ test('arquivo: sucessora não pode ser quem está no arquivo nem quem não é pr
   const t = get(`SELECT * FROM turma WHERE educador_id IS NOT NULL LIMIT 1`);
   const coord = get(`SELECT id FROM educador WHERE papel='coordenacao' AND arquivado_em IS NULL LIMIT 1`).id;
   assert.throws(() => D.arquivarPessoa(t.educador_id, { porUsuarioId: 2, assumidaPor: coord }),
-    /Só professora assume/i);
+    /assume turma/i);
   const fora = D.criarPessoa({ nome: 'Marlene Duarte', papel: 'educador' }).pessoa;
   D.arquivarPessoa(fora.id, { porUsuarioId: 2 });
   assert.throws(() => D.arquivarPessoa(t.educador_id, { porUsuarioId: 2, assumidaPor: fora.id }),
@@ -1579,4 +1600,26 @@ test('seed: nenhuma matrícula encerrada tem data de saída no futuro', () => {
   assert.equal(
     get(`SELECT COUNT(*) AS n FROM matricula WHERE saida IS NOT NULL AND saida > ?`, D.hoje()).n, 0,
     'criança "que saiu" com saída no futuro é dado errado — a tela de arquivo mostra essa data');
+});
+
+// ---------------------------------------------------------------------------
+// Decisão 31 (02/09/2026) — a Vivência terapêutica entra como programa
+// adicional, fora da rubrica: os invariantes do dossiê não se movem.
+// ---------------------------------------------------------------------------
+test('turmaNaRubrica: as turmas da Vivência ficam fora; as demais, dentro', () => {
+  for (const t of all(`SELECT t.id, p.no_escopo FROM turma t JOIN programa p ON p.id = t.programa_id`))
+    assert.equal(D.turmaNaRubrica(t.id), !!t.no_escopo, `turma ${t.id}`);
+  assert.equal(D.turmaNaRubrica(9999), false);
+});
+
+test('papel profissional: fica responsável por turma, não vira sucessora de nada que não seja turma', () => {
+  const psi = get(`SELECT * FROM educador WHERE papel = 'profissional'`);
+  assert.ok(psi, 'a seed tem uma profissional');
+  const turmas = all(`SELECT id FROM turma WHERE educador_id = ?`, psi.id);
+  assert.equal(turmas.length, 2);
+  assert.ok(D.PAPEIS.some(p => p.id === 'profissional'));
+  assert.ok(D.PAPEIS_COM_TURMA.has('profissional') && !D.PAPEIS_COM_TURMA.has('coordenacao'));
+  const nova = D.criarPessoa({ nome: 'Estagiária Psicologia Um', papel: 'profissional' }).pessoa;
+  assert.equal(nova.papel, 'profissional');
+  assert.equal(D.rotuloDoPapel('profissional'), 'psicóloga');
 });

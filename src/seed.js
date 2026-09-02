@@ -7,6 +7,12 @@ import { hoje, agora, addDias, diasEntre, recalcularAlertas } from './domain.js'
 import { segundaDa } from './scores.js';
 
 const rand = mulberry32(20261009);
+// Segundo gerador SO para a Vivencia terapeutica (turmas 6 e 7, decisao 31):
+// ela entrou depois de todos os numeros sinteticos ja documentados, e consumir
+// o gerador principal deslocaria a sequencia de tudo o que vem depois dela
+// (folhas, pautas, observacoes) — 38% de descarte virava 19%, 10 alertas
+// viravam 7. Com o gerador proprio, o mundo anterior fica identico.
+const randVivencia = mulberry32(20260829);
 function mulberry32(a) {
   return function () {
     a |= 0; a = (a + 0x6D2B79F5) | 0;
@@ -15,8 +21,8 @@ function mulberry32(a) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-const pick = (arr) => arr[Math.floor(rand() * arr.length)];
-const intBetween = (a, b) => a + Math.floor(rand() * (b - a + 1));
+const pick = (arr, r = rand) => arr[Math.floor(r() * arr.length)];
+const intBetween = (a, b, r = rand) => a + Math.floor(r() * (b - a + 1));
 
 const NOMES = ['Ana','Beatriz','Caio','Davi','Enzo','Fernanda','Gabriel','Helena','Igor','Julia','Kaua','Larissa','Miguel','Nina','Otavio','Pedro','Quezia','Rafael','Sofia','Thiago','Ursula','Vitor','Wesley','Yasmin','Zoe','Alice','Bruno','Carla','Diego','Elisa','Felipe','Giovana','Heitor','Isadora','Joao','Kelly','Lucas','Manuela','Nicolas','Olivia','Paulo','Rebeca','Samuel','Tatiane','Valentina','Wanderson','Bianca','Cauan','Daniela','Eduardo','Fabiana','Gustavo','Hellen','Ian','Jamile','Kaique','Luana','Matheus','Natalia','Osvaldo','Priscila','Renan','Sabrina','Tales','Vanessa'];
 const SOBRENOMES = ['A.','B.','C.','D.','F.','G.','L.','M.','N.','P.','R.','S.','T.','V.'];
@@ -61,6 +67,10 @@ const GOVERNANCA = [
   { campo: 'score_evasao', rotulo: 'Score de risco de evasão', base_legal: 'Legítimo interesse — proteção do vínculo (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Coordenação e diretoria', retencao: 'Recalculado a cada consulta; não historiado', exige_consentimento: 0 },
   { campo: 'agregado_publicado', rotulo: 'Agregado publicado no relatório', base_legal: 'Legítimo interesse — prestação de contas (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Público, após revisão da diretoria', retencao: 'Permanente', exige_consentimento: 0 },
   { campo: 'conteudo_clinico', rotulo: 'Conteúdo clínico', base_legal: 'Fora do sistema por construção — sigilo profissional da psicóloga', titular: 'Psicóloga', acesso: 'Ninguém, no Percurso', retencao: 'Não coletado', exige_consentimento: 1 },
+  // Decisão 31 (campo, 29/08/2026): o que a Vivência registra é indicador de
+  // programa — procedimento em lista fechada e contagens de grupo. É registro
+  // de TURMA, como a folha do dia: sem criança nomeada, sem consentimento.
+  { campo: 'registro_de_vivencia', rotulo: 'Registro de vivência (procedimento e check-in de grupo)', base_legal: 'Legítimo interesse — execução do programa (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Profissional da turma + coordenação', retencao: '5 anos', exige_consentimento: 0 },
 ];
 
 export function semear() {
@@ -75,25 +85,37 @@ export function semear() {
       run(`INSERT INTO governanca_campo (campo,rotulo,base_legal,titular,acesso,retencao,exige_consentimento)
            VALUES (?,?,?,?,?,?,?)`, g.campo, g.rotulo, g.base_legal, g.titular, g.acesso, g.retencao, g.exige_consentimento);
 
+    // A psicóloga (papel `profissional`) entrou depois da visita de 29/08/2026:
+    // nome SINTÉTICO, como todos os outros — nenhuma pessoa real do Instituto
+    // aparece nesta seed.
     run(`INSERT INTO educador (id,nome,apelido,papel) VALUES
          (1,'Maria Silvia','Maria S.','educador'),
          (2,'Rita Amaral','Rita A.','coordenacao'),
          (3,'Cleide Nunes','Cleide N.','educador'),
-         (4,'Solange Ribeiro','Solange R.','diretoria')`);
+         (4,'Solange Ribeiro','Solange R.','diretoria'),
+         (5,'Carolina Duarte','Carolina D.','profissional')`);
 
+    // `no_escopo` = entra na rubrica por ciclo. A Vivência terapêutica fica
+    // FORA da rubrica (o olhar clínico não vira dado — bloco 6) e DENTRO do
+    // registro de turma: presença, procedimento e check-in de grupo (decisão 31).
     run(`INSERT INTO programa (id,nome,faixa,cadencia,no_escopo,nota) VALUES
       (1,'Reforço escolar','7 a 11 anos','Segunda a sexta, dois turnos',1,NULL),
       (2,'Laboratório de Sonhos','7 a 11 anos','Sábados',1,NULL),
       (3,'Primeira infância','3 a 5 anos','Segunda a sexta, manhã',1,NULL),
-      (4,'Vivência terapêutica','7 a 11 anos','Sábados de manhã',0,
-       'Fora do Percurso por construção: o registro é clínico, a titular é a psicóloga e o sigilo profissional impede transferência (bloco 6 do dossiê).')`);
+      (4,'Vivência terapêutica','7 a 11 anos','Sábados, manhã e tarde',0,
+       'Fora da rubrica por decisão: o registro clínico é da psicóloga e o sigilo profissional impede transferência (bloco 6). Entra no Percurso com presença, registro de vivência e check-in de grupo — indicador de programa, nunca conteúdo clínico (decisão 31).')`);
 
+    // Campo: a turma da manhã tem mais meninos; a da tarde, mais meninas. A seed
+    // não registra sexo (não há campo para isso no modelo) — só a existência
+    // das duas turmas, com a profissional responsável.
     run(`INSERT INTO turma (id,programa_id,nome,turno,educador_id) VALUES
       (1,1,'Reforço · Tarde A','semana',1),
       (2,1,'Reforço · Tarde B','semana',3),
       (3,2,'Laboratório · Sábado 1','sabado',3),
       (4,2,'Laboratório · Sábado 2','sabado',3),
-      (5,3,'Primeira infância · Manhã','semana',3)`);
+      (5,3,'Primeira infância · Manhã','semana',3),
+      (6,4,'Vivência · Sábado manhã','sabado',5),
+      (7,4,'Vivência · Sábado tarde','sabado',5)`);
 
     const c1i = addDias(T, -165), c1f = addDias(T, -135);
     const c2i = addDias(T, -14),  c2f = addDias(T, 26);
@@ -146,6 +168,13 @@ export function semear() {
       const entrada = entradaAleatoria();
       matricular(novaCrianca(3, 5, entrada), 3, 5, entrada);
     }
+    // Vivência terapêutica (decisão 31): 24 crianças que JÁ estão no Laboratório
+    // de Sonhos, 12 por turma de sábado. Não muda os 120 nem as 106 únicas —
+    // é matrícula adicional, como no dossiê, cujos 120 não incluem a vivência.
+    const doLabParaVivencia = all(
+      `SELECT crianca_id, entrada FROM matricula WHERE programa_id = 2 AND status='ativa'
+        ORDER BY crianca_id LIMIT 24`);
+    doLabParaVivencia.forEach((m, i) => matricular(m.crianca_id, 4, i < 12 ? 6 : 7, m.entrada));
     // Criancas que sairam — dao sinal de evasao para as safras (F6).
     // A duracao e' limitada ao que ja' passou: sem o teto, entrada + duracao
     // caia depois de hoje e a seed produzia matricula ENCERRADA com data de
@@ -208,10 +237,11 @@ export function semear() {
       const r = rand();
       return [id, r < 0.10 ? 0.38 + rand() * 0.20 : r < 0.30 ? 0.60 + rand() * 0.18 : 0.78 + rand() * 0.19];
     }));
-    const ultimoRegistro = { 1: addDias(T, -7), 2: T, 3: T, 4: T, 5: T };
+    const ultimoRegistro = { 1: addDias(T, -7), 2: T, 3: T, 4: T, 5: T, 6: T, 7: T };
     for (const t of all(`SELECT * FROM turma`)) {
       const alunos = all(`SELECT crianca_id, entrada FROM matricula WHERE turma_id = ? AND status='ativa'`, t.id);
       if (!alunos.length) continue;
+      const rnd = t.programa_id === 4 ? randVivencia : rand;
       let dia = addDias(T, -75);
       while (dia <= ultimoRegistro[t.id]) {
         const dow = new Date(dia + 'T12:00:00Z').getUTCDay();
@@ -219,12 +249,12 @@ export function semear() {
           run(`INSERT INTO encontro (turma_id,data,registrado_por,registrado_em,duracao_segundos) VALUES (?,?,?,?,?)`,
               t.id, dia, t.educador_id, dia + 'T17:10:00.000Z',
               // maioria dentro da meta de 2 min; ~15% estoura — da grafico honesto
-              rand() < 0.85 ? intBetween(28, 110) : intBetween(125, 200));
+              rnd() < 0.85 ? intBetween(28, 110, rnd) : intBetween(125, 200, rnd));
           const encId = get(`SELECT id FROM encontro WHERE turma_id=? AND data=?`, t.id, dia).id;
           for (const a of alunos) {
             if (a.entrada > dia) continue;
             run(`INSERT INTO presenca (encontro_id,crianca_id,status) VALUES (?,?,?)`,
-                encId, a.crianca_id, rand() < (perfil.get(a.crianca_id) ?? 0.85) ? 'P' : 'F');
+                encId, a.crianca_id, rnd() < (perfil.get(a.crianca_id) ?? 0.85) ? 'P' : 'F');
           }
         }
         dia = addDias(dia, 1);
@@ -247,6 +277,18 @@ export function semear() {
         run(`UPDATE presenca SET status='F' WHERE id = ?`, u.id);
     }
 
+    // Régua de presença do Instituto (75%, decisão 33): na Vivência da manhã,
+    // uma criança fica claramente abaixo da régua e outra na faixa de atenção,
+    // para a tela ter as três faixas e a coordenação ter com quem conversar.
+    {
+      const manha = all(`SELECT crianca_id FROM matricula WHERE turma_id = 6 AND status='ativa' ORDER BY crianca_id`);
+      const alvoAbaixo = manha[3]?.crianca_id, alvoAtencao = manha[7]?.crianca_id;
+      const pres = (id) => all(`SELECT p.id FROM presenca p JOIN encontro e ON e.id = p.encontro_id
+                                 WHERE p.crianca_id = ? AND e.turma_id = 6 ORDER BY e.data`, id);
+      if (alvoAbaixo) pres(alvoAbaixo).forEach((p, i) => run(`UPDATE presenca SET status = ? WHERE id = ?`, i % 5 < 3 ? 'F' : 'P', p.id));
+      if (alvoAtencao) pres(alvoAtencao).forEach((p, i) => run(`UPDATE presenca SET status = ? WHERE id = ?`, i % 9 === 0 || i % 9 === 4 ? 'F' : 'P', p.id));
+    }
+
     // --- Folha do dia, exposicao e pauta (v2) --------------------------------
     // A folha e' da TURMA. Nenhum campo aqui fala de crianca nomeada.
     // A turma 4 fica DELIBERADAMENTE sem folha nenhuma: e' a "turma sem registro"
@@ -259,23 +301,25 @@ export function semear() {
 
     for (const t of all(`SELECT * FROM turma`)) {
       if (t.id === 4) continue;
+      const rnd = t.programa_id === 4 ? randVivencia : rand;
+      const pk = (arr) => pick(arr, rnd);
       const encs = all(`SELECT id, data FROM encontro WHERE turma_id = ? ORDER BY data`, t.id);
       encs.forEach((e, i) => {
-        if (rand() > 0.82) return;                       // ~18% de encontros sem folha
-        const porVoz = rand() < 0.35;
-        const area = pick(AREAS_SEED);
-        const marcs = [...new Set([pick(MARCADORES_SEED), pick(MARCADORES_SEED)])];
+        if (rnd() > 0.82) return;                       // ~18% de encontros sem folha
+        const porVoz = rnd() < 0.35;
+        const area = pk(AREAS_SEED);
+        const marcs = [...new Set([pk(MARCADORES_SEED), pk(MARCADORES_SEED)])];
         // Taxa de correcao alvo ~20%: um extrator lexical que acertasse tudo
         // seria implausivel, e a metrica so serve se for honesta.
-        const editados = porVoz ? (rand() < 0.45 ? 0 : rand() < 0.75 ? 1 : rand() < 0.92 ? 2 : 3) : 0;
+        const editados = porVoz ? (rnd() < 0.45 ? 0 : rnd() < 0.75 ? 1 : rnd() < 0.92 ? 2 : 3) : 0;
         run(`INSERT INTO folha (encontro_id, atividade, area_tematica, pediram_ajuda, origem,
                                 confianca, campos_sugeridos, campos_editados, conteudo_excluido,
                                 confirmado_por, confirmado_em, status)
              VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-            e.id, pick(ATIVIDADES_SEED), area, intBetween(0, 5), porVoz ? 'voz' : 'manual',
-            porVoz ? Math.round((0.62 + rand() * 0.36) * 100) / 100 : null,
+            e.id, pk(ATIVIDADES_SEED), area, intBetween(0, 5, rnd), porVoz ? 'voz' : 'manual',
+            porVoz ? Math.round((0.62 + rnd() * 0.36) * 100) / 100 : null,
             porVoz ? 4 : 0, editados,
-            porVoz && rand() < 0.06 ? 1 : 0,
+            porVoz && rnd() < 0.06 ? 1 : 0,
             t.educador_id ?? 1, e.data + 'T17:20:00.000Z',
             i === encs.length - 1 ? 'aberta' : 'fechada');
         const fid = get(`SELECT id FROM folha WHERE encontro_id = ?`, e.id).id;
@@ -284,7 +328,6 @@ export function semear() {
           run(`INSERT INTO atividade_area (turma_id, area, data, origem) VALUES (?,?,?, 'folha')`, t.id, area, e.data);
       });
     }
-
     // Historico de decisao da pauta — o descarte e' o dado de qualidade do agente.
     for (const turmaId of [1, 2]) {
       for (let semanas = 8; semanas >= 1; semanas--) {
@@ -346,6 +389,14 @@ export function semear() {
       if (dow >= 1 && dow <= 5) run(`INSERT INTO atividade (educador_id,data,tipo) VALUES (1,?,'chamada')`, dia);
     }
     run(`INSERT INTO atividade (educador_id,data,tipo) VALUES (2,?,'painel')`, addDias(T, -1));
+    // A profissional registra aos sábados: o último sábado passado fica marcado,
+    // para ela não abrir o app em "lapso" logo na primeira semana.
+    {
+      let s = addDias(T, -1);
+      while (new Date(s + 'T12:00:00Z').getUTCDay() !== 6) s = addDias(s, -1);
+      for (let k = 0; k < 6; k++)
+        run(`INSERT INTO atividade (educador_id,data,tipo) VALUES (5,?,'chamada')`, addDias(s, -7 * k));
+    }
 
     // Os alertas de ausencia ja nascem calculados: a coordenacao abre o painel
     // no dia 1 e ve as criancas em risco, sem depender de uma chamada nova.

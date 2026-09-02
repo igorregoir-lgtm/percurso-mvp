@@ -350,7 +350,7 @@ secao('9 · Ficha viva da criança (F1)');
   const f = (await GET('maria', `/api/crianca?id=${lista[0].id}`)).corpo;
   T('ficha traz matrículas, presença, trajetória e governança',
     !!f.crianca && Array.isArray(f.matriculas) && Array.isArray(f.presencas) &&
-    !!f.trajetoria && f.consentimentos.length === 10);  // 5 originais + 5 campos da v2
+    !!f.trajetoria && f.consentimentos.length >= 11);  // 5 originais + 5 da v2 + registro de vivência (decisão 31)
   T('a governança declara os campos novos da v2 (voz, score, agregado publicado)',
     ['folha_do_dia', 'audio_da_voz', 'transcricao_da_voz', 'score_evasao', 'agregado_publicado']
       .every(c => f.consentimentos.some(g => g.campo === c)));
@@ -788,8 +788,15 @@ secao('16 · Relatório do ciclo, carta e supressão (F13/F14)');
     /crianças únicas e \d+ matrículas/i.test(g.corpo.texto));
   T('a supressão foi aplicada ANTES da redação e é declarada',
     g.corpo.supressoes.minimo === 5 && Array.isArray(g.corpo.supressoes.programas));
-  T('o programa fora de escopo com poucas crianças foi agrupado',
-    g.corpo.supressoes.programas.length > 0, JSON.stringify(g.corpo.supressoes.programas));
+  // Até 02/09/2026 a Vivência terapêutica não tinha matrícula e era o programa
+  // pequeno que a supressão agrupava. Com as duas turmas de sábado (decisão 31)
+  // ela passa a ser publicável — com presença e SEM rubrica — e a regra de
+  // agrupamento (n < 5) continua provada no teste unitário `suprimir`.
+  T('a lista de programas suprimidos é declarada (vazia quando nenhum é pequeno)',
+    Array.isArray(g.corpo.supressoes.programas), JSON.stringify(g.corpo.supressoes.programas));
+  T('a Vivência terapêutica entra na tabela do doador com presença, como programa',
+    g.corpo.numeros.cobertura.programas.some(p => /Viv[eê]ncia/i.test(p.rotulo ?? p.nome) && p.presenca_pct != null),
+    JSON.stringify(g.corpo.numeros.cobertura.programas.map(p => [p.rotulo ?? p.nome, p.presenca_pct])));
   T('nenhum nome de criança aparece no relatório',
     !g.corpo.blocos.some(b => /EBZ-\d{4}/.test(JSON.stringify(b))));
   T('os dois denominadores de custo são publicados juntos',
@@ -941,7 +948,7 @@ secao('21 · Cadastro de pessoas — equipe e crianças');
 
   const cad = await GET('rita', '/api/cadastro');
   T('coordenação abre o cadastro com equipe, papéis, programas e turmas',
-    cad.status === 200 && cad.corpo.equipe.length >= 4 && cad.corpo.papeis.length === 3 &&
+    cad.status === 200 && cad.corpo.equipe.length >= 5 && cad.corpo.papeis.length === 4 &&
     cad.corpo.programas.length >= 1 && cad.corpo.turmas.length >= 1);
   T('o cadastro anuncia o próximo código da criança', /^EBZ-\d{4}$/.test(cad.corpo.proximo_codigo));
 
@@ -1059,6 +1066,50 @@ secao('22 · Arquivo — ninguém é apagado (decisão 30)');
   const fichaVolta = (await GET('rita', `/api/crianca?id=${alvo.id}`)).corpo;
   T('o consentimento voltou a PENDENTE — a base legal caducou com a saída',
     fichaVolta.consentimentos.find(c => c.campo === 'rubrica_socioemocional').status === 'pendente');
+}
+
+// ------------------------- 24. a psicóloga e a Vivência terapêutica (decisão 31)
+secao('24 · Psicóloga e Vivência terapêutica — indicador de programa, nunca clínico (decisão 31)');
+{
+  const login = await POST('carolina', '/api/sessao', { educador_id: 5 });
+  T('psicóloga entra com o papel profissional', login.status === 200 && login.corpo.usuario.papel === 'profissional');
+
+  const inv = (await GET('carolina', '/api/inventario')).corpo;
+  // Os números exatos da seed (120/106/14) são provados no teste unitário, sobre
+  // banco recém-semeado; aqui a bateria já cadastrou e rematriculou crianças.
+  const somaEscopo = inv.porPrograma.filter(p => p.no_escopo).reduce((s, p) => s + p.matriculas, 0);
+  T('as matrículas do inventário são só dos programas do dossiê — a Vivência é contada à parte',
+    inv.matriculas === somaEscopo && inv.matriculas - inv.criancasUnicas === inv.multi,
+    `(${inv.matriculas}/${inv.criancasUnicas}/${inv.multi}; escopo=${somaEscopo})`);
+  T('a Vivência tem matrícula própria (24) e não muda as crianças únicas',
+    inv.foraDaRubrica.matriculas === 24 && inv.foraDaRubrica.criancas === 24, JSON.stringify(inv.foraDaRubrica));
+
+  const hoje = (await GET('carolina', '/api/hoje')).corpo;
+  T('o Hoje dela abre na turma da Vivência', !!hoje.turma && /Viv[eê]ncia/i.test(hoje.turma.programa));
+  T('a turma da Vivência está fora da rubrica: sem agenda de ciclo', hoje.na_rubrica === false && hoje.agenda === null);
+  T('ela não está em lapso (registrou no último sábado)', hoje.retomada.em_lapso === false);
+
+  const agenda = await GET('carolina', `/api/ciclo/agenda?turma_id=${hoje.turma.id}`);
+  T('pedir a agenda do ciclo para a Vivência é recusado com o motivo (422)',
+    agenda.status === 422 && /rubrica/i.test(agenda.corpo?.erro ?? agenda.corpo?.message ?? JSON.stringify(agenda.corpo)),
+    `(${agenda.status})`);
+
+  const chamada = (await GET('carolina', `/api/chamada?turma_id=${hoje.turma.id}`)).corpo;
+  T('ela vê a chamada da própria turma', Array.isArray(chamada.criancas) && chamada.criancas.length === 12);
+  const outra = await GET('maria', `/api/chamada?turma_id=${hoje.turma.id}`);
+  T('a professora de outra turma NÃO abre a chamada da Vivência (403)', outra.status === 403, `(${outra.status})`);
+  const coord = await GET('rita', `/api/chamada?turma_id=${hoje.turma.id}`);
+  T('a coordenação abre qualquer turma, inclusive a Vivência', coord.status === 200);
+
+  const lista = (await GET('carolina', '/api/criancas')).corpo;
+  T('o escopo dela é o das próprias turmas (24 crianças, não 106)', lista.total === 24, `(${lista.total})`);
+  const painel = (await GET('rita', '/api/painel')).corpo;
+  T('a Vivência não entra no denominador da cobertura da rubrica',
+    painel.programas.every(p => !/Viv[eê]ncia/i.test(p.nome)) && painel.foraDeEscopo.some(p => /Viv[eê]ncia/i.test(p.nome)));
+  const gov = (await GET('rita', '/api/consentimentos')).corpo.governanca;
+  T('a governança declara o registro de vivência (base legal, titular, acesso, retenção) e mantém o conteúdo clínico fora',
+    gov.some(g => g.campo === 'registro_de_vivencia' && !g.exige_consentimento) &&
+    gov.some(g => g.campo === 'conteudo_clinico' && /Ningu/i.test(g.acesso)));
 }
 
 console.log(`\n\x1b[1m${ok} passaram · ${falhas} falharam\x1b[0m\n`);

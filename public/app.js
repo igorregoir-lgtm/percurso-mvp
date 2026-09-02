@@ -235,6 +235,12 @@ const NAV_EDUCADOR = [
   ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'], ['#/pauta', '◈', 'Pauta'],
   ['#/turma', '▥', 'Turma'], ['#/criancas', '☺', 'Crianças'], ['#/copilot', '✷', 'Refletir'],
 ];
+// Psicóloga (decisão 31): a turma dela não entra na rubrica, então não há Ciclo;
+// e ela não pediu pauta de atividades — o que ela pediu foi registrar.
+const NAV_PROFISSIONAL = [
+  ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'], ['#/folha', '✎', 'Vivência'],
+  ['#/turma', '▥', 'Turma'], ['#/criancas', '☺', 'Crianças'], ['#/copilot', '✷', 'Refletir'],
+];
 const NAV_COORDENACAO = [
   ['#/painel', '▦', 'Painel'], ['#/scores', '◑', 'Scores'], ['#/safras', '↝', 'Safras'],
   ['#/sintese', '✎', 'Síntese'], ['#/consentimentos', '⚿', 'Consent.'], ['#/copilot', '✷', 'Refletir'],
@@ -247,7 +253,8 @@ function pintarNav(rotaAtual) {
   if (!sessao) { navEl.hidden = true; pintarPassoFab(false); return; }
   pintarPassoFab(!rotaAtual.startsWith('#/entrar'));
   const itens = sessao.papel === 'coordenacao' ? NAV_COORDENACAO
-              : sessao.papel === 'diretoria' ? NAV_DIRETORIA : NAV_EDUCADOR;
+              : sessao.papel === 'diretoria' ? NAV_DIRETORIA
+              : sessao.papel === 'profissional' ? NAV_PROFISSIONAL : NAV_EDUCADOR;
   navEl.hidden = false;
   navEl.innerHTML = itens.map(([href, ic, rot]) =>
     `<a href="${href}" ${rotaAtual.startsWith(href) ? 'aria-current="page"' : ''}>
@@ -408,7 +415,7 @@ rota(/^#\/entrar/, async () => {
   }
 });
 
-const PAPEL = { coordenacao: 'Coordenação', diretoria: 'Diretoria', educador: 'Professora' };
+const PAPEL = { coordenacao: 'Coordenação', diretoria: 'Diretoria', educador: 'Professora', profissional: 'Psicóloga' };
 
 // ======================================================================
 // HOJE — a tela que a persona abre primeiro
@@ -2214,14 +2221,14 @@ rota(/^#\/pessoas/, async () => {
           <div class="linha">
             <div class="cresce"><div class="nome">${esc(p.nome)}</div>
               <div class="meta">${esc(PAPEL[p.papel] ?? p.papel)}${p.turmas ? ` · ${esc(p.turmas)}` : ''}</div></div>
-            <span class="selo ${p.papel === 'educador' ? 'ok' : 'pend'}">${esc(p.apelido)}</span>
+            <span class="selo ${['educador', 'profissional'].includes(p.papel) ? 'ok' : 'pend'}">${esc(p.apelido)}</span>
           </div>
           ${p.id === sessao.id
             ? '<p class="sub">É você. Quem arquiva não pode ser quem sai.</p>'
             : `<div class="linha">
                 ${p.turmas ? `<select id="sucessora-${p.id}" style="flex:1;min-width:180px">
                   <option value="">Deixar a(s) turma(s) sem professora</option>
-                  ${d.equipe.filter(o => o.papel === 'educador' && o.id !== p.id).map(o =>
+                  ${d.equipe.filter(o => ['educador', 'profissional'].includes(o.papel) && o.id !== p.id).map(o =>
                     `<option value="${o.id}">${esc(o.nome)} assume</option>`).join('')}
                 </select>` : ''}
                 <button class="btn pequeno fantasma" data-acao="arquivar-pessoa"
@@ -2243,7 +2250,7 @@ rota(/^#\/pessoas/, async () => {
   const nota = document.getElementById('p-nota');
   const sincPapel = () => {
     nota.textContent = d.papeis.find(x => x.id === papel.value)?.nota ?? '';
-    blocoTurma.hidden = papel.value !== 'educador';
+    blocoTurma.hidden = !['educador', 'profissional'].includes(papel.value);
     if (blocoTurma.hidden) document.getElementById('p-turma').value = '';
   };
   papel.addEventListener('change', sincPapel);
@@ -3518,6 +3525,7 @@ document.addEventListener('click', comErro(async (ev) => {
 
 const PASSO_ROTAS_POR_PAPEL = {
   educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/pauta', '#/ciclo', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
+  profissional: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
   coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/pessoas', '#/arquivo', '#/criancas', '#/alertas', '#/copilot'],
   diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
 };

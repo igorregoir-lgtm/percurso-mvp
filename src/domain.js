@@ -67,29 +67,51 @@ export function dataBR(iso) {
 // F1 — ficha viva / inventario. Criança e' entidade; matricula e' relacao.
 // --------------------------------------------------------------------------
 export function inventario() {
+  // Os três números do dossiê ("60+40+20=120") contam os programas de
+  // matrícula (no_escopo=1). A Vivência terapêutica entrou no Percurso em
+  // 02/09/2026 como programa ADICIONAL (decisão 31): quem está nela já está no
+  // Laboratório ou no Reforço, então ela não muda crianças únicas nem os 120 —
+  // e é contada à parte, para o painel dizer as duas coisas sem misturar.
   const criancasUnicas = get(
     `SELECT COUNT(DISTINCT c.id) AS n FROM crianca c
       JOIN matricula m ON m.crianca_id = c.id AND m.status = 'ativa'
+      JOIN programa p ON p.id = m.programa_id AND p.no_escopo = 1
      WHERE c.ativo = 1`).n;
   const matriculas = get(
-    `SELECT COUNT(*) AS n FROM matricula WHERE status = 'ativa'`).n;
+    `SELECT COUNT(*) AS n FROM matricula m JOIN programa p ON p.id = m.programa_id
+      WHERE m.status = 'ativa' AND p.no_escopo = 1`).n;
   const multi = get(
     `SELECT COUNT(*) AS n FROM (
-       SELECT crianca_id FROM matricula WHERE status='ativa'
-        GROUP BY crianca_id HAVING COUNT(*) > 1)`).n;
+       SELECT m.crianca_id FROM matricula m JOIN programa p ON p.id = m.programa_id
+        WHERE m.status='ativa' AND p.no_escopo = 1
+        GROUP BY m.crianca_id HAVING COUNT(*) > 1)`).n;
   const porPrograma = all(
     `SELECT p.id, p.nome, p.faixa, p.cadencia, p.no_escopo, p.nota,
             COUNT(m.id) AS matriculas
        FROM programa p
        LEFT JOIN matricula m ON m.programa_id = p.id AND m.status = 'ativa'
       GROUP BY p.id ORDER BY p.id`);
+  const vivencia = get(
+    `SELECT COUNT(m.id) AS matriculas, COUNT(DISTINCT m.crianca_id) AS criancas
+       FROM matricula m JOIN programa p ON p.id = m.programa_id
+      WHERE m.status = 'ativa' AND p.no_escopo = 0`);
   const primeiroEncontro = get(`SELECT MIN(data) AS d FROM encontro`).d;
   const encontros = get(`SELECT COUNT(*) AS n FROM encontro`).n;
   const presencas = get(`SELECT COUNT(*) AS n FROM presenca`).n;
   return {
     criancasUnicas, matriculas, multi, porPrograma,
+    // Programas fora da rubrica (hoje só a Vivência): registro de turma, presença
+    // e check-in de grupo — nunca observação individual.
+    foraDaRubrica: { matriculas: vivencia?.matriculas ?? 0, criancas: vivencia?.criancas ?? 0 },
     cobertura: { desde: primeiroEncontro, encontros, presencas },
   };
+}
+
+/** A turma entra na rubrica por ciclo? Falso para a Vivência terapêutica
+ *  (decisão 31): lá o registro é de turma, e a agenda do ciclo não se aplica. */
+export function turmaNaRubrica(turmaId) {
+  return !!get(`SELECT p.no_escopo AS x FROM turma t JOIN programa p ON p.id = t.programa_id
+                 WHERE t.id = ?`, turmaId)?.x;
 }
 
 // --------------------------------------------------------------------------
@@ -1181,11 +1203,18 @@ export function planoDaTurma(turmaId) {
 /** Rotulos dos papeis — a mesma tabela que o cliente pinta, servida daqui
  *  para nao existirem duas listas de papel valido no produto. */
 export const PAPEIS = [
-  { id: 'educador',    rotulo: 'Professora',  nota: 'Registra chamada e observação das próprias turmas — e só delas.' },
-  { id: 'coordenacao', rotulo: 'Coordenação', nota: 'Vê todas as turmas, cadastra pessoas e trata consentimento.' },
-  { id: 'diretoria',   rotulo: 'Diretoria',   nota: 'Só a camada agregada — não abre ficha individual de criança.' },
+  { id: 'educador',     rotulo: 'Professora',  nota: 'Registra chamada e observação das próprias turmas — e só delas.' },
+  // Campo (29/08/2026): quem nomeia a dor do registro é a psicóloga. Ela entra
+  // pelo INDICADOR DE PROGRAMA (presença, registro de vivência, check-in de
+  // grupo) — o conteúdo clínico continua fora por construção (decisão 31).
+  { id: 'profissional', rotulo: 'Psicóloga',   nota: 'Conduz a vivência: chamada e registro de turma (procedimento e check-in de grupo) — nunca conteúdo clínico, nunca rubrica individual.' },
+  { id: 'coordenacao',  rotulo: 'Coordenação', nota: 'Vê todas as turmas, cadastra pessoas e trata consentimento.' },
+  { id: 'diretoria',    rotulo: 'Diretoria',   nota: 'Só a camada agregada — não abre ficha individual de criança.' },
 ];
 const PAPEL_VALIDO = new Set(PAPEIS.map(p => p.id));
+/** Papéis que ficam responsáveis por turma (e por isso têm escopo de turma). */
+export const PAPEIS_COM_TURMA = new Set(['educador', 'profissional']);
+export const rotuloDoPapel = (papel) => PAPEIS.find(p => p.id === papel)?.rotulo?.toLowerCase() ?? papel;
 
 /** Campos que exigem consentimento E são coletados pelo Percurso. `conteudo_clinico`
  *  também exige, mas está declarado FORA do sistema por construção — abrir linha
@@ -1247,7 +1276,7 @@ export function listarEquipe() {
 export function criarPessoa({ nome, apelido = '', papel, turmaId = null, confirmarTroca = false }) {
   const n = textoObrigatorio(nome, 'O nome');
   if (!PAPEL_VALIDO.has(papel))
-    throw erro(422, 'Escolha o papel: professora, coordenação ou diretoria.');
+    throw erro(422, 'Escolha o papel: professora, psicóloga, coordenação ou diretoria.');
   const a = String(apelido ?? '').trim().replace(/\s+/g, ' ').slice(0, 60) || apelidoDe(n);
 
   const igual = get(
@@ -1260,8 +1289,8 @@ export function criarPessoa({ nome, apelido = '', papel, turmaId = null, confirm
 
   let turma = null;
   if (turmaId != null) {
-    if (papel !== 'educador')
-      throw erro(422, 'Só professora fica responsável por turma. Coordenação e diretoria enxergam todas.');
+    if (!PAPEIS_COM_TURMA.has(papel))
+      throw erro(422, 'Só professora ou psicóloga fica responsável por turma. Coordenação e diretoria enxergam todas.');
     turma = get(
       `SELECT t.id, t.nome, t.educador_id, e.nome AS educador_atual
          FROM turma t LEFT JOIN educador e ON e.id = t.educador_id WHERE t.id = ?`, turmaId);
@@ -1413,8 +1442,8 @@ export function arquivarPessoa(id, { porUsuarioId = null, assumidaPor = null } =
       throw erro(422, 'A pessoa que sai não pode assumir as próprias turmas.');
     if (sucessora.arquivado_em)
       throw erro(422, `${sucessora.nome} está no arquivo. Traga de volta antes de passar turma para ela.`);
-    if (sucessora.papel !== 'educador')
-      throw erro(422, 'Só professora assume turma.');
+    if (!PAPEIS_COM_TURMA.has(sucessora.papel))
+      throw erro(422, 'Só professora ou psicóloga assume turma.');
   }
 
   return tx(() => {
@@ -1443,7 +1472,7 @@ export function reativarPessoa(id) {
   run(`UPDATE educador SET arquivado_em = NULL WHERE id = ?`, id);
   return {
     pessoa: get(`SELECT * FROM educador WHERE id = ?`, id),
-    aviso: `${p.nome} voltou do arquivo como ${p.papel === 'educador' ? 'professora' : p.papel}. Turma não volta junto — atribua em Pessoas se for o caso.`,
+    aviso: `${p.nome} voltou do arquivo como ${rotuloDoPapel(p.papel)}. Turma não volta junto — atribua em Pessoas se for o caso.`,
   };
 }
 

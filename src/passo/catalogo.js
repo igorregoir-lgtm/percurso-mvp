@@ -579,7 +579,7 @@ export const CATALOGO = [...EDUCADOR, ...COORDENACAO, ...DIRETORIA];
 export const IDS_CATALOGO = new Set(CATALOGO.map(c => c.id));
 
 export const doPapel = (papel) => CATALOGO.filter(c =>
-  c.id.startsWith(papel === 'educador' ? 'edu.' : papel === 'coordenacao' ? 'coo.' : 'dir.'));
+  c.id.startsWith(papel === 'coordenacao' ? 'coo.' : papel === 'diretoria' ? 'dir.' : 'edu.'));
 
 export const TIPOS = ['acao', 'pergunta', 'aprimoramento', 'duvida'];
 export const CLASSES = ['pendencia', 'oferta', 'melhoria', 'alivio', 'saber'];

@@ -53,18 +53,18 @@ export function apagarSessaoAssistente(u, sessaoId) {
 // CATÁLOGO DE AÇÕES — fechado, só navegação. O Passo nunca grava nada.
 // ---------------------------------------------------------------------------
 export const CATALOGO_ACOES = [
-  { id: 'hoje', rotulo: 'Hoje', hash: '#/hoje', papeis: ['educador'] },
-  { id: 'chamada', rotulo: 'Chamada', hash: '#/chamada', papeis: ['educador'] },
-  { id: 'voz', rotulo: 'Contar como foi (voz)', hash: '#/voz', papeis: ['educador'] },
-  { id: 'folha', rotulo: 'Folha do dia', hash: '#/folha', papeis: ['educador'] },
+  { id: 'hoje', rotulo: 'Hoje', hash: '#/hoje', papeis: ['educador', 'profissional'] },
+  { id: 'chamada', rotulo: 'Chamada', hash: '#/chamada', papeis: ['educador', 'profissional'] },
+  { id: 'voz', rotulo: 'Contar como foi (voz)', hash: '#/voz', papeis: ['educador', 'profissional'] },
+  { id: 'folha', rotulo: 'Folha do dia', hash: '#/folha', papeis: ['educador', 'profissional'] },
   { id: 'pauta', rotulo: 'Pauta de segunda', hash: '#/pauta', papeis: ['educador'] },
-  { id: 'ciclo', rotulo: 'Agenda do ciclo', hash: '#/ciclo', papeis: ['educador'] },
-  { id: 'turma', rotulo: 'Painel da turma', hash: '#/turma', papeis: ['educador'] },
-  { id: 'criancas', rotulo: 'Crianças', hash: '#/criancas', papeis: ['educador', 'coordenacao'] },
+  { id: 'ciclo', rotulo: 'Agenda do ciclo', hash: '#/ciclo', papeis: ['educador', 'profissional'] },
+  { id: 'turma', rotulo: 'Painel da turma', hash: '#/turma', papeis: ['educador', 'profissional'] },
+  { id: 'criancas', rotulo: 'Crianças', hash: '#/criancas', papeis: ['educador', 'profissional', 'coordenacao'] },
   // A entrada de GUIA 'alertas' existia sem par aqui: validarAcao('alertas')
   // devolvia null e a oferta "Ir para Alertas" sumia em silêncio.
-  { id: 'alertas', rotulo: 'Alertas de ausência', hash: '#/alertas', papeis: ['educador', 'coordenacao'] },
-  { id: 'copilot', rotulo: 'Refletir (copilot)', hash: '#/copilot', papeis: ['educador', 'coordenacao'] },
+  { id: 'alertas', rotulo: 'Alertas de ausência', hash: '#/alertas', papeis: ['educador', 'profissional', 'coordenacao'] },
+  { id: 'copilot', rotulo: 'Refletir (copilot)', hash: '#/copilot', papeis: ['educador', 'profissional', 'coordenacao'] },
   { id: 'painel', rotulo: 'Painel da coordenação', hash: '#/painel', papeis: ['coordenacao'] },
   { id: 'scores', rotulo: 'Scores', hash: '#/scores', papeis: ['coordenacao'] },
   { id: 'safras', rotulo: 'Safras', hash: '#/safras', papeis: ['coordenacao'] },
@@ -109,7 +109,7 @@ export function telaSegura(tela) {
 // ---------------------------------------------------------------------------
 export const GUIA = [
   {
-    id: 'hoje', papeis: ['educador'],
+    id: 'hoje', papeis: ['educador', 'profissional'],
     oQueE: 'A tela Hoje é o ponto de partida da educadora: mostra a chamada do dia, a folha do dia, a agenda do ciclo e o que precisa de atenção nesta semana.',
     chips: ['O que é esta tela?', 'Como faço a chamada?', 'Como conto como foi o encontro?'],
     tarefas: [
@@ -117,7 +117,7 @@ export const GUIA = [
     ],
   },
   {
-    id: 'chamada', papeis: ['educador'],
+    id: 'chamada', papeis: ['educador', 'profissional'],
     oQueE: 'A Chamada registra a presença da turma em um toque por criança — a meta é terminar em menos de 2 minutos, junto com o encontro.',
     chips: ['Como marco presença e falta?', 'Para que serve o cronômetro?', 'Como marco todos presentes?'],
     tarefas: [
@@ -129,7 +129,7 @@ export const GUIA = [
     ],
   },
   {
-    id: 'voz', papeis: ['educador'],
+    id: 'voz', papeis: ['educador', 'profissional'],
     oQueE: 'Em "Contar como foi", você fala por até 40 segundos sobre o encontro da TURMA e o Percurso transforma a fala em campos — que você confere e confirma antes de qualquer coisa ser gravada.',
     chips: ['Como funciona a captura por voz?', 'O áudio fica gravado?', 'E se eu preferir escrever?'],
     tarefas: [
@@ -140,7 +140,7 @@ export const GUIA = [
     ],
   },
   {
-    id: 'ciclo', papeis: ['educador'],
+    id: 'ciclo', papeis: ['educador', 'profissional'],
     oQueE: 'A Agenda do ciclo lista quem já foi observado neste ciclo, quem falta, e quem está bloqueado — sempre com o motivo explícito.',
     chips: ['O que é o ciclo de observação?', 'Por que uma criança aparece bloqueada?'],
     naoEnxergo: 'Eu não abro a ficha de ninguém: eu conto quantas estão bloqueadas, nunca quem. O motivo exato aparece na própria agenda, ao lado do nome.',
@@ -158,13 +158,13 @@ export const GUIA = [
     ],
   },
   {
-    id: 'turma', papeis: ['educador'],
+    id: 'turma', papeis: ['educador', 'profissional'],
     oQueE: 'O Painel da turma mostra as médias por dimensão entre ciclos, a agenda e o plano da semana — sempre agregado, nunca ranking de crianças.',
     chips: ['O que este painel mostra?'],
     tarefas: [],
   },
   {
-    id: 'criancas', papeis: ['educador', 'coordenacao'],
+    id: 'criancas', papeis: ['educador', 'profissional', 'coordenacao'],
     oQueE: 'A lista de Crianças abre a ficha viva de cada uma: matrículas, presença, trajetória categórica e consentimentos. Educadora vê as crianças das próprias turmas.',
     chips: ['Como encontro uma criança?', 'O que tem na ficha?'],
     naoEnxergo: 'Eu não abro a ficha de ninguém — eu só te levo até a lista.',
@@ -173,7 +173,7 @@ export const GUIA = [
     ],
   },
   {
-    id: 'copilot', papeis: ['educador', 'coordenacao'],
+    id: 'copilot', papeis: ['educador', 'profissional', 'coordenacao'],
     oQueE: 'O Refletir é a sala de reflexão pedagógica: você descreve uma situação da turma e o copilot local devolve perguntas, hipóteses rotuladas, alternativas e contraponto — com fontes do corpus aprovado. A decisão é sempre sua.',
     chips: ['O que é o Refletir?', 'O que ele nunca faz?'],
     tarefas: [
@@ -270,7 +270,7 @@ export const GUIA = [
   // As entradas abaixo ficam DEPOIS de 'criancas' de propósito: guiaDe casa
   // por startsWith e '#/criancas' precisa vencer antes de '#/crianca'.
   {
-    id: 'folha', papeis: ['educador'],
+    id: 'folha', papeis: ['educador', 'profissional'],
     oQueE: 'A Folha do dia é o registro à mão do encontro da TURMA — atividade, área temática, como o grupo esteve e quantos pediram ajuda: os mesmos campos que a voz preenche.',
     chips: ['Como preencho a folha?', 'Posso ajustar depois?', 'Qual a diferença para a voz?'],
     tarefas: [
@@ -280,7 +280,7 @@ export const GUIA = [
     ],
   },
   {
-    id: 'confirmar', papeis: ['educador'],
+    id: 'confirmar', papeis: ['educador', 'profissional'],
     oQueE: 'A tela "O que entendi" mostra os campos extraídos da sua fala para você conferir e ajustar — NADA é gravado antes do seu toque em confirmar, e a transcrição é descartada nesse momento.',
     chips: ['Já foi gravado?', 'Posso corrigir um campo?', 'E se estiver tudo errado?'],
     tarefas: [
@@ -289,7 +289,7 @@ export const GUIA = [
     ],
   },
   {
-    id: 'alertas', papeis: ['educador', 'coordenacao'],
+    id: 'alertas', papeis: ['educador', 'profissional', 'coordenacao'],
     oQueE: 'Os Alertas de ausência disparam com faltas consecutivas na chamada — para agir antes de virar evasão: a coordenação liga para a família e a tratativa fica registrada.',
     chips: ['Quando um alerta dispara?', 'Como trato um alerta?', 'O que é esta tela?'],
     tarefas: [
@@ -298,7 +298,7 @@ export const GUIA = [
     ],
   },
   {
-    id: 'observacao', papeis: ['educador'],
+    id: 'observacao', papeis: ['educador', 'profissional'],
     oQueE: 'A Observação registra o seu olhar sobre uma criança nas dimensões do ciclo, nível a nível, com as âncoras da rubrica — decisão sua em cada marca; nenhum nível é sugerido por modelo.',
     chips: ['Como marco os níveis?', 'O que é a âncora?', 'Preciso preencher tudo?'],
     tarefas: [
@@ -308,7 +308,7 @@ export const GUIA = [
     ],
   },
   {
-    id: 'crianca', papeis: ['educador', 'coordenacao'],
+    id: 'crianca', papeis: ['educador', 'profissional', 'coordenacao'],
     oQueE: 'A ficha viva mostra o percurso de uma criança — presença, observações e evolução — sempre dentro do escopo das suas turmas e do consentimento registrado.',
     naoEnxergo: 'Eu não abro o conteúdo de nenhuma ficha — só sei explicar o que a tela mostra e por que algo pode estar fechado.',
     chips: ['O que é esta tela?', 'Por que uma ficha não abre?', 'O que significa bloqueada?'],
@@ -427,6 +427,10 @@ export function limparFala(fala, roster) {
 
 const REDIRECIONAMENTO = {
   educador: {
+    resposta: 'Essa é uma conversa para a sala de reflexão, não para mim — eu sou o guia do produto. No Refletir, o copilot pensa junto com você: perguntas, hipóteses e alternativas, com fontes. Quer ir até lá?',
+    acaoId: 'copilot',
+  },
+  profissional: {
     resposta: 'Essa é uma conversa para a sala de reflexão, não para mim — eu sou o guia do produto. No Refletir, o copilot pensa junto com você: perguntas, hipóteses e alternativas, com fontes. Quer ir até lá?',
     acaoId: 'copilot',
   },

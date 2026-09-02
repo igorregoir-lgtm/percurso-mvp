@@ -169,6 +169,9 @@ function exigeAcessoCrianca(req, criancaId) {
     throw D.erro(403, 'Esta criança é de outra turma. O acesso é do educador da criança e da coordenação.');
   return u;
 }
+// Escopo de leitura individual: professora e profissional (psicóloga) só nas
+// próprias turmas; coordenação sem filtro; diretoria nunca chega aqui.
+const escopoDe = (u) => (u.papel === 'educador' || u.papel === 'profissional') ? u.id : null;
 const num = (v, campo) => {
   const n = Number(v);
   if (!Number.isInteger(n) || n <= 0) throw D.erro(422, `Parâmetro inválido: ${campo}.`);
@@ -208,7 +211,11 @@ export const rotas = {
       retomada: D.estadoDeRetomada(u.id),
       chamada: turma ? D.chamada(turma.id, D.hoje()) : null,
       chamadas_abertas: turma ? D.chamadasEmAberto(turma.id) : [],
-      agenda: turma && ciclo ? D.agendaDoCiclo(turma.id, ciclo.id) : null,
+      // Turma fora da rubrica (Vivência, decisão 31) não tem agenda de ciclo:
+      // oferecer "faltam N observações" à psicóloga seria pedir o que o
+      // produto decidiu não pedir.
+      na_rubrica: turma ? D.turmaNaRubrica(turma.id) : false,
+      agenda: turma && ciclo && D.turmaNaRubrica(turma.id) ? D.agendaDoCiclo(turma.id, ciclo.id) : null,
       alertas: turma
         ? D.alertas().filter(a => get(
             `SELECT 1 x FROM matricula WHERE crianca_id = ? AND turma_id = ? AND status='ativa'`,
@@ -247,6 +254,8 @@ export const rotas = {
   'GET /api/ciclo/agenda': (req, _b, q) => {
     const turmaId = num(q.get('turma_id'), 'turma_id');
     exigeAcessoTurma(req, turmaId);
+    if (!D.turmaNaRubrica(turmaId))
+      throw D.erro(422, 'Esta turma não entra na rubrica por ciclo: na Vivência o registro é de turma (presença, procedimento e check-in de grupo), nunca observação individual — decisão 31.');
     const ciclo = D.cicloAberto();
     if (!ciclo) throw D.erro(404, 'Não há ciclo de observação aberto.');
     return D.agendaDoCiclo(turmaId, ciclo.id);
@@ -319,7 +328,7 @@ export const rotas = {
       q: q.get('q') || '',
       turmaId: q.get('turma_id') ? Number(q.get('turma_id')) : null,
       programaId: q.get('programa_id') ? Number(q.get('programa_id')) : null,
-      educadorId: u.papel === 'educador' ? u.id : null,
+      educadorId: escopoDe(u),
     });
   },
 
@@ -332,7 +341,7 @@ export const rotas = {
   'GET /api/alertas': (req) => {
     const u = exigeEducadorOuCoordenacao(req);
     return {
-      alertas: D.alertas(null, u.papel === 'educador' ? u.id : null),
+      alertas: D.alertas(null, escopoDe(u)),
       faltas_para_lista: D.PARAMS.AUSENCIAS_ALERTA,
     };
   },
