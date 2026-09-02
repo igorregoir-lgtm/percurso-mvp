@@ -71,7 +71,7 @@ não cumprida**.
 
 ### 5 · O olhar — âncoras + calibração — [0:35 · `#/observacao/…`]
 
-**Ação:** abrir uma observação pendente. Mostrar as 5 dimensões com âncoras comportamentais e o
+**Ação:** abrir uma observação pendente. Mostrar as 6 dimensões (os indicadores da planilha do Instituto) com âncoras comportamentais e o
 subtítulo *"Opcional. A folha do dia já registrou a turma."* Abrir o bloco
 **"Como calibrar o olhar (1 minuto)"** e ler dois itens: marcar pelo comportamento
 **predominante**, não pelo episódio; na dúvida entre dois níveis, o **menor**.

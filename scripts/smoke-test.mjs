@@ -1112,5 +1112,40 @@ secao('24 · Psicóloga e Vivência terapêutica — indicador de programa, nunc
     gov.some(g => g.campo === 'conteudo_clinico' && /Ningu/i.test(g.acesso)));
 }
 
+// ------------------------------- 25. a planilha socioemocional (decisão 34)
+secao('25 · A planilha socioemocional do Instituto, preenchida pelo Percurso (decisão 34)');
+{
+  const rub = (await GET('maria', '/api/rubrica')).corpo;
+  T('a rubrica tem as seis dimensões da planilha, nesta ordem',
+    JSON.stringify(rub.dimensoes.map(d => d.nome)) ===
+    JSON.stringify(['Autocontrole', 'Convivência', 'Participação', 'Expressão emocional', 'Autoestima', 'Resiliência']));
+
+  const res = await GET('rita', '/api/planilha/resumo');
+  T('coordenação lê o resumo da planilha (dois ciclos, seis indicadores + geral)',
+    res.status === 200 && res.corpo.indicadores.length === 6 && !!res.corpo.geral && res.corpo.ciclo_inicial.id !== res.corpo.ciclo_final.id);
+  T('cada indicador traz a leitura da planilha ou a supressão declarada',
+    res.corpo.indicadores.every(i => i.suprimida || ['Resultado forte', 'Evolução moderada', 'Atenção para acompanhamento'].includes(i.leitura)));
+  T('o resumo carrega a legenda do mapeamento 1–4 → 0–2 e a ressalva metodológica',
+    /1→0, 2→1, 3→1, 4→2/.test(res.corpo.legenda) && /fatores externos/.test(res.corpo.ressalva));
+  T('a diretoria também lê o resumo (agregado)', (await GET('solange', '/api/planilha/resumo')).status === 200);
+  T('professora NÃO lê o resumo da planilha (403)', (await GET('maria', '/api/planilha/resumo')).status === 403);
+
+  const csv = await fetch(BASE + '/api/exportar/planilha', { headers: { Cookie: cookies['rita'] } });
+  // `text()` descarta o BOM ao decodificar; o Excel precisa dele nos bytes.
+  const bytes = Buffer.from(await csv.arrayBuffer());
+  const texto = bytes.toString('utf8').replace(/^\uFEFF/, '');
+  T('coordenação exporta a planilha como CSV (text/csv, anexo, com BOM para o Excel)',
+    csv.status === 200 && /text\/csv/.test(csv.headers.get('content-type') || '') &&
+    /attachment/.test(csv.headers.get('content-disposition') || '') &&
+    bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF);
+  T('o CSV tem o cabeçalho da aba Avaliações e sai por código, sem nome',
+    /^ID;Turma;/.test(texto) && /Total final;Evolução 0\/1\/2 \(geral\)/.test(texto) &&
+    /\nEBZ-\d{4};/.test(texto) && !/;(Ana|Beatriz|Caio|Davi|Enzo) /.test(texto));
+  T('professora NÃO exporta (403)',
+    (await fetch(BASE + '/api/exportar/planilha', { headers: { Cookie: cookies['maria'] } })).status === 403);
+  T('diretoria NÃO exporta linhas por criança (403) — só o agregado',
+    (await fetch(BASE + '/api/exportar/planilha', { headers: { Cookie: cookies['solange'] } })).status === 403);
+}
+
 console.log(`\n\x1b[1m${ok} passaram · ${falhas} falharam\x1b[0m\n`);
 process.exit(falhas ? 1 : 0);

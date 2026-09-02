@@ -17,11 +17,11 @@
 | 2 | Jornadas do usuário (atual e futura) | ✅ | §2 · íntegra em [`JORNADAS.md`](JORNADAS.md) |
 | 3 | User Stories (3 a 5) | ✅ | §3 — as cinco, com a tela e o teste que prova cada uma |
 | 4 | Fluxo de navegação | ✅ | §4 |
-| 5 | Registro da validação com usuário real | ⛔ **não aconteceu** | §5 — protocolo pronto, resultado em branco |
+| 5 | Registro da validação com usuário real | ◐ **parcial** | §5 — demonstração com usuária real em 29/08/2026, registrada; sessão de teste com tarefas cronometradas ainda pendente |
 
-O item 5 é o único furo, e ele **não se fabrica**. O que o §5 traz é o que falta e o que já está
-preparado para a sessão. Ver também [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md), que classifica
-esta ausência como o maior risco da avaliação acadêmica.
+O item 5 é o único que não está inteiro, e ele **não se fabrica**: o §5 registra o que aconteceu
+(demonstração, reações literais, o que mudou) e o que não aconteceu (o protocolo de tarefas).
+Ver também [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md) §6.
 
 **O protótipo, em Figma:** https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL
 
@@ -52,11 +52,27 @@ A frase que a define, tirada da dinâmica de personas feita em aula:
 **As duas personas de apoio**, que aparecem no protótipo porque o Desafio B tem três leitores
 distintos do mesmo dado: **Rita Amaral** (coordenação — precisa demonstrar resultado sem expor
 criança) e **Solange Ribeiro** (diretoria — presta contas a quem financia e, por decisão de
-desenho, **não abre registro individual**). A psicóloga do Instituto **não é usuária**: o tempo
-dela é clínico, e nenhum fluxo do produto depende dela.
+desenho, **não abre registro individual**).
+
+**A persona que o campo acrescentou — a psicóloga (Carolina Duarte, nome sintético).** Até a
+visita de 29/08/2026 este documento dizia que *"a psicóloga não é usuária: o tempo dela é
+clínico"*. A visita derrubou isso: é ela quem nomeia o registro como a dor central (*"o maior
+desafio aqui é registrar o que você fez, né?"*), quem escreve o único registro que existe (o
+relatório do conselho profissional, por procedimento, sem nome) e para quem foi preciso improvisar
+um perfil na demonstração, porque o app assumia professora. Ela entra pelo **indicador de
+programa** — presença, registro de vivência em lista fechada e check-in de grupo — e o conteúdo
+clínico continua fora por construção. A distinção do bloco 6 (registro clínico ≠ indicador de
+programa) é o que permite as duas coisas ao mesmo tempo. Jornada completa em
+[`JORNADAS.md`](JORNADAS.md) §4; o que o campo contradisse, linha a linha, em
+[`jornada-usuario/CAMPO-versus-REPOSITORIO.md`](jornada-usuario/CAMPO-versus-REPOSITORIO.md).
+
+A pedagoga de semana continua persona: o Reforço escolar roda de segunda a sexta. Mas o campo
+mostrou que **a operação é de sábado** — vivência, Laboratório e oficinas — e o produto passou a
+ter a tela do sábado.
 
 Origem das personas: `1 - Arquitetura/Material Produzido em Aula/mvp-percurso-persona.html` e
-`visao-produto-ebenezer.html`.
+`visao-produto-ebenezer.html`; a da psicóloga, das quatro gravações da visita
+(`1 - Arquitetura/Material da Visita no Ebenezer/`).
 
 ---
 
@@ -67,7 +83,7 @@ contraste, para a persona principal:
 
 | | Hoje (papel, planilha, memória) | Com o Percurso |
 |---|---|---|
-| **Observar** | o que viu fica na cabeça | rubrica de 5 dimensões × 4 âncoras, ~3 min por criança |
+| **Observar** | o que viu fica na cabeça | rubrica de 6 dimensões × 4 âncoras (os indicadores da planilha do Instituto), ~3 min por criança |
 | **Registrar presença** | papel ou planilha — fica quem veio, e só | um toque por criança; sem rede, entra na fila e sobe sozinho |
 | **Contar como foi o dia** | conta para a colega no corredor — a informação morre ali | fala ~40 s sobre a **turma**; o áudio é descartado no aparelho |
 | **Perceber uma ausência** | percebe quando percebe, e age sob demanda | alerta em duas faltas seguidas, na tela de abertura |
@@ -137,7 +153,7 @@ servidor autoriza são a mesma regra, verificada por teste (smoke §0, §19).
         │                       ▼
         ▼                  #/consentimentos
    #/observacao/:id        pendências; ativar
-   5 dimensões × 4 âncoras aqui DESBLOQUEIA a
+   6 dimensões × 4 âncoras aqui DESBLOQUEIA a
         │                  observação lá
         ▼                       │
    #/turma  ◄────────────── #/pessoas · #/arquivo
@@ -164,35 +180,27 @@ ordem:
 
 ## 5. Registro da validação com usuário real
 
-> ### ⛔ A sessão não aconteceu. Este campo fica em branco até acontecer.
+> ### Validação **parcial**: uma demonstração com usuária real aconteceu em 29/08/2026; a sessão de teste com tarefas cronometradas, não.
 
 O guia exige que o protótipo tenha *"sido testado e validado com pelo menos um usuário real"* e que
-a documentação traga *"quem validou, como e principais aprendizados"*. **Nada disso pode ser
-preenchido por memória, inferência ou simulação** — validação fabricada é pior que validação
-ausente, porque a ausência é honesta e a fabricação contamina todo o resto do documento.
-
-**O que já está pronto para a sessão** ([`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md)):
-
-| Peça | Onde |
-|---|---|
-| Roteiro de 45 minutos, com seis tarefas cronometradas | §3 |
-| As perguntas finais, a fazer literalmente e anotar literalmente | §3.2 |
-| Termo de participação | §4 |
-| Formulário de registro estruturado | §5 |
-| Campo de resultados — **vazio** | §6 |
-
-**O que falta, e é humano:** agendar e executar a sessão com uma educadora real, e transcrever o
-formulário da §5 durante a sessão.
-
-**Preencher aqui, depois da sessão:**
+a documentação traga *"quem validou, como e principais aprendizados"*. O que está abaixo é **o que
+aconteceu**, sem completar nada por inferência: o protótipo foi mostrado a uma usuária real e a
+reação dela foi registrada literalmente; o protocolo de seis tarefas cronometradas de
+[`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md) **não foi aplicado** e continua pendente.
 
 | Campo | |
 |---|---|
-| Quem validou (papel, tempo de casa) | — |
-| Quando e onde | — |
-| Como (tarefas aplicadas, o que foi medido) | — |
-| Principais aprendizados | — |
-| O que mudou no produto por causa da sessão | — |
+| **Quem validou** | A **psicóloga** do Instituto (voluntária há 6 anos, conduz a vivência terapêutica de sábado, autora do único registro escrito da operação) e o **líder** do Instituto (quem faz a chamada, o vídeo e a devolutiva aos responsáveis). Nomeados pelo papel, por regra. |
+| **Quando e onde** | Sábado, 29/08/2026, ~11h às 13h, na sede (garagem adaptada, Jardim Ângela), durante e depois da vivência da manhã. |
+| **Como** | (1) Cinco minutos de observação silenciosa da atividade (jogo de cartas sobre a rede de apoio da comunidade). (2) Conversa com o líder sobre o sistema de presença (planilha com % por criança, régua de 75%, grupos de WhatsApp) e sobre as teses do produto. (3) **Demonstração guiada no celular do autor**, com a psicóloga ao lado: Hoje → "contar como foi" → o **check-in estruturado**, respondido por ela ao vivo (*"Quantas ajudaram sem ninguém pedir? — Duas. Quantas participaram do começo ao fim? — Seis. Conflito? — Resolveu conversando. Um não foi observado."*) → assistente. (4) Perguntas abertas sobre a dor, o registro e a rede. Quatro gravações de áudio (97 min), transcritas e conferidas contra os `.srt`. **O que não foi feito:** o aparelho não ficou na mão dela; nenhuma tarefa foi cronometrada; não houve termo assinado nem formulário; a camada de IA ficou desligada. |
+| **Principais aprendizados** | A persona principal estava errada: quem tem a dor do registro é a psicóloga, não a pedagoga de semana (*"eu não sabia que você era psicóloga"*, na fita). A dor é registrar, não ter atividades (*"o ponto mesmo é você registrar"*). O check-in em contagens foi aceito e ela pediu campos para especificidades do grupo. A anonimização com liberação por OK foi o item mais aplaudido (*"amei isso"*). Gravar é lido como perigoso mesmo dentro da sala — a tela de voz precisa dizer o que grava. A régua de 75% e a devolutiva semanal por WhatsApp já existem e são manuais. O destino mais rico do registro é lateral: a assistente social do projeto parceiro. A chamada por voz foi **recusada** por legislação. O relatório dela segue o padrão do conselho profissional — não individualizado, sem nome. Os sete pontos em que o campo contradisse o repositório: [`jornada-usuario/CAMPO-versus-REPOSITORIO.md`](jornada-usuario/CAMPO-versus-REPOSITORIO.md). |
+| **O que mudou no produto** | O papel `profissional` e a Vivência com turma (decisão 31); rubrica alinhada aos seis indicadores da planilha do Instituto, com exportação (decisão 34); registro de vivência com check-in de grupo e relato no padrão do conselho, com liberação; a tela de voz dizendo o que grava e mostrando o nome virar código; régua de presença de 75% e recado da turma (decisão 33); devolução por encontro; parecer profissional-a-profissional sob consentimento (decisão 32). Plano e revisão: [`revisao/11-PLANO-POS-VISITA.md`](revisao/11-PLANO-POS-VISITA.md). |
+
+**O que continua pendente, e é humano:** a sessão de teste com o protocolo de
+[`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md) (aparelho na mão da usuária, seis tarefas
+cronometradas, termo, formulário, Protocolo do Lapso) — agora com **a psicóloga como uma das
+participantes**, além de uma educadora; e o retorno dela sobre o protótipo, que ficou combinado
+(*"ó, eu testei, isso aqui eu precisaria colocar mais coisas"*).
 
 ---
 

@@ -90,7 +90,7 @@ crianças em risco apareciam com o mesmo número (decisão técnica nº 18).
 | Chamada — alternar P/F | `aria-pressed` alterna corretamente; contador atualiza |
 | Chamada — salvar | Toast de confirmação e **abertura automática da próxima data pendente** |
 | Ciclo de observação | 16 de 18, 89%; duas bloqueadas com motivos distintos e explícitos |
-| Observação — rubrica | 5 dimensões × 4 âncoras; contador "x de 5 dimensões marcadas" |
+| Observação — rubrica | 6 dimensões × 4 âncoras (indicadores da planilha, decisão 34); contador "x de 6 dimensões marcadas" |
 | Observação — rascunho | Reabre preenchido, com *"Você tinha começado — continue de onde parou"* |
 | **Filtro de proteção** | Modal isola só a frase clínica, nomeia a categoria (*saúde mental / diagnóstico*) e oferece "Salvar sem esse trecho" |
 | **Fecho da turma** | Ao concluir a última pendente, a tela de revelação abre com 18 de 18, o tempo investido, as barras dos dois ciclos e a frase para o financiador |

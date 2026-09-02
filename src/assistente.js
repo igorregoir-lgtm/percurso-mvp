@@ -146,7 +146,7 @@ export const GUIA = [
     naoEnxergo: 'Eu não abro a ficha de ninguém: eu conto quantas estão bloqueadas, nunca quem. O motivo exato aparece na própria agenda, ao lado do nome.',
     tarefas: [
       { intencoes: ['bloquead', 'nao consigo observar', 'nao deixa observar'], resposta: 'Eu não abro a ficha de ninguém, então não sei o motivo deste caso — mas a Agenda do ciclo mostra o motivo escrito ao lado de cada criança bloqueada. Os dois motivos possíveis são: consentimento do responsável pendente ou revogado, ou a janela mínima de convívio (4 encontros antes de observar — é protocolo, não falha sua). Quer ir até lá ver?', acao: 'ciclo' },
-      { intencoes: ['observa', 'rubrica', 'ancora', 'como avalio', 'niveis'], resposta: 'A observação é uma rubrica de 5 dimensões com âncoras de comportamento observável — você marca o que VIU no ciclo, nível 1 a 4, nunca uma interpretação. Na dúvida entre dois níveis, marque o menor. A própria tela tem o guia "Como calibrar o olhar".', acao: 'ciclo' },
+      { intencoes: ['observa', 'rubrica', 'ancora', 'como avalio', 'niveis'], resposta: 'A observação é uma rubrica de 6 dimensões (os indicadores da planilha socioemocional do Instituto) com âncoras de comportamento observável — você marca o que VIU no ciclo, nível 1 a 4, nunca uma interpretação. Na dúvida entre dois níveis, marque o menor. A própria tela tem o guia "Como calibrar o olhar".', acao: 'ciclo' },
     ],
   },
   {

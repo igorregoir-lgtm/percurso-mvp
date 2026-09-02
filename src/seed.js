@@ -28,28 +28,41 @@ const NOMES = ['Ana','Beatriz','Caio','Davi','Enzo','Fernanda','Gabriel','Helena
 const SOBRENOMES = ['A.','B.','C.','D.','F.','G.','L.','M.','N.','P.','R.','S.','T.','V.'];
 const RESPONSAVEIS = ['Responsável 1','Responsável 2','Responsável 3','Responsável 4','Responsável 5','Responsável 6'];
 
+// Decisão 34 (02/09/2026): as seis dimensões são os seis indicadores da
+// planilha socioemocional que o Instituto tem em mãos (Autocontrole,
+// Convivência, Participação, Expressão emocional, Autoestima, Resiliência).
+// As âncoras continuam em 4 níveis observáveis; a exportação para a planilha
+// mapeia 1–4 → 0–2 num único lugar (src/planilha.js). Correspondência com a
+// rubrica anterior: INTER→CONV, COOP→AUTOC, AUTO→PART, PERS→RESIL, EXPR igual,
+// AUTOEST nova (o padrão da costura: "quis desistir" → resiliência, "nossa, eu
+// consegui" → autoestima). Rubricas provisórias até o aval da psicóloga.
 const DIMENSOES = [
-  { codigo: 'INTER', nome: 'Interação com colegas', descricao: 'Como a criança se aproxima e se mantém junto dos colegas nas atividades.', ancoras: [
+  { codigo: 'AUTOC', nome: 'Autocontrole', descricao: 'Como a criança regula impulso e reação diante dos combinados, da espera e da frustração.', ancoras: [
+    'Reage no impulso (grita, empurra, sai do lugar) na maior parte do encontro, mesmo com lembrete.',
+    'Consegue se conter quando a educadora intervém individualmente.',
+    'Espera a vez e segue os combinados na maior parte do encontro, sem lembrete.',
+    'Regula-se sozinha e ajuda a turma a manter os combinados.'] },
+  { codigo: 'CONV', nome: 'Convivência', descricao: 'Como a criança se aproxima, coopera e inclui os colegas nas atividades.', ancoras: [
     'Fica sozinha na maior parte do encontro; não procura os colegas.',
     'Participa quando alguém a chama; raramente toma a iniciativa.',
-    'Procura colegas por conta própria em parte das atividades.',
-    'Procura colegas e inclui quem está de fora nas atividades.'] },
-  { codigo: 'COOP', nome: 'Cooperação e combinados', descricao: 'Como a criança lida com os combinados coletivos da turma.', ancoras: [
-    'Não segue os combinados da turma, mesmo com lembrete.',
-    'Segue os combinados quando lembrada individualmente.',
-    'Segue os combinados na maior parte do encontro, sem lembrete.',
-    'Segue os combinados e ajuda a turma a lembrar deles.'] },
+    'Procura colegas por conta própria e coopera em parte das atividades.',
+    'Procura colegas, coopera e inclui quem está de fora nas atividades.'] },
+  { codigo: 'PART', nome: 'Participação', descricao: 'Como a criança entra e permanece na atividade proposta.', ancoras: [
+    'Só entra na atividade com a educadora ao lado; sai antes do fim.',
+    'Entra com insistência; fica até o fim só em parte dos encontros.',
+    'Entra por conta própria e fica do começo ao fim na maior parte dos encontros.',
+    'Entra, fica do começo ao fim e puxa a atividade com os colegas.'] },
   { codigo: 'EXPR', nome: 'Expressão emocional', descricao: 'Como a criança comunica o que sente durante o encontro.', ancoras: [
     'Não nomeia o que sente; demonstra por reação física (chorar, sair, bater na mesa).',
     'Nomeia o que sente quando a educadora pergunta diretamente.',
     'Nomeia o que sente por conta própria em algumas situações.',
     'Nomeia o que sente e diz do que precisa (pausa, ajuda, conversa).'] },
-  { codigo: 'AUTO', nome: 'Autonomia na tarefa', descricao: 'Como a criança começa e conduz a atividade proposta.', ancoras: [
-    'Só inicia a tarefa com a educadora ao lado.',
-    'Inicia com instrução repetida; pede ajuda a cada passo.',
-    'Inicia sozinha e pede ajuda em pontos específicos.',
-    'Inicia, organiza o próprio material e busca ajuda depois de já ter tentado.'] },
-  { codigo: 'PERS', nome: 'Persistência diante da dificuldade', descricao: 'O que a criança faz quando a tarefa fica difícil.', ancoras: [
+  { codigo: 'AUTOEST', nome: 'Autoestima', descricao: 'Como a criança se posiciona diante do próprio fazer e do olhar dos outros.', ancoras: [
+    'Desqualifica o que faz ("tá feio", "não sei") e evita mostrar; não aceita elogio.',
+    'Mostra o que fez quando a educadora pede; aceita elogio com desconforto.',
+    'Mostra o que fez por conta própria e reconhece algo bom no próprio trabalho.',
+    'Reconhece o que conseguiu, nomeia o que aprendeu e apoia o trabalho dos colegas.'] },
+  { codigo: 'RESIL', nome: 'Resiliência', descricao: 'O que a criança faz quando a tarefa fica difícil ou dá errado.', ancoras: [
     'Abandona a tarefa na primeira dificuldade.',
     'Continua se a educadora ficar por perto.',
     'Tenta outra vez sozinha antes de pedir ajuda.',
@@ -341,10 +354,11 @@ export function semear() {
     }
 
     // --- Observacoes (F3/F5) -------------------------------------------------
-    // Vies deliberado para que 4 das 5 dimensoes subam e "Expressao emocional"
+    // Vies deliberado para que 5 das 6 dimensoes subam e "Expressao emocional"
     // fique como a menor media — o padrao que a leitura de ciclo deve revelar.
-    const base  = { INTER: 2.7,  COOP: 2.6,  EXPR: 1.9,  AUTO: 2.4,  PERS: 2.3 };
-    const delta = { INTER: 0.35, COOP: 0.30, EXPR: 0.18, AUTO: 0.28, PERS: -0.05 };
+    // Resiliencia recua de leve: e' a que a leitura da planilha tem que apontar.
+    const base  = { AUTOC: 2.6,  CONV: 2.7,  PART: 2.4,  EXPR: 1.9,  AUTOEST: 2.3,  RESIL: 2.3 };
+    const delta = { AUTOC: 0.30, CONV: 0.35, PART: 0.28, EXPR: 0.18, AUTOEST: 0.22, RESIL: -0.05 };
     const dims = all(`SELECT * FROM dimensao ORDER BY ordem`);
     // A dose entra no avanco: crianca que frequenta mais avanca um pouco mais.
     // E' uma premissa do MUNDO SINTETICO, declarada aqui — nao um achado. O

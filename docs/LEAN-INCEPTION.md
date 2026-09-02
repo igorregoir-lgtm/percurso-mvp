@@ -62,6 +62,12 @@ que alimenta o relatório ao financiador.
 outro regime de sigilo. Um sistema que capturasse o que a psicóloga sabe é um sistema que não
 deveria existir.
 
+> **Corrigido pelo campo (29/08/2026, decisão 31).** A segunda frase continua verdadeira; a
+> primeira caiu. A psicóloga é usuária **do indicador de programa** — presença, registro de
+> vivência em lista fechada, check-in de grupo — e é quem nomeia o registro como a dor central.
+> O que ela sabe do atendimento continua fora por construção. Ver `JORNADAS.md` §4 e
+> `jornada-usuario/CAMPO-versus-REPOSITORIO.md`.
+
 **Quem nunca é titular operacional — a criança.** Todo o público é menor de idade; nenhum fluxo
 depende de ação da criança e todo consentimento é do responsável.
 

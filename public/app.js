@@ -1048,8 +1048,29 @@ rota(/^#\/alertas/, async () => {
 // PAINEL DA COORDENACAO (F1 + F5 + F6)
 // ======================================================================
 rota(/^#\/painel/, async () => {
-  const d = await api('/api/painel');
+  // A planilha socioemocional (decisão 34) é leitura à parte: se não houver dois
+  // ciclos com observação, o cartão diz isso em vez de derrubar o painel.
+  const [d, pl] = await Promise.all([api('/api/painel'), api('/api/planilha/resumo').catch(() => null)]);
   const inv = d.inventario;
+  const fmt2 = (v) => v == null ? '—' : String(v).replace('.', ',');
+  const cartaoPlanilha = !pl ? '' : `
+    <div class="cartao" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Planilha socioemocional · ${esc(pl.ciclo_inicial.nome)} → ${esc(pl.ciclo_final.nome)}</h2>
+        <span class="selo ok">${pl.criancas_avaliadas} crianças</span></div>
+      <p class="sub">A leitura no formato que o Instituto já usa: nota inicial × final por indicador (0–2), quantas melhoraram e a leitura da própria planilha (≥70% resultado forte · ≥50% evolução moderada). Linhas com menos de ${pl.minimo_celula} crianças saem sem número.</p>
+      <div class="rolagem" style="margin-top:12px"><table>
+        <thead><tr><th>Indicador</th><th>Inicial</th><th>Final</th><th>Melhoraram</th><th>Leitura</th></tr></thead>
+        <tbody>${[...pl.indicadores, pl.geral].map(i => `<tr${i.indicador === 'Geral' ? ' style="font-weight:600"' : ''}>
+          <td>${esc(i.indicador)}</td>
+          <td>${fmt2(i.media_inicial)}</td><td>${fmt2(i.media_final)}</td>
+          <td>${i.suprimida ? `<span class="sub">n &lt; ${pl.minimo_celula}</span>` : `${i.melhoraram} de ${i.comparadas} (${Math.round((i.pct_melhoraram ?? 0) * 100)}%)`}</td>
+          <td>${esc(i.leitura ?? '—')}</td></tr>`).join('')}</tbody></table></div>
+      <p class="sub" style="margin-top:10px">${esc(pl.legenda)} ${esc(pl.ressalva)}</p>
+      <div class="linha" style="margin-top:12px">
+        <a class="btn pequeno secundario" href="/api/exportar/planilha?inicial=${pl.ciclo_inicial.id}&final=${pl.ciclo_final.id}" download>Exportar a planilha (CSV, por código)</a>
+        <span class="sub">Sem nome: o cadastro que liga código a criança fica com a coordenação.</span>
+      </div>
+    </div>`;
   app.innerHTML = `
     <p class="kicker">Instituto Ebenézer · ${esc(d.ciclo.nome)}</p>
     <h1>Painel da coordenação</h1>
@@ -1101,6 +1122,8 @@ rota(/^#\/painel/, async () => {
       <p class="sub">Agregado de todos os programas em escopo. Nenhum dado individual.</p>
       <div style="margin-top:14px">${barrasDimensoes(d.agregado)}</div>
     </div>
+
+    ${cartaoPlanilha}
 
     ${d.calibracao && d.calibracao.linhas.length ? `<div class="cartao" style="margin-top:14px">
       <h2>Calibração do olhar entre educadoras</h2>

@@ -1089,23 +1089,27 @@ export function reconciliacao() {
 // Nenhum item nasce de modelo (doutrina: escore e plano nascem de regra).
 // --------------------------------------------------------------------------
 const BANCO_ATIVIDADES = {
-  INTER: [
-    { titulo: 'Duplas sorteadas com missão conjunta', descricao: 'Cada dupla recebe uma tarefa que só fecha com as duas partes — a apresentação é da dupla, não de cada um.', duracao: '25–35 min' },
-    { titulo: 'Roda de apresentação cruzada', descricao: 'Cada criança apresenta o trabalho da colega, não o próprio — obriga a perguntar, ouvir e se aproximar.', duracao: '20–30 min' },
-  ],
-  COOP: [
+  AUTOC: [
     { titulo: 'Combinados da semana no quadro', descricao: 'A turma escreve os 3 combinados da semana; quem lembra um combinado em ação ganha o registro no mural.', duracao: '15–20 min' },
+    { titulo: 'Jogo da espera com sinal', descricao: 'Atividade em turnos com um sinal combinado para "minha vez / sua vez" — a regra vira gesto, e o gesto vira autocontrole.', duracao: '20–30 min' },
+  ],
+  CONV: [
+    { titulo: 'Duplas sorteadas com missão conjunta', descricao: 'Cada dupla recebe uma tarefa que só fecha com as duas partes — a apresentação é da dupla, não de cada um.', duracao: '25–35 min' },
     { titulo: 'Jogo cooperativo de construção', descricao: 'Uma construção coletiva onde cada criança tem uma peça obrigatória — não há como terminar sozinho.', duracao: '30–40 min' },
+  ],
+  PART: [
+    { titulo: 'Roteiro visível de 3 passos', descricao: 'A atividade do dia vem com roteiro ilustrado de 3 passos no quadro — a criança consulta antes de pedir ajuda e sabe onde a atividade termina.', duracao: '30–40 min' },
+    { titulo: 'Papéis rotativos na roda', descricao: 'Cada encontro, papéis diferentes (quem abre, quem cronometra, quem fecha) — a criança que costuma sair antes do fim ganha um motivo para ficar.', duracao: '20–30 min' },
   ],
   EXPR: [
     { titulo: 'Roda de nomear emoções', descricao: 'Com cartas de emoções, cada criança escolhe a do dia e conta em uma frase o porquê — sem comentário avaliativo da roda.', duracao: '20–30 min' },
     { titulo: 'Termômetro da emoção na entrada', descricao: 'Painel na porta: cada criança marca como chega. A educadora só observa o padrão da semana.', duracao: '5 min por encontro' },
   ],
-  AUTO: [
-    { titulo: 'Roteiro visível de 3 passos', descricao: 'A atividade do dia vem com roteiro ilustrado de 3 passos no quadro — a criança consulta antes de pedir ajuda.', duracao: '30–40 min' },
-    { titulo: 'Cantinho do material', descricao: 'Cada criança organiza e busca o próprio material a partir de um mapa fixo da sala.', duracao: '10 min por encontro' },
+  AUTOEST: [
+    { titulo: 'Galeria do que eu fiz', descricao: 'Cada criança escolhe uma produção da semana para a parede e diz uma frase sobre o que gostou nela — a roda só escuta.', duracao: '15–20 min' },
+    { titulo: 'Oficina com produto final', descricao: 'Costura, marcenaria simples ou colagem: uma tarefa com começo, meio e um objeto no fim, para o "nossa, eu consegui" ter onde acontecer.', duracao: '40–60 min' },
   ],
-  PERS: [
+  RESIL: [
     { titulo: 'Desafio com duas tentativas', descricao: 'Tarefa deliberadamente difícil com regra explícita: a primeira tentativa não vale nota, vale aprendizado.', duracao: '30–45 min' },
     { titulo: 'Mural do "ainda não"', descricao: 'O que a criança ainda não conseguiu vai ao mural com a palavra "ainda" — e sai quando conseguir.', duracao: '15 min por encontro' },
   ],

@@ -170,15 +170,19 @@ ou "nada", por escrito, se a decisão for não mudar.
 
 ## 6. Resultados
 
-**Em branco. A sessão não aconteceu.**
-
-Quando acontecer, esta seção recebe: o cabeçalho e as tabelas da seção 5 preenchidos, a lista de
-ajustes decididos com o achado que motivou cada um, e a data. Nada além disso — resultado de
-validação é o que a participante fez e disse, não a interpretação do grupo sobre o que ela teria
-achado.
+**A sessão com o protocolo desta página (seis tarefas cronometradas, termo, formulário) não
+aconteceu.** O que aconteceu, em 29/08/2026, foi uma **demonstração guiada com usuária real**
+— a psicóloga do Instituto — e a conversa com o líder, registradas em quatro gravações (97 min)
+e consolidadas em [`ARTEFATO-SEMANA-5.md`](ARTEFATO-SEMANA-5.md) §5 e em
+[`jornada-usuario/CAMPO-versus-REPOSITORIO.md`](jornada-usuario/CAMPO-versus-REPOSITORIO.md).
+Isso **não** preenche as tabelas da seção 5: não houve tempo medido, não houve "sozinha/com
+ajuda", não houve Protocolo do Lapso. Resultado de validação é o que a participante fez e disse
+com o aparelho na mão — e o aparelho ficou na mão do autor.
 
 | Campo | Valor |
 |---|---|
-| Sessão realizada em | — pendente |
-| Formulário preenchido | — pendente |
-| Ajustes decididos | — pendente |
+| Sessão com o protocolo (§3–§5) realizada em | — pendente |
+| Formulário (§5) preenchido | — pendente |
+| Demonstração com usuária real | **29/08/2026** — psicóloga e líder do Instituto; check-in estruturado respondido ao vivo; reações literais nas transcrições |
+| Ajustes decididos a partir da demonstração | as etapas E1–E7 de [`revisao/11-PLANO-POS-VISITA.md`](revisao/11-PLANO-POS-VISITA.md), cada uma ligada ao achado que a motivou |
+| O que a demonstração mudou no protocolo | a psicóloga entra como participante (perfil `profissional`), com o registro de vivência como tarefa 3; a tarefa de voz ganha a verificação do que a tela diz sobre gravação |

@@ -1623,3 +1623,81 @@ test('papel profissional: fica responsável por turma, não vira sucessora de na
   assert.equal(nova.papel, 'profissional');
   assert.equal(D.rotuloDoPapel('profissional'), 'psicóloga');
 });
+
+// ---------------------------------------------------------------------------
+// Decisão 34 (02/09/2026) — rubrica alinhada à planilha socioemocional do
+// Instituto e a planilha preenchida a partir da rubrica.
+// ---------------------------------------------------------------------------
+const PL = await import('../src/planilha.js');
+
+test('rubrica: seis dimensões, na ordem e com os nomes da planilha do Instituto', () => {
+  const dims = D.rubrica();
+  assert.deepEqual(dims.map(d => d.nome),
+    ['Autocontrole', 'Convivência', 'Participação', 'Expressão emocional', 'Autoestima', 'Resiliência']);
+  for (const d of dims) assert.equal(d.ancoras.length, 4, `${d.nome} sem 4 âncoras`);
+});
+
+test('planilha: o mapeamento 1–4 → 0–2 vive num lugar só e é o declarado', () => {
+  assert.deepEqual(PL.NIVEL_PARA_PLANILHA, { 1: 0, 2: 1, 3: 1, 4: 2 });
+  assert.match(PL.LEGENDA_PLANILHA, /1→0, 2→1, 3→1, 4→2/);
+  assert.equal(PL.evolucao012(0, 2), 2);
+  assert.equal(PL.evolucao012(1, 1), 1);
+  assert.equal(PL.evolucao012(2, 0), 0);
+  assert.equal(PL.evolucao012(null, 1), null);
+  assert.equal(PL.leituraDe(0.7), 'Resultado forte');
+  assert.equal(PL.leituraDe(0.5), 'Evolução moderada');
+  assert.equal(PL.leituraDe(0.49), 'Atenção para acompanhamento');
+  assert.equal(PL.leituraDe(null), null);
+});
+
+test('planilha: as linhas saem por CÓDIGO, com 6 indicadores e totais só quando completas', () => {
+  const b = PL.linhasDaPlanilha();
+  assert.ok(b.criancas.length > 20, `poucas crianças: ${b.criancas.length}`);
+  assert.equal(b.dimensoes.length, 6);
+  const nomes = new Set(all(`SELECT nome FROM crianca`).map(r => r.nome));
+  for (const c of b.criancas) {
+    // Fixtures de testes anteriores usam código "TST-0"; o que importa é que a
+    // coluna é CÓDIGO, nunca nome.
+    assert.match(c.codigo, /^[A-Z]+-\d+$/);
+    assert.ok(!nomes.has(c.codigo) && !nomes.has(c.turma), 'código e turma não podem ser nome de criança');
+    assert.equal(c.indicadores.length, 6);
+    for (const i of c.indicadores) {
+      for (const v of [i.inicial, i.final]) assert.ok(v == null || [0, 1, 2].includes(v), `nota fora de 0–2: ${v}`);
+      if (i.inicial != null && i.final != null) assert.equal(i.evolucao, i.final - i.inicial);
+    }
+    if (c.total_final != null) assert.ok(c.total_final >= 0 && c.total_final <= 12);
+  }
+  assert.throws(() => PL.linhasDaPlanilha({ cicloInicialId: b.ciclo_final.id, cicloFinalId: b.ciclo_final.id }), /diferentes/);
+});
+
+test('planilha: o resumo replica a aba Indicadores, com supressão de célula pequena e a ressalva', () => {
+  const r = PL.resumoPlanilha();
+  assert.equal(r.indicadores.length, 6);
+  const leituras = new Set(['Resultado forte', 'Evolução moderada', 'Atenção para acompanhamento']);
+  for (const i of [...r.indicadores, r.geral]) {
+    if (i.suprimida) { assert.equal(i.leitura, null); assert.ok(i.avaliadas < r.minimo_celula); continue; }
+    assert.ok(leituras.has(i.leitura), `${i.indicador}: leitura ${i.leitura}`);
+    assert.ok(i.pct_melhoraram >= 0 && i.pct_melhoraram <= 1);
+    assert.ok(i.media_inicial >= 0 && i.media_final <= (i.indicador === 'Geral' ? 12 : 2));
+  }
+  assert.match(r.ressalva, /fatores externos não foram isolados/);
+  // Célula pequena: um recorte sem observação suficiente sai suprimido, não com número.
+  const vazio = PL.resumoPlanilha({ programaId: 999 });
+  assert.ok(vazio.indicadores.every(i => i.suprimida) && vazio.geral.suprimida, 'recorte vazio tem que sair suprimido');
+  // A Vivência (fora da rubrica) filtra por MATRÍCULA: suas crianças foram observadas
+  // nas turmas do Laboratório, então o recorte existe — e continua sem nome.
+  assert.ok(PL.resumoPlanilha({ programaId: 4 }).criancas_avaliadas > 0);
+});
+
+test('planilha: o CSV abre no Excel (BOM + ";"), tem o cabeçalho da aba Avaliações e nenhum nome', () => {
+  const csv = PL.csvPlanilha();
+  assert.ok(csv.startsWith('\uFEFF'));
+  const [cab, ...resto] = csv.slice(1).split('\r\n');
+  assert.match(cab, /^ID;Turma;Autocon inicial;Autocon final;Evolução autocon;/);
+  assert.match(cab, /Total inicial;Total final;Evolução 0\/1\/2 \(geral\)$/);
+  const nomes = all(`SELECT nome FROM crianca`).map(r => r.nome.split(' ')[0]);
+  const linhas = resto.filter(l => l && !l.startsWith('#'));
+  assert.equal(linhas.length, PL.linhasDaPlanilha().criancas.length);
+  for (const n of new Set(nomes)) assert.ok(!csv.includes(`;${n} `), `nome ${n} vazou no CSV`);
+  assert.ok(csv.includes('# Sem nome por construção'));
+});

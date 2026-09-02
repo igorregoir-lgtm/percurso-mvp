@@ -64,6 +64,15 @@ const servidor = createServer(async (req, res) => {
         invalidarSinais(usuarioDa(req)?.id ?? null);
       const cookie = saida?._cookie;
       if (saida && typeof saida === 'object') delete saida._cookie;
+      // Saída em arquivo (a planilha socioemocional, decisão 34): a rota
+      // devolve `_csv` e o nome; tudo o mais continua JSON.
+      if (saida && typeof saida === 'object' && typeof saida._csv === 'string') {
+        res.writeHead(200, {
+          'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store',
+          'Content-Disposition': `attachment; filename="${saida._nome || 'percurso.csv'}"`,
+        });
+        return res.end(saida._csv);
+      }
       return json(res, 200, saida ?? { ok: true }, cookie);
     } catch (e) {
       const status = e.status || 500;

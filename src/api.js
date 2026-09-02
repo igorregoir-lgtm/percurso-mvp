@@ -18,6 +18,7 @@ import { invalidarSinais, falhasDoEnvelope as envelopeFalhou } from './passo/sin
 import * as PF from './passo/perfil.js';
 import * as PO from './passo/orquestrador.js';
 import * as SROI from './sroi/calculator.js';
+import * as PL from './planilha.js';
 import { conversar, AI_ENABLED } from './ai-client.js';
 const { nomesParaAnonimizar } = C;
 
@@ -250,6 +251,29 @@ export const rotas = {
   },
 
   'GET /api/rubrica': (req) => { exigeUsuario(req); return { dimensoes: D.rubrica(), params: D.PARAMS }; },
+
+  // ---- A planilha socioemocional do Instituto (decisão 34) ----------------
+  // Coordenação e diretoria leem o resumo (agregado, com supressão); só a
+  // coordenação exporta as linhas por criança — e elas saem por CÓDIGO.
+  'GET /api/planilha/resumo': (req, _b, q) => {
+    exigeGestao(req);
+    const opcoes = {
+      cicloInicialId: q.get('inicial') ? num(q.get('inicial'), 'inicial') : null,
+      cicloFinalId: q.get('final') ? num(q.get('final'), 'final') : null,
+      programaId: q.get('programa_id') ? num(q.get('programa_id'), 'programa_id') : null,
+    };
+    return { ...PL.resumoPlanilha(opcoes), ciclos: PL.ciclosDisponiveis() };
+  },
+  'GET /api/exportar/planilha': (req, _b, q) => {
+    exigeCoordenacao(req);
+    const opcoes = {
+      cicloInicialId: q.get('inicial') ? num(q.get('inicial'), 'inicial') : null,
+      cicloFinalId: q.get('final') ? num(q.get('final'), 'final') : null,
+      programaId: q.get('programa_id') ? num(q.get('programa_id'), 'programa_id') : null,
+    };
+    const csv = PL.csvPlanilha(opcoes);
+    return { _csv: csv, _nome: `percurso-planilha-socioemocional-${D.hoje()}.csv` };
+  },
 
   'GET /api/ciclo/agenda': (req, _b, q) => {
     const turmaId = num(q.get('turma_id'), 'turma_id');

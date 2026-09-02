@@ -52,7 +52,7 @@ nada de volta pelo que observa.
    está sempre visível.
 4. **`#/ciclo`** — vê quem falta observar e quem está bloqueada, com o motivo explícito (janela de
    convívio, consentimento) — bloqueio é protocolo, nunca erro dela.
-5. **`#/observacao/:id`** — rubrica de 5 dimensões × 4 âncoras comportamentais, ~3 minutos por
+5. **`#/observacao/:id`** — rubrica de 6 dimensões × 4 âncoras comportamentais (os seis indicadores da planilha socioemocional do Instituto — decisão 34), ~3 minutos por
    criança; rascunho persiste se ela sair no meio. Sem campo de texto livre sobre a criança — por
    decisão de desenho (decisão 15 de [`DECISOES-TECNICAS.md`](DECISOES-TECNICAS.md)).
 6. **`#/pauta`** — toda segunda recebe três linhas acionáveis e uma sugestão de atividade, que
@@ -155,3 +155,75 @@ camada de IA ligada, pedir a explicação das premissas (texto rotulado, fora do
 |---|---|
 | Relatório com números reproduzíveis (SQL + template fechado), defensável diante de auditoria | O texto é contido por construção: ela não pode escrever "o programa gerou X" — o revisor barra, e a ressalva de não-isolamento de fatores é obrigatória. É limite deliberado, não defeito |
 | Nenhum caminho, nem acidental, de exposição de criança na prestação de contas | Perguntas fora da lista fechada da consulta voltam sem resposta — o sistema prefere não saber a inventar |
+
+---
+
+## 4. A psicóloga — Carolina Duarte (papel `profissional`)
+
+> **Persona que o campo trouxe** (visita de 29/08/2026, decisão 31). Até então cinco documentos
+> deste repositório diziam *"a psicóloga não é usuária"*. A visita mostrou o contrário duas
+> vezes: é ela quem nomeia o registro como a dor central (*"o maior desafio aqui é registrar o
+> que você fez, né?"*) e quem produz o único registro escrito que existe — o relatório no padrão
+> do conselho profissional, por procedimento, não individualizado, sem nome. Na demonstração ao
+> vivo foi preciso improvisar um perfil dela, porque o app assumia professora. O nome aqui é
+> sintético; a pessoa real é nomeada pelo papel, a mesma regra que o conselho impõe ao relatório
+> que ela escreve.
+
+Psicóloga voluntária há seis anos, remunerada por parceria só desde este ano e só até dezembro.
+Conduz a **vivência terapêutica** aos sábados (duas turmas: manhã e tarde), faz acolhimentos
+pontuais, atende na própria clínica, trabalha numa segunda organização e cursa uma
+pós-graduação. O tempo dela é o recurso mais escasso da casa — o dossiê já dizia isso, e a visita
+confirmou: *"e aí eu não consigo dar conta"*.
+
+O que ela quer do produto não é atividade nova (*"isso não é uma coisa que eu sinta falta"*): é
+**registrar sem parar o atendimento** e sair com o relatório que o conselho pede.
+
+### Jornada atual (memória, relatório à mão, WhatsApp)
+
+1. Conduz a vivência (ex.: jogo de cartas sobre a rede de apoio da comunidade; roda sobre
+   regulação e sistema nervoso). Observa o grupo — quem ajudou, quem participou do começo ao
+   fim, quem entrou em conflito e como resolveu. **Fica na cabeça.**
+2. Depois, quando dá, escreve o relatório do procedimento no padrão do conselho: o que foi
+   feito, com que objetivo, o que o grupo apresentou — sem nome, não individualizado. Quando
+   precisa citar alguém, usa iniciais. *"Depois tem que sair daqui, preencher o relatório… não
+   dá, não dá."*
+3. A assistente social do projeto parceiro manda mensagem perguntando *"como ele tá"*. Responde
+   **de memória**.
+4. Uma oficina de costura em que uma menina quis desistir e terminou dizendo *"nossa, eu
+   consegui"* trabalhou resiliência e autoestima — e **não deixou rastro** para ninguém, nem para
+   quem financia.
+
+**Dores desta jornada:** o registro compete com o atendimento; o relatório é trabalho de fora de
+hora; o conhecimento de seis anos está só nela (*"ninguém consegue fazer um download do seu
+cérebro"*); o que ela vê não vira evidência.
+
+### Jornada futura (com o Percurso)
+
+1. **`#/hoje`** — entra como psicóloga e vê a turma da Vivência do sábado. **Não há agenda de
+   ciclo**: a turma dela fica fora da rubrica por decisão (o olhar clínico não vira dado).
+2. **`#/chamada`** — presença em um toque, igual às demais turmas. É a mesma régua de 75% que o
+   Instituto já usa.
+3. **`#/voz` → `#/confirmar`** — fala ~40 segundos sobre **o grupo**: o procedimento (lista
+   fechada), o objetivo, como o grupo esteve, e o **check-in estruturado** que ela validou ao
+   vivo — *quantas ajudaram sem ninguém pedir, quantas participaram do começo ao fim, quantos
+   conflitos e quantos resolvidos conversando, quantas não observadas*. Se falar um nome, a tela
+   mostra o nome virando código antes de qualquer gravação. Se falar de um caso, o filtro de
+   perímetro devolve encaminhamento humano — e a frase "vivência terapêutica" não dispara o
+   filtro, porque é o nome do procedimento, não conteúdo sobre criança.
+4. **`#/relato`** — o registro do procedimento nasce pronto, no padrão do conselho, sem nome por
+   construção; ela **revisa e libera** (ou não). O texto é dela; a IA, quando ligada, só organiza.
+5. **`#/turma`** — a devolução por encontro: como o grupo de hoje se compara às últimas
+   vivências, em contagens; e a régua de presença da turma.
+6. **Parecer para profissional parceiro** — quando a assistente social perguntar, ela (ou a
+   coordenação) gera um parecer por **código**, com presença, participação e evolução por
+   indicador — só com consentimento específico do responsável e com a liberação registrada.
+
+### Ganhos e custos, honestos
+
+| Ganha | Custa |
+|---|---|
+| O relatório do conselho sai do próprio registro de 40 s, sem hora extra | O tempo dela em sistema é tempo de atendimento (bloco 5): o custo declarado é ~40 s de fala + a confirmação por encontro, e só a operação real mede se cabe |
+| O que o grupo mostrou vira contagem, e a contagem vira série — a costura passa a deixar rastro | Contagem de grupo é pobre por desenho: o que acontece com **uma** criança no grupo continua fora, e isso é a fronteira do bloco 6, não um defeito a corrigir |
+| Anonimização visível no ato de falar — a prática dela (iniciais) virou regra do sistema | Falar de um caso no meio do relato interrompe o fluxo com o aviso de perímetro: proteção certa, fricção real |
+| A pergunta do parceiro tem resposta com lastro, e o envio fica registrado | Sem consentimento específico do responsável, não há parecer — a coordenação precisa correr atrás do consentimento antes |
+| O modelo de relatório do conselho que ela usa **ainda não chegou**: o template do Percurso é provisório até ele chegar (pendência) | |
