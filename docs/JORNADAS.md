@@ -225,14 +225,21 @@ o passo 3 acima ainda não respeita: **capturar não é registrar**. Capturar é
 já ter um áudio no celular. Registrar é virar relato, contagem e indicador, e isso é trabalho do
 sistema, a qualquer momento. Quem é metódico é o sistema; quem estrutura o dado é o sistema.
 
+Isso **não** quer dizer que o sistema fique quieto. Ele cobra — e cobrar aqui é ajudar. O que muda
+é a hora: o lembrete chega **antes** do encontro, quando ainda dá para apertar "gravar" e o custo é
+zero, em vez de chegar no fim do dia como dívida. Para isso o Instituto precisa de um calendário
+próprio, alimentado pela profissional, pela coordenação ou pela direção.
+
 Na prática, o fluxo `#/voz` de hoje só existe numa janela: durante ou logo depois do encontro. É
 exatamente a hora em que o campo mostra que ela **não tem mãos livres** — e a hora seguinte é onde
-ela responde *"Não dá, não dá"*. Faltam, portanto, quatro coisas, nenhuma delas implementada:
+ela responde *"Não dá, não dá"*. Faltam, portanto, seis coisas, nenhuma delas implementada:
 
 | O que falta | Por quê | O que exige |
 |---|---|---|
-| **O encontro nunca fecha** | registro atrasado precisa entrar com a data do encontro, não a de hoje | modelo de dados aceitar data retroativa + marca de "registrado depois" |
-| **O sistema não cobra** | sem notificação de atraso e sem pendência vermelha por encontro em aberto | revisão de `#/hoje` e `#/alertas` |
+| **Calendário de encontros** | ela, a coordenação ou a direção marcam quando são os encontros, e a partir daí o sistema sabe o que vem pela frente | entidade de encontro agendado e tela de calendário para os três papéis; hoje a folha nasce do encontro do dia e não há agenda futura (`src/domain.js:141`) |
+| **Aviso antes de cada encontro** | o lembrete precisa chegar quando ainda dá para apertar "gravar", não depois | notificação da PWA com regra de antecedência; hoje o produto não emite nenhuma notificação |
+| **O encontro nunca fecha** | registro atrasado precisa entrar com a data do encontro, não a de hoje | modelo de dados aceitar data retroativa + marca de "registrado depois"; o encontro em aberto continua aparecendo até ser registrado |
+| **A fala preenche os seis indicadores** | a rubrica é o instrumento da casa e não pode continuar dependendo de digitação | hoje os seis indicadores são respondidos à mão, criança por criança (~3 min cada, `#/observacao/:id`), e o extrator de `src/voz.js` só preenche a folha do dia e o check-in de grupo — falta extrair a escala 1–4 por indicador, com o mesmo gate de confirmação humana |
 | **Gravar o encontro inteiro** | captura de custo zero: ela aperta no começo e larga o celular na mesa | transcrição local de áudio longo — o `SpeechRecognition` do navegador não serve |
 | **Importar um áudio que ela já tem** | o áudio do gravador do celular ou do WhatsApp, de hoje ou de três semanas atrás | transcrição local **de arquivo**; `ai/model-manifest.json` não tem modelo de áudio (`#/importar` é CSV) |
 

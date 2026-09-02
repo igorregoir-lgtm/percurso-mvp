@@ -22,18 +22,28 @@ O que mudou, concretamente:
 |---|---|
 | **Quatro portas de entrada** para o mesmo registro: falar 40 s · deixar o celular gravando o encontro · trazer um áudio que ela já tem (de hoje ou de três semanas atrás) · escrever | faixa escura `principio` no topo da grade |
 | **Nova linha na tabela: "se ela não registrar nada"** — a rede de segurança de cada fase, em azul | linha 5 da tabela, `rede` em `figjam-dados.js` |
-| **O encontro nunca fecha.** Registro atrasado entra com a data do encontro, não com a data de hoje | regra 3 do princípio · fases 03, 04 e 06 |
-| **O sistema não cobra.** Sem notificação de atraso, sem pendência vermelha | regra 4 · momento da verdade 03 |
+| **O calendário é da casa.** Ela, a coordenação ou a direção marcam quando são os encontros, e a partir daí o sistema sabe o que vem pela frente | regra 3 · fase 01 |
+| **O sistema cobra — antes, não depois.** Ela é avisada antes de cada encontro de que ele vai precisar de registro, quando ainda dá para apertar "gravar"; o encontro em aberto continua aparecendo até ser registrado | regra 4 · fases 01 e 04 · momento da verdade 03 |
+| **A fala vira indicador.** A conversão do áudio preenche os seis indicadores da planilha socioemocional do Instituto, e as telas de acompanhamento são essa planilha | regra 5 · fase 06 |
+| **O encontro nunca fecha.** Registro atrasado entra com a data do encontro, não com a data de hoje | regra 6 · fases 03, 04 e 06 |
 | **Linguagem reescrita inteira**: frases curtas, sem jargão, cada célula legível sozinha | todo o `jornada.json` |
 | **Fases renomeadas pelo momento do dia** (Antes · Durante · Logo depois · À noite · Na semana · Depois) | `fases[].nome` |
-| **Momentos da verdade: 6 → 8**, com dois novos (capturar × registrar; o sistema nunca cobra) | bloco Insights |
+| **Momentos da verdade: 6 → 8**, com dois novos (capturar × registrar; o aviso chega antes do encontro) | bloco Insights |
 | **Contradição 8**: exigir registro na janela do encontro | `CAMPO-versus-REPOSITORIO.md` |
 
-**O que isto custa, dito com todas as letras.** Duas das quatro portas **ainda não existem no
-MVP** e estão marcadas `a construir` no artefato. Gravar o encontro inteiro e importar um arquivo
-de áudio dependem de **transcrição local de arquivo** — o `SpeechRecognition` do navegador, que é
-o que `public/app.js` usa hoje, só transcreve microfone ao vivo, e o manifest de `ai/` não tem
-modelo de áudio. E ambas esbarram na palavra que o campo usou para gravar criança: **"perigoso"**.
+**O que isto custa, dito com todas as letras.** Seis coisas que esta jornada afirma **ainda não
+existem no MVP** — as duas portas marcadas `a construir` no artefato e mais quatro:
+
+| Falta | Estado hoje |
+|---|---|
+| Calendário de encontros | a folha nasce do encontro do dia; não há agenda futura (`src/domain.js:141`) |
+| Aviso antes de cada encontro | o produto não emite nenhuma notificação |
+| Encontro que nunca fecha | não há data retroativa nem marca de "registrado depois" |
+| A fala preencher os seis indicadores | a rubrica é respondida à mão, criança por criança (~3 min cada, `#/observacao/:id`); `src/voz.js` só preenche a folha do dia e o check-in de grupo |
+| Gravar o encontro inteiro (porta B) | exige transcrição local de áudio longo |
+| Importar um áudio (porta C) | exige transcrição local **de arquivo**; o `SpeechRecognition` do navegador só transcreve microfone ao vivo e `ai/model-manifest.json` não tem modelo de áudio |
+
+As duas últimas ainda esbarram na palavra que o campo usou para gravar criança: **"perigoso"**.
 Por isso a faixa do princípio traz uma **condição inegociável** — o áudio não sai do aparelho, é
 apagado assim que vira texto, e nome falado vira código antes de qualquer gravação, tudo dito na
 própria tela no instante do toque. Sem essas três frases visíveis, as portas B e C não podem
@@ -43,7 +53,7 @@ existir.
 
 | Versão | Onde | Para quê |
 |---|---|---|
-| **Imagem** | [`Jornada-Usuario-Ebenezer-Grupo06.png`](Jornada-Usuario-Ebenezer-Grupo06.png) | 6800×4964, para arrastar direto na página do grupo, como o Grupo 05 fez |
+| **Imagem** | [`Jornada-Usuario-Ebenezer-Grupo06.png`](Jornada-Usuario-Ebenezer-Grupo06.png) | 6800×5042, para arrastar direto na página do grupo, como o Grupo 05 fez |
 | **FigJam nativo** | [board `QSzxKH22Hnevnhw7HluW6m`](https://www.figma.com/board/QSzxKH22Hnevnhw7HluW6m) | tabela de **7 linhas × 6 fases**, sticky notes e textos — **editável e comentável** pelo grupo |
 
 > **Por que duas.** O board da turma (`fL1rxchBDlNkQZO7AEjwrf`) está **somente leitura** para a
@@ -98,7 +108,7 @@ pelo papel — a mesma regra que o conselho profissional impõe aos relatórios 
 ```bash
 python3 gerar-jornada.py && python3 gerar-figjam.py
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu \
-  --hide-scrollbars --force-device-scale-factor=2 --window-size=3400,2482 \
+  --hide-scrollbars --force-device-scale-factor=2 --window-size=3400,2521 \
   --virtual-time-budget=12000 --screenshot="Jornada-Usuario-Ebenezer-Grupo06.png" \
   "file://$PWD/jornada.html"
 ```
