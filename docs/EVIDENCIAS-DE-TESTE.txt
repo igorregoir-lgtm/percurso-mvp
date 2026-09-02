@@ -253,7 +253,8 @@ Alvo: http://localhost:3000
   ✓ a manchete da capa respeita o mínimo de célula
   ✓ crianças únicas e matrículas aparecem lado a lado
   ✓ a supressão foi aplicada ANTES da redação e é declarada
-  ✓ o programa fora de escopo com poucas crianças foi agrupado
+  ✓ a lista de programas suprimidos é declarada (vazia quando nenhum é pequeno)
+  ✓ a Vivência terapêutica entra na tabela do doador com presença, como programa
   ✓ nenhum nome de criança aparece no relatório
   ✓ os dois denominadores de custo são publicados juntos
   ✓ a âncora acadêmica é declarada como ainda não ingerida
@@ -345,5 +346,84 @@ Alvo: http://localhost:3000
   ✓ e ela volta para a lista viva da turma
   ✓ o consentimento voltou a PENDENTE — a base legal caducou com a saída
 
-294 passaram · 0 falharam
+24 · Psicóloga e Vivência terapêutica — indicador de programa, nunca clínico (decisão 31)
+  ✓ psicóloga entra com o papel profissional
+  ✓ as matrículas do inventário são só dos programas do dossiê — a Vivência é contada à parte
+  ✓ a Vivência tem matrícula própria (24) e não muda as crianças únicas
+  ✓ o Hoje dela abre na turma da Vivência
+  ✓ a turma da Vivência está fora da rubrica: sem agenda de ciclo
+  ✓ ela não está em lapso (registrou no último sábado)
+  ✓ pedir a agenda do ciclo para a Vivência é recusado com o motivo (422)
+  ✓ ela vê a chamada da própria turma
+  ✓ a professora de outra turma NÃO abre a chamada da Vivência (403)
+  ✓ a coordenação abre qualquer turma, inclusive a Vivência
+  ✓ o escopo dela é o das próprias turmas (24 crianças, não 106)
+  ✓ a Vivência não entra no denominador da cobertura da rubrica
+  ✓ a governança declara o registro de vivência (base legal, titular, acesso, retenção) e mantém o conteúdo clínico fora
+
+25 · A planilha socioemocional do Instituto, preenchida pelo Percurso (decisão 34)
+  ✓ a rubrica tem as seis dimensões da planilha, nesta ordem
+  ✓ coordenação lê o resumo da planilha (dois ciclos, seis indicadores + geral)
+  ✓ cada indicador traz a leitura da planilha ou a supressão declarada
+  ✓ o resumo carrega a legenda do mapeamento 1–4 → 0–2 e a ressalva metodológica
+  ✓ a diretoria também lê o resumo (agregado)
+  ✓ professora NÃO lê o resumo da planilha (403)
+  ✓ coordenação exporta a planilha como CSV (text/csv, anexo, com BOM para o Excel)
+  ✓ o CSV tem o cabeçalho da aba Avaliações e sai por código, sem nome
+  ✓ professora NÃO exporta (403)
+  ✓ diretoria NÃO exporta linhas por criança (403) — só o agregado
+
+26 · Registro de vivência — check-in de grupo, relato do conselho e devolução por encontro
+  ✓ a folha da Vivência se declara vivência e traz os catálogos novos
+  ✓ a folha existente da seed tem check-in e procedimento
+  ✓ a fala da psicóloga sobre a vivência NÃO é barrada pelo perímetro (o nome do procedimento não é conteúdo clínico)
+  ✓ o extrator devolve procedimento, objetivo e o check-in em contagens
+  ✓ nada foi gravado na extração
+  ✓ nome de criança na fala é contado e substituído — a tela mostra o nome virando código
+  ✓ mas conteúdo sobre criança continua barrado mesmo na vivência
+  ✓ salvar a folha da vivência sem procedimento é recusado com o campo apontado (422)
+  ✓ a folha da vivência é gravada com o check-in
+  ✓ a resposta traz a devolução por encontro
+  ✓ a devolução compara com as últimas folhas quando há base
+  ✓ o Hoje da psicóloga carrega a devolução
+  ✓ o relato sai no padrão do conselho, em rascunho
+  ✓ o relato não tem nome de criança
+  ✓ a professora de outra turma não abre o relato (403)
+  ✓ a diretoria não abre o relato (403)
+  ✓ a psicóloga libera o relato — e a folha fecha junto
+  ✓ liberar duas vezes é 409
+  ✓ a coordenação lê o relato liberado e o histórico da turma
+  ✓ a governança do registro de vivência aparece na ficha (campo declarado, sem consentimento)
+
+27 · Régua de presença do Instituto (75%) e recado da turma aos responsáveis
+  ✓ a psicóloga vê a régua da própria turma, com faixa por criança
+  ✓ a régua tem criança abaixo e em atenção (a seed força as duas)
+  ✓ a professora de outra turma NÃO vê a régua da Vivência (403)
+  ✓ a diretoria NÃO vê régua por criança (403)
+  ✓ a diretoria vê a régua do Instituto só em contagens por turma
+  ✓ a coordenação também
+  ✓ a professora NÃO abre a régua do Instituto (403)
+  ✓ o recado da turma é gerado do registro (presença em número, atividade)
+  ✓ o recado não tem nome de criança
+  ✓ o recado abre no WhatsApp sem número (a pessoa escolhe o grupo)
+  ✓ a governança declara o recado da turma (sem consentimento; não persiste)
+  ✓ a professora de outra turma NÃO gera o recado da Vivência (403)
+
+28 · Parecer a profissional parceiro — por código, sob consentimento, liberado
+  ✓ há criança só da turma 1 para o cenário
+  ✓ a ficha do parecer traz o estado do consentimento e a prévia por indicador de programa
+  ✓ a diretoria não chega ao parecer (403)
+  ✓ professora de outra turma não chega ao parecer (403)
+  ✓ sem consentimento específico, o parecer é recusado com o motivo (403)
+  ✓ a coordenação registra o consentimento para compartilhar
+  ✓ professora de outra turma NÃO gera o parecer (403)
+  ✓ a coordenação gera o parecer em rascunho
+  ✓ o parecer sai por código e sem nome
+  ✓ o parecer não carrega detalhe de alerta nem conteúdo clínico
+  ✓ a liberação fica registrada (quem, quando, para quem)
+  ✓ a diretoria não libera parecer (403)
+  ✓ o histórico de pareceres da criança fica na ficha
+  ✓ a governança declara o parecer com consentimento específico
+
+364 passaram · 0 falharam
 

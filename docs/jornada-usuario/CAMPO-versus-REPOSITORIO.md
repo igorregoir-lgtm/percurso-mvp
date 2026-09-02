@@ -80,6 +80,18 @@ este documento mostra onde ele nos contrariou.
 ---
 
 
+## O que mudou no produto por causa de cada achado (02/09/2026)
+
+| Achado | O que entrou | Onde |
+|---|---|---|
+| 1 e 2 — a psicóloga é usuária e o filtro a recusaria | Papel `profissional`; Vivência com turma, fora da rubrica e dentro do registro de turma; filtro de perímetro com contexto (o nome do procedimento não dispara, conteúdo sobre criança continua barrado) | decisão 31 · `src/domain.js`, `src/voz.js`, `src/relato.js` |
+| 3 — a regra vem do conselho | Relato do procedimento gerado dos campos fechados — não individualizado, sem nome — liberado pela profissional; template provisório até o modelo dela chegar | decisão 31 · `#/relato` |
+| 4 — gravar é lido como perigoso | A tela de voz diz o que grava e o que descarta; nome falado vira código na tela e é contado | `#/voz`, `#/confirmar` |
+| 5 — o clímax pode nunca disparar | Devolução por encontro: o check-in de hoje contra as últimas folhas (cala sem base) | decisão 33 · `#/hoje` |
+| 6 — o destino mais rico é lateral | Parecer a profissional parceiro, por código, sob consentimento específico, revisado e liberado | decisão 32 · `#/parecer/:id` |
+| 7 — a devolutiva aos pais já existe e é manual | Recado da turma gerado do registro, sem criança nomeada, link wa.me sem número; a régua de 75% da casa como parâmetro | decisão 33 · `#/recado`, `#/turma` |
+| Planilha socioemocional (consolidado §6) | Rubrica com os seis indicadores; resumo da aba Indicadores e exportação por código | decisão 34 · `#/painel` |
+
 ## Procedência
 
 Extraído por leitura integral das quatro transcrições em

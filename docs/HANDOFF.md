@@ -1,3 +1,26 @@
+# Handoff — 02/09/2026 (pós-visita) e 25/08/2026
+
+> **Sessão de 02/09/2026 — o que mudou.** A visita ao Instituto (29/08) foi lida inteira (quatro
+> gravações, consolidado, planilha socioemocional) e virou o plano `docs/revisao/11-PLANO-POS-VISITA.md`
+> (com a revisão adversarial na §4) e cinco commits, E1 a E7. Resumo do que entrou: papel
+> `profissional` (psicóloga) e a Vivência terapêutica com turma, fora da rubrica e dentro do
+> registro de turma (decisão 31); rubrica com os seis indicadores da planilha do Instituto e a
+> planilha preenchida/exportada por código (decisão 34); registro de vivência com check-in de
+> grupo, relato no padrão do conselho liberado pela profissional, filtro de perímetro com contexto,
+> tela de voz que diz o que grava; régua de 75% e recado da turma (decisão 33); devolução por
+> encontro; parecer a profissional parceiro por código e sob consentimento (decisão 32). A
+> documentação da semana 5 registra a validação de 29/08 como **parcial** (demonstração com
+> usuária real; protocolo de tarefas pendente). Gates: **156 unitários · 364 smoke · 6 rag · 24
+> ia-stub**. Revisão adversarial da implementação: `docs/revisao/12-REVISAO-POS-VISITA.md`.
+>
+> **Armadilhas novas desta sessão:** (1) a seed tem DOIS geradores — tudo o que é da Vivência
+> usa `randVivencia`; consumir `rand` para dado novo desloca os números documentados (38% de
+> descarte virou 19% até isso ser visto); (2) `Response.text()` descarta o BOM do CSV — teste
+> pelos bytes; (3) regex literal escrito via script com `\\s` vira barra literal — `node --check`
+> não pega, o teste pega; (4) a turma 1 troca de professora na seção 21 do smoke: quem responde
+> por ela depois disso é outra pessoa, e testes que dependem de "Maria" quebram; (5) o service
+> worker no navegador embutido devolve 503 para `/api/*` — pelo IP da LAN (sem SW) o app abre normal.
+
 # Handoff — 25/08/2026, fim da sessão
 
 > **Atualizado depois da redação original:** o **cadastro de pessoas** e o **arquivo** entraram

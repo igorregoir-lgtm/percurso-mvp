@@ -23,6 +23,28 @@ Executar na semana da entrega. Nenhum item deste bloco é automatizável por est
 
 ---
 
+## 1b. O que a visita de campo deixou pendente (29/08/2026) — depende de gente
+
+- [ ] **Receber da psicóloga o modelo de relatório do conselho** (prometido na visita). O template
+      de `src/relato.js` é provisório até ele chegar (decisão 31).
+- [ ] **Aval da psicóloga sobre as seis rubricas** (Autocontrole, Convivência, Participação,
+      Expressão emocional, Autoestima, Resiliência) e sobre o **mapeamento 1–4 → 0–2** da planilha
+      (decisão 34) — a parte arbitrária está nomeada em `src/planilha.js`.
+- [ ] **Retorno dela sobre o protótipo** (*"ó, eu testei, isso aqui eu precisaria colocar mais
+      coisas"*) — combinar o canal; e a sessão com o protocolo de `VALIDACAO-USUARIO.md`, agora com
+      a psicóloga como participante.
+- [ ] **Avaliar os notebooks doados** que estão parados como host do Percurso e do modelo local.
+- [ ] **Telas novas no protótipo Figma**: registro de vivência, relato, régua, recado, parecer —
+      o protótipo entregue tem nove telas e três papéis; a psicóloga é o quarto.
+- [ ] **Registro feito pelas famílias em casa** (Grav. 84): validado como direção, fora do MVP —
+      exige canal, consentimento e desenho próprios. Fica como hipótese.
+
+**Insumos para o business case que a visita trouxe** (sem inventar número): seis anos de
+operação da psicóloga, remunerada por parceria só desde este ano e só até dezembro; duas pessoas
+fixas mais voluntários de sábado; a régua de 75% e a devolutiva semanal por WhatsApp já são
+política e prática da casa; notebooks doados sem uso; os passeios (teatro, ópera, Olímpia)
+custeados por doação. Os quatro dados do §3 continuam pendentes.
+
 ## 2. Insumos de arquitetura para o business case (GAP-13)
 
 Produzidos aqui, com o que o repositório sustenta. Estes números e argumentos podem entrar no
