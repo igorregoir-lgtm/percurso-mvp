@@ -6,7 +6,7 @@
 :root{
   --bg:#F4EFE5; --card:#FFFFFF; --card2:#F7F3EA; --ink:#2E2A24; --muted:#8B8478;
   --line:#E6DFD0; --red:#B0392C; --redsoft:#F4DCD7; --ok:#4A6B2A; --okbg:#DCE9CA;
-  --amb:#8A6316; --ambbg:#FBF1DC; --chip:#F0EBE0;
+  --amb:#8A6316; --ambbg:#FBF1DC; --blue:#2A5570; --bluebg:#DBE7EF; --chip:#F0EBE0;
   --disp:"Archivo","Helvetica Neue",Arial,sans-serif;
   --body:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif;
 }
@@ -35,11 +35,41 @@ body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
 .pessoa h3{font-family:var(--disp);font-weight:700;font-size:23px;line-height:1.2}
 .pessoa .papel{font-size:15px;color:var(--muted);margin-top:5px;line-height:1.45}
 .desc{font-size:14.5px;line-height:1.55;color:var(--ink);margin-top:14px}
-.cen{font-size:16px;line-height:1.6}
+.cen p{font-size:16px;line-height:1.6}
+.cen p+p{margin-top:11px}
 .exp ul{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:8px 22px}
 .exp li{font-size:14.5px;line-height:1.45;padding-left:17px;position:relative}
 .exp li::before{content:"";position:absolute;left:0;top:8px;width:7px;height:7px;
                 border-radius:50%;background:var(--ok)}
+
+/* ---- banda do princípio ---- */
+.prin{margin-top:22px;background:var(--ink);color:#F4EFE5;border-radius:16px;padding:30px 34px}
+.prin-top{display:grid;grid-template-columns:760px 1fr;gap:34px;align-items:start}
+.rot.claro{color:#E9A79A}
+.prin h2{font-family:var(--disp);font-weight:700;font-size:40px;letter-spacing:-.02em;line-height:1.05}
+.tese{font-size:16px;line-height:1.62;color:#D8D1C4;margin-top:14px}
+.portas{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.porta{background:#3A352E;border-radius:12px;padding:18px 20px;border-top:5px solid var(--ok)}
+.porta.novo{border-top-color:#D9A43B}
+.porta-h{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.pn{font-family:var(--disp);font-weight:700;font-size:15px;width:29px;height:29px;border-radius:50%;
+    display:grid;place-items:center;background:#F4EFE5;color:var(--ink);flex:none}
+.pe{font-family:var(--disp);font-weight:600;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    padding:4px 9px;border-radius:5px}
+.pe.ok{background:var(--okbg);color:#33501C}
+.pe.novo{background:#F7E4BC;color:#6E4E0E}
+.porta h4{font-family:var(--disp);font-weight:700;font-size:20px;line-height:1.2;margin-bottom:7px}
+.porta p{font-size:13.6px;line-height:1.5;color:#CFC8BB}
+.prin-bot{display:grid;grid-template-columns:1fr 760px;gap:34px;margin-top:26px;
+          border-top:1px solid #4A443B;padding-top:22px;align-items:start}
+.regras{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:12px 26px}
+.regras li{font-size:14px;line-height:1.48;padding-left:18px;position:relative;color:#E4DDD0}
+.regras li::before{content:"";position:absolute;left:0;top:7px;width:8px;height:8px;
+                   border-radius:2px;background:#E9A79A}
+.cond{background:#4A2B26;border:1px solid #8A473C;border-radius:11px;padding:16px 19px;
+      font-size:13.8px;line-height:1.52;color:#F3DAD4}
+.cond b{font-family:var(--disp);font-weight:700;color:#FFD9D0;display:block;margin-bottom:5px;
+        font-size:12px;letter-spacing:.1em;text-transform:uppercase}
 
 .grade{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-top:22px}
 .col{background:var(--card);border:1px solid var(--line);border-radius:14px;
@@ -64,9 +94,11 @@ body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
 .chip.entra{background:var(--okbg);color:var(--ok)}
 .chip.falta,.chip.nao{background:var(--redsoft);color:var(--red)}
 .chip.guarda{background:var(--ambbg);color:var(--amb)}
+.chip.rede{background:var(--bluebg);color:var(--blue)}
 .b.entra{background:#F3F8EC;border-left:3px solid var(--ok);padding:9px 11px;border-radius:0 7px 7px 0}
 .b.falta,.b.nao{background:#FCF4F2;border-left:3px solid var(--red);padding:9px 11px;border-radius:0 7px 7px 0}
 .b.guarda{background:#FDF8EE;border-left:3px solid var(--amb);padding:9px 11px;border-radius:0 7px 7px 0}
+.b.rede{background:#EFF5F9;border-left:3px solid var(--blue);padding:9px 11px;border-radius:0 7px 7px 0}
 .quote{margin:0 18px 18px;padding:14px 16px;border-radius:10px;font-style:italic;
        font-size:13.4px;line-height:1.5}
 .quote.conf{background:var(--okbg);border:1px solid var(--ok);color:#33501C}
@@ -75,7 +107,7 @@ body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
               margin-top:9px;opacity:.75;font-family:var(--disp);font-weight:500}
 
 .legenda{background:var(--ink);color:#C9C0B2;border-radius:12px;margin-top:18px;
-         padding:15px 30px;display:flex;align-items:center;gap:30px;font-size:14px}
+         padding:15px 30px;display:flex;align-items:center;gap:26px;font-size:13.5px;flex-wrap:wrap}
 .pt{display:inline-flex;align-items:center;gap:9px}
 .pt i{width:11px;height:11px;border-radius:50%;display:block}
 .dir{margin-left:auto;font-family:var(--disp);font-weight:500}
@@ -83,7 +115,7 @@ body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
 .insights{margin-top:26px}
 .ih{font-family:var(--disp);font-weight:700;font-size:27px;margin-bottom:5px}
 .isub{font-size:15.5px;color:var(--muted);margin-bottom:17px}
-.mvs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.mvs{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 .mv{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--amb);
     border-radius:0 12px 12px 0;padding:19px 22px}
 .mv-n{font-family:var(--disp);font-weight:600;font-size:12px;letter-spacing:.14em;color:var(--amb)}
@@ -98,7 +130,7 @@ body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
 <div class="topo">
   <div class="marca">P</div>
   <div>
-    <h1>Jornada de Usuário — o registro do trabalho socioemocional</h1>
+    <h1>Jornada de Usuário — O registro do trabalho socioemocional</h1>
     <div class="sub">Instituto Ebenézer · Desafio B (Monitoramento de Impacto) · Produto: <b>Percurso</b> · Grupo 06</div>
   </div>
   <div class="selo">JORNADA ATUAL<small>levantada em campo · 29/08/2026</small></div>
@@ -111,25 +143,64 @@ body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
       <div class="av">◔</div>
       <div>
         <h3>A psicóloga do Instituto</h3>
-        <div class="papel">Psicóloga voluntária — conduz os grupos, faz o atendimento individual e é quem escreve o relatório</div>
+        <div class="papel">Psicóloga voluntária. Conduz os grupos, atende as crianças e é quem escreve o relatório.</div>
       </div>
     </div>
-    <div class="desc">Seis anos de casa. Este é o primeiro ano em que existe uma remuneração para ela, bancada por um recurso de um ano só, com renovação incerta. É a profissional que consegue acompanhar as crianças durante a semana — quem conduz o sábado não está lá de segunda a sexta. Num mesmo dia atende o grupo, faz atendimento individual, recebe estagiária, atende outra escola e ainda tem os próprios pacientes fora do Instituto. Já conhece metodologia de medição socioemocional (escala 0/1/2 no início e no fim do ano) porque usou em outra ONG — só que lá quem transformava relatório em indicador era uma pessoa de monitoramento, papel que aqui não existe. Já anonimiza por conta própria, trocando o nome por iniciais, antes de qualquer sistema pedir. Ela não tem problema para fazer a atividade: o repertório vem da vivência e do estudo. O gargalo é registrar.</div>
+    <div class="desc">Está no Instituto há seis anos. Só neste ano existe um pagamento para ela, bancado por um recurso que vale um ano e pode não ser renovado. Num mesmo dia ela conduz o grupo, faz atendimento individual, recebe estagiária, atende outra escola e ainda tem os pacientes dela fora daqui. Já sabe medir evolução socioemocional: usou uma escala de 0 a 2 em outra ONG. Lá existia uma pessoa de monitoramento para virar relatório em número; aqui esse papel não existe. Ela também já protege as crianças por conta própria — troca o nome pelas iniciais antes de qualquer sistema pedir. Dar a atividade não é o problema dela. O problema é registrar.</div>
   </div>
-  <div>
+  <div class="cen">
     <div class="rot">Cenário</div>
-    <div class="cen">Um sábado de atividade no Instituto Ebenézer e a semana que vem depois. A atividade acontece e é boa — o problema é fazer com que ela exista fora da cabeça de quem estava na sala. O registro tem três destinos ao mesmo tempo: o relatório no padrão que o conselho profissional exige, a prestação de contas semanal aos pais (hoje manual, por WhatsApp, grupo por turma) e a prova de efetividade para quem financia — porque sem captação nada do resto se sustenta. A operação inteira cabe em duas pessoas, falta voluntário para delegar, o sábado é corrido e o domingo é descanso. Jornada levantada na visita de campo de 29/08/2026, a partir das transcrições das gravações 81 a 84.</div>
+    <p>Um sábado de atividade no Instituto Ebenézer e a semana que vem depois. A atividade acontece e é boa. O problema é fazer com que ela exista fora da cabeça de quem estava na sala.</p><p>O mesmo registro precisa servir a três destinos ao mesmo tempo: o relatório no padrão que o conselho profissional exige, o recado semanal aos pais (hoje feito à mão, no WhatsApp, grupo por turma) e a prova de resultado para quem financia — porque sem captação nada do resto se sustenta.</p><p>A operação inteira cabe em duas pessoas. Falta voluntário para delegar, o sábado é corrido e o domingo é descanso. Jornada levantada na visita de campo de 29/08/2026, a partir das gravações 81 a 84.</p>
   </div>
   <div class="exp">
     <div class="rot">O que ela espera de qualquer solução</div>
-    <ul><li>Registrar sem sair da sala e sem parar a atividade — no celular, em segundos, não no notebook depois.</li>
-<li>Que o relatório saia no padrão que o conselho profissional exige: descrevendo o procedimento, de forma não individualizada e sem nome de criança.</li>
-<li>Poder corrigir o texto antes de qualquer coisa valer — o fecho é revisão, nunca redação automática.</li>
-<li>Que o dado não saia do Instituto e que nada que identifique a criança seja gravado.</li>
-<li>Que a técnica e o vocabulário dela sejam respeitados (resistência, resiliência), em vez de um formulário genérico por cima.</li>
-<li>Que o registro devolva alguma coisa: histórico da mesma criança ao longo do tempo, e resposta pronta quando a assistente social do projeto parceiro pergunta como a criança está.</li>
-<li>Que exista o que mostrar a quem financia — hoje o único número consolidado é presença.</li>
-<li>Não perder o que já funciona: o vídeo curto do celular direto para o grupo dos pais, e a chamada exatamente como ela é hoje.</li></ul>
+    <ul><li>Registrar sem sair da sala e sem parar a atividade. No celular, em segundos — não no notebook depois.</li>
+<li>Poder registrar depois, quando der, sem perder nada e sem o sistema cobrar o atraso.</li>
+<li>Não preencher formulário. Contar como foi, do jeito dela, e deixar o sistema organizar.</li>
+<li>Que o relatório saia no padrão do conselho profissional: descreve o procedimento, não individualiza, não cita nome de criança.</li>
+<li>Poder corrigir o texto antes de ele valer. O rascunho é da máquina; quem assina é ela.</li>
+<li>Que nada que identifique a criança seja gravado e que o dado não saia do Instituto.</li>
+<li>Que o registro devolva alguma coisa: o histórico da mesma criança ao longo do tempo e uma resposta pronta quando a assistente social do parceiro perguntar.</li>
+<li>Não perder o que já funciona: o vídeo curto do celular para o grupo dos pais e a chamada exatamente como ela é hoje.</li></ul>
+  </div>
+</div>
+
+<div class="prin">
+  <div class="prin-top">
+    <div>
+      <div class="rot claro">O princípio que atravessa a jornada inteira</div>
+      <h2>Nunca é tarde para registrar</h2>
+      <p class="tese">Capturar e registrar são duas coisas diferentes, e o produto vinha tratando como uma só. Capturar é apertar um botão — ou simplesmente já ter um áudio no celular. Registrar é transformar aquilo em relatório, contagem e indicador, e isso é trabalho do sistema, não dela. Por isso o Percurso passa a ter quatro portas de entrada. Todas terminam no mesmo registro.</p>
+    </div>
+    <div class="portas"><div class="porta ok">
+      <div class="porta-h"><span class="pn">A</span>
+        <span class="pe ok">já existe</span></div>
+      <h4>Falar 40 segundos</h4>
+      <p>Durante a atividade ou logo depois. Ela conta como foi, do jeito dela, e não preenche nada.</p>
+    </div><div class="porta novo">
+      <div class="porta-h"><span class="pn">B</span>
+        <span class="pe novo">a construir</span></div>
+      <h4>Deixar gravando o encontro</h4>
+      <p>Aperta um botão no começo e esquece o celular na mesa. No fim, o próprio aparelho transcreve e monta o registro. O áudio é apagado ali mesmo.</p>
+    </div><div class="porta novo">
+      <div class="porta-h"><span class="pn">C</span>
+        <span class="pe novo">a construir</span></div>
+      <h4>Trazer um áudio que ela já tem</h4>
+      <p>O que ela gravou no celular ou mandou no WhatsApp. De hoje ou de três semanas atrás. Ela escolhe o arquivo e diz de que encontro era.</p>
+    </div><div class="porta ok">
+      <div class="porta-h"><span class="pn">D</span>
+        <span class="pe ok">já existe</span></div>
+      <h4>Escrever</h4>
+      <p>Sempre visível, nunca obrigatório. Uma frase já basta para o sistema começar.</p>
+    </div></div>
+  </div>
+  <div class="prin-bot">
+    <ul class="regras"><li>As quatro portas produzem o mesmo registro: presença, contagens do grupo, relato no padrão do conselho, recado da turma e indicadores.</li>
+<li>Ela nunca escolhe campo, categoria nem formulário. Ela conta; o sistema separa. Se o produto pedir método à usuária, ele já perdeu.</li>
+<li>O encontro nunca fecha. Registro feito três semanas depois entra com a data do encontro, não com a data de hoje.</li>
+<li>O sistema não cobra. Sem notificação de atraso, sem pendência vermelha, sem explicar por que demorou.</li>
+<li>Nada vale antes do ok dela. O rascunho é da máquina; o texto é dela e ela pode reescrever.</li></ul>
+    <div class="cond"><b>A condição inegociável</b>As portas B e C só podem existir com três garantias ditas na própria tela, no instante do toque: o áudio não sai do aparelho, é apagado assim que vira texto, e nome falado vira código antes de qualquer gravação. O campo chamou gravar criança de &quot;perigoso&quot; — sem essas três frases visíveis, a porta mais poderosa do produto fica fechada.</div>
   </div>
 </div>
 
@@ -137,17 +208,19 @@ body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
     <div class="col">
       <div class="col-h">
         <span class="num">01</span>
-        <span class="cnome">Chega e monta o encontro sozinha</span>
+        <span class="cnome">Antes: ela monta o encontro sozinha</span>
       </div>
       <div class="emo">
         <span class="emoji">🙂</span>
-        <span class="etxt">Confiança alta no ofício, peso do quadro mínimo. A atividade ela sabe fazer; o resto é duas pessoas para tudo.</span>
+        <span class="etxt">Segura no que faz, sozinha no resto. A atividade ela sabe dar; o problema é que a casa inteira cabe em duas pessoas.</span>
       </div>
-      <ul class="acoes"><li class="b hoje">Define a atividade a partir da vivência e do estudo — esse repertório nunca foi o gargalo.</li>
-<li class="b hoje">Faz a chamada em papel ou planilha: é o único registro consolidado que a operação tem, com corte de 75% de presença para a criança seguir no programa.</li>
-<li class="b hoje">Não há a quem delegar: falta voluntário, e quem conduz no sábado não aparece durante a semana.</li>
-<li class="b entra"><span class="chip entra">o produto entra</span>marcar se hoje tem encontro e contar por voz, em segundos, o que vai acontecer — antes de a sala encher.</li>
-<li class="b nao"><span class="chip nao">o produto não entra</span>a chamada. Sugerir mexer nela recebeu recusa imediata, justificada por legislação.</li></ul>
+      <ul class="acoes"><li class="b hoje">Escolhe a atividade a partir da experiência e do estudo. Esse repertório nunca foi o gargalo.</li>
+<li class="b hoje">Faz a chamada no papel ou na planilha. É o único registro consolidado que a operação tem, e vale a régua de 75% de presença para a criança seguir no programa.</li>
+<li class="b hoje">Não tem a quem delegar: falta voluntário, e quem conduz no sábado não aparece durante a semana.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>marcar em um toque que hoje tem encontro.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>se ela quiser, apertar “gravar o encontro” e largar o celular na mesa. Depois disso, nada mais a fazer.</li>
+<li class="b rede"><span class="chip rede">se não registrou</span>tudo bem. O encontro pode ser reconstruído depois, por áudio ou por uma frase escrita.</li>
+<li class="b nao"><span class="chip nao">o produto não entra</span>a chamada. Sugerir mexer nela recebeu não na hora, justificado por legislação.</li></ul>
       <div class="quote aten">
         <p>“Mas ele tem uma coisa razoavelmente organizada aqui. Para só ele e uma pedagoga. Razoavelmente organizada.”</p>
         <span class="fonte">Visita 29/08/2026 · Gravação 81 · observação do entrevistador</span>
@@ -156,18 +229,20 @@ body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
     <div class="col">
       <div class="col-h">
         <span class="num">02</span>
-        <span class="cnome">A coisa boa acontece — e ninguém de fora consegue ler</span>
+        <span class="cnome">Durante: acontece a coisa boa e ninguém de fora vê</span>
       </div>
       <div class="emo">
         <span class="emoji">✨</span>
-        <span class="etxt">Pico de valor humano e zero de registro: as mãos e a atenção estão ocupadas conduzindo.</span>
+        <span class="etxt">Todo o valor está aqui, e nada disso vira registro. As mãos e a atenção estão ocupadas conduzindo.</span>
       </div>
-      <ul class="acoes"><li class="b hoje">Conduz o jogo, guarda o placar de cabeça, adia a contagem para o final, e ainda cozinha, arruma a mesa e tira foto.</li>
-<li class="b hoje">Para quem está de fora, a atividade é ilegível enquanto acontece: nem quantas crianças, nem qual atividade — isso só é reconstruído depois, por quem viu.</li>
-<li class="b hoje">O único registro que existe no momento é uma contagem manual improvisada, mostrada no gesto.</li>
-<li class="b hoje">A evidência mais forte da manhã é uma fala dita em voz alta na roda — e ela evapora se ninguém anotar no instante.</li>
-<li class="b entra"><span class="chip entra">o produto entra</span>nada pode disputar a atenção dela aqui. Ou a captura é de segundos, ou não existe.</li>
-<li class="b guarda"><span class="chip guarda">não pode ser perdido</span>o vídeo curto gravado no celular e mandado direto para o grupo dos pais já funciona e é considerado fácil.</li></ul>
+      <ul class="acoes"><li class="b hoje">Conduz o jogo, guarda o placar de cabeça e deixa a contagem para o fim. Ainda cozinha, arruma a mesa e tira foto.</li>
+<li class="b hoje">De fora, ninguém consegue ler o que está acontecendo: nem quantas crianças, nem qual atividade. Isso só é reconstruído depois, por quem viu.</li>
+<li class="b hoje">O único registro do momento é uma contagem manual improvisada, mostrada no gesto.</li>
+<li class="b hoje">A prova mais forte da manhã é uma frase dita em voz alta na roda. Se ninguém anotar na hora, ela evapora.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>nada pode disputar a atenção dela aqui. Ou a captura custa segundos, ou não existe.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>o celular gravando na mesa é a captura de custo zero — ela não faz nada e a matéria-prima do registro fica guardada.</li>
+<li class="b rede"><span class="chip rede">se não registrou</span>a frase mais forte da roda ainda pode entrar depois. Contar em 40 segundos quando lembrar já basta.</li>
+<li class="b guarda"><span class="chip guarda">não pode ser perdido</span>o vídeo curto do celular para o grupo dos pais já funciona e ela chama de fácil. Nisso não se mexe.</li></ul>
       <div class="quote conf">
         <p>“Agora eu já mando um vídeozinho, tá vendo? Do que tá acontecendo aqui. E você que fez? Pegou seu celular, gravou e fez. Isso, é fácil. Se você pudesse fazer tudo isso no celular, seria muito mais fácil. Do que você parar aí pro notebook.”</p>
         <span class="fonte">Visita 29/08/2026 · Gravação 82 · fala da liderança</span>
@@ -176,18 +251,19 @@ body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
     <div class="col">
       <div class="col-h">
         <span class="num">03</span>
-        <span class="cnome">A hora em que o registro deveria nascer</span>
+        <span class="cnome">Logo depois: a hora em que o registro deveria nascer</span>
       </div>
       <div class="emo">
         <span class="emoji">😕</span>
-        <span class="etxt">Queda. A dor é nomeada em voz alta: fazer, a equipe faz bem — registrar é o que quebra.</span>
+        <span class="etxt">Queda. Ela nomeia a dor em voz alta: fazer, a equipe faz bem. Registrar é o que quebra.</span>
       </div>
-      <ul class="acoes"><li class="b hoje">O que existe hoje é um relatório em texto, no padrão do conselho profissional: descreve o procedimento feito durante a atividade, não individualiza, não cita nome de criança.</li>
-<li class="b hoje">A dinâmica que acabou de acontecer não cabe nesse formato — ela mesma diz que não consegue traduzir no relatório o que foi desenvolvido ali.</li>
-<li class="b hoje">Ela já anonimiza por conta própria, trocando o nome pelas iniciais.</li>
-<li class="b hoje">A tradução do episódio concreto para a competência socioemocional já está pronta na cabeça dela, no vocabulário dela (resistência, resiliência).</li>
-<li class="b entra"><span class="chip entra">o produto entra</span>check-in de perguntas fechadas e contáveis — quantas ajudaram sem ninguém pedir, quantas participaram do começo ao fim — com a opção explícita de não observado.</li>
-<li class="b entra"><span class="chip entra">o produto entra</span>a fala de cerca de 40 segundos que vira rascunho — o nome dito no meio da frase é apagado sem interromper o relato, e nada é liberado sem o ok dela.</li></ul>
+      <ul class="acoes"><li class="b hoje">O registro que existe hoje é um texto no padrão do conselho profissional: descreve o procedimento, não individualiza, não cita nome de criança.</li>
+<li class="b hoje">A dinâmica que acabou de acontecer não cabe nesse formato, e ela mesma diz que não consegue traduzir ali o que foi desenvolvido.</li>
+<li class="b hoje">Ela já troca o nome pelas iniciais por conta própria, antes de qualquer sistema pedir.</li>
+<li class="b hoje">A leitura socioemocional já está pronta na cabeça dela e no vocabulário dela: resistência, resiliência.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>check-in em contagens, que ela responde de cabeça — quantas ajudaram sem ninguém pedir, quantas participaram do começo ao fim, quantos conflitos. Sempre com a opção “não observei”.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>ou 40 segundos de fala. O nome dito no meio da frase é apagado sem interromper o relato, e nada é liberado sem o ok dela.</li>
+<li class="b rede"><span class="chip rede">se não registrou</span>nada se perde. O encontro fica em aberto e aceita registro depois, sempre na data em que aconteceu.</li></ul>
       <div class="quote aten">
         <p>“Eu acho que o maior desafio aqui é registrar o que você fez, né? Essa é a maior dificuldade, é o registro.”</p>
         <span class="fonte">Visita 29/08/2026 · Gravação 82</span>
@@ -196,17 +272,19 @@ body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
     <div class="col">
       <div class="col-h">
         <span class="num">04</span>
-        <span class="cnome">O relatório é a primeira coisa a ser empurrada</span>
+        <span class="cnome">À noite: o relatório é a primeira coisa a ser empurrada</span>
       </div>
       <div class="emo">
         <span class="emoji">😮‍💨</span>
-        <span class="etxt">Fundo do dia. Não é má vontade: não sobra nem tempo nem energia, e a negativa é dupla e imediata.</span>
+        <span class="etxt">Fundo do dia. Não é má vontade: não sobra tempo nem energia, e a negativa é dupla e imediata.</span>
       </div>
       <ul class="acoes"><li class="b hoje">O dia inteiro foi cheio: grupo, atendimento individual, reunião, estagiária que chega, outra escola atendida.</li>
-<li class="b hoje">Ela ainda tem os próprios pacientes fora do Instituto — o registro compete com atendimento, e perde.</li>
-<li class="b hoje">O relatório só sai quando sobra tempo, e o sábado é corrido, o domingo é descanso.</li>
-<li class="b hoje">O acompanhamento longitudinal continua existindo, mas como pauta falada entre os adultos, todo dia, sem nenhum suporte — um prontuário oral.</li>
-<li class="b entra"><span class="chip entra">o produto entra</span>se o registro não nasceu durante ou logo depois da atividade, aqui ele não nasce. Qualquer solução que peça uma sessão dedicada de escrita já nasce morta.</li></ul>
+<li class="b hoje">Ela ainda tem os pacientes dela fora do Instituto. O registro compete com atendimento e perde.</li>
+<li class="b hoje">O relatório só sai quando sobra tempo. O sábado é corrido e o domingo é descanso.</li>
+<li class="b hoje">O acompanhamento das crianças continua existindo, mas só como conversa entre os adultos, todo dia, sem nenhum suporte. Um prontuário oral.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>aqui o Percurso não pede nada. Nenhuma notificação, nenhuma pendência vermelha, nenhuma cobrança de atraso.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>se o celular ficou gravando, o registro já está pronto esperando revisão. Ela só lê e libera — ou nem isso, hoje.</li>
+<li class="b rede"><span class="chip rede">se não registrou</span>o encontro continua aberto. Segunda, quinta ou daqui a três semanas — quando ela abrir, o registro entra com a data do sábado.</li></ul>
       <div class="quote aten">
         <p>“Você depois tem que sair daqui, preencher o relatório... Não dá, não dá.”</p>
         <span class="fonte">Visita 29/08/2026 · Gravação 84</span>
@@ -215,18 +293,19 @@ body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
     <div class="col">
       <div class="col-h">
         <span class="num">05</span>
-        <span class="cnome">Tem massa de vivência, não tem prova</span>
+        <span class="cnome">Na semana: tem história, não tem prova</span>
       </div>
       <div class="emo">
         <span class="emoji">😟</span>
-        <span class="etxt">Peso existencial e um susto no meio: entusiasmo com a demo e, logo em seguida, a palavra perigoso sobre gravar.</span>
+        <span class="etxt">Peso existencial e um susto no meio: entusiasmo com a demonstração e, logo depois, a palavra “perigoso” sobre gravar.</span>
       </div>
-      <ul class="acoes"><li class="b hoje">A prestação de contas semanal aos pais é feita à mão, por WhatsApp, grupo por turma — inclusive um grupo restrito a quem tem 75% de presença, onde circulam passeios e benefícios.</li>
+      <ul class="acoes"><li class="b hoje">O recado semanal aos pais é feito à mão, no WhatsApp, grupo por turma. Existe até um grupo restrito a quem tem 75% de presença, onde circulam passeios e benefícios.</li>
 <li class="b hoje">O único número consolidado que existe é presença. Sobre evolução socioemocional não há o que mostrar a investidor.</li>
-<li class="b hoje">Sem captação, nada do resto se sustenta: a prestação de contas tem peso de sobrevivência, não de burocracia — inclusive da própria remuneração dela, que vale um ano.</li>
-<li class="b hoje">O medo aparece com nome: gravar áudio ou vídeo da criança é tratado como proibido e perigoso, mesmo que o dado fique dentro da sala.</li>
-<li class="b entra"><span class="chip entra">o produto entra</span>a demonstração de anonimização — falar sem parar, o nome sumir sozinho, o relatório só sair mediante ok humano — foi recebida com Nossa, que legal.</li>
-<li class="b falta"><span class="chip falta">falta na tela</span>dizer, no instante em que o botão é apertado, que quem está sendo gravada é a profissional falando sobre a turma, e que o áudio não fica.</li></ul>
+<li class="b hoje">Sem captação nada se sustenta, inclusive o pagamento dela, que vale um ano. Prestar contas aqui tem peso de sobrevivência, não de burocracia.</li>
+<li class="b hoje">Gravar áudio ou vídeo de criança é tratado como proibido e perigoso, mesmo que o dado fique dentro da sala.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>a demonstração de anonimização — falar sem parar, o nome sumir sozinho, o relatório só sair com o ok dela — foi recebida com “Nossa, que legal”.</li>
+<li class="b rede"><span class="chip rede">se não registrou</span>importar um áudio antigo segue a mesma regra. O arquivo é lido no aparelho, vira texto e é descartado. Nada sobe para lugar nenhum.</li>
+<li class="b falta"><span class="chip falta">falta na tela</span>dizer, no instante do toque, quem está sendo gravado e que o áudio não fica. Sem essa frase, gravar o encontro inteiro não passa.</li></ul>
       <div class="quote aten">
         <p>“E aí você fica, a gente sempre faz o trabalho com os meninos e a gente já teve um bom trabalho com os meninos aqui, só que a gente não consegue meio que ter um registro pra conseguir, por exemplo, mostrar pros investidores, sabe?”</p>
         <span class="fonte">Visita 29/08/2026 · Gravação 83 · fala da psicóloga</span>
@@ -235,18 +314,19 @@ body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
     <div class="col">
       <div class="col-h">
         <span class="num">06</span>
-        <span class="cnome">O registro serve para conversar, não para arquivar</span>
+        <span class="cnome">Depois: o registro serve para conversar, não para arquivar</span>
       </div>
       <div class="emo">
         <span class="emoji">🤝</span>
-        <span class="etxt">Alívio condicional. Interesse real, com uma exigência na frente: poder corrigir depois. Ainda não é vitória.</span>
+        <span class="etxt">Alívio com condição. Interesse real, com uma exigência na frente: poder corrigir depois. Ainda não é vitória.</span>
       </div>
-      <ul class="acoes"><li class="b hoje">O valor que ela enxerga não é o relatório avulso — é o histórico da mesma criança ao longo do tempo.</li>
-<li class="b hoje">Existe um consumidor externo real e hoje sem resposta: a assistente social do projeto parceiro manda mensagem perguntando como a criança está, e isso é respondido de memória, no WhatsApp.</li>
-<li class="b hoje">A primeira pergunta espontânea dela diante do relato gerado foi sobre poder editar depois — controle editorial é condição de confiança, não recurso extra.</li>
-<li class="b hoje">Ela pede para poder informar a técnica que usa e que o sistema respeite esse formato, em vez de impor um genérico.</li>
-<li class="b entra"><span class="chip entra">o produto entra</span>devolve médias por dimensão, pauta acionável e relatório para quem financia — a primeira vez que o registro devolve alguma coisa a quem registrou.</li>
-<li class="b falta"><span class="chip falta">ainda não entra</span>não existe nenhum canal de profissional para profissional, que é justamente o destino que ela chama de mais rico.</li></ul>
+      <ul class="acoes"><li class="b hoje">O que ela valoriza não é o relatório avulso. É o histórico da mesma criança ao longo do tempo.</li>
+<li class="b hoje">Existe alguém de fora esperando resposta: a assistente social do projeto parceiro pergunta como a criança está, e isso é respondido de memória, no WhatsApp.</li>
+<li class="b hoje">A primeira pergunta espontânea dela diante do relato gerado foi se dava para editar depois. Controle do texto é condição de confiança, não recurso extra.</li>
+<li class="b hoje">Ela pede para informar a técnica que usa e que o sistema respeite esse formato, em vez de impor um genérico.</li>
+<li class="b entra"><span class="chip entra">o produto entra</span>devolve médias por dimensão, pauta acionável e relatório para quem financia. É a primeira vez que registrar devolve alguma coisa a quem registrou.</li>
+<li class="b rede"><span class="chip rede">se não registrou</span>registro atrasado entra no lugar certo da linha do tempo. Chegar tarde não vale menos que chegar na hora.</li>
+<li class="b falta"><span class="chip falta">ainda não entra</span>não existe canal de profissional para profissional, que é justamente o destino que ela chama de mais rico.</li></ul>
       <div class="quote conf">
         <p>“Que daí seria entre profissionais, que é mais rico ainda.”</p>
         <span class="fonte">Visita 29/08/2026 · Gravação 84</span>
@@ -257,6 +337,7 @@ body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
   <span class="pt"><i style="background:#B5D48C"></i> momento de confiança / o que já funciona</span>
   <span class="pt"><i style="background:#E4796A"></i> ponto de atenção / onde trava</span>
   <span class="pt"><i style="background:#DCE9CA;border:1px solid #4A6B2A"></i> onde o Percurso entra</span>
+  <span class="pt"><i style="background:#DBE7EF;border:1px solid #2A5570"></i> a rede: o que acontece se ela não registrar nada</span>
   <span class="pt"><i style="background:#F4DCD7;border:1px solid #B0392C"></i> onde ele ainda não entra</span>
   <span class="dir">Modelo de 3 zonas (Lens · Experience · Insights) — NN/g</span>
 </div>
@@ -266,34 +347,43 @@ body{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body);
   <div class="isub">Os pontos em que a solução é aprovada ou reprovada na prática — cada um ancorado numa fala da visita.</div>
   <div class="mvs"><div class="mv">
       <span class="mv-n">01</span>
-      <h4>A evidência só existe se for capturada na hora</h4>
-      <p>O dado socioemocional não se extrai perguntando depois. Formulação literal do campo: &quot;É que a gente às vezes vem com a percepção de que a gente vai conseguir extrair alguma informação dele. Você tem que, na verdade, observar o que está acontecendo.&quot; Qualquer fluxo que só peça o registro no fim do dia já perdeu o material — e o fim do dia é exatamente onde ela responde &quot;Não dá, não dá&quot;.</p>
+      <h4>Capturar na hora, registrar quando der</h4>
+      <p>O dado socioemocional não se extrai perguntando depois: “Você tem que, na verdade, observar o que está acontecendo.” Mas observar não é preencher. O que precisa acontecer na hora é a captura — apertar um botão, ou já ter um áudio no celular. Virar relatório é trabalho do sistema e pode ser feito a qualquer momento. É essa separação que destrava a fase 04, onde ela responde “Não dá, não dá”.</p>
     </div><div class="mv">
       <span class="mv-n">02</span>
-      <h4>O check-in é respondível: falta captura, não observação</h4>
-      <p>Perguntada em números logo depois da atividade, ela respondeu sem hesitar — &quot;Duas.&quot; / &quot;Quanta participou do começo ao fim?&quot; / &quot;Seis.&quot; A observação já está pronta na cabeça dela. O risco é o oposto do esperado, e quem levantou foi o próprio time: &quot;Se vai ficar longo pra você ou não&quot;. Cada pergunta a mais no check-in é tempo tirado de atendimento.</p>
+      <h4>Quem é metódico é o sistema</h4>
+      <p>Ela não escolhe campo, não escolhe categoria e não abre formulário. Ela conta como foi — ou nem isso, e deixa o celular gravando. Quem separa procedimento, objetivo, contagens e indicadores é o sistema. Um produto que exige método de quem já não dá conta transfere o trabalho para o lado errado do balcão.</p>
     </div><div class="mv">
       <span class="mv-n">03</span>
-      <h4>&quot;Aí eu consigo editar depois também?&quot;</h4>
-      <p>Primeira pergunta espontânea dela ao ver o relato gerado pela máquina. Se o texto não for corrigível antes de valer, o registro não é dela — e ela não assina o que não escreveu. O fecho tem de ser revisão, nunca redação automática. Isto é gate de confiança, não refinamento de v2.</p>
+      <h4>O sistema nunca cobra</h4>
+      <p>Sem notificação de atraso, sem pendência vermelha, sem “você deixou 3 encontros em aberto”. Encontro sem registro é um convite, não uma dívida. Cobrar uma pessoa que atende em duas escolas, recebe estagiária e ainda tem pacientes próprios é o caminho mais curto para ela parar de abrir o aplicativo.</p>
     </div><div class="mv">
       <span class="mv-n">04</span>
-      <h4>A palavra usada para gravar é &quot;perigoso&quot;</h4>
-      <p>Sobre captar áudio ou vídeo da criança, mesmo sem o dado sair da sala: &quot;Mas mesmo que fique aqui dentro este dado, ela não pode fazer? / É perigoso, né?&quot; O coração do MVP é captura por voz. Ou a tela deixa explícito, no momento da gravação, quem está sendo gravado e que o áudio não persiste, ou o fluxo principal trava aí.</p>
+      <h4>“Aí eu consigo editar depois também?”</h4>
+      <p>Foi a primeira pergunta espontânea dela ao ver o relato gerado pela máquina. Se o texto não puder ser corrigido antes de valer, o registro não é dela — e ela não assina o que não escreveu. O fecho é revisão, nunca redação automática. Isto é gate de confiança, não refinamento.</p>
     </div><div class="mv">
       <span class="mv-n">05</span>
-      <h4>Celular, nunca notebook</h4>
-      <p>A rotina que já funciona é o vídeo curto gravado no celular e mandado direto para o grupo dos pais — classificada por ela mesma como &quot;Isso, é fácil.&quot; O contraste levantado na visita foi celular versus &quot;Do que você parar aí pro notebook.&quot; O que exigir estação de trabalho não acontece.</p>
+      <h4>A palavra usada para gravar é “perigoso”</h4>
+      <p>Sobre captar áudio ou vídeo da criança, mesmo sem o dado sair da sala: “Mas mesmo que fique aqui dentro este dado, ela não pode fazer? / É perigoso, né?” Gravar o encontro inteiro só é possível com três garantias na própria tela: o áudio não sai do aparelho, é apagado quando vira texto, e nome falado vira código antes de qualquer gravação.</p>
     </div><div class="mv">
       <span class="mv-n">06</span>
+      <h4>O check-in é respondível: falta captura, não observação</h4>
+      <p>Perguntada em números logo depois da atividade, ela respondeu na hora — “Duas.” / “Quantas participaram do começo ao fim?” / “Seis.” A observação já está pronta na cabeça dela. E o risco foi levantado pelo próprio time: “Se vai ficar longo pra você ou não.” Cada pergunta a mais é tempo tirado de atendimento.</p>
+    </div><div class="mv">
+      <span class="mv-n">07</span>
+      <h4>Celular, nunca notebook</h4>
+      <p>A rotina que já funciona é o vídeo curto gravado no celular e mandado direto para o grupo dos pais, classificada por ela mesma como “Isso, é fácil.” O contraste levantado na visita foi celular contra “Do que você parar aí pro notebook.” O que exigir estação de trabalho não acontece.</p>
+    </div><div class="mv">
+      <span class="mv-n">08</span>
       <h4>O formato do relatório tem dono, e não é o produto</h4>
-      <p>O relatório segue o padrão do conselho profissional: &quot;Você registra o procedimento que você faz durante a atividade&quot;, e &quot;De forma não individualizada. Porque não pode ser individualizado.&quot; Se a saída do sistema não nascer nesse formato, ela continua escrevendo o relatório à mão — e o produto vira trabalho a mais, não a menos.</p>
+      <p>O relatório segue o padrão do conselho profissional: “Você registra o procedimento que você faz durante a atividade”, e “De forma não individualizada. Porque não pode ser individualizado.” Se a saída do sistema não nascer nesse formato, ela continua escrevendo à mão e o produto vira trabalho a mais.</p>
     </div></div>
 </div>
 
 <div class="rodape">
   <div style="flex:1"><b>Fonte.</b> Visita de campo ao Instituto Ebenézer em 29/08/2026, das 11h às 13h. Quatro gravações (97 min), transcritas e consolidadas. As seis falas citadas nesta jornada foram <b>conferidas uma a uma contra as transcrições originais</b> — todas literais.</div>
   <div style="flex:1"><b>Proteção.</b> Nenhum nome de criança e nenhum caso individual identificável aparece aqui. A persona é nomeada pelo papel, não pelo nome próprio — como a norma do conselho profissional exige dos relatórios da própria psicóloga.</div>
+  <div style="flex:1"><b>Leitura.</b> A faixa escura é o princípio; as seis colunas são a jornada de hoje; a linha azul dentro de cada coluna é a rede de segurança — o que o sistema faz quando ela não registra nada. As portas marcadas <b>a construir</b> ainda não existem no MVP.</div>
 </div>
 
 </body></html>

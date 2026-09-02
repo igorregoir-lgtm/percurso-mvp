@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-import json, html, re, io
+# Gera jornada.html a partir de jornada.json (fonte de verdade).
+# Depois: Chrome headless em 3400px de largura, escala 2 -> Jornada-Usuario-Ebenezer-Grupo06.png
+import json, html
 
 J = json.load(open('jornada.json', encoding='utf-8'))
 
@@ -7,6 +9,7 @@ MARCAS = [
     ('ONDE O PRODUTO ENTRA:', 'entra', 'o produto entra'),
     ('ONDE O PRODUTO AINDA NÃO ENTRA:', 'falta', 'ainda não entra'),
     ('ONDE O PRODUTO NÃO ENTRA:', 'nao', 'o produto não entra'),
+    ('SE NADA FOR REGISTRADO:', 'rede', 'se não registrou'),
     ('O QUE NÃO PODE SER PERDIDO:', 'guarda', 'não pode ser perdido'),
     ('O QUE FALTA NA TELA:', 'falta', 'falta na tela'),
 ]
@@ -21,6 +24,9 @@ def bullet(txt):
 
 def cit(t):
     return html.escape(t.replace('\n', ' ')).strip()
+
+def paras(t):
+    return ''.join('<p>%s</p>' % html.escape(p) for p in t.split('\n\n'))
 
 cols = []
 for f in J['fases']:
@@ -45,6 +51,18 @@ for f in J['fases']:
 
 exp = '\n'.join('<li>%s</li>' % html.escape(e) for e in J['expectativas'])
 
+P = J['principio']
+portas = []
+for p in P['portas']:
+    cls = 'ok' if p['estado'] == 'já existe' else 'novo'
+    portas.append(f'''<div class="porta {cls}">
+      <div class="porta-h"><span class="pn">{html.escape(p['n'])}</span>
+        <span class="pe {cls}">{html.escape(p['estado'])}</span></div>
+      <h4>{html.escape(p['titulo'])}</h4>
+      <p>{html.escape(p['texto'])}</p>
+    </div>''')
+regras = '\n'.join('<li>%s</li>' % html.escape(r) for r in P['regras'])
+
 mvs = []
 for i, m in enumerate(J['momentosDaVerdade'], 1):
     mvs.append(f'''<div class="mv">
@@ -61,7 +79,7 @@ HTML = f'''<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 :root{{
   --bg:#F4EFE5; --card:#FFFFFF; --card2:#F7F3EA; --ink:#2E2A24; --muted:#8B8478;
   --line:#E6DFD0; --red:#B0392C; --redsoft:#F4DCD7; --ok:#4A6B2A; --okbg:#DCE9CA;
-  --amb:#8A6316; --ambbg:#FBF1DC; --chip:#F0EBE0;
+  --amb:#8A6316; --ambbg:#FBF1DC; --blue:#2A5570; --bluebg:#DBE7EF; --chip:#F0EBE0;
   --disp:"Archivo","Helvetica Neue",Arial,sans-serif;
   --body:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif;
 }}
@@ -90,11 +108,41 @@ body{{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body)
 .pessoa h3{{font-family:var(--disp);font-weight:700;font-size:23px;line-height:1.2}}
 .pessoa .papel{{font-size:15px;color:var(--muted);margin-top:5px;line-height:1.45}}
 .desc{{font-size:14.5px;line-height:1.55;color:var(--ink);margin-top:14px}}
-.cen{{font-size:16px;line-height:1.6}}
+.cen p{{font-size:16px;line-height:1.6}}
+.cen p+p{{margin-top:11px}}
 .exp ul{{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:8px 22px}}
 .exp li{{font-size:14.5px;line-height:1.45;padding-left:17px;position:relative}}
 .exp li::before{{content:"";position:absolute;left:0;top:8px;width:7px;height:7px;
                 border-radius:50%;background:var(--ok)}}
+
+/* ---- banda do princípio ---- */
+.prin{{margin-top:22px;background:var(--ink);color:#F4EFE5;border-radius:16px;padding:30px 34px}}
+.prin-top{{display:grid;grid-template-columns:760px 1fr;gap:34px;align-items:start}}
+.rot.claro{{color:#E9A79A}}
+.prin h2{{font-family:var(--disp);font-weight:700;font-size:40px;letter-spacing:-.02em;line-height:1.05}}
+.tese{{font-size:16px;line-height:1.62;color:#D8D1C4;margin-top:14px}}
+.portas{{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}}
+.porta{{background:#3A352E;border-radius:12px;padding:18px 20px;border-top:5px solid var(--ok)}}
+.porta.novo{{border-top-color:#D9A43B}}
+.porta-h{{display:flex;align-items:center;gap:10px;margin-bottom:9px}}
+.pn{{font-family:var(--disp);font-weight:700;font-size:15px;width:29px;height:29px;border-radius:50%;
+    display:grid;place-items:center;background:#F4EFE5;color:var(--ink);flex:none}}
+.pe{{font-family:var(--disp);font-weight:600;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    padding:4px 9px;border-radius:5px}}
+.pe.ok{{background:var(--okbg);color:#33501C}}
+.pe.novo{{background:#F7E4BC;color:#6E4E0E}}
+.porta h4{{font-family:var(--disp);font-weight:700;font-size:20px;line-height:1.2;margin-bottom:7px}}
+.porta p{{font-size:13.6px;line-height:1.5;color:#CFC8BB}}
+.prin-bot{{display:grid;grid-template-columns:1fr 760px;gap:34px;margin-top:26px;
+          border-top:1px solid #4A443B;padding-top:22px;align-items:start}}
+.regras{{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:12px 26px}}
+.regras li{{font-size:14px;line-height:1.48;padding-left:18px;position:relative;color:#E4DDD0}}
+.regras li::before{{content:"";position:absolute;left:0;top:7px;width:8px;height:8px;
+                   border-radius:2px;background:#E9A79A}}
+.cond{{background:#4A2B26;border:1px solid #8A473C;border-radius:11px;padding:16px 19px;
+      font-size:13.8px;line-height:1.52;color:#F3DAD4}}
+.cond b{{font-family:var(--disp);font-weight:700;color:#FFD9D0;display:block;margin-bottom:5px;
+        font-size:12px;letter-spacing:.1em;text-transform:uppercase}}
 
 .grade{{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-top:22px}}
 .col{{background:var(--card);border:1px solid var(--line);border-radius:14px;
@@ -119,9 +167,11 @@ body{{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body)
 .chip.entra{{background:var(--okbg);color:var(--ok)}}
 .chip.falta,.chip.nao{{background:var(--redsoft);color:var(--red)}}
 .chip.guarda{{background:var(--ambbg);color:var(--amb)}}
+.chip.rede{{background:var(--bluebg);color:var(--blue)}}
 .b.entra{{background:#F3F8EC;border-left:3px solid var(--ok);padding:9px 11px;border-radius:0 7px 7px 0}}
 .b.falta,.b.nao{{background:#FCF4F2;border-left:3px solid var(--red);padding:9px 11px;border-radius:0 7px 7px 0}}
 .b.guarda{{background:#FDF8EE;border-left:3px solid var(--amb);padding:9px 11px;border-radius:0 7px 7px 0}}
+.b.rede{{background:#EFF5F9;border-left:3px solid var(--blue);padding:9px 11px;border-radius:0 7px 7px 0}}
 .quote{{margin:0 18px 18px;padding:14px 16px;border-radius:10px;font-style:italic;
        font-size:13.4px;line-height:1.5}}
 .quote.conf{{background:var(--okbg);border:1px solid var(--ok);color:#33501C}}
@@ -130,7 +180,7 @@ body{{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body)
               margin-top:9px;opacity:.75;font-family:var(--disp);font-weight:500}}
 
 .legenda{{background:var(--ink);color:#C9C0B2;border-radius:12px;margin-top:18px;
-         padding:15px 30px;display:flex;align-items:center;gap:30px;font-size:14px}}
+         padding:15px 30px;display:flex;align-items:center;gap:26px;font-size:13.5px;flex-wrap:wrap}}
 .pt{{display:inline-flex;align-items:center;gap:9px}}
 .pt i{{width:11px;height:11px;border-radius:50%;display:block}}
 .dir{{margin-left:auto;font-family:var(--disp);font-weight:500}}
@@ -138,7 +188,7 @@ body{{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body)
 .insights{{margin-top:26px}}
 .ih{{font-family:var(--disp);font-weight:700;font-size:27px;margin-bottom:5px}}
 .isub{{font-size:15.5px;color:var(--muted);margin-bottom:17px}}
-.mvs{{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}}
+.mvs{{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}}
 .mv{{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--amb);
     border-radius:0 12px 12px 0;padding:19px 22px}}
 .mv-n{{font-family:var(--disp);font-weight:600;font-size:12px;letter-spacing:.14em;color:var(--amb)}}
@@ -153,7 +203,7 @@ body{{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body)
 <div class="topo">
   <div class="marca">P</div>
   <div>
-    <h1>Jornada de Usuário — o registro do trabalho socioemocional</h1>
+    <h1>Jornada de Usuário — {html.escape(J['titulo'])}</h1>
     <div class="sub">Instituto Ebenézer · Desafio B (Monitoramento de Impacto) · Produto: <b>Percurso</b> · Grupo 06</div>
   </div>
   <div class="selo">JORNADA ATUAL<small>levantada em campo · 29/08/2026</small></div>
@@ -171,13 +221,28 @@ body{{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body)
     </div>
     <div class="desc">{html.escape(J['persona']['descricao'])}</div>
   </div>
-  <div>
+  <div class="cen">
     <div class="rot">Cenário</div>
-    <div class="cen">{html.escape(J['cenario'])}</div>
+    {paras(J['cenario'])}
   </div>
   <div class="exp">
     <div class="rot">O que ela espera de qualquer solução</div>
     <ul>{exp}</ul>
+  </div>
+</div>
+
+<div class="prin">
+  <div class="prin-top">
+    <div>
+      <div class="rot claro">O princípio que atravessa a jornada inteira</div>
+      <h2>{html.escape(P['titulo'])}</h2>
+      <p class="tese">{html.escape(P['tese'])}</p>
+    </div>
+    <div class="portas">{''.join(portas)}</div>
+  </div>
+  <div class="prin-bot">
+    <ul class="regras">{regras}</ul>
+    <div class="cond"><b>A condição inegociável</b>{html.escape(P['condicao'])}</div>
   </div>
 </div>
 
@@ -187,6 +252,7 @@ body{{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body)
   <span class="pt"><i style="background:#B5D48C"></i> momento de confiança / o que já funciona</span>
   <span class="pt"><i style="background:#E4796A"></i> ponto de atenção / onde trava</span>
   <span class="pt"><i style="background:#DCE9CA;border:1px solid #4A6B2A"></i> onde o Percurso entra</span>
+  <span class="pt"><i style="background:#DBE7EF;border:1px solid #2A5570"></i> a rede: o que acontece se ela não registrar nada</span>
   <span class="pt"><i style="background:#F4DCD7;border:1px solid #B0392C"></i> onde ele ainda não entra</span>
   <span class="dir">Modelo de 3 zonas (Lens · Experience · Insights) — NN/g</span>
 </div>
@@ -200,6 +266,7 @@ body{{width:3400px;background:var(--bg);color:var(--ink);font-family:var(--body)
 <div class="rodape">
   <div style="flex:1"><b>Fonte.</b> Visita de campo ao Instituto Ebenézer em 29/08/2026, das 11h às 13h. Quatro gravações (97 min), transcritas e consolidadas. As seis falas citadas nesta jornada foram <b>conferidas uma a uma contra as transcrições originais</b> — todas literais.</div>
   <div style="flex:1"><b>Proteção.</b> Nenhum nome de criança e nenhum caso individual identificável aparece aqui. A persona é nomeada pelo papel, não pelo nome próprio — como a norma do conselho profissional exige dos relatórios da própria psicóloga.</div>
+  <div style="flex:1"><b>Leitura.</b> A faixa escura é o princípio; as seis colunas são a jornada de hoje; a linha azul dentro de cada coluna é a rede de segurança — o que o sistema faz quando ela não registra nada. As portas marcadas <b>a construir</b> ainda não existem no MVP.</div>
 </div>
 
 </body></html>'''

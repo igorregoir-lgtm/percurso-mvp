@@ -79,6 +79,16 @@ este documento mostra onde ele nos contrariou.
 
 ---
 
+## 8. Exigir que o registro nasça na janela do encontro é desenhar o produto para a única hora…
+
+**O que o repositório diz.** O registro só nasce na janela do encontro. A jornada da educadora em docs/JORNADAS.md encadeia #/hoje → #/chamada → #/folha → #/voz → #/confirmar como sequência do dia, e a própria versão anterior desta jornada afirmava, na fase 04: "se o registro não nasceu durante ou logo depois da atividade, aqui ele não nasce". O único caminho de entrada é o microfone ao vivo (public/app.js usa SpeechRecognition, que só transcreve fala em tempo real) — não existe rota para importar um arquivo de áudio, e #/importar é importação de planilha CSV pela coordenação.
+
+**O que o campo mostrou.** A janela do encontro é exatamente onde ela não tem mãos livres, e a janela seguinte é onde ela responde "Não dá, não dá". A operação é intermitente por natureza: sábado corrido, domingo de descanso, e quem conduz o sábado não aparece na semana. Ao mesmo tempo, gravar com o celular já é rotina tranquila e chamada de "fácil" — o aparelho já está na mão, gravando.
+
+**Consequência.** Exigir que o registro nasça numa janela é desenhar o produto para a única hora em que a usuária comprovadamente não pode usá-lo. A correção separa captura de registro: capturar é apertar um botão ou já ter o áudio; registrar é trabalho do sistema, a qualquer momento. Isso exige três coisas que o repositório ainda não tem — encontro que nunca fecha (registro atrasado entra na data do encontro), gravação do encontro inteiro, e importação de arquivo de áudio, que por sua vez exige transcrição local de arquivo (o SLM da pasta ai/ não faz ASR; o manifest não tem modelo de áudio). É a mudança de maior alcance apontada por esta jornada.
+
+---
+
 
 ## O que mudou no produto por causa de cada achado (02/09/2026)
 
@@ -90,6 +100,7 @@ este documento mostra onde ele nos contrariou.
 | 5 — o clímax pode nunca disparar | Devolução por encontro: o check-in de hoje contra as últimas folhas (cala sem base) | decisão 33 · `#/hoje` |
 | 6 — o destino mais rico é lateral | Parecer a profissional parceiro, por código, sob consentimento específico, revisado e liberado | decisão 32 · `#/parecer/:id` |
 | 7 — a devolutiva aos pais já existe e é manual | Recado da turma gerado do registro, sem criança nomeada, link wa.me sem número; a régua de 75% da casa como parâmetro | decisão 33 · `#/recado`, `#/turma` |
+| 8 — a janela do encontro é a hora em que ela não pode usar o produto | **Ainda não entrou.** Exige encontro que nunca fecha (registro atrasado com a data do encontro), gravação do encontro inteiro e importação de arquivo de áudio — esta última depende de transcrição local de arquivo, que a pasta `ai/` ainda não tem | pendente · proposto por esta jornada em 02/09/2026 |
 | Planilha socioemocional (consolidado §6) | Rubrica com os seis indicadores; resumo da aba Indicadores e exportação por código | decisão 34 · `#/painel` |
 
 ## Procedência

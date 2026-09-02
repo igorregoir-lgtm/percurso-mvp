@@ -218,6 +218,30 @@ cérebro"*); o que ela vê não vira evidência.
    coordenação) gera um parecer por **código**, com presença, participação e evolução por
    indicador — só com consentimento específico do responsável e com a liberação registrada.
 
+### O que a jornada de campo v2 exige e o MVP ainda não tem (02/09/2026)
+
+A jornada de campo (`docs/jornada-usuario/`) foi revista em 02/09/2026 e trouxe uma distinção que
+o passo 3 acima ainda não respeita: **capturar não é registrar**. Capturar é apertar um botão — ou
+já ter um áudio no celular. Registrar é virar relato, contagem e indicador, e isso é trabalho do
+sistema, a qualquer momento. Quem é metódico é o sistema; quem estrutura o dado é o sistema.
+
+Na prática, o fluxo `#/voz` de hoje só existe numa janela: durante ou logo depois do encontro. É
+exatamente a hora em que o campo mostra que ela **não tem mãos livres** — e a hora seguinte é onde
+ela responde *"Não dá, não dá"*. Faltam, portanto, quatro coisas, nenhuma delas implementada:
+
+| O que falta | Por quê | O que exige |
+|---|---|---|
+| **O encontro nunca fecha** | registro atrasado precisa entrar com a data do encontro, não a de hoje | modelo de dados aceitar data retroativa + marca de "registrado depois" |
+| **O sistema não cobra** | sem notificação de atraso e sem pendência vermelha por encontro em aberto | revisão de `#/hoje` e `#/alertas` |
+| **Gravar o encontro inteiro** | captura de custo zero: ela aperta no começo e larga o celular na mesa | transcrição local de áudio longo — o `SpeechRecognition` do navegador não serve |
+| **Importar um áudio que ela já tem** | o áudio do gravador do celular ou do WhatsApp, de hoje ou de três semanas atrás | transcrição local **de arquivo**; `ai/model-manifest.json` não tem modelo de áudio (`#/importar` é CSV) |
+
+**Condição inegociável para as duas últimas.** O campo chamou gravar criança de *"perigoso"*. As
+duas só podem existir com três garantias ditas na própria tela, no instante do toque: o áudio não
+sai do aparelho, é apagado assim que vira texto, e nome falado vira código antes de qualquer
+gravação. Sem essas três frases visíveis, não se constrói.
+
+
 ### Ganhos e custos, honestos
 
 | Ganha | Custa |
