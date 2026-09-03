@@ -8,10 +8,33 @@
 
 | # | Artefato | Onde | Estado | Para que serve |
 |---|---|---|---|---|
-| **1** | **Protótipo navegável completo** — 27 telas, 4 papéis, 402 × 874 pt | [`h6AnLVYLfpeVl2N4ie0Qzv`](https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv) · página *Protótipo completo · 4 papéis* | **canônico** | O produto inteiro, como cada papel o usa. É este que vai para a banca e para a pasta de entrega |
-| 2 | Protótipo da sessão de validação — 12 telas, 6 tarefas | mesmo arquivo · página *Protótipo · sessão de validação* | vivo | Ensaiar e conduzir a sessão de [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md). Uma faixa por tarefa, com enunciado e limiar |
+| **1** | **Protótipo v3 — 12 telas, 4 papéis, 402 × 874 pt** | [`JMejpNsHkckqeSP8KE1PTh`](https://www.figma.com/design/JMejpNsHkckqeSP8KE1PTh) · página *Protótipo v3 · 4 papéis* | **canônico** | O produto **como ele vai ficar**: 28 rotas fundidas em 12, captura por áudio em primeiro, botões de um toque. Desenhado 03/09/2026, **antes** do código que o implementa |
+| 2 | Protótipo navegável de 02/09 — 27 telas, 4 papéis | [`h6AnLVYLfpeVl2N4ie0Qzv`](https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv) | **registro histórico** | O produto **como ele era** antes da rodada de simplificação. Serve de antes-e-depois; não é mais o alvo |
 | 3 | Protótipo entregue na semana 5 — 9 telas, 375 × 812 pt | [`HBBd4GyVRjd7C3WgJ4jnpL`](https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL) | **congelado — registro histórico** | O que foi entregue em 04/09/2026. **Não atualizar**: o valor dele é ser o que foi entregue |
 | 4 | Protótipo HTML pré-visita | [`prototipo-figma/`](../prototipo-figma/) | congelado | A etapa em que o protótipo era HTML, antes de CFL-03 |
+
+### O protótipo passou a vir ANTES do código (03/09/2026)
+
+Até aqui o protótipo **seguia** o código, e por isso envelhecia: o [`HANDOFF.md`](HANDOFF.md)
+registra que ele *"mente assim que `public/app.js` muda"*, que a manutenção é manual e recorrente e
+que **nenhum teste pega** a divergência. A rodada de simplificação inverteu a ordem — o v3 foi
+desenhado primeiro, e é ele que o código implementa. A divergência passa a ser erro de execução,
+visível, em vez de decadência silenciosa.
+
+**O que o v3 muda em relação ao v2:** 28 rotas viram 12 (`#/voz`+`#/folha`+`#/confirmar` →
+`#/registrar`; `#/criancas`+`#/observacao`+`#/parecer` → ficha da criança; `#/alertas`+`#/pauta`+
+`#/ciclo` → cartões do `#/hoje`; `#/relato`+`#/recado` → `#/sai-daqui`; scores+safras+síntese →
+`#/painel`; importar+arquivo → `#/pessoas`; impacto+perguntar → `#/relatorio`); a captura por áudio
+abre a tela em vez de ser o terceiro cartão; a janela de 40 s deixa de ser teto; as três garantias
+aparecem no instante do toque; o check-in vira entrada direta preservando `—`/`0`/`N`; a conferência
+mostra a origem de cada campo; e existe seletor de turma.
+
+> **Ressalva de leitura, registrada em 03/09/2026.** O conector do Figma expõe apenas **uma página
+> por arquivo**, e no `h6AnLVYLfpeVl2N4ie0Qzv` a página exposta é o `Leia-me` — cujo texto manda
+> abrir uma página chamada *"Protótipo · iPhone 17"*, enquanto esta tabela a chamava de *"Protótipo
+> completo · 4 papéis"*. Não foi possível confirmar pelo conector que as 27 telas e as 153 ligações
+> descritas aqui existem naquele arquivo. **Conferir no navegador antes de citar aqueles números em
+> entrega.**
 
 O arquivo **1 e 2 é o mesmo arquivo Figma**, com páginas diferentes e um único *Design system*
 (variáveis de cor e escala tipográfica saídas de `public/styles.css`, mais os componentes de
