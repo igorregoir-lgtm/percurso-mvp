@@ -8,7 +8,7 @@
 
 | # | Artefato | Onde | Estado | Para que serve |
 |---|---|---|---|---|
-| **1** | **Protótipo v3 — 12 rotas em 15 telas, 4 papéis, 402 × 874 pt** | [`JMejpNsHkckqeSP8KE1PTh`](https://www.figma.com/design/JMejpNsHkckqeSP8KE1PTh) · página *Protótipo v3 · 4 papéis* | **canônico** | O produto **como ele vai ficar**: 28 rotas fundidas em 12, captura por áudio em primeiro, botões de um toque. Navegável: **44 ligações**, nenhuma tela sem entrada e nenhuma sem saída. Desenhado 03/09/2026, **antes** do código que o implementa |
+| **1** | **Protótipo v3 — 12 rotas em 16 telas, 4 papéis, 402 × 874 pt** | [`JMejpNsHkckqeSP8KE1PTh`](https://www.figma.com/design/JMejpNsHkckqeSP8KE1PTh) · página *Protótipo v3 · 4 papéis* | **canônico** | O produto **como ele vai ficar**: 28 rotas fundidas em 12, captura por áudio em primeiro, botões de um toque, o Passo como porta. Navegável: **84 elementos com ação**, nenhuma tela sem entrada e nenhuma sem saída. Desenhado 03/09/2026, **antes** do código que o implementa |
 | 2 | Protótipo navegável de 02/09 — 27 telas, 4 papéis | [`h6AnLVYLfpeVl2N4ie0Qzv`](https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv) | **registro histórico** | O produto **como ele era** antes da rodada de simplificação. Serve de antes-e-depois; não é mais o alvo |
 | 3 | Protótipo entregue na semana 5 — 9 telas, 375 × 812 pt | [`HBBd4GyVRjd7C3WgJ4jnpL`](https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL) | **congelado — registro histórico** | O que foi entregue em 04/09/2026. **Não atualizar**: o valor dele é ser o que foi entregue |
 | 4 | Protótipo HTML pré-visita | [`prototipo-figma/`](../prototipo-figma/) | congelado | A etapa em que o protótipo era HTML, antes de CFL-03 |
@@ -21,10 +21,32 @@
    `#/painel`, Solange no `#/relatorio`.
 3. As barras inferiores navegam de verdade — 3 abas para quem está em sala, 4 para a coordenação.
 
-**As 15 telas são as 12 rotas mais três estados** que só existem navegando: `#/registrar` aparece
+> **As setas de protótipo não aparecem na aba Design.** Para vê-las, selecione a aba **Prototype**
+> no painel da direita, ou dê play. Na Design elas existem e ficam invisíveis — foi o que aconteceu
+> na primeira leitura deste arquivo.
+
+### O Passo continua, e cresce
+
+O ❋ está em **todas as telas menos `#/entrar`** — exatamente como o produto faz hoje
+(`pintarPassoFab` esconde o FAB na entrada). Ele não some com a simplificação: **é ele que a torna
+possível.** Com o menu caindo de 6 abas para 3, o Passo é o caminho para o que saiu — a tela
+`Passo · painel aberto` mostra isso com o bloco **IR PARA** (a turma inteira, quem veio sábado,
+pensar junto).
+
+O painel mantém o que o produto já tem e que a rodada não deve estragar: no máximo **3 vagas**, teto
+de **uma pendência** por painel, alívio quando não há nada pendente (*"Ninguém sumiu do radar esta
+semana — isso é o seu registro funcionando, não é sorte"*), **ponto** em vez de contador (contador
+lê como caixa de entrada em dívida), e o limite dito na própria tela: *"conta quantos, nunca quem"*.
+
+As três entradas contextuais que também existem (`Quem veio sábado` no cartão de captura, `Ver a
+turma inteira` no cartão do grupo, `Pensar junto` no painel) são **redundância deliberada**: o Passo
+é a porta geral, elas são a porta do contexto. Quem não descobrir o ❋ ainda chega.
+
+**As 16 telas são as 12 rotas mais quatro estados** que só existem navegando: `#/registrar` aparece
 duas vezes (capturando e conferindo), `#/hoje` aparece duas vezes (turma da manhã e **turma da
 tarde**, que é a prova de que o seletor resolve a turma que o produto não acompanhava) e
-`#/relatorio` aparece duas vezes (a pergunta e a resposta).
+`#/relatorio` aparece duas vezes (a pergunta e a resposta) — e há a tela do **painel do Passo
+aberto**, que é onde a fusão de superfícies da F6 se vê.
 
 **Dois percursos valem cronometrar na sessão de validação:**
 
