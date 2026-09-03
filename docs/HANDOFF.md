@@ -38,7 +38,7 @@
 > cinco cenas, mais a consulta, **dentro dos mesmos 7m00** — o que foi cortado está declarado em
 > tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; são **368 · 163**.
 >
-> **Gates: 163 unitários · 368 smoke · 6 rag · 24 ia-stub.**
+> **Gates: 164 unitários · 371 smoke · 6 rag · 24 ia-stub.**
 >
 > **Armadilhas novas — as do Figma custaram a maior parte do tempo:**
 > (1) **`SF Pro` aparece em `listAvailableFontsAsync` mas renderiza largura ZERO** nesta conta; o

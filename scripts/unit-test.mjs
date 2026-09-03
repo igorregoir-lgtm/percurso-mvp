@@ -597,6 +597,19 @@ test('consultar: perguntar pelo gatilho do alerta é perguntar por evasão', () 
   assert.equal(R.consultar('quantas faltas a turma teve?').intencao, 'presenca');
 });
 
+test('consultar: a tela e a recusa oferecem a MESMA lista de perguntas', () => {
+  // Os chips de `#/consulta` e a lista da recusa saem de R.SUGESTOES. Se um dia
+  // divergirem, a base passa a ensinar duas linguagens para a mesma pergunta.
+  assert.ok(Array.isArray(R.SUGESTOES) && R.SUGESTOES.length === 6);
+  assert.deepEqual(R.consultar('a Ana Clara está bem?').sugestoes, R.SUGESTOES);
+
+  // e o placeholder da tela não repete nenhum chip — ele existe para mostrar
+  // que a pergunta pode ser feita com outras palavras
+  const placeholder = 'qual é o limiar do alerta de ausência?';
+  assert.ok(!R.SUGESTOES.some(s => s.toLowerCase() === placeholder));
+  assert.equal(R.consultar(placeholder).intencao, 'evasao', 'o placeholder tem de ser respondível');
+});
+
 test('consultar: o sistema responde corretamente as perguntas que ele mesmo sugere', () => {
   // Invariante de auto-consistência: sugerir uma pergunta e classificá-la errado
   // é pior que não sugerir nada. Foi assim que o bug de precedência apareceu —

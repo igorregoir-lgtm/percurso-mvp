@@ -835,7 +835,12 @@ secao('17 · Consulta sobre a camada agregada (F15)');
   const negado = await POST('maria', '/api/consulta', { pergunta: 'quantas crianças?' });
   T('educadora não usa a consulta agregada (403)', negado.status === 403);
 
+  const chips = (await GET('rita', '/api/consulta')).corpo;
+  T('a tela oferece as sugestões ANTES da primeira pergunta', Array.isArray(chips.sugestoes) && chips.sugestoes.length === 6);
+  T('educadora não recebe as sugestões (403)', (await GET('maria', '/api/consulta')).status === 403);
+
   const n0 = (await POST('rita', '/api/consulta', { pergunta: 'a Ana Clara está bem?' })).corpo;
+  T('os chips da tela e a lista da recusa são a mesma', JSON.stringify(chips.sugestoes) === JSON.stringify(n0.sugestoes));
 
   const c = (await POST('rita', '/api/consulta', { pergunta: 'Quantas crianças o instituto atende?' })).corpo;
   T('a consulta reconhece a intenção de contagem', c.reconhecida && c.intencao === 'contagem');

@@ -2391,6 +2391,11 @@ rota(/^#\/relatorio/, async () => {
 // CONSULTA EM LINGUAGEM NATURAL (F15) — só a camada agregada.
 // ======================================================================
 rota(/^#\/consulta/, async () => {
+  // As sugestões vêm ANTES da primeira pergunta. Até aqui elas só apareciam na
+  // recusa: quem chegava tinha de errar uma vez para descobrir o que a base
+  // sabe responder. O placeholder não repete nenhum chip — usa outra formulação
+  // de propósito, para dizer que a pergunta não precisa ser copiada daqui.
+  const { sugestoes } = await api('/api/consulta');
   app.innerHTML = `
     <p class="kicker">Camada agregada · nunca dado individual</p>
     <h1>Perguntar à base</h1>
@@ -2398,11 +2403,17 @@ rota(/^#\/consulta/, async () => {
     <div class="cartao" style="margin-top:16px">
       ${(() => { const d = blocoDitado('pergunta', 'pergunta-ditado-estado'); return `
       <div class="linha" style="flex-wrap:nowrap">
-        <input type="text" id="pergunta" class="cresce" placeholder="Ex.: quantas crianças estão em risco de sair?" autocomplete="off" style="width:auto">
+        <input type="text" id="pergunta" class="cresce" placeholder="Ex.: qual é o limiar do alerta de ausência?" autocomplete="off" style="width:auto">
         ${d.botao}
       </div>
       ${d.estado}`; })()}
       <div class="linha" style="margin-top:12px"><button class="btn largo" data-acao="perguntar">Perguntar</button></div>
+    </div>
+    <div class="cartao compacto" style="margin-top:12px">
+      <div class="lbl">O que a base sabe responder</div>
+      <div style="margin-top:8px">${sugestoes.map(x =>
+        `<button class="p off" data-acao="sugestao" data-q="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+      <p class="sub" style="margin-top:4px">Uma pergunta por assunto. Pode perguntar com as suas palavras — não precisa copiar daqui.</p>
     </div>
     <div id="resposta" class="pilha"></div>
     <p class="rodape">Dado individual de criança não é respondido aqui, em nenhuma formulação.</p>`;

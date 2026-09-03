@@ -638,6 +638,20 @@ const INTENCOES = [
     } },
 ];
 
+/** As perguntas que o sistema sabe responder — UMA por intencao, e e' isso que
+ *  o teste trava. Elas aparecem em dois lugares: nos chips da tela `#/consulta`,
+ *  ANTES de a pessoa errar, e na recusa, depois. Sao a mesma lista: sugerir na
+ *  recusa algo diferente do que a tela oferece de saida seria ensinar duas
+ *  linguagens para a mesma base. */
+export const SUGESTOES = [
+  'Quantas crianças o instituto atende?',
+  'Como está a presença deste mês?',
+  'Quantas crianças estão em risco de sair?',
+  'Como está a cobertura do registro?',
+  'Quais áreas do Laboratório de Sonhos estão em aberto?',
+  'Como está o ciclo de observação?',
+];
+
 export function consultar(pergunta) {
   const t = (pergunta || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (!t.trim()) throw erro(422, 'Escreva a pergunta.');
@@ -659,14 +673,7 @@ export function consultar(pergunta) {
     return {
       reconhecida: false,
       resposta: 'Não sei responder isso a partir da camada agregada — e prefiro dizer que não sei a inventar um número.',
-      sugestoes: [
-        'Quantas crianças o instituto atende?',
-        'Como está a presença deste mês?',
-        'Quantas crianças estão em risco de sair?',
-        'Como está a cobertura do registro?',
-        'Quais áreas do Laboratório de Sonhos estão em aberto?',
-        'Como está o ciclo de observação?',
-      ],
+      sugestoes: SUGESTOES,
       doutrina: 'A consulta só alcança a camada agregada. Dado individual de criança não é respondido aqui, em nenhuma formulação.',
     };
   }

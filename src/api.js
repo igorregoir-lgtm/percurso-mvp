@@ -893,6 +893,12 @@ export const rotas = {
   },
 
   // F15 — consulta em linguagem natural sobre a camada agregada.
+  // A tela pede as sugestoes ANTES de a pessoa perguntar: quem chega nao deveria
+  // ter de errar uma vez para descobrir o que a base sabe responder.
+  'GET /api/consulta': (req) => {
+    exigeGestao(req);
+    return { sugestoes: R.SUGESTOES };
+  },
   'POST /api/consulta': (req, body) => {
     exigeGestao(req);
     return R.consultar(body.pergunta);
