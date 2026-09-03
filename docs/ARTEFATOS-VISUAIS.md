@@ -8,10 +8,37 @@
 
 | # | Artefato | Onde | Estado | Para que serve |
 |---|---|---|---|---|
-| **1** | **Protótipo v3 — 12 telas, 4 papéis, 402 × 874 pt** | [`JMejpNsHkckqeSP8KE1PTh`](https://www.figma.com/design/JMejpNsHkckqeSP8KE1PTh) · página *Protótipo v3 · 4 papéis* | **canônico** | O produto **como ele vai ficar**: 28 rotas fundidas em 12, captura por áudio em primeiro, botões de um toque. Desenhado 03/09/2026, **antes** do código que o implementa |
+| **1** | **Protótipo v3 — 12 rotas em 15 telas, 4 papéis, 402 × 874 pt** | [`JMejpNsHkckqeSP8KE1PTh`](https://www.figma.com/design/JMejpNsHkckqeSP8KE1PTh) · página *Protótipo v3 · 4 papéis* | **canônico** | O produto **como ele vai ficar**: 28 rotas fundidas em 12, captura por áudio em primeiro, botões de um toque. Navegável: **44 ligações**, nenhuma tela sem entrada e nenhuma sem saída. Desenhado 03/09/2026, **antes** do código que o implementa |
 | 2 | Protótipo navegável de 02/09 — 27 telas, 4 papéis | [`h6AnLVYLfpeVl2N4ie0Qzv`](https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv) | **registro histórico** | O produto **como ele era** antes da rodada de simplificação. Serve de antes-e-depois; não é mais o alvo |
 | 3 | Protótipo entregue na semana 5 — 9 telas, 375 × 812 pt | [`HBBd4GyVRjd7C3WgJ4jnpL`](https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL) | **congelado — registro histórico** | O que foi entregue em 04/09/2026. **Não atualizar**: o valor dele é ser o que foi entregue |
 | 4 | Protótipo HTML pré-visita | [`prototipo-figma/`](../prototipo-figma/) | congelado | A etapa em que o protótipo era HTML, antes de CFL-03 |
+
+### Como percorrer o v3
+
+1. Abrir [`JMejpNsHkckqeSP8KE1PTh`](https://www.figma.com/design/JMejpNsHkckqeSP8KE1PTh) → página
+   **Protótipo v3 · 4 papéis** → modo de apresentação. O ponto de partida é **`#/entrar`**.
+2. O perfil escolhido entra na faixa do papel: Carolina e Maria Silvia caem em `#/hoje`, Rita no
+   `#/painel`, Solange no `#/relatorio`.
+3. As barras inferiores navegam de verdade — 3 abas para quem está em sala, 4 para a coordenação.
+
+**As 15 telas são as 12 rotas mais três estados** que só existem navegando: `#/registrar` aparece
+duas vezes (capturando e conferindo), `#/hoje` aparece duas vezes (turma da manhã e **turma da
+tarde**, que é a prova de que o seletor resolve a turma que o produto não acompanhava) e
+`#/relatorio` aparece duas vezes (a pergunta e a resposta).
+
+**Dois percursos valem cronometrar na sessão de validação:**
+
+- **A dor dela** — `#/entrar` → Carolina → `#/hoje` → *Falar agora* → `#/registrar` capturando →
+  *Terminei* → `#/registrar` conferindo → *Confirmar e guardar* → **`#/sai-daqui`**. Este último
+  passo é o conserto do **passo 05** do task flow: hoje `public/app.js:4031` devolve para `#/hoje` e
+  o relato não abre sozinho. No v3, confirmar a folha abre o relato.
+- **A segunda turma** — `#/hoje` → chip *Sábado tarde* → `#/hoje` da tarde. Hoje esse caminho não
+  existe: `GET /api/hoje` monta tudo a partir de `turmas[0]`.
+
+**O que ficou sem ligação, e por quê.** Quatro elementos apontariam para a própria tela e o Figma
+recusa auto-referência: o chip da turma já ativa, a aba *Recado aos pais* (o recado é a segunda aba
+de `#/sai-daqui`, não uma tela), o botão *Aprovar* da síntese e a aba já ativa do relatório. São
+estados internos, não navegação — e é assim que devem ficar.
 
 ### O protótipo passou a vir ANTES do código (03/09/2026)
 
