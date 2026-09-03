@@ -51,9 +51,9 @@
 >
 > **5. Roteiro do vídeo v3.** Tinha 13 cenas e nenhuma da psicóloga. Agora tem o bloco dela com
 > cinco cenas, mais a consulta, **dentro dos mesmos 7m00** — o que foi cortado está declarado em
-> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; hoje são **371 · 164**.
+> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; hoje são **374 · 165**.
 >
-> **Gates: 164 unitários · 371 smoke · 6 rag · 24 ia-stub.**
+> **Gates: 165 unitários · 374 smoke · 6 rag · 24 ia-stub.**
 >
 > **Armadilhas novas — as do Figma custaram a maior parte do tempo:**
 > (1) **`SF Pro` aparece em `listAvailableFontsAsync` mas renderiza largura ZERO** nesta conta; o
@@ -96,11 +96,24 @@
 > grep -rhoE '(src|public|scripts)/[a-z/-]+\.(js|mjs):[0-9]+' docs/*.md docs/*/*.md | sort -u
 > ```
 >
-> **Sessão paralela — não mexer.** `claude/focused-cerf-1530ff`, no worktree
-> `.claude/worktrees/focused-cerf-1530ff`, tem trabalho **não commitado** (correção da entrada do
-> recado na tela Hoje: o botão depende da chamada de hoje, `public/app.js:509`, e some em dia não
-> letivo). Rebase com árvore suja destrói trabalho em andamento. Conferido com
-> `git apply --check --3way`: o diff dela **aplica limpo** sobre `main`.
+> **A sessão paralela foi fechada — `48ec1dd`, já em `main`.** `claude/focused-cerf-1530ff` tinha
+> trabalho **não commitado** e parado havia 3h30, sem processo ativo: a correção do botão do recado
+> na tela Hoje, que era o único elemento do cartão preso à chamada **de hoje** e sumia em dia não
+> letivo. A branch não tinha commit próprio — o "rebase" foi mover o ponteiro 17 commits à frente
+> com o trabalho em cima (`stash` → `rebase` → `pop`, com backup do diff antes e comparação do
+> conteúdo depois: 38 linhas adicionadas, 1 removida, nenhuma alterada). Gates do conjunto: **165
+> unitários · 374 smoke**. O commit declara a autoria: o conteúdo é da sessão paralela; esta
+> revisou, verificou e commitou.
+>
+> **A correção derrubou uma ressalva em três documentos** — `VALIDACAO-USUARIO.md` §2 e a tarefa 6,
+> e a instrução 4 do roteiro do vídeo, que mandavam abrir `#/recado` pela URL. Todas atualizadas no
+> mesmo lote. **Achado corrigido é documentação a revisar**: a ressalva sobrevive ao defeito se
+> ninguém a procurar.
+>
+> **Lição de worktree:** rebase com árvore suja destrói trabalho em andamento. Antes de tocar numa
+> branch de outra sessão, confira se há processo vivo (`ps`) e há quanto tempo os arquivos não
+> mudam (`stat`) — e salve o diff num arquivo fora do worktree, que é o que torna a operação
+> reversível.
 
 
 > **Sessão de 02/09/2026 — o que mudou.** A visita ao Instituto (29/08) foi lida inteira (quatro

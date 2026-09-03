@@ -115,12 +115,12 @@ console.log(`  Alertas recalculados  ${alertas.alertasAbertos} em aberto`);
 if (lapsoData) console.log(`  Lapso forçado ....... última atividade em ${lapsoData} (${LAPSO} dias) — a tela Hoje abre com a retomada`);
 
 if (!diaLetivo(turma.turno, hoje())) {
-  console.log(`\nAVISO — hoje não é dia de encontro desta turma (turno "${turma.turno}").`);
-  console.log('  As tarefas 1 a 5 funcionam: a tela Hoje oferece a data em aberto.');
-  console.log('  A tarefa 6 (recado) NÃO tem entrada na tela Hoje em dia não letivo — o botão');
-  console.log('  depende da chamada de HOJE (public/app.js:508), e não do encontro registrado.');
-  console.log('  Rodar a sessão no dia de encontro da turma, ou registrar a tarefa 6 como');
-  console.log('  achado de navegação do produto — nunca como falha da participante.');
+  console.log(`\nHoje não é dia de encontro desta turma (turno "${turma.turno}") — e tudo bem.`);
+  console.log('  As seis tarefas funcionam assim: a tela Hoje oferece a data em aberto, que é o');
+  console.log('  caminho do "nunca é tarde para registrar" da jornada v2.');
+  console.log('  (Até 03/09/2026 a tarefa 6 era exceção — o botão do recado sumia em dia não');
+  console.log('   letivo. Corrigido em 48ec1dd: ele segue o encontro da folha, como o resto do');
+  console.log('   cartão. Se a tarefa 6 falhar agora, é achado de verdade.)');
 }
 
 console.log('\nNa tela Hoje a data acima aparece em "Datas ainda sem chamada".');

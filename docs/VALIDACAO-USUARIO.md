@@ -33,7 +33,7 @@ avaliação acadêmica". A exigência vem da semana 5, está admitida como pende
 [`TESTES.md`](TESTES.md) ("a validação com usuário real é a etapa seguinte") e aparece como item
 1.3 do Horizonte 1 em [`ARQUITETURA.md`](ARQUITETURA.md).
 
-O motivo é simples. O MVP tem 371 asserções de fluxo e 164 testes unitários — mas teste
+O motivo é simples. O MVP tem 374 asserções de fluxo e 165 testes unitários — mas teste
 automatizado prova que o sistema faz o que o código diz, não que a profissional consegue usá-lo.
 Desde a visita, o produto está ancorado em duas frases dela, literais:
 
@@ -80,14 +80,16 @@ node scripts/reset.mjs && node scripts/preparar-sessao.mjs --lapso && node serve
   [`PROTOTIPO-FIGMA-VALIDACAO.md`](PROTOTIPO-FIGMA-VALIDACAO.md) — as 12 telas destas seis tarefas
   em iPhone 17, uma seção por tarefa. **A sessão em si roda no MVP**, não nele: tempo, taxa de
   correção e Protocolo do Lapso só existem no sistema rodando.
-- **Preferir o sábado, que é o dia da turma.** Num dia útil as tarefas 1 a 5 funcionam — a tela
-  Hoje diz "hoje não tem encontro" e oferece o sábado em aberto, que é justamente o caminho que a
-  jornada v2 chama de *nunca é tarde para registrar*. **A tarefa 6 é a exceção:** o botão do recado
-  na tela Hoje depende da chamada **de hoje** (`public/app.js:509`), e não do encontro registrado
-  como o resto do mesmo cartão — então em dia não letivo ele não aparece, e o recado só é
-  alcançável pela URL. O `preparar-sessao.mjs` avisa quando é o caso. **Isso é achado do produto,
-  já verificado, não falha da participante** — se a sessão tiver que rodar num dia útil, a tarefa 6
-  entra no formulário como "não — entrada ausente na tela Hoje", com o ajuste já identificado.
+- **A sessão pode rodar em qualquer dia.** Num dia útil a tela Hoje diz "hoje não tem encontro" e
+  oferece o sábado em aberto — que é justamente o caminho que a jornada v2 chama de *nunca é tarde
+  para registrar*. **As seis tarefas funcionam assim**, inclusive a 6.
+
+  > **Mudou em 03/09/2026.** Até esta data a tarefa 6 era a exceção: o botão do recado era o único
+  > elemento do cartão preso à chamada **de hoje**, então sumia em dia não letivo e o recado só era
+  > alcançável pela URL. O protocolo mandava registrar isso como "não — entrada ausente na tela
+  > Hoje". Corrigido em `48ec1dd`: o botão passou a seguir o **encontro da folha**
+  > (`public/app.js:509`), como o resto do cartão. **A ressalva não vale mais** — se a tarefa 6
+  > falhar agora, é achado de verdade, não defeito conhecido.
 
 **Regras do facilitador.**
 
@@ -126,7 +128,7 @@ reconhecer sucesso; não é dita a ela.
 | 3 | Registrar o encontro | "O grupo acabou agora. Registre este encontro no sistema, do jeito que for mais rápido para você." *(entregar o cartão de cenário abaixo)* | `#/hoje` → `#/voz` (≈40 s) → `#/confirmar` | Folha confirmada. **Não contar campos à mão** — o sistema conta: ver §5, medida específica |
 | 4 | O relatório do conselho | "Terminou o que você precisava fazer hoje, ou ficou faltando alguma coisa?" | `#/hoje` → `#/relato` → "Revisei — liberar o relato" | Relato liberado. **Cronometrar do "Confirmar e guardar" até ela achar o caminho** — acima de 20 s ou com ajuda é achado de navegação, não de compreensão |
 | 5 | A pergunta da assistente social | "A assistente social do projeto parceiro te pergunta como está uma criança que ela acompanha. Responda pelo sistema." | `#/criancas` → `#/crianca/:id` → cartão "Parecer a profissional parceiro", **bloqueado** | Ela chega ao parecer **e explica o bloqueio com as próprias palavras**. Anotar a explicação literal: se ela ler como erro dela, o produto está gerando culpa |
-| 6 | O recado dos responsáveis | "Antes de sair, resolva o recado que você mandaria hoje no grupo dos responsáveis." | `#/hoje` → "Recado para os responsáveis" → `#/recado` → copiar / abrir no WhatsApp. **Em dia não letivo esse botão não existe** — ver §2 | Recado copiado ou aberto. Anotar **se ela edita antes de mandar e o que edita** — é o que ela faz hoje à mão, grupo por turma |
+| 6 | O recado dos responsáveis | "Antes de sair, resolva o recado que você mandaria hoje no grupo dos responsáveis." | `#/hoje` → "Recado para os responsáveis" → `#/recado` → copiar / abrir no WhatsApp | Recado copiado ou aberto. Anotar **se ela edita antes de mandar e o que edita** — é o que ela faz hoje à mão, grupo por turma |
 
 **Cartão de cenário da tarefa 3** — entregar impresso, sem ler em voz alta:
 
