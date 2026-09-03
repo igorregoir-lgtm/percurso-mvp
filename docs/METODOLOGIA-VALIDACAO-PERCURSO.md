@@ -26,21 +26,30 @@
 IA local (copilot, RAG, SROI explicado por modelo) **está fora deste estudo**: é passo opcional da
 jornada, e testar o opcional antes do fluxo principal inverte a pergunta.
 
-**Pergunta central.** Não é "a educadora gostou". É:
+**Pergunta central.** Não é "ela gostou". É:
 
 > **O custo de registrar cabe na rotina de quem atende criança — e o comportamento sobrevive à
 > primeira falha?**
 
 As duas metades importam separadamente. A primeira é medida por tempo e conclusão de tarefa. A
 segunda é medida pelo **Protocolo do Lapso** (§5.5) e não é medida por nenhum outro instrumento
-deste documento — nem por nenhum dos 136 testes unitários ou das 294 asserções de fluxo do
+deste documento — nem por nenhum dos 159 testes unitários ou das 365 asserções de fluxo do
 repositório.
 
 **Por que teste automatizado não responde.** Ele prova que o sistema faz o que o código diz. O
-produto inteiro está ancorado numa frase de persona (*"Não consigo transformar em dados os
-resultados do meu trabalho"*) e em três promessas verificáveis só por observação: registro sem
-tirar atenção das crianças, ~3 minutos por observação, 40 segundos de fala que viram folha do dia.
-Enquanto ninguém real passar pelo fluxo, isso é hipótese.
+produto está ancorado em duas frases literais da psicóloga na visita de 29/08/2026 (*"o maior
+desafio aqui é registrar o que você fez, né?"* e *"você depois tem que sair daqui, preencher o
+relatório… não dá, não dá"*) e em promessas verificáveis só por observação: 40 segundos de fala
+que viram registro, o relatório do conselho sem escrever à noite, ~3 minutos por observação na
+rubrica. Enquanto ninguém real passar pelo fluxo, isso é hipótese.
+
+> **Quem é "ninguém real" mudou (02/09/2026).** Até a visita, a participante prevista era a
+> **pedagoga**. O campo mostrou que quem tem a dor do registro e escreve o relatório é a
+> **psicóloga**, e que a turma dela está fora da rubrica por decisão de projeto (decisão 31) — o
+> que torna a agenda do ciclo e a observação por criança inexecutáveis para ela (`src/api.js:293`).
+> O protocolo em [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md) foi refeito em cima disso; a
+> variante pedagoga sobrevive lá na §3.4, para turma dentro da rubrica. Este documento acompanha:
+> o que muda é **em quem** cada hipótese é medida e **com qual tarefa**, não os limiares.
 
 ---
 
@@ -52,9 +61,9 @@ para mudar.
 
 | # | Hipótese | Origem | Estado hoje |
 |---|---|---|---|
-| **H1** | A educadora conclui uma observação em ~3 min, sem perder a atenção das crianças | US-1 · F3 | não medida com usuário real |
+| **H1** | O registro cabe na rotina: **~3 min do gatilho ao relato liberado** para a psicóloga (US-6 · [task flow](task-flow/README.md)); **~3 min por observação** para a pedagoga (US-1 · F3) | US-6 · US-1 · F3 | não medida com usuário real |
 | **H2** | A captura por voz é mais barata que o formulário | decisão técnica 13 | não medida |
-| **H3** | Bloqueio de consentimento é lido como **protocolo**, não como erro da usuária | US-5 · F1 | não medida |
+| **H3** | Bloqueio de consentimento é lido como **protocolo**, não como erro da usuária | US-5 · F1 · decisão 32 | não medida |
 | **H4** | O sistema devolve algo a ela — e ela reconhece a devolução como útil | F5, F11 · pauta | não medida |
 | **H5** | **O registro sobrevive à primeira falha** — os seis mecanismos anti-abandono funcionam sem ninguém apontá-los | inception §6b | **não medida, e é a mais original** |
 | **H6** | O produto **se recusa** a receber o que não deve — e a recusa é compreendida | bloco 6 do dossiê · decisão 15 | provada por teste automatizado; **não provada com humano** |
@@ -72,11 +81,11 @@ sobre H7 são **respostas de entrevista** (quem opera, com quantas horas, quem s
 |---|---|---|
 | Tipo | Teste de usabilidade moderado, baseado em tarefas, **com provocação de falha** | opinião não prevê comportamento; e o caminho feliz não prevê fevereiro |
 | Unidade de análise | **a sessão** — não a pessoa, não a criança | n pequeno não sustenta taxa |
-| n alvo | 1 a 3 educadoras | restrição real: equipe pequena com função assistencial (bloco 5) |
-| Participante | educadora do Instituto, o mais próxima possível da persona Maria Silvia | persona principal |
-| Proxy admissível | educadora de outra organização social | **declarar que foi proxy, sem disfarçar** |
+| n alvo | 1 a 3 profissionais | restrição real: equipe pequena com função assistencial (bloco 5) |
+| Participante | **a psicóloga da Vivência** — quem escreve o relatório do conselho | persona principal desde a visita de 29/08/2026 |
+| Proxy admissível | psicóloga ou assistente social que conduz grupo e registra em outra organização social | **declarar que foi proxy, sem disfarçar**. Pedagoga **não** é proxy dela: é a variante §3.4 do protocolo |
 | Aparelho | **celular** (notebook como fallback) | contexto de uso da persona: em pé, na sala, entre atividades |
-| Dados | **100% sintéticos**, banco resemeado antes | regra 1 do bloco 6 |
+| Dados | **100% sintéticos**, banco resemeado **e preparado** antes (`scripts/preparar-sessao.mjs`) | regra 1 do bloco 6; sem o preparo a sessão começa com o trabalho feito |
 | Duração | 45 min de teste + 10 min de lapso + 10 min de compromisso | o que uma equipe assistencial pode ceder |
 | Ordem das tarefas | **fixa entre participantes** | comparabilidade; o aprendizado ao longo da sessão é confundidor conhecido |
 | Facilitação | enunciados lidos **literalmente**; sem ajuda antes de 120 s | ver §9, viés do autor |
@@ -121,7 +130,7 @@ Nenhum limiar é inventado aqui. Quando a fonte é externa ao projeto, está rot
 | Fala da folha do dia | **~40 s** | promessa declarada da v2 |
 | **Taxa de correção pós-extração** | **≤ 40%** | decisão técnica 13: "acima de 40%, o extrator está pior que o formulário e a decisão deve ser revista" |
 | Cobertura de registro (piloto, não sessão) | **≥ 80% das sessões** | Aula 01, mesmo slide |
-| **Falha declarada** | educadora volta à planilha por conta própria | Aula 01, critério de falha do experimento de referência |
+| **Falha declarada** | a profissional volta à planilha (ou ao papel) por conta própria | Aula 01, critério de falha do experimento de referência |
 
 ### 5.2. Limiares de benchmark externo — rotulados
 
@@ -145,22 +154,33 @@ suficiente.
 
 ### 5.4. As seis tarefas e o que cada uma mede
 
+Enunciados em [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md) §3.1.
+
 | # | Tarefa | Hipótese | Métrica principal |
 |---|---|---|---|
-| 1 | Entrar | orientação inicial | M1 · primeira verbalização de intenção |
-| 2 | Chamada | H1 | tempo **< 2 min** |
-| 3 | Folha do dia por voz | **H2** | **taxa de correção ≤ 40%** |
-| 4 | Agenda do ciclo | **H3** | como ela **explica o bloqueio** — citação literal |
-| 5 | Observação com âncoras | **H1** | tempo contra **~3 min** |
-| 6 | Fechar | H4 | reação literal à devolução final |
+| 1 | Voltar depois de um tempo fora | **H5** | Provocação Longa: age **< 30 s**, antes de se justificar |
+| 2 | A chamada do sábado que ficou | H1 | tempo **< 2 min** · e a data salva é a do sábado, não a de hoje |
+| 3 | Registrar o encontro | **H2** | **taxa de correção ≤ 40%**, lida do banco (`campos_editados ÷ campos_sugeridos`) |
+| 4 | O relatório do conselho | H1 · H4 | segundos até achar o relato depois de guardar a folha — **limiar 20 s** |
+| 5 | A pergunta da assistente social | **H3** | como ela **explica o bloqueio** — citação literal |
+| 6 | O recado dos responsáveis | H4 | edita antes de mandar? o quê? — é o trabalho que ela já faz à mão |
 
-**A tarefa 4 não é usabilidade.** É o teste de H3 e o único jeito de saber se o desenho "bloqueio é
+**A tarefa 5 não é usabilidade.** É o teste de H3 e o único jeito de saber se o desenho "bloqueio é
 protocolo, nunca erro dela" chegou até a cabeça de quem usa. Se ela explicar como erro próprio, o
 produto está gerando culpa — e culpa é o combustível do abandono medido em M5.
 
+**A tarefa 4 mede uma costura, não uma tela.** Confirmar a folha devolve a usuária a `#/hoje`
+(`public/app.js:4016`); o relato não se abre sozinho. O limiar de 20 s existe para separar "ela não
+entendeu o relatório" de "o produto soltou a mão dela no meio da tarefa" — são achados diferentes,
+com correções diferentes.
+
+**Correspondência com a variante pedagoga** (§3.4 do protocolo): tarefa 4 lá é a agenda do ciclo
+(H3) e tarefa 5 é a observação com âncoras (H1, contra ~3 min). As hipóteses são as mesmas; os
+instrumentos mudam porque a turma dela está dentro da rubrica.
+
 ### 5.5. Protocolo do Lapso — a medição de H5, em detalhe
 
-O risco real de um sistema de registro em ONG não é a educadora não gostar. É ela perder uma
+O risco real de um sistema de registro em ONG não é ela não gostar. É ela perder uma
 semana, sentir que "já era", e nunca mais voltar — o *what-the-hell effect* descrito por Polivy e
 Herman: depois de um deslize percebido, a autorregulação não se degrada, ela **colapsa**.
 
@@ -169,8 +189,10 @@ retomada sem culpa após 5+ dias, nenhuma data que expira, encadeamento de recup
 rascunho de observação persistente, barra de progresso que só sobe (sem *streak*, sem vermelho de
 falha), e bloqueio explicado como protocolo. Este protocolo mede os seis de uma vez.
 
-**Preparação.** Antes da sessão, ajustar a semente para que o último registro esteja **9 dias
-atrás** — acima do gatilho de 5 dias da retomada sem culpa em `#/hoje`.
+**Preparação.** `node scripts/preparar-sessao.mjs --lapso` empurra a última atividade da
+profissional para **9 dias atrás** — acima do gatilho de 5 dias (`PARAMS.DIAS_LAPSO`) da retomada
+sem culpa em `#/hoje`. A retomada lê a tabela `atividade` (`src/domain.js:936`), não os encontros:
+mexer só nos encontros não dispara o lapso. O script imprime o estado; conferir antes de começar.
 
 **Provocação longa**, enunciado literal:
 
@@ -185,7 +207,8 @@ atrás** — acima do gatilho de 5 dias da retomada sem culpa em `#/hoje`.
 | Pergunta se "ainda vale" registrar dia passado | sim/não | sim = a promessa "nada expira" não está visível |
 | Lê a mensagem de retomada em voz alta × passa direto | qual das duas | passar direto ≠ falha: o efeito pode ser não-verbal |
 
-**Provocação curta**, no meio da tarefa 5, com a observação pela metade:
+**Provocação curta**, no meio da tarefa 3, com a tela de conferência aberta e nada confirmado
+(na variante pedagoga, no meio da tarefa 5, com a observação pela metade):
 
 > *"Uma criança acabou de te chamar. Sai daí agora."* — 60 s de conversa sobre outra coisa —
 > *"pronto, voltou. Continua."*
@@ -211,16 +234,23 @@ bloco 6 do dossiê diz que a confusão entre **registro clínico** e **indicador
 erro mais provável e mais grave deste módulo", e que um protótipo que a desrespeite é inviável por
 construção, independentemente da qualidade de execução.
 
-**A tentativa não se induz.** Mas ela costuma aparecer sozinha: a educadora quer contar algo sobre
-uma criança, e procura onde escrever. Quando aparecer, registrar três coisas:
+**A tentativa não se induz.** Mas ela costuma aparecer sozinha: a profissional quer contar algo
+sobre uma criança, e procura onde escrever. Com a psicóloga o risco é maior, não menor — a leitura
+clínica já está pronta na cabeça dela, e o formato do conselho a proíbe de individualizar. Quando aparecer, registrar três coisas:
 
 1. **Em que tela** ela procurou o campo.
 2. **Que categoria** de informação ela queria registrar — *categoria*, nunca conteúdo.
 3. **O que o sistema fez**: barrou? explicou? ofereceu o caminho humano?
 
 E o complemento que só uma pessoa pode dar: a **auditoria de fronteira com a psicóloga** (15 min,
-ela não como usuária, mas como quem diz onde está a linha — ver
+como quem diz onde está a linha — ver
 [`visita-ebenezer/ROTEIRO-IGOR.md`](visita-ebenezer/ROTEIRO-IGOR.md) §6.3).
+
+> **Correção de premissa (02/09/2026).** Este parágrafo dizia "ela **não** como usuária, mas como
+> quem diz onde está a linha". A visita derrubou a primeira metade: ela é **as duas coisas**. Isso
+> tem consequência de método — quando a mesma pessoa é usuária e autoridade de fronteira, M6 não
+> pode ser medida na mesma conversa em que ela opina sobre a linha, senão a resposta contamina a
+> observação. **Medir M6 durante as tarefas; discutir a linha só depois das perguntas finais.**
 
 > **Regra de reprovação global:** um artefato que aceite conteúdo clínico reprova M6 **mesmo com
 > M1 a M5 perfeitos**. Não é média ponderada; é gate.
@@ -310,7 +340,7 @@ fronteira ética se sustenta (ou não se sustenta) diante de quem trabalha com c
 | **Efeito Hawthorne** | ela se esforça mais porque está sendo observada | o resultado é **teto**, não média — declarar assim no relatório |
 | **n pequeno** | nenhuma generalização | contagem bruta; nunca percentual |
 | **Ordem fixa das tarefas** | as últimas se beneficiam do aprendizado | ordem idêntica entre participantes e declarada |
-| **Proxy** | educadora de outra organização ≠ educadora do Instituto | declarar que foi proxy, sem disfarçar |
+| **Proxy** | profissional de outra organização ≠ a psicóloga do Instituto; e **pedagoga ≠ psicóloga** — trocar de papel troca de fluxo, não só de pessoa | declarar que foi proxy, e qual dos dois protocolos foi rodado |
 | **Cenário sintético limpo demais** | o cartão do dia é mais organizado que a realidade | usar cartão com ruído: uma informação faltando e uma ambígua |
 | **Lapso simulado ≠ lapso real** | ela sabe que é encenação; a culpa real é maior | tratar M5 como **limite superior** de resiliência — o resultado real é pior, nunca melhor |
 
