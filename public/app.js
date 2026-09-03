@@ -235,6 +235,12 @@ const NAV_EDUCADOR = [
   ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'], ['#/pauta', '◈', 'Pauta'],
   ['#/turma', '▥', 'Turma'], ['#/criancas', '☺', 'Crianças'], ['#/copilot', '✷', 'Refletir'],
 ];
+// Psicóloga (decisão 31): a turma dela não entra na rubrica, então não há Ciclo;
+// e ela não pediu pauta de atividades — o que ela pediu foi registrar.
+const NAV_PROFISSIONAL = [
+  ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'], ['#/folha', '✎', 'Vivência'],
+  ['#/relato', '▤', 'Relato'], ['#/turma', '▥', 'Turma'], ['#/criancas', '☺', 'Crianças'],
+];
 const NAV_COORDENACAO = [
   ['#/painel', '▦', 'Painel'], ['#/scores', '◑', 'Scores'], ['#/safras', '↝', 'Safras'],
   ['#/sintese', '✎', 'Síntese'], ['#/consentimentos', '⚿', 'Consent.'], ['#/copilot', '✷', 'Refletir'],
@@ -247,7 +253,8 @@ function pintarNav(rotaAtual) {
   if (!sessao) { navEl.hidden = true; pintarPassoFab(false); return; }
   pintarPassoFab(!rotaAtual.startsWith('#/entrar'));
   const itens = sessao.papel === 'coordenacao' ? NAV_COORDENACAO
-              : sessao.papel === 'diretoria' ? NAV_DIRETORIA : NAV_EDUCADOR;
+              : sessao.papel === 'diretoria' ? NAV_DIRETORIA
+              : sessao.papel === 'profissional' ? NAV_PROFISSIONAL : NAV_EDUCADOR;
   navEl.hidden = false;
   navEl.innerHTML = itens.map(([href, ic, rot]) =>
     `<a href="${href}" ${rotaAtual.startsWith(href) ? 'aria-current="page"' : ''}>
@@ -408,7 +415,7 @@ rota(/^#\/entrar/, async () => {
   }
 });
 
-const PAPEL = { coordenacao: 'Coordenação', diretoria: 'Diretoria', educador: 'Professora' };
+const PAPEL = { coordenacao: 'Coordenação', diretoria: 'Diretoria', educador: 'Professora', profissional: 'Psicóloga' };
 
 // ======================================================================
 // HOJE — a tela que a persona abre primeiro
@@ -490,7 +497,7 @@ rota(/^#\/hoje/, async () => {
   // mesmo que ele tenha sido no ultimo dia letivo e nao hoje.
   const cartaoFolha = !d.data_folha ? '' : `
     <div class="cartao compacto">
-      <div class="linha"><h2 class="cresce">Folha ${d.data_folha === d.hoje ? 'do dia' : `de ${dataBR(d.data_folha)}`}</h2>
+      <div class="linha"><h2 class="cresce">${d.na_rubrica === false ? 'Registro da vivência' : 'Folha'} ${d.data_folha === d.hoje ? 'do dia' : `de ${dataBR(d.data_folha)}`}</h2>
         <span class="selo ${folhaFeita ? 'ok' : 'pend'}">${folhaFeita ? (d.folha.origem === 'voz' ? 'por voz' : 'manual') : 'pendente'}</span></div>
       <p class="sub">${folhaFeita
         ? 'Registrada. Dá para ajustar enquanto o dia não fecha.'
@@ -498,6 +505,8 @@ rota(/^#\/hoje/, async () => {
       <div class="linha" style="margin-top:12px">
         <button class="btn largo" data-acao="ir" data-href="#/voz">${folhaFeita ? 'Contar de novo' : 'Contar como foi'}</button>
         <button class="btn largo secundario" data-acao="ir" data-href="#/folha">Preencher à mão</button>
+        ${folhaFeita && d.na_rubrica === false ? `<button class="btn largo ${d.folha.relato_liberado ? 'fantasma' : 'secundario'}" data-acao="ir" data-href="#/relato">${d.folha.relato_liberado ? 'Relato liberado' : 'Revisar e liberar o relato'}</button>` : ''}
+        ${ch?.registrada ? `<button class="btn largo fantasma" data-acao="ir" data-href="#/recado">Recado para os responsáveis</button>` : ''}
       </div>
     </div>`;
 
@@ -525,6 +534,19 @@ rota(/^#\/hoje/, async () => {
         : `<p class="sub">${esc(pt?.mensagem_tranquila || 'Ninguém sumiu do radar esta semana.')}</p>`}
     </div>`;
 
+  // E6: devolver algo por encontro — as contagens de hoje contra as últimas folhas.
+  const dv = d.devolucao;
+  const cartaoDevolucao = !dv || !dv.linhas.length ? '' : `
+    <div class="cartao compacto">
+      <div class="linha"><h2 class="cresce">O que o grupo mostrou em ${dataBR(dv.encontro.data)}</h2>
+        <span class="selo ${dv.comparavel ? 'ok' : 'pend'}">${dv.comparavel ? `vs. últimos ${dv.anteriores}` : 'sem base ainda'}</span></div>
+      <div class="pilha" style="margin-top:8px">
+        ${dv.linhas.map(l => `<div class="dado"><span class="k">${esc(l.rotulo)}</span>
+          <b>${l.hoje}${l.presentes ? `<span class="sub"> de ${l.presentes}</span>` : ''}${l.comparacao ? ` <span class="selo ${l.comparacao === 'acima' ? 'ok' : l.comparacao === 'abaixo' ? 'pend' : ''}">${l.comparacao === 'acima' ? '▲' : l.comparacao === 'abaixo' ? '▼' : '='} ${String(l.media_anteriores).replace('.', ',')}</span>` : ''}</b></div>`).join('')}
+      </div>
+      <p class="sub" style="margin-top:8px">${esc(dv.leitura)}</p>
+    </div>`;
+
   const abertas = d.chamadas_abertas.length && !d.retomada.em_lapso ? `
     <div class="cartao compacto">
       <h2>Datas ainda sem chamada</h2>
@@ -543,7 +565,7 @@ rota(/^#\/hoje/, async () => {
     <h1>${saudacao}, ${esc(sessao.apelido.split(' ')[0])}</h1>
     <p class="sub">${esc(d.turma ? d.turma.nome : 'Sem turma atribuída')} · ${esc(porExtenso(d.hoje))}</p>
     <div class="pilha">
-      ${retomada}${cartaoChamada}${cartaoFolha}${paraEstaSemana}${alertas}${cartaoCiclo}${abertas}
+      ${retomada}${cartaoChamada}${cartaoFolha}${cartaoDevolucao}${paraEstaSemana}${alertas}${cartaoCiclo}${abertas}
     </div>
     <p class="rodape">Chamada em um toque, 40 segundos de voz — e o resto o Percurso organiza para você.</p>`;
 });
@@ -792,10 +814,11 @@ function tabelaTrajetoria(t) {
 rota(/^#\/turma/, async () => {
   const d = await api('/api/hoje');
   if (!d.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2></div>`; return; }
-  const [p, est, risco] = await Promise.all([
+  const [p, est, risco, regua] = await Promise.all([
     api(`/api/turma/painel?turma_id=${d.turma.id}`),
     api(`/api/turma/estado?turma_id=${d.turma.id}`),
     api(`/api/turma/risco?turma_id=${d.turma.id}`),
+    api(`/api/turma/presenca?turma_id=${d.turma.id}`).catch(() => null),
   ]);
   const emRisco = new Set(risco.linhas.map(l => l.crianca_id));
   app.innerHTML = `
@@ -835,6 +858,8 @@ rota(/^#\/turma/, async () => {
       ${barra(p.agenda.cobertura, p.agenda.pendentes === 0)}
     </div>` : ''}
 
+    ${cartaoRegua(regua)}
+
     ${cartaoPlano(p.plano)}
 
     ${p.tempo?.registros ? `<div class="cartao compacto" style="margin-top:14px">
@@ -848,6 +873,34 @@ rota(/^#\/turma/, async () => {
 });
 
 const fmtSeg = (s) => s == null ? '—' : `${Math.floor(s / 60)}m${String(Math.round(s % 60)).padStart(2, '0')}s`;
+
+// Decisão 33 — a régua de presença do Instituto (75%). Linguagem de protocolo:
+// "abaixo da régua" não é cor de erro, é a conversa com a família que a casa já faz.
+const FAIXA = { ok: ['na régua', 'ok'], atencao: ['atenção', 'pend'], abaixo: ['abaixo da régua', 'alerta'], sem_base: ['sem base ainda', ''] };
+function cartaoRegua(r) {
+  if (!r) return '';
+  const res = r.resumo;
+  return `
+    <div class="cartao" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Régua de presença do Instituto · ${r.minima_pct}%</h2>
+        <span class="sub">desde ${dataBR(r.desde)}</span></div>
+      <p class="sub">${esc(r.doutrina)}</p>
+      <div class="linha" style="margin-top:10px;gap:6px">
+        <span class="selo ok">${res.ok} na régua</span>
+        <span class="selo pend">${res.atencao} em atenção (${r.minima_pct}–${r.atencao_pct - 1}%)</span>
+        <span class="selo alerta">${res.abaixo} abaixo</span>
+        ${res.sem_base ? `<span class="selo">${res.sem_base} sem base (menos de ${r.minimo_encontros} encontros)</span>` : ''}
+      </div>
+      <div class="pilha" style="margin-top:10px">
+        ${r.criancas.filter(c => c.faixa !== 'ok').map(c => `
+          <button class="link" data-acao="ir" data-href="#/crianca/${c.id}">
+            <span><span>${esc(c.nome)}</span><span class="d">${c.pct == null ? '—' : c.pct + '%'} · ${c.presentes} de ${c.encontros} encontros</span></span>
+            <span class="selo ${FAIXA[c.faixa][1]}">${FAIXA[c.faixa][0]}</span>
+          </button>`).join('') || '<p class="sub">Toda a turma está na régua neste período.</p>'}
+      </div>
+      <p class="sub" style="margin-top:8px">A régua é para dentro. O recado da turma leva só a presença em número, nunca quem.</p>
+    </div>`;
+}
 
 // Plano da próxima semana — a devolução: registro vira pauta pronta.
 function cartaoPlano(plano) {
@@ -947,7 +1000,31 @@ const listaCriancas = (r) => {
 };
 
 rota(/^#\/crianca\/(\d+)/, async (id) => {
-  const f = await api(`/api/crianca?id=${id}`);
+  const [f, par] = await Promise.all([api(`/api/crianca?id=${id}`), api(`/api/parecer?crianca_id=${id}`).catch(() => null)]);
+  ctx.parecer = { criancaId: Number(id) };
+  // Decisão 32: o parecer para profissional parceiro — o único dado individual
+  // que sai, por código, sob consentimento e liberado. A ficha é a porta.
+  const cartaoParecer = !par ? '' : `
+    <div class="cartao compacto" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Parecer a profissional parceiro</h2>
+        <span class="selo ${par.consentimento === 'ativo' ? 'ok' : 'bloq'}">consentimento ${esc(par.consentimento)}</span></div>
+      <p class="sub">Quando a assistente social do projeto parceiro perguntar "como está", a resposta sai daqui: por <b>código</b>, com presença, régua e evolução por indicador do programa — nunca nome, nunca conteúdo clínico. Só com consentimento específico do responsável, e só vale depois de liberado.</p>
+      ${par.consentimento !== 'ativo' ? `
+        <div class="aviso" style="margin-top:10px"><h3>Sem consentimento específico, não sai</h3>
+          <p>${sessao.papel === 'coordenacao' ? 'Registre abaixo o consentimento do responsável para compartilhar com profissional parceiro.' : 'A coordenação registra o consentimento do responsável na tela de Consentimentos.'}</p>
+          ${sessao.papel === 'coordenacao' ? `<label class="rot-campo" for="par-resp">Responsável que consentiu</label>
+            <input type="text" id="par-resp" placeholder="Nome do responsável" autocomplete="off">
+            <button class="btn pequeno" data-acao="consentir-parecer" style="margin-top:10px">Registrar consentimento</button>` : ''}
+        </div>` : `
+        <label class="rot-campo" for="par-dest">Para quem (profissional e serviço)</label>
+        <input type="text" id="par-dest" placeholder="Ex.: assistente social — projeto parceiro" autocomplete="off">
+        <button class="btn pequeno" data-acao="gerar-parecer" style="margin-top:10px">Gerar o parecer (rascunho)</button>`}
+      ${par.pareceres.length ? `<div class="pilha" style="margin-top:12px">
+        ${par.pareceres.map(p => `<button class="link" data-acao="ir" data-href="#/parecer/${p.id}">
+          <span><span>${esc(p.destinatario)}</span><span class="d">${dataBR(p.gerado_em)} · ${p.status === 'liberado' ? `liberado por ${esc(p.liberado_por_nome ?? '—')}` : 'rascunho'}</span></span>
+          <span class="selo ${p.status === 'liberado' ? 'ok' : 'pend'}">${p.status}</span></button>`).join('')}
+      </div>` : ''}
+    </div>`;
   const pres = f.presencas.map(p =>
     `<span title="${dataBR(p.data)}" style="display:inline-block;width:14px;height:22px;border-radius:4px;margin-right:4px;background:${p.status === 'P' ? 'var(--ok)' : 'var(--red)'};opacity:${p.status === 'P' ? .85 : 1}"></span>`).join('');
 
@@ -988,6 +1065,8 @@ rota(/^#\/crianca\/(\d+)/, async (id) => {
       <div style="margin-top:10px">${tabelaTrajetoria(f.trajetoria)}</div>
     </div>
 
+    ${cartaoParecer}
+
     <div class="cartao compacto" style="margin-top:14px">
       <h2>Governança dos campos</h2>
       <p class="sub">Regra 3 do bloco 6: cada campo declara base legal, titular, acesso e retenção.</p>
@@ -1009,6 +1088,31 @@ rota(/^#\/crianca\/(\d+)/, async (id) => {
       <button class="btn secundario" data-acao="arquivar-crianca" data-id="${f.crianca.id}"
         style="margin-top:14px">Mandar para o arquivo</button>
     </div>` : ''}`;
+});
+
+// ======================================================================
+// PARECER (decisão 32) — o texto, a liberação e o registro de que saiu.
+// ======================================================================
+rota(/^#\/parecer\/(\d+)/, async (id) => {
+  const p = await api(`/api/parecer/ver?id=${id}`);
+  ctx.parecer = { id: Number(id), criancaId: p.crianca_id };
+  app.innerHTML = `
+    <p class="kicker">Parecer · código ${esc(p.numeros.codigo)}</p>
+    <h1>${p.status === 'liberado' ? 'Parecer liberado' : 'Parecer em rascunho'}</h1>
+    <p class="sub">Para ${esc(p.destinatario)} · gerado por ${esc(p.gerado_por_nome)} em ${dataBR(p.gerado_em)}${p.liberado_em ? ` · liberado por ${esc(p.liberado_por_nome)} em ${dataBR(p.liberado_em)}` : ''}</p>
+    <div class="cartao" style="margin-top:14px">
+      <pre id="parecer-texto" style="white-space:pre-wrap;font:inherit;line-height:1.55;margin:0">${esc(p.texto)}</pre>
+    </div>
+    <div class="aviso calmo" style="margin-top:12px">
+      <h3>O que sai e o que não sai</h3>
+      <p>Sai: código, presença e régua, evolução por indicador do programa (piorou/manteve/evoluiu), o fato de haver ou não acompanhamento. Não sai: nome, alerta em detalhe, qualquer conteúdo clínico. Revisor de sobre-alegação: ${esc(p.revisor_status)}.</p>
+    </div>
+    <div class="pilha">
+      ${p.status === 'liberado' ? '' : `<button class="btn largo" data-acao="liberar-parecer">Revisei — liberar para enviar</button>`}
+      <button class="btn largo secundario" data-acao="copiar-parecer">Copiar o texto</button>
+      <button class="btn largo fantasma" data-acao="ir" data-href="#/crianca/${p.crianca_id}">Voltar à ficha</button>
+    </div>
+    <p class="rodape">O envio é feito por você, no canal que já usa com o serviço parceiro. O registro de que este parecer saiu — para quem, quando, liberado por quem — fica aqui, permanente.</p>`;
 });
 
 // ======================================================================
@@ -1041,8 +1145,29 @@ rota(/^#\/alertas/, async () => {
 // PAINEL DA COORDENACAO (F1 + F5 + F6)
 // ======================================================================
 rota(/^#\/painel/, async () => {
-  const d = await api('/api/painel');
+  // A planilha socioemocional (decisão 34) é leitura à parte: se não houver dois
+  // ciclos com observação, o cartão diz isso em vez de derrubar o painel.
+  const [d, pl, rg] = await Promise.all([api('/api/painel'), api('/api/planilha/resumo').catch(() => null), api('/api/regua').catch(() => null)]);
   const inv = d.inventario;
+  const fmt2 = (v) => v == null ? '—' : String(v).replace('.', ',');
+  const cartaoPlanilha = !pl ? '' : `
+    <div class="cartao" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Planilha socioemocional · ${esc(pl.ciclo_inicial.nome)} → ${esc(pl.ciclo_final.nome)}</h2>
+        <span class="selo ok">${pl.criancas_avaliadas} crianças</span></div>
+      <p class="sub">A leitura no formato que o Instituto já usa: nota inicial × final por indicador (0–2), quantas melhoraram e a leitura da própria planilha (≥70% resultado forte · ≥50% evolução moderada). Linhas com menos de ${pl.minimo_celula} crianças saem sem número.</p>
+      <div class="rolagem" style="margin-top:12px"><table>
+        <thead><tr><th>Indicador</th><th>Inicial</th><th>Final</th><th>Melhoraram</th><th>Leitura</th></tr></thead>
+        <tbody>${[...pl.indicadores, pl.geral].map(i => `<tr${i.indicador === 'Geral' ? ' style="font-weight:600"' : ''}>
+          <td>${esc(i.indicador)}</td>
+          <td>${fmt2(i.media_inicial)}</td><td>${fmt2(i.media_final)}</td>
+          <td>${i.suprimida ? `<span class="sub">n &lt; ${pl.minimo_celula}</span>` : `${i.melhoraram} de ${i.comparadas} (${Math.round((i.pct_melhoraram ?? 0) * 100)}%)`}</td>
+          <td>${esc(i.leitura ?? '—')}</td></tr>`).join('')}</tbody></table></div>
+      <p class="sub" style="margin-top:10px">${esc(pl.legenda)} ${esc(pl.ressalva)}</p>
+      <div class="linha" style="margin-top:12px">
+        <a class="btn pequeno secundario" href="/api/exportar/planilha?inicial=${pl.ciclo_inicial.id}&final=${pl.ciclo_final.id}" download>Exportar a planilha (CSV, por código)</a>
+        <span class="sub">Sem nome: o cadastro que liga código a criança fica com a coordenação.</span>
+      </div>
+    </div>`;
   app.innerHTML = `
     <p class="kicker">Instituto Ebenézer · ${esc(d.ciclo.nome)}</p>
     <h1>Painel da coordenação</h1>
@@ -1094,6 +1219,20 @@ rota(/^#\/painel/, async () => {
       <p class="sub">Agregado de todos os programas em escopo. Nenhum dado individual.</p>
       <div style="margin-top:14px">${barrasDimensoes(d.agregado)}</div>
     </div>
+
+    ${cartaoPlanilha}
+
+    ${!rg ? '' : `<div class="cartao" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Régua de presença do Instituto · ${rg.minima_pct}%</h2><span class="sub">desde ${dataBR(rg.desde)}</span></div>
+      <p class="sub">A política que a casa já usa (75% para permanecer e para o grupo de benefícios; abaixo de ${rg.atencao_pct}%, atenção), lida do registro de presença. Aqui só contagens; a criança aparece na tela de cada turma.</p>
+      <div class="rolagem" style="margin-top:12px"><table>
+        <thead><tr><th>Turma</th><th>Crianças</th><th>Na régua</th><th>Atenção</th><th>Abaixo</th><th>Sem base</th></tr></thead>
+        <tbody>${rg.turmas.map(t => `<tr><td><b>${esc(t.turma.nome)}</b></td><td>${t.criancas}</td><td>${t.resumo.ok}</td>
+          <td style="color:${t.resumo.atencao ? 'var(--atencao)' : 'inherit'}">${t.resumo.atencao}</td>
+          <td style="color:${t.resumo.abaixo ? 'var(--red)' : 'inherit'}">${t.resumo.abaixo}</td><td>${t.resumo.sem_base}</td></tr>`).join('')}
+        <tr style="font-weight:600"><td>Total</td><td>${rg.turmas.reduce((a, t) => a + t.criancas, 0)}</td><td>${rg.total.ok}</td><td>${rg.total.atencao}</td><td>${rg.total.abaixo}</td><td>${rg.total.sem_base}</td></tr>
+        </tbody></table></div>
+    </div>`}
 
     ${d.calibracao && d.calibracao.linhas.length ? `<div class="cartao" style="margin-top:14px">
       <h2>Calibração do olhar entre educadoras</h2>
@@ -1489,9 +1628,41 @@ function pills(lista, selecionados, grupo, unico) {
             aria-pressed="${selecionados.includes(x.codigo)}">${esc(x.rotulo)}</button>`).join('');
 }
 
+const stepper = (campo, valor, rotulo) => `
+      <div class="dado">
+        <span class="k">${esc(rotulo)}</span>
+        <span class="step">
+          <button type="button" data-acao="checkin" data-campo="${campo}" data-d="-1" aria-label="Menos um">−</button>
+          <b id="ck-${campo}">${valor == null ? '—' : valor}</b>
+          <button type="button" data-acao="checkin" data-campo="${campo}" data-d="1" aria-label="Mais um">+</button>
+        </span>
+      </div>`;
+
 function blocosDaFolha() {
   const f = ctx.folha, c = f.catalogos;
-  return `
+  // Decisão 31: na Vivência a folha é o registro do procedimento — o que a
+  // profissional fez e com que objetivo, em lista fechada. É o que vai para o
+  // relato no padrão do conselho.
+  const blocoVivencia = !f.vivencia ? '' : `
+    <div class="cartao">
+      <div class="lbl" id="lbl-procedimento">Procedimento realizado</div>
+      <div role="group" aria-labelledby="lbl-procedimento">${pills(c.procedimentos, [f.campos.procedimento], 'procedimento', true)}</div>
+      <p class="sub" style="margin-top:4px">O que você fez com o grupo — é o que entra no relato.</p>
+    </div>
+    <div class="cartao">
+      <div class="lbl" id="lbl-objetivo">Objetivo</div>
+      <div role="group" aria-labelledby="lbl-objetivo">${pills(c.objetivos.filter(o => o.codigo !== 'nenhum'), [f.campos.objetivo], 'objetivo', true)}</div>
+    </div>`;
+  // O check-in de grupo que a psicóloga validou ao vivo (campo, 29/08/2026):
+  // contagens da turma, nunca quem. "—" é não informado, que é diferente de zero.
+  const ck = f.campos.checkin;
+  const blocoCheckin = `
+    <div class="cartao">
+      <div class="lbl">Check-in do grupo</div>
+      ${c.checkin.map(k => stepper(k.campo, ck[k.campo], k.rotulo)).join('')}
+      <p class="sub" style="margin-top:6px">Contagens da turma, nunca de uma criança. "—" é não informado.${f.vivencia ? ' Na vivência, é o que devolve algo a cada encontro.' : ''}</p>
+    </div>`;
+  return blocoVivencia + `
     <div class="cartao">
       <div class="lbl" id="lbl-atividade">O que a turma fez</div>
       <div role="group" aria-labelledby="lbl-atividade">${pills(c.atividades, [f.campos.atividade], 'atividade', true)}</div>
@@ -1520,7 +1691,7 @@ function blocosDaFolha() {
           ? f.faltas.map(n => `<span class="p redsoft" style="margin:0 4px 0 0">${esc(n)}</span>`).join('')
           : '<span class="sub">ninguém</span>'}</span>
       </div>
-    </div>`;
+    </div>` + blocoCheckin;
 }
 
 async function carregarFolha(turmaId, data) {
@@ -1529,16 +1700,21 @@ async function carregarFolha(turmaId, data) {
     turma: d.turma, data: d.data, catalogos: d.catalogos,
     encontro: d.encontro, existente: d.folha,
     faltas: d.chamada.criancas.filter(c => c.status === 'F').map(c => c.nome),
+    roster: d.chamada.criancas.map(c => c.nome),
     // Editar a mao uma folha que veio da voz e' edicao MANUAL: manter 'voz' aqui
     // sujaria a taxa de correcao do agente com correcao que nao foi dele.
     origem: 'manual',
     sugestao: null, excluido: !!d.folha?.conteudo_excluido, trechos: [], baixaConfianca: false,
+    vivencia: !!d.vivencia, devolucao: d.devolucao ?? null,
     campos: {
       atividade: d.folha?.atividade ?? 'nao_identificada',
       area_tematica: d.folha?.area_tematica ?? 'nenhuma',
       marcadores_turma: d.folha?.marcadores ?? [],
       pediram_ajuda: d.folha?.pediram_ajuda ?? 0,
       conteudo_excluido: !!d.folha?.conteudo_excluido,
+      procedimento: d.folha?.procedimento ?? (d.vivencia ? 'nao_identificado' : null),
+      objetivo: d.folha?.objetivo ?? (d.vivencia ? 'nenhum' : null),
+      checkin: Object.fromEntries(d.catalogos.checkin.map(k => [k.campo, d.folha?.checkin?.[k.campo] ?? null])),
     },
   };
   return d;
@@ -1559,11 +1735,12 @@ rota(/^#\/folha/, async () => {
   const fechada = d.folha?.status === 'fechada';
   app.innerHTML = `
     <p class="kicker">${esc(d.turma.programa)}</p>
-    <h1>Folha do dia</h1>
+    <h1>${d.vivencia ? 'Registro da vivência' : 'Folha do dia'}</h1>
     <p class="sub">${esc(d.turma.nome)} · ${esc(porExtenso(d.data))}</p>
     <div class="pilha">
       ${blocosDaFolha()}
-      <div class="aviso neutro">O que cada criança fez não entra aqui. Esta folha é da turma.</div>
+      <div class="aviso neutro">O que cada criança fez não entra aqui. ${d.vivencia ? 'Este é o registro do procedimento — não individualizado, sem nome, como o conselho pede.' : 'Esta folha é da turma.'}</div>
+      ${d.folha ? `<button class="btn largo secundario" data-acao="ir" data-href="#/relato?data=${d.data}">${d.vivencia ? 'Ver o relato do procedimento' : 'Ver o registro do encontro'}</button>` : ''}
       ${fechada ? `
         <div class="aviso"><h3>Folha fechada</h3>
           <p>Esta folha foi fechada em ${dataBR(d.folha.confirmado_em)} e não aceita mais alteração.
@@ -1610,7 +1787,12 @@ rota(/^#\/voz/, async () => {
     </div>
 
     <div class="cartao compacto" style="margin-top:10px">
-      <p class="sub">Fale enquanto arruma a sala. Diga como foi a turma, o que fizeram e quem faltou.</p>
+      <p class="sub">Fale enquanto arruma a sala. Diga como foi a turma, o que fizeram${d.vivencia ? ', o procedimento e as contagens do grupo (quantas ajudaram sem pedir, quantas participaram do começo ao fim, conflitos)' : ' e quem faltou'}.</p>
+    </div>
+    <div class="aviso calmo" style="margin-top:10px">
+      <h3>O que este botão grava — e o que não grava</h3>
+      <p><b>Sua voz sobre a turma.</b> Nenhuma criança é gravada. O áudio não sai deste aparelho e é descartado na transcrição.
+         Se você falar um nome, ele vira código antes de qualquer gravação — e você vê isso na tela seguinte.</p>
     </div>
 
     <div class="cartao" style="margin-top:10px">
@@ -1677,7 +1859,17 @@ async function magiaExtracao(texto, promessaPost, catalogos) {
   el.className = 'magia';
   el.setAttribute('role', 'dialog');
   el.setAttribute('aria-label', 'Lendo o que você contou');
-  const palavras = texto.trim().split(/\s+/);
+  // E4 (campo): a fala aparece UMA vez, já com os nomes da turma trocados por
+  // código — "você fala o nome, ele apaga". O roster vem da chamada carregada.
+  const roster = (ctx.folha?.roster ?? []);
+  let textoTela = texto;
+  roster.forEach((nome, i) => {
+    const primeiro = nome.split(' ')[0];
+    if (primeiro.length < 3) return;
+    const re = new RegExp('(^|[^\\p{L}])' + primeiro.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[^\\p{L}])', 'giu');
+    textoTela = textoTela.replace(re, (m, pre) => pre + 'Criança ' + String.fromCharCode(65 + (i % 26)));
+  });
+  const palavras = textoTela.trim().split(/\s+/);
   el.innerHTML = `
     <div class="magia-caixa">
       <div class="lbl magia-estado" role="status" aria-live="polite" style="margin:0">Lendo o que você contou…</div>
@@ -1842,6 +2034,11 @@ rota(/^#\/confirmar/, async () => {
         <h3>Não consegui entender direito</h3>
         <p>Marque você mesma. Não pré-marquei nada — falhar em branco é melhor que falhar preenchido.</p>
       </div>` : ''}
+    ${f.nomesSubstituidos ? `
+      <div class="aviso calmo" style="margin-top:14px">
+        <h3>${f.nomesSubstituidos === 1 ? 'Um nome virou código' : `${f.nomesSubstituidos} nomes viraram código`}</h3>
+        <p>Você falou o nome de ${f.nomesSubstituidos === 1 ? 'uma criança' : 'crianças'}. O nome não entrou em campo nenhum e não foi gravado — a folha é da turma.</p>
+      </div>` : ''}
 
     <div class="pilha">
       ${blocosDaFolha()}
@@ -1858,6 +2055,92 @@ rota(/^#\/confirmar/, async () => {
     </div>
     <p class="rodape">Áudio e transcrição são apagados ao confirmar.<br>
       Confiança do extrator nesta fala: ${f.sugestao.confianca != null ? String(f.sugestao.confianca).replace('.', ',') : '—'}.</p>`;
+});
+
+// ======================================================================
+// RELATO DO PROCEDIMENTO (decisão 31) — o texto no padrão do conselho, gerado
+// dos campos fechados, revisado e LIBERADO pela profissional.
+// ======================================================================
+rota(/^#\/relato/, async () => {
+  const params = new URLSearchParams(location.hash.split('?')[1] || '');
+  let turmaId = params.get('turma_id');
+  if (!turmaId) {
+    const h = await api('/api/hoje');
+    if (!h.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2><p class="sub">A coordenação abre o relato pela folha de cada turma.</p></div>`; return; }
+    turmaId = h.turma.id;
+  }
+  let r;
+  try { r = await api(`/api/relato?turma_id=${turmaId}${params.get('data') ? `&data=${params.get('data')}` : ''}`); }
+  catch (e) {
+    app.innerHTML = `<p class="kicker">Relato</p><h1>Ainda não há o que relatar</h1><p class="sub">${esc(e.message)}</p>
+      <div class="linha" style="margin-top:16px"><button class="btn" data-acao="ir" data-href="#/voz">Contar como foi</button>
+      <button class="btn secundario" data-acao="ir" data-href="#/folha">Preencher à mão</button></div>`;
+    return;
+  }
+  ctx.relato = { turmaId, data: r.data };
+  app.innerHTML = `
+    <p class="kicker">${esc(r.turma.programa)} · ${esc(r.turma.nome)}</p>
+    <h1>${r.vivencia ? 'Relato do procedimento' : 'Registro do encontro'}</h1>
+    <p class="sub">${esc(porExtenso(r.data))} · ${r.liberado ? 'liberado' : 'rascunho — aguardando seu OK'}</p>
+    <div class="cartao" style="margin-top:14px">
+      <pre id="relato-texto" style="white-space:pre-wrap;font:inherit;line-height:1.55;margin:0">${esc(r.texto)}</pre>
+    </div>
+    <div class="aviso calmo" style="margin-top:12px">
+      <h3>Sem nome por construção</h3>
+      <p>O texto sai dos campos fechados da folha: não existe onde escrever o nome de uma criança. A IA, quando ligada, não escreve aqui — o texto é seu, e só vale depois do seu OK.</p>
+    </div>
+    <div class="pilha">
+      ${r.liberado ? '' : `<button class="btn largo" data-acao="liberar-relato">Revisei — liberar o relato</button>`}
+      <button class="btn largo secundario" data-acao="copiar-relato">Copiar o texto</button>
+      <button class="btn largo fantasma" data-acao="imprimir">Imprimir</button>
+      ${r.liberado ? '' : `<button class="btn largo fantasma" data-acao="ir" data-href="#/folha?data=${r.data}">Ajustar a folha antes</button>`}
+    </div>
+    ${r.historico.length ? `<div class="cartao compacto" style="margin-top:14px">
+      <h2>Relatos liberados desta turma</h2>
+      <div class="pilha" style="margin-top:8px">${r.historico.map(h => `
+        <button class="link" data-acao="ir" data-href="#/relato?turma_id=${turmaId}&data=${h.data}">
+          <span><span>${dataBR(h.data)}</span><span class="d">${esc(h.procedimento_rotulo)} · por ${esc(h.liberado_por ?? '—')}</span></span>
+          <span class="chev" aria-hidden="true">›</span></button>`).join('')}</div>
+    </div>` : ''}
+    <p class="rodape">${esc(r.versao_template)}. Editar a folha depois de liberar derruba a liberação — o texto aprovado tem que ser o do banco.</p>`;
+});
+
+// ======================================================================
+// RECADO DA TURMA (decisão 33) — o que já sai para o grupo dos responsáveis,
+// gerado; quem envia é a pessoa. Sem criança nomeada.
+// ======================================================================
+rota(/^#\/recado/, async () => {
+  const params = new URLSearchParams(location.hash.split('?')[1] || '');
+  let turmaId = params.get('turma_id');
+  if (!turmaId) {
+    const h = await api('/api/hoje');
+    if (!h.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2></div>`; return; }
+    turmaId = h.turma.id;
+  }
+  let r;
+  try { r = await api(`/api/recado?turma_id=${turmaId}${params.get('data') ? `&data=${params.get('data')}` : ''}`); }
+  catch (e) {
+    app.innerHTML = `<p class="kicker">Recado da turma</p><h1>Antes, a chamada</h1><p class="sub">${esc(e.message)}</p>
+      <div class="linha" style="margin-top:16px"><button class="btn" data-acao="ir" data-href="#/chamada">Fazer a chamada</button></div>`;
+    return;
+  }
+  app.innerHTML = `
+    <p class="kicker">${esc(r.turma.nome)}</p>
+    <h1>Recado para os responsáveis</h1>
+    <p class="sub">${esc(porExtenso(r.data))} · o que já sai hoje para o grupo, pronto para colar</p>
+    <div class="cartao" style="margin-top:14px">
+      <pre id="recado-texto" style="white-space:pre-wrap;font:inherit;line-height:1.55;margin:0">${esc(r.texto)}</pre>
+    </div>
+    <div class="aviso calmo" style="margin-top:12px">
+      <h3>Da turma, nunca de uma criança</h3>
+      <p>${esc(r.doutrina)}</p>
+    </div>
+    <div class="pilha">
+      <button class="btn largo" data-acao="copiar-recado">Copiar o recado</button>
+      <a class="btn largo secundario" href="${r.whatsapp_url}" target="_blank" rel="noopener">Abrir no WhatsApp</a>
+      <button class="btn largo fantasma" data-acao="ir" data-href="#/hoje">Voltar</button>
+    </div>
+    <p class="rodape">Base legal: legítimo interesse — comunicação com os responsáveis sobre a turma. O recado não é guardado: é gerado agora, do registro.</p>`;
 });
 
 // ======================================================================
@@ -2108,6 +2391,11 @@ rota(/^#\/relatorio/, async () => {
 // CONSULTA EM LINGUAGEM NATURAL (F15) — só a camada agregada.
 // ======================================================================
 rota(/^#\/consulta/, async () => {
+  // As sugestões vêm ANTES da primeira pergunta. Até aqui elas só apareciam na
+  // recusa: quem chegava tinha de errar uma vez para descobrir o que a base
+  // sabe responder. O placeholder não repete nenhum chip — usa outra formulação
+  // de propósito, para dizer que a pergunta não precisa ser copiada daqui.
+  const { sugestoes } = await api('/api/consulta');
   app.innerHTML = `
     <p class="kicker">Camada agregada · nunca dado individual</p>
     <h1>Perguntar à base</h1>
@@ -2115,11 +2403,17 @@ rota(/^#\/consulta/, async () => {
     <div class="cartao" style="margin-top:16px">
       ${(() => { const d = blocoDitado('pergunta', 'pergunta-ditado-estado'); return `
       <div class="linha" style="flex-wrap:nowrap">
-        <input type="text" id="pergunta" class="cresce" placeholder="Ex.: quantas crianças estão em risco de sair?" autocomplete="off" style="width:auto">
+        <input type="text" id="pergunta" class="cresce" placeholder="Ex.: qual é o limiar do alerta de ausência?" autocomplete="off" style="width:auto">
         ${d.botao}
       </div>
       ${d.estado}`; })()}
       <div class="linha" style="margin-top:12px"><button class="btn largo" data-acao="perguntar">Perguntar</button></div>
+    </div>
+    <div class="cartao compacto" style="margin-top:12px">
+      <div class="lbl">O que a base sabe responder</div>
+      <div style="margin-top:8px">${sugestoes.map(x =>
+        `<button class="p off" data-acao="sugestao" data-q="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+      <p class="sub" style="margin-top:4px">Uma pergunta por assunto. Pode perguntar com as suas palavras — não precisa copiar daqui.</p>
     </div>
     <div id="resposta" class="pilha"></div>
     <p class="rodape">Dado individual de criança não é respondido aqui, em nenhuma formulação.</p>`;
@@ -2214,14 +2508,14 @@ rota(/^#\/pessoas/, async () => {
           <div class="linha">
             <div class="cresce"><div class="nome">${esc(p.nome)}</div>
               <div class="meta">${esc(PAPEL[p.papel] ?? p.papel)}${p.turmas ? ` · ${esc(p.turmas)}` : ''}</div></div>
-            <span class="selo ${p.papel === 'educador' ? 'ok' : 'pend'}">${esc(p.apelido)}</span>
+            <span class="selo ${['educador', 'profissional'].includes(p.papel) ? 'ok' : 'pend'}">${esc(p.apelido)}</span>
           </div>
           ${p.id === sessao.id
             ? '<p class="sub">É você. Quem arquiva não pode ser quem sai.</p>'
             : `<div class="linha">
                 ${p.turmas ? `<select id="sucessora-${p.id}" style="flex:1;min-width:180px">
                   <option value="">Deixar a(s) turma(s) sem professora</option>
-                  ${d.equipe.filter(o => o.papel === 'educador' && o.id !== p.id).map(o =>
+                  ${d.equipe.filter(o => ['educador', 'profissional'].includes(o.papel) && o.id !== p.id).map(o =>
                     `<option value="${o.id}">${esc(o.nome)} assume</option>`).join('')}
                 </select>` : ''}
                 <button class="btn pequeno fantasma" data-acao="arquivar-pessoa"
@@ -2243,7 +2537,7 @@ rota(/^#\/pessoas/, async () => {
   const nota = document.getElementById('p-nota');
   const sincPapel = () => {
     nota.textContent = d.papeis.find(x => x.id === papel.value)?.nota ?? '';
-    blocoTurma.hidden = papel.value !== 'educador';
+    blocoTurma.hidden = !['educador', 'profissional'].includes(papel.value);
     if (blocoTurma.hidden) document.getElementById('p-turma').value = '';
   };
   papel.addEventListener('change', sincPapel);
@@ -3517,8 +3811,9 @@ document.addEventListener('click', comErro(async (ev) => {
 }));
 
 const PASSO_ROTAS_POR_PAPEL = {
-  educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/pauta', '#/ciclo', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
-  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/pessoas', '#/arquivo', '#/criancas', '#/alertas', '#/copilot'],
+  educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/pauta', '#/ciclo', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
+  profissional: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
+  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/pessoas', '#/arquivo', '#/criancas', '#/alertas', '#/relato', '#/copilot'],
   diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
 };
 
@@ -3671,7 +3966,7 @@ document.addEventListener('click', comErro(async (ev) => {
     const g = alvo.dataset.grupo, cod = alvo.dataset.codigo, unico = alvo.dataset.unico === '1';
     const c = ctx.folha.campos;
     if (unico) {
-      const neutro = g === 'atividade' ? 'nao_identificada' : 'nenhuma';
+      const neutro = g === 'atividade' ? 'nao_identificada' : g === 'procedimento' ? 'nao_identificado' : 'nenhuma';
       c[g] = c[g] === cod ? neutro : cod;
       alvo.parentElement.querySelectorAll('.p').forEach(b => {
         const on = c[g] === b.dataset.codigo;
@@ -3699,6 +3994,23 @@ document.addEventListener('click', comErro(async (ev) => {
     return;
   }
 
+  if (a === 'checkin') {
+    const ck = ctx.folha.campos.checkin, campo = alvo.dataset.campo, d = Number(alvo.dataset.d);
+    const max = ctx.folha.catalogos.checkin_max ?? 30;
+    // "—" (não informado) vira 0 no primeiro toque em "+", e volta a "—" no "−" abaixo de zero.
+    let v = ck[campo] == null ? (d > 0 ? 0 : null) : ck[campo] + d;
+    if (v != null && v < 0) v = null;
+    if (v != null && v > max) v = max;
+    if (campo === 'conflitos_resolvidos_conversando' && v != null && ck.conflitos != null && v > ck.conflitos) {
+      toast('Resolvidos conversando não passa do total de conflitos.'); return;
+    }
+    if (campo === 'conflitos' && v != null && ck.conflitos_resolvidos_conversando != null && v < ck.conflitos_resolvidos_conversando)
+      ck.conflitos_resolvidos_conversando = v;
+    ck[campo] = v;
+    for (const k of Object.keys(ck)) { const el = document.getElementById(`ck-${k}`); if (el) el.textContent = ck[k] == null ? '—' : ck[k]; }
+    return;
+  }
+
   if (a === 'salvar-folha') {
     const f = ctx.folha;
     alvo.disabled = true;
@@ -3711,9 +4023,57 @@ document.addEventListener('click', comErro(async (ev) => {
       // A transcricao morre aqui, junto com a sugestao do agente.
       if (ctx.voz) ctx.voz.transcricao = '';
       f.sugestao = null;
-      if (enviado) toast(alvo.dataset.fechar === '1' ? 'Folha fechada.' : 'Folha guardada.', 'bom');
+      if (enviado) toast(alvo.dataset.fechar === '1' ? 'Folha fechada.' : 'Folha guardada — a devolução do encontro está no Hoje.', 'bom');
       location.hash = '#/hoje'; navegar();
     } finally { alvo.disabled = false; }
+    return;
+  }
+
+  if (a === 'liberar-relato') {
+    alvo.disabled = true;
+    try {
+      await post('/api/relato/liberar', { turma_id: ctx.relato.turmaId, data: ctx.relato.data });
+      toast('Relato liberado e folha fechada.', 'bom');
+      navegar();
+    } finally { alvo.disabled = false; }
+    return;
+  }
+  if (a === 'consentir-parecer') {
+    const responsavel = document.getElementById('par-resp')?.value || '';
+    await post('/api/consentimento', { crianca_id: ctx.parecer.criancaId, campo: 'parecer_profissional', status: 'ativo', responsavel });
+    toast('Consentimento registrado.', 'bom'); navegar(); return;
+  }
+  if (a === 'gerar-parecer') {
+    const destinatario = document.getElementById('par-dest')?.value || '';
+    alvo.disabled = true;
+    try {
+      const r = await post('/api/parecer/gerar', { crianca_id: ctx.parecer.criancaId, destinatario });
+      location.hash = `#/parecer/${r.parecer.id}`; navegar();
+    } finally { alvo.disabled = false; }
+    return;
+  }
+  if (a === 'liberar-parecer') {
+    alvo.disabled = true;
+    try { await post('/api/parecer/liberar', { id: ctx.parecer.id }); toast('Parecer liberado.', 'bom'); navegar(); }
+    finally { alvo.disabled = false; }
+    return;
+  }
+  if (a === 'copiar-parecer') {
+    const t = document.getElementById('parecer-texto')?.textContent ?? '';
+    try { await navigator.clipboard.writeText(t); toast('Texto copiado.', 'bom'); }
+    catch { toast('Não deu para copiar automaticamente — selecione o texto e copie.'); }
+    return;
+  }
+  if (a === 'copiar-recado') {
+    const t = document.getElementById('recado-texto')?.textContent ?? '';
+    try { await navigator.clipboard.writeText(t); toast('Recado copiado — cole no grupo da turma.', 'bom'); }
+    catch { toast('Não deu para copiar automaticamente — selecione o texto e copie.'); }
+    return;
+  }
+  if (a === 'copiar-relato') {
+    const t = document.getElementById('relato-texto')?.textContent ?? '';
+    try { await navigator.clipboard.writeText(t); toast('Texto copiado.', 'bom'); }
+    catch { toast('Não deu para copiar automaticamente — selecione o texto e copie.'); }
     return;
   }
 
@@ -3811,12 +4171,16 @@ document.addEventListener('click', comErro(async (ev) => {
       f.excluido = r.excluido;
       f.trechos = r.trechos;
       f.baixaConfianca = r.baixa_confianca;
+      f.nomesSubstituidos = r.nomes_substituidos ?? 0;
       f.campos = {
         atividade: r.extracao.atividade,
         area_tematica: r.extracao.area_tematica,
         marcadores_turma: [...r.extracao.marcadores_turma],
         pediram_ajuda: r.extracao.pediram_ajuda,
         conteudo_excluido: r.extracao.conteudo_excluido,
+        procedimento: r.extracao.procedimento ?? (f.vivencia ? 'nao_identificado' : null),
+        objetivo: r.extracao.objetivo ?? (f.vivencia ? 'nenhum' : null),
+        checkin: { ...(r.extracao.checkin ?? {}) },
       };
       // Se o usuário navegou no MEIO da magia (Back, link), não sequestrar: o
       // resultado fica em ctx.folha (a tela #/confirmar mostra quando ela

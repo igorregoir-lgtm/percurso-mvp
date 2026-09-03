@@ -52,13 +52,13 @@ cada criança fez não entra aqui, esta folha é da turma"* virando esquema. Nã
 |---|---|---|
 | `crianca` | A pessoa atendida. Entidade única. | `codigo` (EBZ-0001), `nome`, `nascimento`, `responsavel`, `ativo` (0 = no arquivo) |
 | `matricula` | Relação criança × programa × turma × período | `crianca_id`, `programa_id`, `turma_id`, `entrada`, `saida`, `status` |
-| `programa` | Os quatro programas do Instituto | `nome`, `faixa`, `cadencia`, `no_escopo`, `nota` |
+| `programa` | Os quatro programas do Instituto. `no_escopo` = entra na rubrica por ciclo; a Vivência terapêutica fica fora da rubrica e dentro do registro de turma (decisão 31) | `nome`, `faixa`, `cadencia`, `no_escopo`, `nota` |
 | `turma` | Recorte operacional do programa, com educador responsável | `programa_id`, `nome`, `turno`, `educador_id` |
-| `educador` | Quem opera o sistema | `nome`, `apelido`, `papel` (`educador` \| `coordenacao` \| `diretoria`), `arquivado_em` (NULL = na ativa) |
+| `educador` | Quem opera o sistema | `nome`, `apelido`, `papel` (`educador` \| `profissional` \| `coordenacao` \| `diretoria`), `arquivado_em` (NULL = na ativa) |
 | `encontro` | Um dia de aula de uma turma | `turma_id`, `data`, `registrado_por`, `registrado_em` |
 | `presenca` | Uma criança em um encontro | `encontro_id`, `crianca_id`, `status` (`P` \| `F`) |
 | `ciclo` | Janela de observação (2–3×/ano) | `nome`, `ano`, `ordem`, `inicio`, `fim`, `status` |
-| `dimensao` | As 5 dimensões da rubrica | `codigo`, `nome`, `descricao`, `ordem` |
+| `dimensao` | As 6 dimensões da rubrica — os indicadores da planilha do Instituto (decisão 34) | `codigo` (AUTOC, CONV, PART, EXPR, AUTOEST, RESIL), `nome`, `descricao`, `ordem` |
 | `ancora` | Descrição comportamental de cada nível (1–4) de cada dimensão | `dimensao_id`, `nivel`, `texto` |
 | `observacao` | Uma criança em um ciclo, por um educador | `ciclo_id`, `crianca_id`, `educador_id`, `status` (`rascunho` \| `concluida`), `nota_livre` |
 | `observacao_item` | O nível marcado em cada dimensão | `observacao_id`, `dimensao_id`, `nivel` (1–4) |
@@ -72,13 +72,21 @@ cada criança fez não entra aqui, esta folha é da turma"* virando esquema. Nã
 
 | Tabela | O que é | Campos-chave |
 |---|---|---|
-| `folha` | **Folha do dia — registro da TURMA.** Não tem, por construção, nenhuma coluna que aponte para criança. | `encontro_id` (único), `atividade`, `area_tematica`, `pediram_ajuda`, `origem` (`voz` \| `manual`), `confianca`, `campos_sugeridos`, `campos_editados`, `conteudo_excluido`, `confirmado_por`, `status` |
+| `folha` | **Folha do dia — registro da TURMA.** Não tem, por construção, nenhuma coluna que aponte para criança. Desde a decisão 31 é também o **registro de vivência**: procedimento e objetivo em lista fechada, o **check-in de grupo** (contagens, NULL = não informado) e a liberação do relato | `encontro_id` (único), `atividade`, `area_tematica`, `pediram_ajuda`, `origem` (`voz` \| `manual`), `confianca`, `campos_sugeridos`, `campos_editados`, `conteudo_excluido`, `procedimento`, `objetivo`, `ajudaram_sem_pedir`, `participaram_inteiro`, `conflitos`, `conflitos_resolvidos_conversando`, `nao_observados`, `relato_liberado_por`, `relato_liberado_em`, `confirmado_por`, `status` |
 | `folha_marcador` | Marcadores de como foi o grupo, dentro de lista fechada | `folha_id`, `marcador` |
 | `aspiracao` | Área que a criança nomeou no Laboratório de Sonhos | `crianca_id`, `area`, `declarada_em` |
 | `atividade_area` | Atividade de uma área temática realizada por uma turma — o denominador do score de exposição | `turma_id`, `area`, `data`, `origem` |
 | `pauta` | A sugestão da semana e a decisão da educadora. O **descarte** é o dado que mede o agente. | `turma_id`, `semana`, `sugestao_codigo`, `decisao` (`aceita` \| `descartada`), `decidido_por` |
 | `relatorio` | O artefato do doador: blocos, texto, supressões aplicadas e publicação | `tipo` (`ciclo` \| `carta`), `periodo`, `blocos_json`, `texto`, `revisor_status`, `supressoes_json`, `status`, `publicado_por` |
 | `importacao` | Log da ingestão retroativa: quantas crianças, quantas grafias unificadas, o que foi descartado e por quê | `origem`, `linhas`, `criancas_novas`, `reconhecidas`, `duplicatas`, `relatorio_json`, `executado_por` |
+
+### Entidades pós-visita (02/09/2026)
+
+| Tabela | O que é | Campos-chave |
+|---|---|---|
+| `parecer` | **O único dado individual que sai** (decisão 32): parecer a profissional parceiro, por código, gerado sob consentimento específico e válido só depois de liberado. O registro de que saiu — para quem, quando, por quem — é permanente | `crianca_id`, `destinatario`, `texto`, `numeros_json`, `revisor_status`, `status` (`rascunho` \| `liberado`), `gerado_por`, `liberado_por`, `liberado_em` |
+
+**O que NÃO virou tabela, de propósito:** o recado da turma (decisão 33) e o relato do procedimento (decisão 31) são gerados sob demanda dos campos fechados — persistir texto seria persistir uma segunda cópia do mesmo dado. Da régua de presença nada é gravado: é leitura de `presenca`.
 
 **O que NÃO existe como operação, e é o ponto: DELETE de pessoa.** Não há rota, função de domínio
 nem gesto de interface que apague alguém deste banco — nem da equipe, nem criança. Quem sai do
@@ -109,6 +117,8 @@ requisição; o score de evasão é recalculado a cada consulta e nunca historia
 | `CHECK origem IN ('voz','manual')` | Origem da folha fora do que o sistema sabe auditar |
 | **`folha` não tem `crianca_id`** | Registro individual disfarçado de folha de turma |
 | `CHECK nivel BETWEEN 1 AND 4` | Nota fora da escala da rubrica |
+| `CHECK conflitos_resolvidos_conversando <= conflitos` (e cada contagem 0–30 ou NULL) | Check-in de grupo impossível |
+| `parecer.status IN ('rascunho','liberado')` + consentimento verificado na liberação | Parecer saindo sem o OK, ou depois de consentimento revogado |
 | `consentimento.campo → governanca_campo` | Consentimento para um campo que não declarou base legal |
 
 A última é a mais importante: **é impossível gravar consentimento para um campo que não tenha as
@@ -128,6 +138,9 @@ quatro respostas do bloco 6.** A regra virou chave estrangeira.
 | Score de risco de evasão | Legítimo interesse — proteção do vínculo (Art. 7º, IX) | Organização | Coordenação e diretoria | Recalculado a cada consulta; não historiado |
 | Agregado publicado no relatório | Legítimo interesse — prestação de contas (Art. 7º, IX) | Organização | Público, após revisão da diretoria | Permanente |
 | Conteúdo clínico | **Fora do sistema por construção** — sigilo profissional | Psicóloga | Ninguém, no Percurso | Não coletado |
+| Registro de vivência (procedimento e check-in de grupo) | Legítimo interesse — execução do programa (Art. 7º, IX) | Organização | Profissional da turma + coordenação | 5 anos |
+| Parecer a profissional parceiro (por código) | Consentimento específico do responsável (Art. 14) | Organização | Profissional parceiro nomeado pela coordenação, após liberação | Registro da liberação permanente |
+| Recado da turma aos responsáveis | Legítimo interesse — comunicação sobre a turma (Art. 7º, IX) | Organização | Responsáveis da turma, pelo grupo que já existe; quem envia é a pessoa | Não persiste — gerado sob demanda, só agregado |
 
 ## O que o modelo não guarda, por decisão
 
@@ -143,7 +156,7 @@ quatro respostas do bloco 6.** A regra virou chave estrangeira.
 
 ## Dados sintéticos semeados
 
-> Snapshot medido em 22/08/2026. As datas da seed são relativas a *hoje*, então os volumes que
+> Snapshot medido em 22/08/2026; a Vivência terapêutica (decisão 31, 02/09/2026) entra à parte: 2 turmas de sábado, 24 matrículas de crianças que já estão no Laboratório, encontros e folhas com check-in gerados por um segundo gerador — os invariantes abaixo não se movem. As datas da seed são relativas a *hoje*, então os volumes que
 > dependem de calendário (encontros, presenças, folhas, observações, consentimentos pendentes)
 > variam alguns pontos conforme o dia da semana em que o banco é semeado. **Invariantes exatos**,
 > que os testes protegem: 132 crianças, 106 ativas únicas, 120 matrículas, 14 em dois programas.
@@ -152,11 +165,13 @@ quatro respostas do bloco 6.** A regra virou chave estrangeira.
 |---|---|
 | Crianças (ativas + egressas) | 132 |
 | Crianças ativas únicas | 106 |
-| Matrículas ativas | 120 (14 crianças em 2 programas) |
+| Matrículas ativas (programas do dossiê) | 120 (14 crianças em 2 programas) |
+| Matrículas na Vivência terapêutica (à parte) | 24 |
 | Encontros registrados | 182 |
 | Registros de presença | 3749 |
-| Observações (2 ciclos) | 166 |
-| Consentimentos pendentes | 4 |
+| Observações (2 ciclos, 6 dimensões) | 166 |
+| Consentimentos pendentes (rubrica) | 4 |
+| Consentimentos de parecer a parceiro | todos pendentes (é outro pedido ao responsável) |
 | Folhas do dia | 143 (sendo 33 por voz) |
 | Aspirações declaradas | 43 |
 | Atividades por área temática | 121 |

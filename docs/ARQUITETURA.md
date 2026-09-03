@@ -87,7 +87,7 @@ data/percurso.db local ou /var/data/percurso.db no Render
                    (WAL; disco persistente; backup externo obrigatório)
 
 src/seed.js      dados 100% sintéticos, PRNG com semente fixa (regra 1 do bloco 6)
-scripts/         reset.mjs · smoke-test.mjs (294 asserções) · unit-test.mjs (136)
+scripts/         reset.mjs · smoke-test.mjs (371 asserções) · unit-test.mjs (164) · preparar-sessao.mjs
                  rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
 .github/workflows/ci.yml   as quatro baterias a cada push (AI_ENABLED=false)
 ```
@@ -117,6 +117,21 @@ Decisões estruturantes já tomadas e documentadas (não se reabre sem fato novo
   declarada "não persiste em nenhum momento", justamente para que a ausência seja auditável.
 
 ---
+
+### 2.1. Adendo pós-visita (02/09/2026)
+
+Quatro módulos novos, todos determinísticos e sem dependência: `src/planilha.js` (a planilha
+socioemocional do Instituto preenchida da rubrica; exportação CSV por código — o servidor ganhou a
+saída `_csv`), `src/relato.js` (relato do procedimento no padrão do conselho, liberado pela
+profissional), `src/recado.js` (recado da turma aos responsáveis) e `src/parecer.js` (parecer a
+profissional parceiro, sob consentimento). `src/voz.js` ganhou os catálogos da vivência
+(procedimento, objetivo), o check-in de grupo e a devolução por encontro; `src/domain.js`, o papel
+`profissional`, `turmaNaRubrica`, a régua de presença (`reguaDaTurma`, `reguaDoInstituto`) e o
+filtro de perímetro com contexto. Rotas novas: `GET /api/planilha/resumo`,
+`GET /api/exportar/planilha`, `GET /api/relato`, `POST /api/relato/liberar`, `GET /api/turma/presenca`,
+`GET /api/regua`, `GET /api/recado`, `GET /api/parecer`, `GET /api/parecer/ver`,
+`POST /api/parecer/gerar`, `POST /api/parecer/liberar`. Uma tabela nova (`parecer`) e colunas novas
+em `folha`; a assinatura do DDL mudou e o banco se recria (decisão 14). Decisões 31–34.
 
 ## 3. Invariantes — o que nenhum horizonte pode mudar
 

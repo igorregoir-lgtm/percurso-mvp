@@ -14,10 +14,10 @@ Em outro:
 node scripts/smoke-test.mjs
 ```
 
-Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **294 passaram,
+Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **364 passaram,
 0 falharam**.
 
-Há também uma bateria de **136 testes unitários** das regras críticas de domínio (filtro de
+Há também uma bateria de **164 testes unitários** das regras críticas de domínio (filtro de
 perímetro, validação do schema do extrator, determinismo do agente, os três scores, supressão com
 agrupamento, deduplicação da ingestão, revisor de sobre-alegação, consentimento, imutabilidade da
 síntese, fecho de ciclo, cadastro e arquivo de pessoas, base fixa da curva de permanência), que roda sem servidor, contra um banco temporário descartável:
@@ -65,6 +65,11 @@ node scripts/reset.mjs
 | **20 · Passo — assistente (decisão 26)** | 9 | 401 sem sessão; 422 vazia; **pergunta reflexiva redireciona ao copilot sem modelo**; redirecionamento sem fala; fora do produto = limite declarado; **diretoria + nome = recusa (decisão 16)**; chips por tela e por papel; sessão apagada |
 | **21 · Cadastro de pessoas (decisão 29)** | 18 | professora não abre o cadastro e diretoria não cadastra criança (403); equipe, papéis, programas e turmas na mesma resposta; apelido derivado do nome; **homônimo no mesmo papel recusado (409)**; a pessoa nova entra pela porta de sempre e aparece na tela de entrada; **turma ocupada exige confirmação — e a troca diz quem saiu**; criança nova entra na lista da turma; **nasce com a rubrica pendente, é bloqueada para observação e aparece na tela que a desbloqueia**; **mesma chave nome+nascimento recusada (409)**; nascimento no futuro recusado (422) |
 | **22 · Arquivo (decisão 30)** | 21 | **não existe `DELETE` de pessoa em rota nenhuma (404)**; coordenação arquiva a professora e **a sessão ABERTA dela morre no ato (401)**; ela some da tela de entrada e não entra de novo (403); **continua existindo, no arquivo**, com a contagem do que registrou; volta e entra outra vez; **ninguém arquiva a si mesma (422)**; criança arquivada sai da lista viva com **matrícula encerrada e data de saída**, e a presença dela fica; educadora não arquiva criança (403); **voltar é matrícula NOVA e a antiga continua encerrada**; o consentimento volta a pendente |
+| **24 · Psicóloga e Vivência (decisão 31)** | 12 | psicóloga entra como `profissional`; os 120/106/14 do dossiê são só dos programas de matrícula e a Vivência é contada à parte (24); Hoje dela abre na Vivência **sem agenda de ciclo**; `GET /api/ciclo/agenda` da Vivência responde 422; escopo de turma (403 para professora de outra turma; coordenação passa); a Vivência não entra no denominador da cobertura; governança declara o registro de vivência e mantém o conteúdo clínico fora |
+| **25 · Planilha socioemocional (decisão 34)** | 10 | seis dimensões na ordem da planilha; resumo com seis indicadores + geral, leitura ou supressão declarada, legenda do mapeamento e ressalva; diretoria lê o resumo, professora não (403); **CSV com BOM, cabeçalho da aba Avaliações, por código e sem nome**; professora e diretoria não exportam (403) |
+| **26 · Registro de vivência e relato (decisão 31)** | 20 | folha se declara vivência e traz os catálogos; **a fala "vivência terapêutica" não é barrada** (procedimento neutralizado) e o extrator devolve procedimento, objetivo e o check-in em contagens; nome falado é contado e substituído; conteúdo sobre criança continua barrado; salvar sem procedimento é 422 apontando o campo; folha gravada com check-in; **devolução por encontro** na resposta e no Hoje; relato em rascunho, sem nome, 403 para outra turma e diretoria; liberar fecha a folha; 409 na segunda liberação; histórico para a coordenação |
+| **27 · Régua de 75% e recado (decisão 33)** | 12 | régua da própria turma com faixa por criança (abaixo e atenção presentes); 403 para outra turma e para a diretoria; régua do Instituto só em contagens (diretoria e coordenação; professora 403); recado gerado do registro, **sem nome**, link wa.me sem número; governança declara o recado (não persiste) |
+| **28 · Parecer a parceiro (decisão 32)** | 14 | ficha do parecer com consentimento e prévia; diretoria e outra turma não chegam (403); **sem consentimento específico, 403 com o motivo**; coordenação registra o consentimento; outra turma não gera; parecer em rascunho **por código, sem nome, sem detalhe de alerta nem clínica**; liberação registrada; diretoria não libera; histórico na ficha; governança exige consentimento |
 
 ---
 
@@ -90,7 +95,7 @@ crianças em risco apareciam com o mesmo número (decisão técnica nº 18).
 | Chamada — alternar P/F | `aria-pressed` alterna corretamente; contador atualiza |
 | Chamada — salvar | Toast de confirmação e **abertura automática da próxima data pendente** |
 | Ciclo de observação | 16 de 18, 89%; duas bloqueadas com motivos distintos e explícitos |
-| Observação — rubrica | 5 dimensões × 4 âncoras; contador "x de 5 dimensões marcadas" |
+| Observação — rubrica | 6 dimensões × 4 âncoras (indicadores da planilha, decisão 34); contador "x de 6 dimensões marcadas" |
 | Observação — rascunho | Reabre preenchido, com *"Você tinha começado — continue de onde parou"* |
 | **Filtro de proteção** | Modal isola só a frase clínica, nomeia a categoria (*saúde mental / diagnóstico*) e oferece "Salvar sem esse trecho" |
 | **Fecho da turma** | Ao concluir a última pendente, a tela de revelação abre com 18 de 18, o tempo investido, as barras dos dois ciclos e a frase para o financiador |
@@ -121,7 +126,7 @@ crianças em risco apareciam com o mesmo número (decisão técnica nº 18).
 | Modo A com modelo real | bateria manual (`ai/README.md`) | 100% de saída válida contra `validarExtracao` e zero regressão frente ao extrator lexical — executada em 25/08/2026: **6/6, 0 regressões** | só local |
 | Modo B com modelo real | sessão manual | 7 blocos, citações reais do corpus, recusa de diagnóstico/score, encaminhamento de perímetro, pseudonimização (nome nunca aparece na resposta) — validada em 25/08/2026 | só local |
 
-Os testes unitários somam **115** (os 55 originais + escopo de turma, aviso de corte da lista,
+Os testes unitários somam **164** (pós-visita: invariantes da Vivência, rubrica e planilha, catálogos e extração do check-in, perímetro com contexto em pares, relato e liberação, devolução, régua e recado, parecer; antes disso, **115** (os 55 originais + escopo de turma, aviso de corte da lista,
 denominador da cobertura só com programas em escopo, o motor SROI — 3 cenários determinísticos,
 dupla contagem bloqueada, benchmark recusado no cálculo, rastreabilidade das premissas, parâmetro
 fora de 0..1 recusado — e o Passo: sub-tarefas da chamada, recusa da diretoria, redirecionamento

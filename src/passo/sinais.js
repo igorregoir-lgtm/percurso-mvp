@@ -44,7 +44,7 @@ const CHAVE_PROIBIDA = /(^|_)(nome|codigo|apelido|aluno|crianca)(_|$)|_id$/i;
 let TOKENS_OK = null;
 const tokensOk = () => (TOKENS_OK ??= new Set([
   ...AREAS.map(a => a.codigo ?? a),
-  'educador', 'coordenacao', 'diretoria',
+  'educador', 'profissional', 'coordenacao', 'diretoria',
   ...ESTADOS, '',
 ]));
 
@@ -126,6 +126,9 @@ const perimetroNaUltimaFolha = (turmaId) =>
 // tela não dá. Sem `#/hoje` aqui, `edu.radar_do_registro` nunca disparava lá,
 // apesar de estar declarado para essa tela.
 const caro = (tela) => tela === '#/chamada' || tela === '#/turma' || tela === '#/hoje';
+// A profissional (psicóloga) tem o mesmo envelope da educadora — a diferença é
+// que a turma dela não entra na rubrica (decisão 31), e isso aparece nos zeros.
+const papelDe = (u) => (u.papel === 'profissional' ? 'profissional' : 'educador');
 
 function doEducador(u, tela, ref) {
   const turmas = all(`SELECT id, turno FROM turma WHERE educador_id = ? ORDER BY id`, u.id);
@@ -133,7 +136,7 @@ function doEducador(u, tela, ref) {
   const ret = D.estadoDeRetomada(u.id);
   if (!turma) {
     return {
-      papel: 'educador', tela, tem_turma: false, dia_letivo: false,
+      papel: papelDe(u), tela, tem_turma: false, dia_letivo: false,
       em_lapso: !!ret.em_lapso, registrou_hoje: !!ret.registrou_hoje,
       chamada_pendente: false, datas_abertas: 0, folha_pendente: false, folha_aberta: false,
       folhas_atrasadas: 0, perimetro_na_ultima_folha: false,
@@ -145,7 +148,9 @@ function doEducador(u, tela, ref) {
   }
 
   const ciclo = D.cicloAberto();
-  const agenda = ciclo ? D.agendaDoCiclo(turma.id, ciclo.id) : null;
+  // Turma fora da rubrica (Vivência, decisão 31): sem agenda — os contadores do
+  // ciclo ficam em zero e nenhuma sugestão de "faltam N olhares" acende.
+  const agenda = ciclo && D.turmaNaRubrica(turma.id) ? D.agendaDoCiclo(turma.id, ciclo.id) : null;
   const dataFolha = D.dataDaFolha(turma.id, ref);
   const folha = dataFolha
     ? get(`SELECT f.status FROM folha f JOIN encontro e ON e.id = f.encontro_id
@@ -165,7 +170,7 @@ function doEducador(u, tela, ref) {
   const areaToken = lac && tokensOk().has(lac.area) ? lac.area : '';
 
   return congelar({
-    papel: 'educador', tela, tem_turma: true,
+    papel: papelDe(u), tela, tem_turma: true,
     dia_letivo: !!D.diaLetivo(turma.turno, ref),
     em_lapso: !!ret.em_lapso, registrou_hoje: !!ret.registrou_hoje,
     chamada_pendente: !cham?.registrada,

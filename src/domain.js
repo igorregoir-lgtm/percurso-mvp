@@ -39,6 +39,14 @@ export const PARAMS = {
   COBERTURA_ALERTA: 70,
   // Taxa de descarte da pauta acima disto significa agente generico.
   DESCARTE_ALERTA: 30,
+  // --- decisao 33 (campo, 29/08/2026) ------------------------------------
+  // A regua de presenca do Instituto: 75% e' o minimo para permanecer no
+  // programa e entrar no grupo de beneficios; abaixo de 80% a casa ja' marca
+  // "atencao — os pais tem que regular". E' politica existente, absorvida.
+  PRESENCA_MINIMA_PCT: 75,
+  PRESENCA_ATENCAO_PCT: 80,
+  // Com menos encontros que isto no periodo, a regua nao se aplica (sem base).
+  REGUA_MINIMO_ENCONTROS: 4,
 };
 
 export const hoje = () => {
@@ -67,29 +75,51 @@ export function dataBR(iso) {
 // F1 — ficha viva / inventario. Criança e' entidade; matricula e' relacao.
 // --------------------------------------------------------------------------
 export function inventario() {
+  // Os três números do dossiê ("60+40+20=120") contam os programas de
+  // matrícula (no_escopo=1). A Vivência terapêutica entrou no Percurso em
+  // 02/09/2026 como programa ADICIONAL (decisão 31): quem está nela já está no
+  // Laboratório ou no Reforço, então ela não muda crianças únicas nem os 120 —
+  // e é contada à parte, para o painel dizer as duas coisas sem misturar.
   const criancasUnicas = get(
     `SELECT COUNT(DISTINCT c.id) AS n FROM crianca c
       JOIN matricula m ON m.crianca_id = c.id AND m.status = 'ativa'
+      JOIN programa p ON p.id = m.programa_id AND p.no_escopo = 1
      WHERE c.ativo = 1`).n;
   const matriculas = get(
-    `SELECT COUNT(*) AS n FROM matricula WHERE status = 'ativa'`).n;
+    `SELECT COUNT(*) AS n FROM matricula m JOIN programa p ON p.id = m.programa_id
+      WHERE m.status = 'ativa' AND p.no_escopo = 1`).n;
   const multi = get(
     `SELECT COUNT(*) AS n FROM (
-       SELECT crianca_id FROM matricula WHERE status='ativa'
-        GROUP BY crianca_id HAVING COUNT(*) > 1)`).n;
+       SELECT m.crianca_id FROM matricula m JOIN programa p ON p.id = m.programa_id
+        WHERE m.status='ativa' AND p.no_escopo = 1
+        GROUP BY m.crianca_id HAVING COUNT(*) > 1)`).n;
   const porPrograma = all(
     `SELECT p.id, p.nome, p.faixa, p.cadencia, p.no_escopo, p.nota,
             COUNT(m.id) AS matriculas
        FROM programa p
        LEFT JOIN matricula m ON m.programa_id = p.id AND m.status = 'ativa'
       GROUP BY p.id ORDER BY p.id`);
+  const vivencia = get(
+    `SELECT COUNT(m.id) AS matriculas, COUNT(DISTINCT m.crianca_id) AS criancas
+       FROM matricula m JOIN programa p ON p.id = m.programa_id
+      WHERE m.status = 'ativa' AND p.no_escopo = 0`);
   const primeiroEncontro = get(`SELECT MIN(data) AS d FROM encontro`).d;
   const encontros = get(`SELECT COUNT(*) AS n FROM encontro`).n;
   const presencas = get(`SELECT COUNT(*) AS n FROM presenca`).n;
   return {
     criancasUnicas, matriculas, multi, porPrograma,
+    // Programas fora da rubrica (hoje só a Vivência): registro de turma, presença
+    // e check-in de grupo — nunca observação individual.
+    foraDaRubrica: { matriculas: vivencia?.matriculas ?? 0, criancas: vivencia?.criancas ?? 0 },
     cobertura: { desde: primeiroEncontro, encontros, presencas },
   };
+}
+
+/** A turma entra na rubrica por ciclo? Falso para a Vivência terapêutica
+ *  (decisão 31): lá o registro é de turma, e a agenda do ciclo não se aplica. */
+export function turmaNaRubrica(turmaId) {
+  return !!get(`SELECT p.no_escopo AS x FROM turma t JOIN programa p ON p.id = t.programa_id
+                 WHERE t.id = ?`, turmaId)?.x;
 }
 
 // --------------------------------------------------------------------------
@@ -399,15 +429,41 @@ const semAcento = (t) => String(t ?? '').toLowerCase()
  * @param {string[]} [nomes]  nomes da turma; habilita a categoria 5 (estado
  *                            psiquico de crianca NOMEADA)
  */
-export function filtrarPerimetro(texto, nomes = []) {
+// Decisão 31: na turma da VIVÊNCIA, o nome do procedimento não é conteúdo sobre
+// criança. "Vivência terapêutica" e "terapia em grupo" são o que a psicóloga
+// FAZ, e sem esta lista o filtro recusaria a fala dela sobre o próprio trabalho
+// (a psicóloga era o usuário mais provável a ser barrado — campo, 29/08/2026).
+// Lista FECHADA de sintagmas, comparada sem acento, aplicada só com o contexto
+// 'vivencia'. Tudo o que é sobre criança (diagnóstico, laudo, abuso, estado
+// interno de criança nomeada) continua barrado: a neutralização troca o
+// sintagma por "atividade" e o resto da frase segue para as listas.
+const NEUTRALIZAVEIS_VIVENCIA = [
+  'vivencias terapeuticas', 'vivencia terapeutica', 'terapia em grupo', 'terapia de grupo',
+  'grupo terapeutico', 'trabalho terapeutico', 'atividade terapeutica', 'psicoeducativa',
+  'psicoeducativo', 'psicoeducacao', 'a psicologa conduziu', 'como psicologa',
+];
+function neutralizarProcedimento(norm) {
+  let n = norm, quantos = 0;
+  for (const s of NEUTRALIZAVEIS_VIVENCIA) {
+    if (n.includes(s)) { n = n.split(s).join('atividade'); quantos++; }
+  }
+  return { norm: n, quantos };
+}
+
+export function filtrarPerimetro(texto, nomes = [], { contexto = null } = {}) {
   const bruto = (texto || '').trim();
-  if (!bruto) return { limpo: '', bloqueado: false, trechos: [] };
+  if (!bruto) return { limpo: '', bloqueado: false, trechos: [], neutralizados: 0 };
   const primeiros = [...new Set(nomes.map(n => semAcento(n).split(' ')[0]).filter(n => n.length >= 3))];
   const frases = bruto.split(/(?<=[.!?;\n])\s*/).filter(f => f.trim());
   const trechos = [];
   const mantidas = [];
+  let neutralizados = 0;
   for (const f of frases) {
-    const norm = semAcento(f);
+    let norm = semAcento(f);
+    if (contexto === 'vivencia') {
+      const r = neutralizarProcedimento(norm);
+      norm = r.norm; neutralizados += r.quantos;
+    }
     // O trecho devolvido é o ORIGINAL, com acento: a normalização serve só para
     // comparar. Quem lê o encaminhamento tem que ver o que de fato foi dito.
     let hit = PERIMETRO.find(cat => cat.termos.some(t => norm.includes(semAcento(t))))?.rotulo;
@@ -419,7 +475,7 @@ export function filtrarPerimetro(texto, nomes = []) {
     if (hit) trechos.push({ trecho: f.trim(), categoria: hit });
     else mantidas.push(f.trim());
   }
-  return { limpo: mantidas.join(' ').trim(), bloqueado: trechos.length > 0, trechos };
+  return { limpo: mantidas.join(' ').trim(), bloqueado: trechos.length > 0, trechos, neutralizados };
 }
 
 // --------------------------------------------------------------------------
@@ -1067,23 +1123,27 @@ export function reconciliacao() {
 // Nenhum item nasce de modelo (doutrina: escore e plano nascem de regra).
 // --------------------------------------------------------------------------
 const BANCO_ATIVIDADES = {
-  INTER: [
-    { titulo: 'Duplas sorteadas com missão conjunta', descricao: 'Cada dupla recebe uma tarefa que só fecha com as duas partes — a apresentação é da dupla, não de cada um.', duracao: '25–35 min' },
-    { titulo: 'Roda de apresentação cruzada', descricao: 'Cada criança apresenta o trabalho da colega, não o próprio — obriga a perguntar, ouvir e se aproximar.', duracao: '20–30 min' },
-  ],
-  COOP: [
+  AUTOC: [
     { titulo: 'Combinados da semana no quadro', descricao: 'A turma escreve os 3 combinados da semana; quem lembra um combinado em ação ganha o registro no mural.', duracao: '15–20 min' },
+    { titulo: 'Jogo da espera com sinal', descricao: 'Atividade em turnos com um sinal combinado para "minha vez / sua vez" — a regra vira gesto, e o gesto vira autocontrole.', duracao: '20–30 min' },
+  ],
+  CONV: [
+    { titulo: 'Duplas sorteadas com missão conjunta', descricao: 'Cada dupla recebe uma tarefa que só fecha com as duas partes — a apresentação é da dupla, não de cada um.', duracao: '25–35 min' },
     { titulo: 'Jogo cooperativo de construção', descricao: 'Uma construção coletiva onde cada criança tem uma peça obrigatória — não há como terminar sozinho.', duracao: '30–40 min' },
+  ],
+  PART: [
+    { titulo: 'Roteiro visível de 3 passos', descricao: 'A atividade do dia vem com roteiro ilustrado de 3 passos no quadro — a criança consulta antes de pedir ajuda e sabe onde a atividade termina.', duracao: '30–40 min' },
+    { titulo: 'Papéis rotativos na roda', descricao: 'Cada encontro, papéis diferentes (quem abre, quem cronometra, quem fecha) — a criança que costuma sair antes do fim ganha um motivo para ficar.', duracao: '20–30 min' },
   ],
   EXPR: [
     { titulo: 'Roda de nomear emoções', descricao: 'Com cartas de emoções, cada criança escolhe a do dia e conta em uma frase o porquê — sem comentário avaliativo da roda.', duracao: '20–30 min' },
     { titulo: 'Termômetro da emoção na entrada', descricao: 'Painel na porta: cada criança marca como chega. A educadora só observa o padrão da semana.', duracao: '5 min por encontro' },
   ],
-  AUTO: [
-    { titulo: 'Roteiro visível de 3 passos', descricao: 'A atividade do dia vem com roteiro ilustrado de 3 passos no quadro — a criança consulta antes de pedir ajuda.', duracao: '30–40 min' },
-    { titulo: 'Cantinho do material', descricao: 'Cada criança organiza e busca o próprio material a partir de um mapa fixo da sala.', duracao: '10 min por encontro' },
+  AUTOEST: [
+    { titulo: 'Galeria do que eu fiz', descricao: 'Cada criança escolhe uma produção da semana para a parede e diz uma frase sobre o que gostou nela — a roda só escuta.', duracao: '15–20 min' },
+    { titulo: 'Oficina com produto final', descricao: 'Costura, marcenaria simples ou colagem: uma tarefa com começo, meio e um objeto no fim, para o "nossa, eu consegui" ter onde acontecer.', duracao: '40–60 min' },
   ],
-  PERS: [
+  RESIL: [
     { titulo: 'Desafio com duas tentativas', descricao: 'Tarefa deliberadamente difícil com regra explícita: a primeira tentativa não vale nota, vale aprendizado.', duracao: '30–45 min' },
     { titulo: 'Mural do "ainda não"', descricao: 'O que a criança ainda não conseguiu vai ao mural com a palavra "ainda" — e sai quando conseguir.', duracao: '15 min por encontro' },
   ],
@@ -1181,16 +1241,23 @@ export function planoDaTurma(turmaId) {
 /** Rotulos dos papeis — a mesma tabela que o cliente pinta, servida daqui
  *  para nao existirem duas listas de papel valido no produto. */
 export const PAPEIS = [
-  { id: 'educador',    rotulo: 'Professora',  nota: 'Registra chamada e observação das próprias turmas — e só delas.' },
-  { id: 'coordenacao', rotulo: 'Coordenação', nota: 'Vê todas as turmas, cadastra pessoas e trata consentimento.' },
-  { id: 'diretoria',   rotulo: 'Diretoria',   nota: 'Só a camada agregada — não abre ficha individual de criança.' },
+  { id: 'educador',     rotulo: 'Professora',  nota: 'Registra chamada e observação das próprias turmas — e só delas.' },
+  // Campo (29/08/2026): quem nomeia a dor do registro é a psicóloga. Ela entra
+  // pelo INDICADOR DE PROGRAMA (presença, registro de vivência, check-in de
+  // grupo) — o conteúdo clínico continua fora por construção (decisão 31).
+  { id: 'profissional', rotulo: 'Psicóloga',   nota: 'Conduz a vivência: chamada e registro de turma (procedimento e check-in de grupo) — nunca conteúdo clínico, nunca rubrica individual.' },
+  { id: 'coordenacao',  rotulo: 'Coordenação', nota: 'Vê todas as turmas, cadastra pessoas e trata consentimento.' },
+  { id: 'diretoria',    rotulo: 'Diretoria',   nota: 'Só a camada agregada — não abre ficha individual de criança.' },
 ];
 const PAPEL_VALIDO = new Set(PAPEIS.map(p => p.id));
+/** Papéis que ficam responsáveis por turma (e por isso têm escopo de turma). */
+export const PAPEIS_COM_TURMA = new Set(['educador', 'profissional']);
+export const rotuloDoPapel = (papel) => PAPEIS.find(p => p.id === papel)?.rotulo?.toLowerCase() ?? papel;
 
 /** Campos que exigem consentimento E são coletados pelo Percurso. `conteudo_clinico`
  *  também exige, mas está declarado FORA do sistema por construção — abrir linha
  *  'pendente' para ele sugeriria que um dia vai ser coletado. Não vai. */
-const CONSENTIMENTOS_DA_MATRICULA = ['rubrica_socioemocional', 'campo_livre'];
+const CONSENTIMENTOS_DA_MATRICULA = ['rubrica_socioemocional', 'campo_livre', 'parecer_profissional'];
 
 function textoObrigatorio(v, campo, max = 120) {
   const t = String(v ?? '').trim().replace(/\s+/g, ' ');
@@ -1247,7 +1314,7 @@ export function listarEquipe() {
 export function criarPessoa({ nome, apelido = '', papel, turmaId = null, confirmarTroca = false }) {
   const n = textoObrigatorio(nome, 'O nome');
   if (!PAPEL_VALIDO.has(papel))
-    throw erro(422, 'Escolha o papel: professora, coordenação ou diretoria.');
+    throw erro(422, 'Escolha o papel: professora, psicóloga, coordenação ou diretoria.');
   const a = String(apelido ?? '').trim().replace(/\s+/g, ' ').slice(0, 60) || apelidoDe(n);
 
   const igual = get(
@@ -1260,8 +1327,8 @@ export function criarPessoa({ nome, apelido = '', papel, turmaId = null, confirm
 
   let turma = null;
   if (turmaId != null) {
-    if (papel !== 'educador')
-      throw erro(422, 'Só professora fica responsável por turma. Coordenação e diretoria enxergam todas.');
+    if (!PAPEIS_COM_TURMA.has(papel))
+      throw erro(422, 'Só professora ou psicóloga fica responsável por turma. Coordenação e diretoria enxergam todas.');
     turma = get(
       `SELECT t.id, t.nome, t.educador_id, e.nome AS educador_atual
          FROM turma t LEFT JOIN educador e ON e.id = t.educador_id WHERE t.id = ?`, turmaId);
@@ -1413,8 +1480,8 @@ export function arquivarPessoa(id, { porUsuarioId = null, assumidaPor = null } =
       throw erro(422, 'A pessoa que sai não pode assumir as próprias turmas.');
     if (sucessora.arquivado_em)
       throw erro(422, `${sucessora.nome} está no arquivo. Traga de volta antes de passar turma para ela.`);
-    if (sucessora.papel !== 'educador')
-      throw erro(422, 'Só professora assume turma.');
+    if (!PAPEIS_COM_TURMA.has(sucessora.papel))
+      throw erro(422, 'Só professora ou psicóloga assume turma.');
   }
 
   return tx(() => {
@@ -1443,7 +1510,7 @@ export function reativarPessoa(id) {
   run(`UPDATE educador SET arquivado_em = NULL WHERE id = ?`, id);
   return {
     pessoa: get(`SELECT * FROM educador WHERE id = ?`, id),
-    aviso: `${p.nome} voltou do arquivo como ${p.papel === 'educador' ? 'professora' : p.papel}. Turma não volta junto — atribua em Pessoas se for o caso.`,
+    aviso: `${p.nome} voltou do arquivo como ${rotuloDoPapel(p.papel)}. Turma não volta junto — atribua em Pessoas se for o caso.`,
   };
 }
 
@@ -1554,4 +1621,71 @@ export function listarArquivo() {
     pessoas, criancas,
     doutrina: 'Este produto não apaga pessoa. O arquivo guarda quem saiu, com o que a pessoa deixou registrado — a saída da criança é o dado que a curva de permanência lê, e o registro da professora continua assinado com o nome dela.',
   };
+}
+
+
+// --------------------------------------------------------------------------
+// Decisao 33 — a regua de presenca do Instituto (75%), por crianca e por turma.
+// E' para DENTRO: quem responde pela turma e a coordenacao veem a crianca com a
+// faixa e o numero (e' a pratica da casa: conversar com a familia). A diretoria
+// ve so' contagens. Nada daqui sai identificado — o recado da turma leva so' o
+// agregado.
+// --------------------------------------------------------------------------
+export function inicioDoSemestre(ref = hoje()) {
+  const ano = ref.slice(0, 4);
+  return Number(ref.slice(5, 7)) >= 7 ? `${ano}-07-01` : `${ano}-01-01`;
+}
+
+export function faixaDaRegua(pct, encontros) {
+  if (pct == null || encontros < PARAMS.REGUA_MINIMO_ENCONTROS) return 'sem_base';
+  if (pct < PARAMS.PRESENCA_MINIMA_PCT) return 'abaixo';
+  if (pct < PARAMS.PRESENCA_ATENCAO_PCT) return 'atencao';
+  return 'ok';
+}
+
+export function reguaDaTurma(turmaId, { desde = null, ref = hoje() } = {}) {
+  const turma = get(`SELECT t.*, p.nome AS programa FROM turma t JOIN programa p ON p.id = t.programa_id WHERE t.id = ?`, turmaId);
+  if (!turma) throw erro(404, 'Turma não encontrada.');
+  const inicio = desde ?? inicioDoSemestre(ref);
+  // O filtro de encontro fica DENTRO do join: uma crianca com presenca so' em
+  // outra turma (Laboratorio) e ainda sem presenca nesta nao pode sumir da lista
+  // — ela e' exatamente o "sem base" que a regua precisa mostrar.
+  const criancas = all(
+    `SELECT c.id, c.codigo, c.nome,
+            COUNT(p.id) AS encontros,
+            SUM(CASE WHEN p.status = 'P' THEN 1 ELSE 0 END) AS presentes
+       FROM crianca c
+       JOIN matricula m ON m.crianca_id = c.id AND m.turma_id = ? AND m.status = 'ativa'
+       LEFT JOIN presenca p ON p.crianca_id = c.id
+         AND p.encontro_id IN (SELECT id FROM encontro WHERE turma_id = ? AND data >= ? AND data <= ?)
+      WHERE c.ativo = 1
+      GROUP BY c.id ORDER BY c.nome`, turmaId, turmaId, inicio, ref)
+    .map(c => {
+      const pct = c.encontros ? Math.round(((c.presentes ?? 0) / c.encontros) * 100) : null;
+      return { ...c, presentes: c.presentes ?? 0, pct, faixa: faixaDaRegua(pct, c.encontros) };
+    });
+  const resumo = { ok: 0, atencao: 0, abaixo: 0, sem_base: 0 };
+  for (const c of criancas) resumo[c.faixa]++;
+  return {
+    turma: { id: turma.id, nome: turma.nome, programa: turma.programa },
+    desde: inicio, ate: ref,
+    minima_pct: PARAMS.PRESENCA_MINIMA_PCT, atencao_pct: PARAMS.PRESENCA_ATENCAO_PCT,
+    minimo_encontros: PARAMS.REGUA_MINIMO_ENCONTROS,
+    criancas, resumo,
+    doutrina: 'A régua é a do Instituto (75% para permanecer e para o grupo de benefícios). Abaixo dela não é erro de ninguém: é protocolo — a conversa é com a família.',
+  };
+}
+
+/** Só contagens por turma — o que a coordenação e a diretoria veem no painel. */
+export function reguaDoInstituto(opcoes = {}) {
+  const turmas = all(`SELECT id FROM turma ORDER BY id`).map(t => {
+    const r = reguaDaTurma(t.id, opcoes);
+    return { turma: r.turma, criancas: r.criancas.length, resumo: r.resumo };
+  });
+  const total = { ok: 0, atencao: 0, abaixo: 0, sem_base: 0 };
+  for (const t of turmas) for (const k of Object.keys(total)) total[k] += t.resumo[k];
+  // O objeto mapeado acima nao tem `desde`; ler dele ignorava o ?desde= e o ?ref=
+  // do chamador e o cabecalho caia sempre no inicio do semestre corrente.
+  return { desde: opcoes.desde ?? inicioDoSemestre(opcoes.ref), minima_pct: PARAMS.PRESENCA_MINIMA_PCT,
+           atencao_pct: PARAMS.PRESENCA_ATENCAO_PCT, turmas, total };
 }

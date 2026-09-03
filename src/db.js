@@ -70,7 +70,7 @@ const ESQUEMA_SQL = `
     id       INTEGER PRIMARY KEY,
     nome     TEXT NOT NULL,
     apelido  TEXT NOT NULL,
-    papel    TEXT NOT NULL CHECK (papel IN ('educador','coordenacao','diretoria')),
+    papel    TEXT NOT NULL CHECK (papel IN ('educador','profissional','coordenacao','diretoria')),
     -- Ninguem e' apagado deste banco. Quem sai do pipeline ganha data aqui e
     -- some das listas vivas; o que ela registrou continua de pe' e assinado
     -- com o nome dela (decisao 30). NULL = esta' na ativa.
@@ -275,6 +275,23 @@ const ESQUEMA_SQL = `
     -- Marca que a fala continha material fora do perimetro. Guarda o FATO de
     -- ter havido exclusao, jamais o conteudo excluido.
     conteudo_excluido INTEGER NOT NULL DEFAULT 0,
+    -- Decisao 31 (campo, 29/08/2026): o registro de vivencia. Procedimento e
+    -- objetivo em lista fechada (a psicologa registra O QUE FEZ, no padrao do
+    -- conselho) e o check-in de grupo — CONTAGENS da turma, nunca quem. NULL =
+    -- nao registrado (folha anterior a esta versao, ou campo nao informado).
+    procedimento      TEXT,
+    objetivo          TEXT,
+    ajudaram_sem_pedir               INTEGER CHECK (ajudaram_sem_pedir IS NULL OR ajudaram_sem_pedir BETWEEN 0 AND 30),
+    participaram_inteiro             INTEGER CHECK (participaram_inteiro IS NULL OR participaram_inteiro BETWEEN 0 AND 30),
+    conflitos                        INTEGER CHECK (conflitos IS NULL OR conflitos BETWEEN 0 AND 30),
+    conflitos_resolvidos_conversando INTEGER CHECK (conflitos_resolvidos_conversando IS NULL OR
+                                                    (conflitos_resolvidos_conversando BETWEEN 0 AND 30
+                                                     AND (conflitos IS NULL OR conflitos_resolvidos_conversando <= conflitos))),
+    nao_observados                   INTEGER CHECK (nao_observados IS NULL OR nao_observados BETWEEN 0 AND 30),
+    -- O relato do procedimento so' vale depois do OK da profissional: "ele so'
+    -- vai liberar o relatorio se voce der ok" (campo). Quem liberou e quando.
+    relato_liberado_por INTEGER REFERENCES educador(id),
+    relato_liberado_em  TEXT,
     confirmado_por    INTEGER NOT NULL REFERENCES educador(id),
     confirmado_em     TEXT NOT NULL,
     status            TEXT NOT NULL CHECK (status IN ('aberta','fechada'))
@@ -345,6 +362,26 @@ const ESQUEMA_SQL = `
     executado_por  INTEGER REFERENCES educador(id),
     executado_em   TEXT NOT NULL
   );
+
+  -- Decisao 32 (campo, 29/08/2026): o parecer profissional-a-profissional. A
+  -- assistente social do projeto parceiro pergunta "como ele esta'" e hoje e'
+  -- respondida de memoria. O parecer sai por CODIGO, so' com consentimento
+  -- especifico do responsavel e com a liberacao registrada — e o registro de
+  -- que saiu, para quem e por quem e' permanente (trilha de auditoria).
+  CREATE TABLE IF NOT EXISTS parecer (
+    id            INTEGER PRIMARY KEY,
+    crianca_id    INTEGER NOT NULL REFERENCES crianca(id) ON DELETE CASCADE,
+    destinatario  TEXT NOT NULL,
+    texto         TEXT NOT NULL,
+    numeros_json  TEXT NOT NULL,
+    revisor_status TEXT NOT NULL,
+    status        TEXT NOT NULL CHECK (status IN ('rascunho','liberado')),
+    gerado_por    INTEGER NOT NULL REFERENCES educador(id),
+    gerado_em     TEXT NOT NULL,
+    liberado_por  INTEGER REFERENCES educador(id),
+    liberado_em   TEXT
+  );
+  CREATE INDEX IF NOT EXISTS ix_parecer_crianca ON parecer(crianca_id, gerado_em);
 
   CREATE INDEX IF NOT EXISTS ix_presenca_crianca ON presenca(crianca_id);
   CREATE INDEX IF NOT EXISTS ix_encontro_turma   ON encontro(turma_id, data);

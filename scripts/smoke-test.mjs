@@ -350,7 +350,7 @@ secao('9 · Ficha viva da criança (F1)');
   const f = (await GET('maria', `/api/crianca?id=${lista[0].id}`)).corpo;
   T('ficha traz matrículas, presença, trajetória e governança',
     !!f.crianca && Array.isArray(f.matriculas) && Array.isArray(f.presencas) &&
-    !!f.trajetoria && f.consentimentos.length === 10);  // 5 originais + 5 campos da v2
+    !!f.trajetoria && f.consentimentos.length >= 11);  // 5 originais + 5 da v2 + registro de vivência (decisão 31)
   T('a governança declara os campos novos da v2 (voz, score, agregado publicado)',
     ['folha_do_dia', 'audio_da_voz', 'transcricao_da_voz', 'score_evasao', 'agregado_publicado']
       .every(c => f.consentimentos.some(g => g.campo === c)));
@@ -499,7 +499,8 @@ let dataFolha = null;
   T('o que a pessoa confirmou vence o que a IA propôs',
     conf.corpo.folha.area_tematica === 'educacao' && ex.corpo.extracao.area_tematica === 'saude');
   T('a correção humana é medida (taxa de correção pós-extração)',
-    conf.corpo.folha.campos_sugeridos === 4 && conf.corpo.folha.campos_editados === 2,
+    // Desde a decisão 31 o check-in de grupo conta como UM campo sugerido (5 no total).
+    conf.corpo.folha.campos_sugeridos === 5 && conf.corpo.folha.campos_editados === 2,
     `${conf.corpo.folha.campos_editados}/${conf.corpo.folha.campos_sugeridos}`);
   T('a folha não tem nenhum campo sobre criança nomeada',
     !('crianca_id' in conf.corpo.folha) && !JSON.stringify(conf.corpo.folha).match(/nota|texto|observacao_livre/i));
@@ -788,8 +789,15 @@ secao('16 · Relatório do ciclo, carta e supressão (F13/F14)');
     /crianças únicas e \d+ matrículas/i.test(g.corpo.texto));
   T('a supressão foi aplicada ANTES da redação e é declarada',
     g.corpo.supressoes.minimo === 5 && Array.isArray(g.corpo.supressoes.programas));
-  T('o programa fora de escopo com poucas crianças foi agrupado',
-    g.corpo.supressoes.programas.length > 0, JSON.stringify(g.corpo.supressoes.programas));
+  // Até 02/09/2026 a Vivência terapêutica não tinha matrícula e era o programa
+  // pequeno que a supressão agrupava. Com as duas turmas de sábado (decisão 31)
+  // ela passa a ser publicável — com presença e SEM rubrica — e a regra de
+  // agrupamento (n < 5) continua provada no teste unitário `suprimir`.
+  T('a lista de programas suprimidos é declarada (vazia quando nenhum é pequeno)',
+    Array.isArray(g.corpo.supressoes.programas), JSON.stringify(g.corpo.supressoes.programas));
+  T('a Vivência terapêutica entra na tabela do doador com presença, como programa',
+    g.corpo.numeros.cobertura.programas.some(p => /Viv[eê]ncia/i.test(p.rotulo ?? p.nome) && p.presenca_pct != null),
+    JSON.stringify(g.corpo.numeros.cobertura.programas.map(p => [p.rotulo ?? p.nome, p.presenca_pct])));
   T('nenhum nome de criança aparece no relatório',
     !g.corpo.blocos.some(b => /EBZ-\d{4}/.test(JSON.stringify(b))));
   T('os dois denominadores de custo são publicados juntos',
@@ -827,6 +835,13 @@ secao('17 · Consulta sobre a camada agregada (F15)');
   const negado = await POST('maria', '/api/consulta', { pergunta: 'quantas crianças?' });
   T('educadora não usa a consulta agregada (403)', negado.status === 403);
 
+  const chips = (await GET('rita', '/api/consulta')).corpo;
+  T('a tela oferece as sugestões ANTES da primeira pergunta', Array.isArray(chips.sugestoes) && chips.sugestoes.length === 6);
+  T('educadora não recebe as sugestões (403)', (await GET('maria', '/api/consulta')).status === 403);
+
+  const n0 = (await POST('rita', '/api/consulta', { pergunta: 'a Ana Clara está bem?' })).corpo;
+  T('os chips da tela e a lista da recusa são a mesma', JSON.stringify(chips.sugestoes) === JSON.stringify(n0.sugestoes));
+
   const c = (await POST('rita', '/api/consulta', { pergunta: 'Quantas crianças o instituto atende?' })).corpo;
   T('a consulta reconhece a intenção de contagem', c.reconhecida && c.intencao === 'contagem');
   T('a resposta cita a fonte do número', /crianca|matricula/i.test(c.fonte));
@@ -835,6 +850,24 @@ secao('17 · Consulta sobre a camada agregada (F15)');
 
   const r = (await POST('rita', '/api/consulta', { pergunta: 'quantas estão em risco de sair?' })).corpo;
   T('a consulta responde sobre evasão com número do banco', r.reconhecida && /em risco/i.test(r.resposta));
+
+  // A formulação natural — com "crianças" — caía em contagem até 03/09/2026,
+  // porque o termo 'quantas crianc' vencia o assunto. Ver a nota de PRECEDENCIA
+  // em src/relatorio.js.
+  const rc = (await POST('rita', '/api/consulta', { pergunta: 'Quantas crianças estão em risco de sair?' })).corpo;
+  T('o assunto vence a fórmula de contagem na consulta', rc.intencao === 'evasao', `(${rc.intencao})`);
+
+  // Auto-consistência: o sistema tem de saber responder o que ele mesmo sugere,
+  // e cada sugestão tem de cair numa intenção diferente.
+  const intencoes = [];
+  for (const s of n0.sugestoes) {
+    const x = (await POST('rita', '/api/consulta', { pergunta: s })).corpo;
+    intencoes.push(x.reconhecida ? x.intencao : 'NAO-RECONHECIDA');
+  }
+  T('o sistema responde todas as perguntas que ele mesmo sugere',
+    intencoes.every(i => i !== 'NAO-RECONHECIDA'), `(${intencoes.join(', ')})`);
+  T('cada sugestão cai numa intenção diferente',
+    new Set(intencoes).size === intencoes.length, `(${intencoes.join(', ')})`);
 
   const n = (await POST('rita', '/api/consulta', { pergunta: 'a Ana Clara está bem?' })).corpo;
   T('pergunta sobre criança individual não é reconhecida', n.reconhecida === false);
@@ -941,7 +974,7 @@ secao('21 · Cadastro de pessoas — equipe e crianças');
 
   const cad = await GET('rita', '/api/cadastro');
   T('coordenação abre o cadastro com equipe, papéis, programas e turmas',
-    cad.status === 200 && cad.corpo.equipe.length >= 4 && cad.corpo.papeis.length === 3 &&
+    cad.status === 200 && cad.corpo.equipe.length >= 5 && cad.corpo.papeis.length === 4 &&
     cad.corpo.programas.length >= 1 && cad.corpo.turmas.length >= 1);
   T('o cadastro anuncia o próximo código da criança', /^EBZ-\d{4}$/.test(cad.corpo.proximo_codigo));
 
@@ -1059,6 +1092,207 @@ secao('22 · Arquivo — ninguém é apagado (decisão 30)');
   const fichaVolta = (await GET('rita', `/api/crianca?id=${alvo.id}`)).corpo;
   T('o consentimento voltou a PENDENTE — a base legal caducou com a saída',
     fichaVolta.consentimentos.find(c => c.campo === 'rubrica_socioemocional').status === 'pendente');
+}
+
+// ------------------------- 24. a psicóloga e a Vivência terapêutica (decisão 31)
+secao('24 · Psicóloga e Vivência terapêutica — indicador de programa, nunca clínico (decisão 31)');
+{
+  const login = await POST('carolina', '/api/sessao', { educador_id: 5 });
+  T('psicóloga entra com o papel profissional', login.status === 200 && login.corpo.usuario.papel === 'profissional');
+
+  const inv = (await GET('carolina', '/api/inventario')).corpo;
+  // Os números exatos da seed (120/106/14) são provados no teste unitário, sobre
+  // banco recém-semeado; aqui a bateria já cadastrou e rematriculou crianças.
+  const somaEscopo = inv.porPrograma.filter(p => p.no_escopo).reduce((s, p) => s + p.matriculas, 0);
+  T('as matrículas do inventário são só dos programas do dossiê — a Vivência é contada à parte',
+    inv.matriculas === somaEscopo && inv.matriculas - inv.criancasUnicas === inv.multi,
+    `(${inv.matriculas}/${inv.criancasUnicas}/${inv.multi}; escopo=${somaEscopo})`);
+  T('a Vivência tem matrícula própria (24) e não muda as crianças únicas',
+    inv.foraDaRubrica.matriculas === 24 && inv.foraDaRubrica.criancas === 24, JSON.stringify(inv.foraDaRubrica));
+
+  const hoje = (await GET('carolina', '/api/hoje')).corpo;
+  T('o Hoje dela abre na turma da Vivência', !!hoje.turma && /Viv[eê]ncia/i.test(hoje.turma.programa));
+  T('a turma da Vivência está fora da rubrica: sem agenda de ciclo', hoje.na_rubrica === false && hoje.agenda === null);
+  // A Vivencia e' sabatica: a ultima atividade dela e' sempre o sabado anterior, e a
+  // regua de lapso e' de 5 dias (PARAMS.DIAS_LAPSO). Numa quinta-feira o lapso dispara
+  // sozinho — isso e' a regua funcionando, nao o teste quebrando. Fixar `false` aqui so'
+  // valia de sabado a quarta; a assercao passa a derivar da mesma regra.
+  const diasSemRegistro = hoje.retomada.dias_sem_registro;
+  T('a retomada dela conta a partir do último sábado (a Vivência é sabática)',
+    diasSemRegistro != null && diasSemRegistro <= 7, `(${diasSemRegistro} dias)`);
+  T('o lapso dela segue a régua de 5 dias, sem exceção para a Vivência',
+    hoje.retomada.em_lapso === (diasSemRegistro >= 5),
+    `(${diasSemRegistro} dias, em_lapso=${hoje.retomada.em_lapso})`);
+
+  const agenda = await GET('carolina', `/api/ciclo/agenda?turma_id=${hoje.turma.id}`);
+  T('pedir a agenda do ciclo para a Vivência é recusado com o motivo (422)',
+    agenda.status === 422 && /rubrica/i.test(agenda.corpo?.erro ?? agenda.corpo?.message ?? JSON.stringify(agenda.corpo)),
+    `(${agenda.status})`);
+
+  const chamada = (await GET('carolina', `/api/chamada?turma_id=${hoje.turma.id}`)).corpo;
+  T('ela vê a chamada da própria turma', Array.isArray(chamada.criancas) && chamada.criancas.length === 12);
+  const outra = await GET('maria', `/api/chamada?turma_id=${hoje.turma.id}`);
+  T('a professora de outra turma NÃO abre a chamada da Vivência (403)', outra.status === 403, `(${outra.status})`);
+  const coord = await GET('rita', `/api/chamada?turma_id=${hoje.turma.id}`);
+  T('a coordenação abre qualquer turma, inclusive a Vivência', coord.status === 200);
+
+  const lista = (await GET('carolina', '/api/criancas')).corpo;
+  T('o escopo dela é o das próprias turmas (24 crianças, não 106)', lista.total === 24, `(${lista.total})`);
+  const painel = (await GET('rita', '/api/painel')).corpo;
+  T('a Vivência não entra no denominador da cobertura da rubrica',
+    painel.programas.every(p => !/Viv[eê]ncia/i.test(p.nome)) && painel.foraDeEscopo.some(p => /Viv[eê]ncia/i.test(p.nome)));
+  const gov = (await GET('rita', '/api/consentimentos')).corpo.governanca;
+  T('a governança declara o registro de vivência (base legal, titular, acesso, retenção) e mantém o conteúdo clínico fora',
+    gov.some(g => g.campo === 'registro_de_vivencia' && !g.exige_consentimento) &&
+    gov.some(g => g.campo === 'conteudo_clinico' && /Ningu/i.test(g.acesso)));
+}
+
+// ------------------------------- 25. a planilha socioemocional (decisão 34)
+secao('25 · A planilha socioemocional do Instituto, preenchida pelo Percurso (decisão 34)');
+{
+  const rub = (await GET('maria', '/api/rubrica')).corpo;
+  T('a rubrica tem as seis dimensões da planilha, nesta ordem',
+    JSON.stringify(rub.dimensoes.map(d => d.nome)) ===
+    JSON.stringify(['Autocontrole', 'Convivência', 'Participação', 'Expressão emocional', 'Autoestima', 'Resiliência']));
+
+  const res = await GET('rita', '/api/planilha/resumo');
+  T('coordenação lê o resumo da planilha (dois ciclos, seis indicadores + geral)',
+    res.status === 200 && res.corpo.indicadores.length === 6 && !!res.corpo.geral && res.corpo.ciclo_inicial.id !== res.corpo.ciclo_final.id);
+  T('cada indicador traz a leitura da planilha ou a supressão declarada',
+    res.corpo.indicadores.every(i => i.suprimida || ['Resultado forte', 'Evolução moderada', 'Atenção para acompanhamento'].includes(i.leitura)));
+  T('o resumo carrega a legenda do mapeamento 1–4 → 0–2 e a ressalva metodológica',
+    /1→0, 2→1, 3→1, 4→2/.test(res.corpo.legenda) && /fatores externos/.test(res.corpo.ressalva));
+  T('a diretoria também lê o resumo (agregado)', (await GET('solange', '/api/planilha/resumo')).status === 200);
+  T('professora NÃO lê o resumo da planilha (403)', (await GET('maria', '/api/planilha/resumo')).status === 403);
+
+  const csv = await fetch(BASE + '/api/exportar/planilha', { headers: { Cookie: cookies['rita'] } });
+  // `text()` descarta o BOM ao decodificar; o Excel precisa dele nos bytes.
+  const bytes = Buffer.from(await csv.arrayBuffer());
+  const texto = bytes.toString('utf8').replace(/^\uFEFF/, '');
+  T('coordenação exporta a planilha como CSV (text/csv, anexo, com BOM para o Excel)',
+    csv.status === 200 && /text\/csv/.test(csv.headers.get('content-type') || '') &&
+    /attachment/.test(csv.headers.get('content-disposition') || '') &&
+    bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF);
+  T('o CSV tem o cabeçalho da aba Avaliações e sai por código, sem nome',
+    /^ID;Turma;/.test(texto) && /Total final;Evolução 0\/1\/2 \(geral\)/.test(texto) &&
+    /\nEBZ-\d{4};/.test(texto) && !/;(Ana|Beatriz|Caio|Davi|Enzo) /.test(texto));
+  T('professora NÃO exporta (403)',
+    (await fetch(BASE + '/api/exportar/planilha', { headers: { Cookie: cookies['maria'] } })).status === 403);
+  T('diretoria NÃO exporta linhas por criança (403) — só o agregado',
+    (await fetch(BASE + '/api/exportar/planilha', { headers: { Cookie: cookies['solange'] } })).status === 403);
+}
+
+// ------------------------ 26. registro de vivência, relato e devolução (decisão 31)
+secao('26 · Registro de vivência — check-in de grupo, relato do conselho e devolução por encontro');
+{
+  const hoje = (await GET('carolina', '/api/hoje')).corpo;
+  const tid = hoje.turma.id;
+  const folha = (await GET('carolina', `/api/folha?turma_id=${tid}`)).corpo;
+  T('a folha da Vivência se declara vivência e traz os catálogos novos',
+    folha.vivencia === true && folha.catalogos.procedimentos.length >= 6 && folha.catalogos.checkin.length === 5);
+  T('a folha existente da seed tem check-in e procedimento', !!folha.folha && folha.folha.procedimento && folha.folha.checkin.participaram_inteiro != null);
+
+  const fala = 'Hoje foi vivência terapêutica com o jogo da rede de apoio, sobre cidadania. Duas ajudaram sem ninguém pedir, seis participaram do começo ao fim, teve um conflito e resolveram conversando. Uma não foi observada.';
+  const ex = await POST('carolina', '/api/voz/extrair', { turma_id: tid, transcricao: fala });
+  T('a fala da psicóloga sobre a vivência NÃO é barrada pelo perímetro (o nome do procedimento não é conteúdo clínico)',
+    ex.status === 200 && ex.corpo.excluido === false && ex.corpo.procedimento_neutralizado >= 1, JSON.stringify(ex.corpo.trechos));
+  T('o extrator devolve procedimento, objetivo e o check-in em contagens',
+    ex.corpo.extracao.procedimento === 'rede_apoio' && ex.corpo.extracao.checkin.ajudaram_sem_pedir === 2 &&
+    ex.corpo.extracao.checkin.participaram_inteiro === 6 && ex.corpo.extracao.checkin.conflitos_resolvidos_conversando === 1);
+  T('nada foi gravado na extração', ex.corpo.gravado === false);
+  const comNome = await POST('carolina', '/api/voz/extrair', { turma_id: tid, transcricao: `${folha.chamada.criancas[0].nome} ajudou sem ninguém pedir hoje na roda de emoções, e a turma participou.` });
+  T('nome de criança na fala é contado e substituído — a tela mostra o nome virando código',
+    comNome.status === 200 && comNome.corpo.nomes_substituidos >= 1);
+  const clinico = await POST('carolina', '/api/voz/extrair', { turma_id: tid, transcricao: `Na vivência terapêutica a ${folha.chamada.criancas[0].nome.split(' ')[0]} contou que sofreu abuso em casa. O resto do grupo fez a roda.` });
+  T('mas conteúdo sobre criança continua barrado mesmo na vivência', clinico.corpo.excluido === true);
+
+  const semProc = await POST('carolina', '/api/folha', { turma_id: tid, campos: { ...ex.corpo.extracao, procedimento: 'nao_identificado' }, origem: 'voz', sugestao: ex.corpo.extracao });
+  T('salvar a folha da vivência sem procedimento é recusado com o campo apontado (422)', semProc.status === 422 && semProc.corpo.campo === 'procedimento');
+  const salva = await POST('carolina', '/api/folha', { turma_id: tid, campos: ex.corpo.extracao, origem: 'voz', sugestao: ex.corpo.extracao });
+  T('a folha da vivência é gravada com o check-in', salva.status === 200 && salva.corpo.folha.checkin.participaram_inteiro === 6 && salva.corpo.folha.procedimento === 'rede_apoio');
+  T('a resposta traz a devolução por encontro', !!salva.corpo.devolucao && salva.corpo.devolucao.linhas.length >= 3);
+  T('a devolução compara com as últimas folhas quando há base', salva.corpo.devolucao.comparavel === true && salva.corpo.devolucao.linhas.some(l => l.comparacao));
+  const hoje2 = (await GET('carolina', '/api/hoje')).corpo;
+  T('o Hoje da psicóloga carrega a devolução', !!hoje2.devolucao && hoje2.devolucao.linhas.length >= 3);
+
+  const rel = await GET('carolina', `/api/relato?turma_id=${tid}`);
+  T('o relato sai no padrão do conselho, em rascunho', rel.status === 200 && /REGISTRO DE PROCEDIMENTO/.test(rel.corpo.texto) && rel.corpo.liberado === false && /RASCUNHO/.test(rel.corpo.texto));
+  T('o relato não tem nome de criança', !folha.chamada.criancas.some(c => rel.corpo.texto.includes(c.nome.split(' ')[0] + ' ')));
+  T('a professora de outra turma não abre o relato (403)', (await GET('maria', `/api/relato?turma_id=${tid}`)).status === 403);
+  T('a diretoria não abre o relato (403)', (await GET('solange', `/api/relato?turma_id=${tid}`)).status === 403);
+  const lib = await POST('carolina', '/api/relato/liberar', { turma_id: tid });
+  T('a psicóloga libera o relato — e a folha fecha junto', lib.status === 200 && lib.corpo.liberado === true &&
+    (await GET('carolina', `/api/folha?turma_id=${tid}`)).corpo.folha.status === 'fechada');
+  T('liberar duas vezes é 409', (await POST('carolina', '/api/relato/liberar', { turma_id: tid })).status === 409);
+  T('a coordenação lê o relato liberado e o histórico da turma',
+    (await GET('rita', `/api/relato?turma_id=${tid}`)).corpo.historico.length >= 1);
+  T('a governança do registro de vivência aparece na ficha (campo declarado, sem consentimento)',
+    (await GET('rita', `/api/crianca?id=${folha.chamada.criancas[0].id}`)).corpo.consentimentos.some(c => c.campo === 'registro_de_vivencia'));
+}
+
+// ---------------------- 27. régua de presença e recado da turma (decisão 33)
+secao('27 · Régua de presença do Instituto (75%) e recado da turma aos responsáveis');
+{
+  const hoje = (await GET('carolina', '/api/hoje')).corpo;
+  const tid = hoje.turma.id;
+  const r = await GET('carolina', `/api/turma/presenca?turma_id=${tid}`);
+  T('a psicóloga vê a régua da própria turma, com faixa por criança', r.status === 200 && r.corpo.minima_pct === 75 &&
+    r.corpo.criancas.length >= 10 && r.corpo.criancas.every(c => ['ok', 'atencao', 'abaixo', 'sem_base'].includes(c.faixa)));
+  T('a régua tem criança abaixo e em atenção (a seed força as duas)', r.corpo.resumo.abaixo >= 1 && r.corpo.resumo.atencao >= 1, JSON.stringify(r.corpo.resumo));
+  T('a professora de outra turma NÃO vê a régua da Vivência (403)', (await GET('maria', `/api/turma/presenca?turma_id=${tid}`)).status === 403);
+  T('a diretoria NÃO vê régua por criança (403)', (await GET('solange', `/api/turma/presenca?turma_id=${tid}`)).status === 403);
+  const inst = await GET('solange', '/api/regua');
+  T('a diretoria vê a régua do Instituto só em contagens por turma', inst.status === 200 && inst.corpo.turmas.length >= 7 &&
+    !JSON.stringify(inst.corpo).includes(r.corpo.criancas[0].nome));
+  T('a coordenação também', (await GET('rita', '/api/regua')).status === 200);
+  T('a professora NÃO abre a régua do Instituto (403)', (await GET('maria', '/api/regua')).status === 403);
+
+  const rec = await GET('carolina', `/api/recado?turma_id=${tid}`);
+  T('o recado da turma é gerado do registro (presença em número, atividade)', rec.status === 200 && new RegExp('Presença de hoje: \\d+ de ' + r.corpo.criancas.length).test(rec.corpo.texto));
+  T('o recado não tem nome de criança', !r.corpo.criancas.some(c => rec.corpo.texto.includes(c.nome.split(' ')[0])));
+  T('o recado abre no WhatsApp sem número (a pessoa escolhe o grupo)', /^https:\/\/wa\.me\/\?text=/.test(rec.corpo.whatsapp_url));
+  T('a governança declara o recado da turma (sem consentimento; não persiste)',
+    (await GET('rita', '/api/consentimentos')).corpo.governanca.some(g => g.campo === 'recado_da_turma' && /persiste/i.test(g.retencao)));
+  T('a professora de outra turma NÃO gera o recado da Vivência (403)', (await GET('maria', `/api/recado?turma_id=${tid}`)).status === 403);
+}
+
+// ----------------------- 28. parecer profissional-a-profissional (decisão 32)
+secao('28 · Parecer a profissional parceiro — por código, sob consentimento, liberado');
+{
+  // A esta altura a turma 1 já trocou de professora (seção 21) — quem responde
+  // por ela agora é outra pessoa; a coordenação passa sempre. Criança SÓ da
+  // turma 1, para a Cleide (turmas 2–5) ser "outra turma".
+  const lista = (await GET('rita', '/api/criancas?turma_id=1')).corpo.criancas;
+  let alvo = null;
+  for (const c of lista) {
+    const f = (await GET('rita', `/api/crianca?id=${c.id}`)).corpo;
+    if (f.matriculas.filter(m => m.status === 'ativa').length === 1) { alvo = c; break; }
+  }
+  T('há criança só da turma 1 para o cenário', !!alvo);
+  const antes = await GET('rita', `/api/parecer?crianca_id=${alvo.id}`);
+  T('a ficha do parecer traz o estado do consentimento e a prévia por indicador de programa',
+    antes.status === 200 && ['ativo', 'pendente', 'revogado'].includes(antes.corpo.consentimento) && antes.corpo.previa.codigo === alvo.codigo);
+  T('a diretoria não chega ao parecer (403)', (await GET('solange', `/api/parecer?crianca_id=${alvo.id}`)).status === 403);
+  T('professora de outra turma não chega ao parecer (403)', (await GET('cleide', `/api/parecer?crianca_id=${alvo.id}`)).status === 403);
+
+  await POST('rita', '/api/consentimento', { crianca_id: alvo.id, campo: 'parecer_profissional', status: 'pendente', responsavel: '' });
+  const semCons = await POST('rita', '/api/parecer/gerar', { crianca_id: alvo.id, destinatario: 'Assistente social — projeto parceiro' });
+  T('sem consentimento específico, o parecer é recusado com o motivo (403)', semCons.status === 403 && semCons.corpo.motivo === 'consentimento');
+  const cons = await POST('rita', '/api/consentimento', { crianca_id: alvo.id, campo: 'parecer_profissional', status: 'ativo', responsavel: 'Responsável 1' });
+  T('a coordenação registra o consentimento para compartilhar', cons.status === 200);
+  T('professora de outra turma NÃO gera o parecer (403)',
+    (await POST('cleide', '/api/parecer/gerar', { crianca_id: alvo.id, destinatario: 'X' })).status === 403);
+  const ger = await POST('rita', '/api/parecer/gerar', { crianca_id: alvo.id, destinatario: 'Assistente social — projeto parceiro' });
+  T('a coordenação gera o parecer em rascunho', ger.status === 200 && ger.corpo.parecer.status === 'rascunho');
+  T('o parecer sai por código e sem nome', ger.corpo.parecer.texto.includes(alvo.codigo) && !ger.corpo.parecer.texto.includes(alvo.nome.split(' ')[0]));
+  T('o parecer não carrega detalhe de alerta nem conteúdo clínico', !/Faltou nos|laudo|terapia|abuso/i.test(ger.corpo.parecer.texto));
+  const lib = await POST('rita', '/api/parecer/liberar', { id: ger.corpo.parecer.id });
+  T('a liberação fica registrada (quem, quando, para quem)', lib.status === 200 && lib.corpo.parecer.status === 'liberado' && !!lib.corpo.parecer.liberado_em);
+  T('a diretoria não libera parecer (403)', (await POST('solange', '/api/parecer/liberar', { id: ger.corpo.parecer.id })).status === 403);
+  const hist = (await GET('rita', `/api/parecer?crianca_id=${alvo.id}`)).corpo;
+  T('o histórico de pareceres da criança fica na ficha', hist.pareceres.length >= 1 && hist.pareceres[0].status === 'liberado');
+  T('a governança declara o parecer com consentimento específico',
+    (await GET('rita', '/api/consentimentos')).corpo.governanca.some(g => g.campo === 'parecer_profissional' && g.exige_consentimento === 1));
 }
 
 console.log(`\n\x1b[1m${ok} passaram · ${falhas} falharam\x1b[0m\n`);

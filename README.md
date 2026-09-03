@@ -10,6 +10,16 @@ não pontuam a criança; pauta de segunda como devolução; e o relatório do ci
 revisa e envia a quem financia. O que mudou, feature a feature, está em
 [`docs/O-QUE-VEIO-DA-V2.md`](docs/O-QUE-VEIO-DA-V2.md).
 
+**Pós-visita** (02/09/2026): a visita de campo ao Instituto (29/08) mudou a persona — quem tem a
+dor do registro é a **psicóloga** — e o produto ganhou a tela do sábado: papel `profissional`,
+Vivência terapêutica com turma e **registro de vivência** (procedimento em lista fechada +
+check-in de grupo em contagens), **relato no padrão do conselho** liberado por ela, rubrica
+alinhada aos **seis indicadores da planilha socioemocional** do Instituto com exportação por código,
+**régua de presença de 75%**, **recado da turma** para o grupo dos responsáveis, devolução por
+encontro e **parecer a profissional parceiro** por código, sob consentimento. Decisões 31–34 em
+[`docs/DECISOES-TECNICAS.md`](docs/DECISOES-TECNICAS.md); plano e revisão em
+[`docs/revisao/11-PLANO-POS-VISITA.md`](docs/revisao/11-PLANO-POS-VISITA.md).
+
 **Versão 3** (25/08/2026): a camada de IA local do plano de arquitetura, inteira e desligável —
 RAG com corpus governado por manifest (`#/copilot` cita a fonte), copilot reflexivo num Qwen3 4B
 rodando **na própria máquina** (nada sai dela), SROI exploratório determinístico (`#/impacto`),
@@ -57,7 +67,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **294 asserções de fluxo** e **136 testes unitários** — mais a avaliação do RAG
+São **371 asserções de fluxo** e **164 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização) e a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo). As quatro baterias rodam a cada push (`.github/workflows/ci.yml`), sempre com
@@ -152,6 +162,7 @@ O MVP não guarda senha — o controle de acesso real é uma decisão da coorden
 | **Rita Amaral** | Coordenação | Painel, Scores, Safras, Síntese, Consentimentos, Refletir* |
 | **Cleide Nunes** | Professora | As demais turmas |
 | **Solange Ribeiro** | Diretoria | Relatório do ciclo, Impacto (SROI exploratório) e consulta agregada — **e nada individual** |
+| **Carolina Duarte** | Psicóloga (papel `profissional`) | Hoje, Chamada, Vivência (registro de procedimento + check-in), Relato, Turma (com a régua de 75%), Crianças — **sem agenda de ciclo**: a Vivência fica fora da rubrica (decisão 31) |
 
 \* Refletir é a sala de reflexão do copilot local — só responde com `AI_ENABLED=1` (camada opcional).
 
@@ -175,8 +186,11 @@ de sobre-alegação e aprovação humana.
 
 **Não faz.** Não guarda áudio nem transcrição — a fala é transcrita no próprio aparelho e o texto
 morre na confirmação. Não guarda texto livre sobre criança nomeada, em lugar nenhum. Não guarda
-conteúdo clínico: a Vivência terapêutica está fora do sistema por construção, porque o titular do
-registro é a psicóloga e o sigilo profissional impede a transferência. Não emite diagnóstico. Não
+conteúdo clínico: o que a Vivência terapêutica registra é **indicador de programa** — procedimento
+em lista fechada e contagens de grupo — porque o titular do registro clínico é a psicóloga e o
+sigilo profissional impede a transferência (decisão 31). Não expõe criança para fora: o único
+dado individual que sai é o parecer a profissional parceiro, por código, sob consentimento
+específico e liberado (decisão 32). Não emite diagnóstico. Não
 cria score socioemocional individual, por decisão de desenho. Não expõe dado individual para fora
 da organização. Não ingere o relatório do parceiro educacional (âncora acadêmica) — fica fora até o
 canal mediado responder à pergunta 2 do bloco 7.
@@ -219,6 +233,21 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 | F14 | Carta do trimestre — mesmo pipeline, template curto | `#/relatorio` |
 | F15 | Consulta em linguagem natural sobre a camada agregada | `#/consulta` |
 
+### O que a visita de campo acrescentou (02/09/2026)
+
+| # | Funcionalidade | Onde está |
+|---|---|---|
+| V1 | Papel `profissional` (psicóloga) e a Vivência terapêutica com turma, presença e folha — fora da rubrica, dentro do registro de turma | `#/hoje` da psicóloga, `GET /api/inventario` (`foraDaRubrica`), decisão 31 |
+| V2 | Registro de vivência: procedimento e objetivo em lista fechada + **check-in de grupo** (contagens, nunca quem); o extrator lê as contagens da fala | `#/folha`, `#/voz`, `POST /api/voz/extrair`, `src/voz.js` |
+| V3 | Relato do procedimento no padrão do conselho, gerado dos campos fechados, sem nome, liberado pela profissional | `#/relato`, `GET /api/relato`, `POST /api/relato/liberar`, `src/relato.js` |
+| V4 | Filtro de perímetro com contexto: o nome do procedimento não dispara; conteúdo sobre criança continua barrado | `filtrarPerimetro(…, { contexto: 'vivencia' })` |
+| V5 | A tela de voz diz o que grava; nome falado vira código na tela e é contado (`nomes_substituidos`) | `#/voz`, `#/confirmar` |
+| V6 | Rubrica com os seis indicadores da planilha do Instituto; resumo da aba Indicadores e exportação da aba Avaliações (CSV, por código) | `#/painel`, `GET /api/planilha/resumo`, `GET /api/exportar/planilha`, `src/planilha.js`, decisão 34 |
+| V7 | Régua de presença do Instituto (75% · atenção até 80%): criança com faixa para quem responde pela turma; só contagens para a diretoria | `#/turma`, `#/painel`, `GET /api/turma/presenca`, `GET /api/regua`, decisão 33 |
+| V8 | Recado da turma para o grupo dos responsáveis — gerado do registro, sem criança nomeada, link wa.me sem número | `#/recado`, `GET /api/recado`, `src/recado.js` |
+| V9 | Devolução por encontro: o check-in de hoje contra as últimas folhas da turma (cala sem base) | `#/hoje`, `POST /api/folha` (`devolucao`) |
+| V10 | Parecer a profissional parceiro — por código, sob consentimento específico, revisado e liberado; registro permanente de que saiu | ficha da criança → `#/parecer/:id`, `GET/POST /api/parecer/*`, `src/parecer.js`, decisão 32 |
+
 ### Cadastro de pessoas
 
 | # | Funcionalidade | Onde está |
@@ -250,6 +279,10 @@ src/domain.js             regras de presença, ciclo, consentimento, safras e s�
 src/voz.js                catálogos fechados, agente extrator e folha do dia (v2)
 src/scores.js             os três scores, a supressão e a pauta de segunda (v2)
 src/relatorio.js          saída para o doador em sete blocos e consulta agregada (v2)
+src/planilha.js           a planilha socioemocional do Instituto, preenchida da rubrica (decisão 34)
+src/relato.js             relato do procedimento no padrão do conselho, liberado pela profissional (decisão 31)
+src/recado.js             recado da turma aos responsáveis, sem criança nomeada (decisão 33)
+src/parecer.js            parecer a profissional parceiro, por código e sob consentimento (decisão 32)
 src/ingestao.js           ingestão retroativa das planilhas antigas (v2)
 src/seed.js               geração dos dados sintéticos
 src/api.js                rotas HTTP/JSON
@@ -265,8 +298,8 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    294 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     136 testes unitários das regras críticas (banco temporário)
+scripts/smoke-test.mjs    371 asserções do fluxo principal (contra o servidor no ar)
+scripts/unit-test.mjs     164 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
 scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)

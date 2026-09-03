@@ -137,6 +137,9 @@ export function numerosDoPeriodo({ inicio, fim, custoPeriodo = null }) {
     cobertura: {
       criancas_unicas: inv.criancasUnicas,
       matriculas: inv.matriculas,
+      // Decisao 31: a Vivencia e' programa ADICIONAL — entra na tabela por
+      // programa, mas nao nos 120, senao a soma da tabela desmente o texto.
+      matriculas_adicionais: inv.foraDaRubrica?.matriculas ?? 0,
       multi_programa: inv.multi,
       programas: supProgramas.publicaveis,
       programas_suprimidos: supProgramas.suprimidos,
@@ -337,7 +340,7 @@ export function redigirRelatorio(n) {
           + `Este é o retrato de ${n.periodo.rotulo}.` });
 
   b.push({ numero: 2, titulo: 'Quem você ajudou a receber',
-    texto: `Foram ${n.cobertura.criancas_unicas} crianças únicas e ${n.cobertura.matriculas} matrículas ativas, em ${n.cobertura.encontros} encontros ao longo do período. `
+    texto: `Foram ${n.cobertura.criancas_unicas} crianças únicas e ${n.cobertura.matriculas} matrículas ativas nos programas de matrícula${n.cobertura.matriculas_adicionais ? ` (mais ${n.cobertura.matriculas_adicionais} na Vivência terapêutica, programa adicional de quem já está no Laboratório)` : ''}, em ${n.cobertura.encontros} encontros ao longo do período. `
       + `Os dois números são diferentes de propósito: ${n.cobertura.multi_programa} crianças participam de mais de um programa e aparecem duas vezes na conta de matrículas. `
       + `Daria para somar tudo e dizer que alcançamos cerca de ${n.cobertura.diferenca_pct}% a mais de gente. Preferimos não fazer isso. `
       + `Quando você lê "criança" neste documento, é uma criança, contada uma vez só.`,
@@ -549,22 +552,60 @@ export function publicarRelatorio(tipo, periodo, usuarioId) {
 // Deterministica: casamento de intencao contra uma lista fechada de perguntas
 // que o sistema sabe responder com numero vindo de SQL. Quando nao reconhece,
 // diz que nao sabe — nunca estima, nunca infere, nunca devolve dado individual.
+//
+// PRECEDENCIA (corrigido em 03/09/2026). O casamento era "primeira intencao da
+// lista que bate", e `contagem` estava em primeiro com o termo 'quantas crianc'.
+// Resultado: TODA pergunta que comecasse por "quantas criancas..." caia em
+// contagem antes de o assunto ser testado — inclusive "quantas criancas estao em
+// risco de sair?", que e' uma das seis perguntas que o proprio sistema SUGERE
+// quando nao entende. Ele sugeria uma pergunta que respondia errado.
+//
+// A correcao nao e' reordenar a lista (continuaria fragil): `contagem` passa a
+// ser declarada GENERICA e so' e' considerada quando nenhuma intencao de assunto
+// casou. "Quantas criancas" e' formula de contagem, nao assunto; o assunto e'
+// "risco de sair", "presenca", "cobertura". O assunto vence a formula, sempre.
+//
+// EVIDENCIA (03/09/2026). Especificidade por tamanho nao resolve empate: 'alerta'
+// e 'faltas' tem seis letras cada, e "o alerta dispara com quantas faltas?" casa
+// nas duas. Tamanho e' proxy de especificidade, nao a coisa em si — o que separa
+// as duas palavras e' que 'alerta' so' existe no vocabulario de evasao, enquanto
+// 'faltas' e' dividida. Por isso um termo pode ser declarado FRACO: ele so' vale
+// quando NENHUM outro assunto se manifestou. 'faltas' sozinho e' presenca; ao
+// lado de qualquer marca de evasao ('alerta', 'seguidas', 'risco de sair'),
+// perde. Nao ha termo fraco em evasao: 'alerta' e 'limiar' nao sao ambiguos.
+//
+// ESPECIFICIDADE (03/09/2026). Dois assuntos podem dividir a mesma palavra:
+// 'faltas' e' da presenca (quantas faltas houve no mes) e 'faltas seguidas' e' a
+// definicao do alerta de evasao. Com "primeira da lista que casa", quem estivesse
+// declarada antes engolia a outra — presenca roubaria ate' "em risco de sair".
+// Por isso o desempate dentro de cada passada e' pelo TERMO MAIS LONGO que casou:
+// a frase mais especifica ganha da palavra solta, independente da ordem da lista.
 // --------------------------------------------------------------------------
 const INTENCOES = [
-  { codigo: 'contagem', termos: ['quantas crianc', 'quantos atendid', 'quantas matricul', 'quantos alunos', 'tamanho do instituto', 'quantas pessoas'],
+  { codigo: 'contagem', generica: true,
+    termos: ['quantas crianc', 'quantos atendid', 'quantas matricul', 'quantos alunos', 'tamanho do instituto', 'quantas pessoas'],
     responder: () => {
       const i = inventario();
       return { resposta: `${i.criancasUnicas} crianças únicas e ${i.matriculas} matrículas ativas. ${i.multi} crianças estão em mais de um programa — é essa a diferença entre os dois números.`,
                fonte: 'tabelas crianca e matricula' };
     } },
-  { codigo: 'presenca', termos: ['presenca', 'frequencia', 'comparecimento', 'quantos vieram'],
+  { codigo: 'presenca', termos: ['presenca', 'frequencia', 'comparecimento', 'quantos vieram', 'faltaram'],
+    // 'faltas' e' a unica palavra que presenca e evasao dividem: e' evidencia
+    // FRACA, so' vale quando nenhum outro assunto se manifestou. Ver EVIDENCIA.
+    termosFracos: ['faltas'],
     responder: () => {
       const p = presencaMedia();
       return { resposta: p.pct == null ? 'Ainda não há presença registrada neste mês.'
                 : `A presença média do mês corrente é de ${p.pct}% (${p.presentes} de ${p.total} marcações).`,
                fonte: 'tabela presenca' };
     } },
-  { codigo: 'evasao', termos: ['evasao', 'sairam', 'estao saindo', 'risco de sair', 'abandon', 'permanencia', 'tempo de vinculo'],
+  { codigo: 'evasao', termos: ['evasao', 'sairam', 'estao saindo', 'risco de sair', 'abandon', 'permanencia', 'tempo de vinculo',
+      // 'faltas' sozinho e' da presenca (quantas faltas houve); 'faltas seguidas'
+      // e' a definicao do alerta de evasao. O termo mais longo vence — ver ESPECIFICIDADE.
+      'faltas seguidas', 'faltou seguid',
+      // o limiar e o alerta sao conceitos de evasao — nao existe "alerta" na
+      // presenca. Perguntar pelo gatilho e' perguntar por evasao.
+      'alerta', 'limiar', 'entra na lista', 'dispara'],
     responder: () => {
       const r = riscoEvasao({});
       const s = safras().porPrograma;
@@ -597,22 +638,42 @@ const INTENCOES = [
     } },
 ];
 
+/** As perguntas que o sistema sabe responder — UMA por intencao, e e' isso que
+ *  o teste trava. Elas aparecem em dois lugares: nos chips da tela `#/consulta`,
+ *  ANTES de a pessoa errar, e na recusa, depois. Sao a mesma lista: sugerir na
+ *  recusa algo diferente do que a tela oferece de saida seria ensinar duas
+ *  linguagens para a mesma base. */
+export const SUGESTOES = [
+  'Quantas crianças o instituto atende?',
+  'Como está a presença deste mês?',
+  'Quantas crianças estão em risco de sair?',
+  'Como está a cobertura do registro?',
+  'Quais áreas do Laboratório de Sonhos estão em aberto?',
+  'Como está o ciclo de observação?',
+];
+
 export function consultar(pergunta) {
   const t = (pergunta || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (!t.trim()) throw erro(422, 'Escreva a pergunta.');
-  const achada = INTENCOES.find(i => i.termos.some(termo => t.includes(termo)));
+  // Tres passadas, da evidencia mais forte para a mais fraca:
+  //   1. assunto por termo forte  (PRECEDENCIA + ESPECIFICIDADE)
+  //   2. assunto por termo fraco  (EVIDENCIA)
+  //   3. formula de contagem      (a generica)
+  // Dentro de cada passada, vence o termo mais longo que casou.
+  const forca = (termos = []) => termos.reduce((m, termo) => t.includes(termo) ? Math.max(m, termo.length) : m, 0);
+  const melhor = (lista, campo) => lista
+    .map(i => ({ i, n: forca(i[campo]) }))
+    .filter(x => x.n > 0)
+    .sort((a, b) => b.n - a.n)[0]?.i;
+  const assuntos = INTENCOES.filter(i => !i.generica);
+  const achada = melhor(assuntos, 'termos')
+              ?? melhor(assuntos, 'termosFracos')
+              ?? melhor(INTENCOES.filter(i => i.generica), 'termos');
   if (!achada) {
     return {
       reconhecida: false,
       resposta: 'Não sei responder isso a partir da camada agregada — e prefiro dizer que não sei a inventar um número.',
-      sugestoes: [
-        'Quantas crianças o instituto atende?',
-        'Como está a presença deste mês?',
-        'Quantas crianças estão em risco de sair?',
-        'Como está a cobertura do registro?',
-        'Quais áreas do Laboratório de Sonhos estão em aberto?',
-        'Como está o ciclo de observação?',
-      ],
+      sugestoes: SUGESTOES,
       doutrina: 'A consulta só alcança a camada agregada. Dado individual de criança não é respondido aqui, em nenhuma formulação.',
     };
   }

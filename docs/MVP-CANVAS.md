@@ -30,9 +30,9 @@ pelos educadores, e não é registrada, acompanhada no tempo nem comprovável a 
 | **Maria Silvia**, 35, pedagoga do reforço escolar (7–11) | Persona principal — quem registra | *"Não consigo transformar em dados os resultados do meu trabalho."* Dores: registrar sem tirar atenção das crianças; ter mais tempo para planejar; agir sob demanda. Necessidade decisiva: **não expor as crianças** — exigência da própria usuária |
 | Coordenação | Usuária secundária — quem agrega e presta contas para dentro | Precisa do agregado, da cobertura, da evasão e da síntese que alimenta o relatório ao financiador |
 | Diretoria | Quem presta contas para fora | Trabalha só sobre a camada agregada — sem acesso individual, por desenho (perfil formalizado na v2; ver [`O-QUE-VEIO-DA-V2.md`](O-QUE-VEIO-DA-V2.md)) |
-| **Não é usuária: a psicóloga** | — | O registro clínico tem outro titular e outro regime de sigilo; capturá-lo é o que o produto se recusa a fazer |
+| **A psicóloga** (Carolina Duarte, nome sintético) | Usuária do **indicador de programa** — quem registra a vivência | Corrigido pelo campo em 29/08/2026 (decisão 31): é quem nomeia o registro como a dor central e escreve o relatório do conselho. Entra com presença, registro de vivência em lista fechada e check-in de grupo. O registro clínico continua com outro titular e outro regime de sigilo — capturá-lo é o que o produto se recusa a fazer |
 | **Nunca é titular operacional: a criança** | — | Todo o público é menor de idade; nenhum fluxo depende de ação da criança; consentimento é do responsável |
-| Fora do MVP: o responsável como usuário | — | O perfil de acesso digital das famílias não está caracterizado; nada pode pressupor aparelho ou conexão |
+| Fora do MVP: o responsável como usuário | — | O perfil de acesso digital das famílias não está caracterizado; nada pode pressupor aparelho ou conexão. **Reaberto como borda em 02/09/2026 (decisão 33):** a devolutiva semanal por WhatsApp já existe e é manual — o Percurso gera o recado da turma; quem envia é a pessoa, e o responsável continua sem login |
 
 ## 3. Jornadas
 

@@ -139,8 +139,8 @@ autenticação por senha ou SSO; (b) HTTPS; (c) registro de auditoria de acesso 
 
 ### 9. Dados sintéticos determinísticos
 
-PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 294
-asserções de fluxo e os 136 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
+PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 371
+asserções de fluxo e os 164 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
 a *hoje*, então a demonstração nunca "envelhece".
 
 ---
@@ -634,6 +634,122 @@ estavam no banco e nos testes há semanas; o que os encontrou não foi leitura d
 
 ---
 
+### 31. A psicóloga é usuária do indicador de programa; a Vivência entra fora da rubrica e dentro do registro de turma
+
+**Origem:** visita de campo de 29/08/2026 (`jornada-usuario/CAMPO-versus-REPOSITORIO.md`, achados
+1 e 2; plano em `revisao/11-PLANO-POS-VISITA.md`). Cinco documentos diziam *"a psicóloga não é
+usuária"*. O campo mostrou o contrário: é ela quem nomeia o registro como a dor central e quem
+escreve o único registro escrito da operação — o relatório do conselho profissional, por
+procedimento, não individualizado, sem nome. Na demonstração foi preciso improvisar um perfil
+dela, porque o app assumia professora.
+
+**Decisão.** Papel `profissional` (rótulo "Psicóloga"), com escopo de turma igual ao da
+professora. A **Vivência terapêutica** ganha duas turmas de sábado, matrícula, encontro, presença
+e folha. `programa.no_escopo` passa a significar exatamente *"entra na rubrica por ciclo"*: a
+Vivência fica **fora da rubrica** (`GET /api/ciclo/agenda` responde 422; o `#/hoje` dela não tem
+agenda) e **dentro do registro de turma** — procedimento e objetivo em lista fechada, o
+**check-in de grupo** (ajudaram sem pedir, participaram do começo ao fim, conflitos e quantos
+resolvidos conversando, não observados) e o **relato do procedimento** (`src/relato.js`), gerado
+dos campos fechados no padrão do conselho e válido só depois do OK dela (`relato_liberado_por/em`;
+editar a folha derruba a liberação).
+
+**O que a distinção do bloco 6 permite.** Registro clínico (titular: psicóloga; individual,
+narrativo) continua fora por construção — `conteudo_clinico` segue com acesso "ninguém". O que
+entra é *indicador de programa*: contagens de turma e listas fechadas. Não há campo livre em
+nenhuma tela nova, então não há onde escrever o nome de uma criança.
+
+**O filtro de perímetro ganhou contexto, e este é o ponto mais perigoso da decisão.** Sem
+contexto, a fala *"na vivência terapêutica de hoje o grupo fez a roda"* era barrada como "saúde
+mental / diagnóstico" — o sistema recusaria seu usuário mais provável. Com `contexto: 'vivencia'`,
+uma **lista fechada de sintagmas do procedimento** (`NEUTRALIZAVEIS_VIVENCIA`) é trocada por
+"atividade" antes das listas; tudo o que é sobre criança (diagnóstico, laudo, abuso, estado
+interno de criança nomeada) continua barrado. Os testes exercitam pares: a mesma palavra passa
+como procedimento e é barrada como conteúdo sobre criança.
+
+**Os invariantes não se movem.** `inventario()` conta os 120/106/14 sobre os programas do dossiê e
+devolve a Vivência à parte (`foraDaRubrica`: 24 matrículas de crianças que já estão no
+Laboratório). A seed usa um **segundo gerador** só para a Vivência: consumir o principal deslocava
+a sequência de tudo o que vem depois (38% de descarte virava 19%; 10 alertas viravam 7).
+
+**O custo, declarado (bloco 5).** O tempo dela em sistema é tempo de atendimento: ~40 s de fala
+mais a confirmação por encontro, medidos como a folha (`duracao_segundos`, taxa de correção). O
+modelo de relatório que ela usa foi prometido e ainda não chegou — o template é provisório
+(`VERSAO_TEMPLATE`).
+
+---
+
+### 32. Parecer profissional-a-profissional: o único dado individual que sai — por código, sob consentimento, liberado
+
+**Origem:** campo (achado 6): a assistente social do projeto parceiro pergunta *"como ele tá"* e é
+respondida de memória; *"seria entre profissionais, que é mais rico ainda"*. A mentoria de
+negócios de 28/08 pediu cautela ao cruzar dados da mesma criança — e o parecer cruza presença,
+rubrica e alerta.
+
+**Decisão.** Tabela `parecer` e campo de governança `parecer_profissional` (consentimento
+específico do responsável, Art. 14, nascendo **pendente** para toda criança — como a rubrica; a
+seed não consome o gerador para ele). `src/parecer.js` gera texto **determinístico** só com
+indicador de programa: código (nunca nome), presença e faixa da régua, evolução por indicador em
+piorou/manteve/evoluiu entre os dois últimos ciclos, e **o fato** de haver acompanhamento — nunca
+o detalhe do alerta, nunca conteúdo clínico, nunca campo livre. Quatro portas, nesta ordem:
+consentimento ativo, autoria (quem responde pela criança ou a coordenação), revisor de
+sobre-alegação, **liberação registrada** (quem, quando, para quem) — e o consentimento é
+verificado de novo na liberação, não só na geração. A diretoria não chega a nenhuma rota
+(decisão 16). O envio continua humano, pelo canal que a equipe já usa; o Percurso guarda o
+registro de que saiu.
+
+---
+
+### 33. A régua de 75% e o recado da turma: o produto absorve a gestão que já existe
+
+**Origem:** campo (achados 6 e 7 do consolidado): planilha com % por criança, 75% para permanecer
+e para o grupo de benefícios, faixa amarela de atenção, e a devolutiva semanal aos responsáveis
+por WhatsApp, manual — *"se você tivesse um mecanismo de enviar isso automaticamente para o pai,
+seria ótimo"*.
+
+**Decisão.** `PARAMS.PRESENCA_MINIMA_PCT = 75`, `PRESENCA_ATENCAO_PCT = 80`,
+`REGUA_MINIMO_ENCONTROS = 4`. `reguaDaTurma` devolve a criança com faixa (`abaixo`, `atencao`,
+`ok`, `sem_base`) para quem responde pela turma e para a coordenação — é a prática da casa, a
+conversa é com a família — e `reguaDoInstituto` devolve **só contagens** por turma para o painel
+(a diretoria vê contagens, nunca criança). A linguagem é de protocolo ("abaixo da régua do
+Instituto"), não de erro.
+
+**O recado da turma** (`src/recado.js`) reabre a borda "responsável fora do MVP" **por evidência**:
+o canal já existe e é manual. O Percurso gera o texto **da turma** (atividade ou procedimento,
+presença em número, presença do mês, próximo encontro) e um link `wa.me` sem número — quem
+envia é a pessoa, no grupo que já existe; o texto não persiste (governança `recado_da_turma`,
+legítimo interesse). A régua individual **não** entra no recado: é para dentro.
+
+**Devolução por encontro** (achado 9: *"não dá, não dá"*): `devolucaoDoEncontro` compara o
+check-in de hoje com as últimas quatro folhas da turma e **cala quando não há três anteriores** —
+falhar em branco. O clímax do fecho de ciclo continua existindo; deixou de ser a única devolução.
+
+---
+
+### 34. A rubrica fala a língua da planilha do Instituto — e o mapeamento é declarado
+
+**Origem:** a planilha socioemocional que o Instituto tem em mãos (seis indicadores, escala 0–2,
+inicial × final, evolução automática, leitura ≥70/≥50%) e o método 0/1/2 da outra organização
+(*piorou, manteve, evoluiu*), que a psicóloga conhece e no qual confia.
+
+**Decisão.** As seis dimensões passam a ser os seis indicadores: Autocontrole (ex-Cooperação e
+combinados), Convivência (ex-Interação com colegas), Participação (ex-Autonomia na tarefa),
+Expressão emocional, **Autoestima (nova)**, Resiliência (ex-Persistência). As âncoras continuam em
+4 níveis observáveis — mais finas que uma escala de frequência — e foram reescritas para os nomes
+novos; o corpus do RAG acompanha (hash novo no manifest). O mapeamento **1→0, 2→1, 3→1, 4→2**
+vive num único lugar (`src/planilha.js`, `NIVEL_PARA_PLANILHA`), sai na legenda da exportação e é
+declarado **provisório até o aval da psicóloga** — a escolha de colapsar 2 e 3 é a parte
+arbitrária, e por isso está nomeada. `GET /api/planilha/resumo` replica a aba *Indicadores* com
+supressão de célula pequena; `GET /api/exportar/planilha` devolve a aba *Avaliações* em CSV
+(UTF-8 com BOM, `;`) **por código** — o cadastro que liga código a nome fica com a coordenação.
+O agregado interno continua na escala 1–4.
+
+**Onde o número mudou.** A seed passou a ter 6 dimensões e o viés deliberado ficou: cinco sobem,
+Resiliência recua de leve, Expressão emocional segue a menor. Toda menção a "5 dimensões" nos
+documentos vivos foi corrigida; os históricos (inception, roteiros da visita) ficaram como
+registro da época.
+
+---
+
 ---
 
 ## Dívidas técnicas conhecidas
@@ -651,3 +767,7 @@ estavam no banco e nos testes há semanas; o que os encontrou não foi leitura d
 | Anonimização não cobre apelido/paráfrase | Risco residual declarado na UI | Reavaliar com a PoC; orientação de uso é a mitigação |
 | Educadora substituta sem representação no modelo | Escopo de turma barra acesso legítimo temporário | Decisão da coordenação (decisão 22) |
 | Políticas A-06/A-11 propostas, não validadas | Pendência de governança | Validação da coordenação (decisão 23) |
+| Mapeamento 1–4 → 0–2 da planilha é provisório | A exportação pode divergir do que a psicóloga faria à mão | Aval da psicóloga sobre as 6 rubricas e o mapeamento (decisão 34) |
+| Template do relato do procedimento é provisório | Pode não bater com o padrão que o conselho pede a ela | Quando o modelo prometido na visita chegar (decisão 31) |
+| Extrator lê contagens por padrão lexical | Fala fora do padrão ("umas seis") fica em branco | Medir a taxa de correção do check-in na operação; Modo A por modelo continua opt-in |
+| Neutralização do perímetro por lista fechada | Sintagma novo do procedimento volta a ser barrado | Ampliar `NEUTRALIZAVEIS_VIVENCIA` com a psicóloga, nunca por inferência |

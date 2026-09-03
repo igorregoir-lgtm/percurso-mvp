@@ -62,6 +62,12 @@ que alimenta o relatório ao financiador.
 outro regime de sigilo. Um sistema que capturasse o que a psicóloga sabe é um sistema que não
 deveria existir.
 
+> **Corrigido pelo campo (29/08/2026, decisão 31).** A segunda frase continua verdadeira; a
+> primeira caiu. A psicóloga é usuária **do indicador de programa** — presença, registro de
+> vivência em lista fechada, check-in de grupo — e é quem nomeia o registro como a dor central.
+> O que ela sabe do atendimento continua fora por construção. Ver `JORNADAS.md` §4 e
+> `jornada-usuario/CAMPO-versus-REPOSITORIO.md`.
+
 **Quem nunca é titular operacional — a criança.** Todo o público é menor de idade; nenhum fluxo
 depende de ação da criança e todo consentimento é do responsável.
 
@@ -164,6 +170,16 @@ escreve o relatório com adjetivos, porque não tem substantivos.
    expor nenhuma criança. *(F5, F7)*
 5. Como **coordenação**, quero campos sem consentimento bloqueados por padrão, para que a proteção
    seja regra do sistema. *(F1)*
+6. Como **psicóloga da Vivência**, quero contar em 40 segundos como foi o encontro, para que o
+   relatório no padrão do conselho exista sem eu ter que escrever à noite. *(decisão 31)*
+
+> **A sexta chegou depois, e pelo campo.** As cinco de cima saíram da inception, com a pedagoga como
+> persona. A visita de 29/08/2026 mostrou que quem tem a dor do registro e quem escreve o relatório
+> é a **psicóloga** — e que a turma dela fica fora da rubrica por decisão de projeto. A US-6 é a
+> história que a inception não tinha como ter: ela nasce de uma pessoa dizendo *"o maior desafio
+> aqui é registrar o que você fez, né?"*. O fluxo dela está desenhado em
+> [`task-flow/README.md`](task-flow/README.md) e é o que a sessão de
+> [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md) mede.
 
 ---
 

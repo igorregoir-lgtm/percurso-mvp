@@ -79,6 +79,29 @@ este documento mostra onde ele nos contrariou.
 
 ---
 
+## 8. Exigir que o registro nasça na janela do encontro é desenhar o produto para a única hora…
+
+**O que o repositório diz.** O registro só nasce na janela do encontro. A jornada da educadora em docs/JORNADAS.md encadeia #/hoje → #/chamada → #/folha → #/voz → #/confirmar como sequência do dia, e a própria versão anterior desta jornada afirmava, na fase 04: "se o registro não nasceu durante ou logo depois da atividade, aqui ele não nasce". O único caminho de entrada é o microfone ao vivo (public/app.js usa SpeechRecognition, que só transcreve fala em tempo real) — não existe rota para importar um arquivo de áudio, e #/importar é importação de planilha CSV pela coordenação.
+
+**O que o campo mostrou.** A janela do encontro é exatamente onde ela não tem mãos livres, e a janela seguinte é onde ela responde "Não dá, não dá". A operação é intermitente por natureza: sábado corrido, domingo de descanso, e quem conduz o sábado não aparece na semana. Ao mesmo tempo, gravar com o celular já é rotina tranquila e chamada de "fácil" — o aparelho já está na mão, gravando.
+
+**Consequência.** Exigir que o registro nasça numa janela é desenhar o produto para a única hora em que a usuária comprovadamente não pode usá-lo. A correção separa captura de registro: capturar é apertar um botão ou já ter o áudio; registrar é trabalho do sistema, a qualquer momento. O sistema continua cobrando — e cobrar aqui é ajudar —, só que antes do encontro, quando ainda dá para apertar "gravar", em vez de no fim do dia como dívida. Isso exige seis coisas que o repositório ainda não tem: calendário de encontros marcado pela profissional, pela coordenação ou pela direção; aviso antes de cada encontro (o produto não emite nenhuma notificação hoje); encontro que nunca fecha, com registro atrasado entrando na data do encontro; a conversão do áudio preenchendo os seis indicadores da planilha do Instituto (hoje a rubrica é respondida à mão, criança por criança, e src/voz.js só preenche a folha do dia e o check-in de grupo); gravação do encontro inteiro; e importação de arquivo de áudio, que por sua vez exige transcrição local de arquivo (o SLM da pasta ai/ não faz ASR; o manifest não tem modelo de áudio). É a mudança de maior alcance apontada por esta jornada.
+
+---
+
+
+## O que mudou no produto por causa de cada achado (02/09/2026)
+
+| Achado | O que entrou | Onde |
+|---|---|---|
+| 1 e 2 — a psicóloga é usuária e o filtro a recusaria | Papel `profissional`; Vivência com turma, fora da rubrica e dentro do registro de turma; filtro de perímetro com contexto (o nome do procedimento não dispara, conteúdo sobre criança continua barrado) | decisão 31 · `src/domain.js`, `src/voz.js`, `src/relato.js` |
+| 3 — a regra vem do conselho | Relato do procedimento gerado dos campos fechados — não individualizado, sem nome — liberado pela profissional; template provisório até o modelo dela chegar | decisão 31 · `#/relato` |
+| 4 — gravar é lido como perigoso | A tela de voz diz o que grava e o que descarta; nome falado vira código na tela e é contado | `#/voz`, `#/confirmar` |
+| 5 — o clímax pode nunca disparar | Devolução por encontro: o check-in de hoje contra as últimas folhas (cala sem base) | decisão 33 · `#/hoje` |
+| 6 — o destino mais rico é lateral | Parecer a profissional parceiro, por código, sob consentimento específico, revisado e liberado | decisão 32 · `#/parecer/:id` |
+| 7 — a devolutiva aos pais já existe e é manual | Recado da turma gerado do registro, sem criança nomeada, link wa.me sem número; a régua de 75% da casa como parâmetro | decisão 33 · `#/recado`, `#/turma` |
+| 8 — a janela do encontro é a hora em que ela não pode usar o produto | **Ainda não entrou.** Seis peças: calendário de encontros (profissional/coordenação/direção), aviso antes de cada encontro, encontro que nunca fecha, a fala preenchendo os seis indicadores da planilha, gravação do encontro inteiro e importação de arquivo de áudio — as duas últimas dependem de transcrição local de arquivo, que a pasta `ai/` ainda não tem | pendente · proposto por esta jornada em 02/09/2026 |
+| Planilha socioemocional (consolidado §6) | Rubrica com os seis indicadores; resumo da aba Indicadores e exportação por código | decisão 34 · `#/painel` |
 
 ## Procedência
 

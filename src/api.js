@@ -18,6 +18,10 @@ import { invalidarSinais, falhasDoEnvelope as envelopeFalhou } from './passo/sin
 import * as PF from './passo/perfil.js';
 import * as PO from './passo/orquestrador.js';
 import * as SROI from './sroi/calculator.js';
+import * as PL from './planilha.js';
+import * as REL from './relato.js';
+import * as REC from './recado.js';
+import * as PAR from './parecer.js';
 import { conversar, AI_ENABLED } from './ai-client.js';
 const { nomesParaAnonimizar } = C;
 
@@ -169,6 +173,9 @@ function exigeAcessoCrianca(req, criancaId) {
     throw D.erro(403, 'Esta criança é de outra turma. O acesso é do educador da criança e da coordenação.');
   return u;
 }
+// Escopo de leitura individual: professora e profissional (psicóloga) só nas
+// próprias turmas; coordenação sem filtro; diretoria nunca chega aqui.
+const escopoDe = (u) => (u.papel === 'educador' || u.papel === 'profissional') ? u.id : null;
 const num = (v, campo) => {
   const n = Number(v);
   if (!Number.isInteger(n) || n <= 0) throw D.erro(422, `Parâmetro inválido: ${campo}.`);
@@ -208,16 +215,29 @@ export const rotas = {
       retomada: D.estadoDeRetomada(u.id),
       chamada: turma ? D.chamada(turma.id, D.hoje()) : null,
       chamadas_abertas: turma ? D.chamadasEmAberto(turma.id) : [],
-      agenda: turma && ciclo ? D.agendaDoCiclo(turma.id, ciclo.id) : null,
+      // Turma fora da rubrica (Vivência, decisão 31) não tem agenda de ciclo:
+      // oferecer "faltam N observações" à psicóloga seria pedir o que o
+      // produto decidiu não pedir.
+      na_rubrica: turma ? D.turmaNaRubrica(turma.id) : false,
+      agenda: turma && ciclo && D.turmaNaRubrica(turma.id) ? D.agendaDoCiclo(turma.id, ciclo.id) : null,
       alertas: turma
         ? D.alertas().filter(a => get(
             `SELECT 1 x FROM matricula WHERE crianca_id = ? AND turma_id = ? AND status='ativa'`,
             a.crianca_id, turma.id))
         : [],
       // "Para esta semana": o sistema deixa de cobrar e passa a devolver.
-      pauta: turma ? S.pautaDaSemana(turma.id) : null,
+      // Turma fora da rubrica: a pauta de segunda nao e' dela (sem sugestao de
+      // atividade nem lacuna de exposicao); o risco de sair continua valendo.
+      pauta: turma ? (D.turmaNaRubrica(turma.id) ? S.pautaDaSemana(turma.id)
+                      : { ...S.pautaDaSemana(turma.id), exposicao: null, sugestao: null }) : null,
       folha: turma ? V.folhaDaTurma(turma.id, D.dataDaFolha(turma.id)) : null,
       data_folha: turma ? D.dataDaFolha(turma.id) : null,
+      // E6: a devolucao do ultimo encontro com folha, para a tela de abertura.
+      devolucao: (() => {
+        if (!turma) return null;
+        const enc = D.encontroDe(turma.id, D.dataDaFolha(turma.id));
+        return enc && V.folhaDe(enc.id) ? V.devolucaoDoEncontro(enc.id) : null;
+      })(),
     };
   },
 
@@ -244,9 +264,34 @@ export const rotas = {
 
   'GET /api/rubrica': (req) => { exigeUsuario(req); return { dimensoes: D.rubrica(), params: D.PARAMS }; },
 
+  // ---- A planilha socioemocional do Instituto (decisão 34) ----------------
+  // Coordenação e diretoria leem o resumo (agregado, com supressão); só a
+  // coordenação exporta as linhas por criança — e elas saem por CÓDIGO.
+  'GET /api/planilha/resumo': (req, _b, q) => {
+    exigeGestao(req);
+    const opcoes = {
+      cicloInicialId: q.get('inicial') ? num(q.get('inicial'), 'inicial') : null,
+      cicloFinalId: q.get('final') ? num(q.get('final'), 'final') : null,
+      programaId: q.get('programa_id') ? num(q.get('programa_id'), 'programa_id') : null,
+    };
+    return { ...PL.resumoPlanilha(opcoes), ciclos: PL.ciclosDisponiveis() };
+  },
+  'GET /api/exportar/planilha': (req, _b, q) => {
+    exigeCoordenacao(req);
+    const opcoes = {
+      cicloInicialId: q.get('inicial') ? num(q.get('inicial'), 'inicial') : null,
+      cicloFinalId: q.get('final') ? num(q.get('final'), 'final') : null,
+      programaId: q.get('programa_id') ? num(q.get('programa_id'), 'programa_id') : null,
+    };
+    const csv = PL.csvPlanilha(opcoes);
+    return { _csv: csv, _nome: `percurso-planilha-socioemocional-${D.hoje()}.csv` };
+  },
+
   'GET /api/ciclo/agenda': (req, _b, q) => {
     const turmaId = num(q.get('turma_id'), 'turma_id');
     exigeAcessoTurma(req, turmaId);
+    if (!D.turmaNaRubrica(turmaId))
+      throw D.erro(422, 'Esta turma não entra na rubrica por ciclo: na Vivência o registro é de turma (presença, procedimento e check-in de grupo), nunca observação individual — decisão 31.');
     const ciclo = D.cicloAberto();
     if (!ciclo) throw D.erro(404, 'Não há ciclo de observação aberto.');
     return D.agendaDoCiclo(turmaId, ciclo.id);
@@ -296,7 +341,9 @@ export const rotas = {
     const ciclo = D.cicloAberto();
     return {
       turma, agregado: agg, leitura: D.leituraDoCiclo(agg),
-      agenda: ciclo ? D.agendaDoCiclo(turmaId, ciclo.id) : null,
+      // Turma fora da rubrica (Vivencia, decisao 31): sem agenda de ciclo aqui tambem.
+      agenda: ciclo && D.turmaNaRubrica(turmaId) ? D.agendaDoCiclo(turmaId, ciclo.id) : null,
+      na_rubrica: D.turmaNaRubrica(turmaId),
       plano: D.planoDaTurma(turmaId),
       tempo: D.tempoDeRegistro({ turmaId }),
     };
@@ -319,7 +366,7 @@ export const rotas = {
       q: q.get('q') || '',
       turmaId: q.get('turma_id') ? Number(q.get('turma_id')) : null,
       programaId: q.get('programa_id') ? Number(q.get('programa_id')) : null,
-      educadorId: u.papel === 'educador' ? u.id : null,
+      educadorId: escopoDe(u),
     });
   },
 
@@ -332,7 +379,7 @@ export const rotas = {
   'GET /api/alertas': (req) => {
     const u = exigeEducadorOuCoordenacao(req);
     return {
-      alertas: D.alertas(null, u.papel === 'educador' ? u.id : null),
+      alertas: D.alertas(null, escopoDe(u)),
       faltas_para_lista: D.PARAMS.AUSENCIAS_ALERTA,
     };
   },
@@ -616,6 +663,11 @@ export const rotas = {
       chamada: D.chamada(turmaId, data),
       folha: enc ? V.folhaDe(enc.id) : null,
       catalogos: V.catalogos(),
+      // Decisao 31: na Vivencia a folha e' o registro de procedimento — a tela
+      // mostra procedimento/objetivo e exige o check-in.
+      vivencia: !D.turmaNaRubrica(turmaId),
+      // E6: a devolucao por encontro, quando ja' ha' folha.
+      devolucao: enc && V.folhaDe(enc.id) ? V.devolucaoDoEncontro(enc.id) : null,
     };
   },
 
@@ -629,15 +681,22 @@ export const rotas = {
     const texto = String(body.transcricao ?? '');
     if (texto.length > 4000) throw D.erro(422, 'Transcrição longa demais para uma fala de 40 segundos.');
     const nomes = D.criancasDaTurma(turmaId).map(c => c.nome);
+    const vivencia = !D.turmaNaRubrica(turmaId);
     // Modo A com modelo e' OPT-IN (AI_EXTRATOR=1) e cai para o extrator lexical
     // em qualquer falha — o contrato da decisao 13 continua o mesmo: saida
     // valida contra o schema fechado, confirmacao humana, nada gravado aqui.
     const { extracao, perimetro, invalido, origem } = C.AI_EXTRATOR
       ? await C.extrairComModelo(texto, nomes, C.nomesParaAnonimizar(exigeUsuario(req)))
-      : { ...V.extrairDaFala(texto, nomes), origem: 'regras' };
+      : { ...V.extrairDaFala(texto, nomes, { vivencia }), origem: 'regras' };
+    // E4 (campo): "voce fala o nome, ele apaga". A contagem de nomes que a
+    // fala continha vai para a tela — o nome em si nao volta e nao e' gravado.
+    const { substituicoes } = anonimizarTexto(texto, nomes);
     return {
       extracao,
       origem: origem ?? 'regras',
+      vivencia,
+      nomes_substituidos: substituicoes,
+      procedimento_neutralizado: perimetro.neutralizados ?? 0,
       // Fato de ter havido exclusao + a categoria, para a tela devolver o
       // encaminhamento humano. O trecho volta so para a pessoa que falou ver o
       // que nao entra; nao e' persistido em lugar nenhum.
@@ -661,7 +720,69 @@ export const rotas = {
       encontroId: enc.id, educadorId: u.id, campos: body.campos, origem: body.origem || 'manual',
       sugestao: body.sugestao ?? null, fechar: !!body.fechar,
     });
-    return { ok: true, folha, pauta: S.pautaDaSemana(turmaId) };
+    return { ok: true, folha, pauta: S.pautaDaSemana(turmaId), devolucao: V.devolucaoDoEncontro(enc.id) };
+  },
+
+  // ---- Regua de presenca (decisao 33) -------------------------------------
+  // Quem responde pela turma e a coordenacao veem a crianca com a faixa; a
+  // diretoria so' o total por turma (contagens).
+  'GET /api/turma/presenca': (req, _b, q) => {
+    const turmaId = num(q.get('turma_id'), 'turma_id');
+    exigeAcessoTurma(req, turmaId);
+    return D.reguaDaTurma(turmaId, { desde: q.get('desde') || null });
+  },
+  'GET /api/regua': (req, _b, q) => {
+    exigeGestao(req);
+    return D.reguaDoInstituto({ desde: q.get('desde') || null });
+  },
+
+  // ---- Recado da turma para os responsaveis (decisao 33) ------------------
+  'GET /api/recado': (req, _b, q) => {
+    const turmaId = num(q.get('turma_id'), 'turma_id');
+    exigeAcessoTurma(req, turmaId);
+    return REC.recadoDaTurma(turmaId, q.get('data') || D.dataDaFolha(turmaId));
+  },
+
+  // ---- Parecer profissional-a-profissional (decisao 32) --------------------
+  // O unico dado individual que sai: por codigo, sob consentimento, liberado.
+  // A diretoria nunca chega aqui (decisao 16).
+  'GET /api/parecer': (req, _b, q) => {
+    const criancaId = num(q.get('crianca_id'), 'crianca_id');
+    exigeAcessoCrianca(req, criancaId);
+    return {
+      consentimento: D.consentimentoDe(criancaId, 'parecer_profissional').status,
+      previa: PAR.numerosDoParecer(criancaId),
+      pareceres: PAR.pareceresDe(criancaId),
+    };
+  },
+  'GET /api/parecer/ver': (req, _b, q) => {
+    const p = PAR.parecerDe(num(q.get('id'), 'id'));
+    exigeAcessoCrianca(req, p.crianca_id);
+    return p;
+  },
+  'POST /api/parecer/gerar': (req, body) => {
+    const criancaId = num(body.crianca_id, 'crianca_id');
+    const u = exigeAcessoCrianca(req, criancaId);
+    return { ok: true, parecer: PAR.gerarParecer({ criancaId, destinatario: body.destinatario, usuarioId: u.id }) };
+  },
+  'POST /api/parecer/liberar': (req, body) => {
+    const u = exigeUsuario(req);
+    semAcessoIndividual(u);
+    return { ok: true, parecer: PAR.liberarParecer(num(body.id, 'id'), u.id) };
+  },
+
+  // ---- Relato do procedimento (decisao 31) --------------------------------
+  'GET /api/relato': (req, _b, q) => {
+    const turmaId = num(q.get('turma_id'), 'turma_id');
+    exigeAcessoTurma(req, turmaId);
+    const data = q.get('data') || D.dataDaFolha(turmaId);
+    return { ...REL.relatoDoProcedimento(turmaId, data), historico: REL.relatosDaTurma(turmaId) };
+  },
+  'POST /api/relato/liberar': (req, body) => {
+    const turmaId = num(body.turma_id, 'turma_id');
+    const u = exigeAcessoTurma(req, turmaId);
+    const data = body.data || D.dataDaFolha(turmaId);
+    return { ok: true, ...REL.liberarRelato(turmaId, data, u.id) };
   },
 
   'POST /api/folha/reabrir': (req, body) => {
@@ -772,6 +893,12 @@ export const rotas = {
   },
 
   // F15 — consulta em linguagem natural sobre a camada agregada.
+  // A tela pede as sugestoes ANTES de a pessoa perguntar: quem chega nao deveria
+  // ter de errar uma vez para descobrir o que a base sabe responder.
+  'GET /api/consulta': (req) => {
+    exigeGestao(req);
+    return { sugestoes: R.SUGESTOES };
+  },
   'POST /api/consulta': (req, body) => {
     exigeGestao(req);
     return R.consultar(body.pergunta);
