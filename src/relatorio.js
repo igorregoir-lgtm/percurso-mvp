@@ -552,9 +552,22 @@ export function publicarRelatorio(tipo, periodo, usuarioId) {
 // Deterministica: casamento de intencao contra uma lista fechada de perguntas
 // que o sistema sabe responder com numero vindo de SQL. Quando nao reconhece,
 // diz que nao sabe — nunca estima, nunca infere, nunca devolve dado individual.
+//
+// PRECEDENCIA (corrigido em 03/09/2026). O casamento era "primeira intencao da
+// lista que bate", e `contagem` estava em primeiro com o termo 'quantas crianc'.
+// Resultado: TODA pergunta que comecasse por "quantas criancas..." caia em
+// contagem antes de o assunto ser testado — inclusive "quantas criancas estao em
+// risco de sair?", que e' uma das seis perguntas que o proprio sistema SUGERE
+// quando nao entende. Ele sugeria uma pergunta que respondia errado.
+//
+// A correcao nao e' reordenar a lista (continuaria fragil): `contagem` passa a
+// ser declarada GENERICA e so' e' considerada quando nenhuma intencao de assunto
+// casou. "Quantas criancas" e' formula de contagem, nao assunto; o assunto e'
+// "risco de sair", "presenca", "cobertura". O assunto vence a formula, sempre.
 // --------------------------------------------------------------------------
 const INTENCOES = [
-  { codigo: 'contagem', termos: ['quantas crianc', 'quantos atendid', 'quantas matricul', 'quantos alunos', 'tamanho do instituto', 'quantas pessoas'],
+  { codigo: 'contagem', generica: true,
+    termos: ['quantas crianc', 'quantos atendid', 'quantas matricul', 'quantos alunos', 'tamanho do instituto', 'quantas pessoas'],
     responder: () => {
       const i = inventario();
       return { resposta: `${i.criancasUnicas} crianças únicas e ${i.matriculas} matrículas ativas. ${i.multi} crianças estão em mais de um programa — é essa a diferença entre os dois números.`,
@@ -603,7 +616,11 @@ const INTENCOES = [
 export function consultar(pergunta) {
   const t = (pergunta || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (!t.trim()) throw erro(422, 'Escreva a pergunta.');
-  const achada = INTENCOES.find(i => i.termos.some(termo => t.includes(termo)));
+  // Duas passadas: assunto primeiro, formula de contagem depois. Ver a nota de
+  // PRECEDENCIA acima — sem isso, 'quantas crianc' engole o assunto da pergunta.
+  const casa = i => i.termos.some(termo => t.includes(termo));
+  const achada = INTENCOES.find(i => !i.generica && casa(i))
+              ?? INTENCOES.find(i => i.generica && casa(i));
   if (!achada) {
     return {
       reconhecida: false,

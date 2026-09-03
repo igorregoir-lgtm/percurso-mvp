@@ -545,6 +545,41 @@ test('consultar: sobre criança individual, o sistema diz que não sabe', () => 
   assert.throws(() => R.consultar('  '), (e) => e.status === 422);
 });
 
+test('consultar: o assunto vence a fórmula de contagem', () => {
+  // O bug: 'quantas crianc' (intenção contagem) casava antes de 'risco de sair'
+  // (intenção evasão), porque contagem era a primeira da lista. Toda pergunta
+  // que começasse por "quantas crianças…" era respondida com o total do
+  // instituto — resposta certa para outra pergunta.
+  const e = R.consultar('quantas crianças estão em risco de sair?');
+  assert.equal(e.intencao, 'evasao', 'assunto "risco de sair" tem de vencer a fórmula "quantas crianças"');
+  assert.match(e.resposta, /em risco/i);
+
+  // A fórmula sozinha continua caindo em contagem — a genérica não sumiu.
+  assert.equal(R.consultar('quantas crianças o instituto atende?').intencao, 'contagem');
+
+  // E o assunto vence em qualquer formulação, com ou sem a palavra "crianças".
+  assert.equal(R.consultar('quantas estão em risco de sair?').intencao, 'evasao');
+  assert.equal(R.consultar('quantas crianças já foram observadas no ciclo?').intencao, 'ciclo');
+});
+
+test('consultar: o sistema responde corretamente as perguntas que ele mesmo sugere', () => {
+  // Invariante de auto-consistência: sugerir uma pergunta e classificá-la errado
+  // é pior que não sugerir nada. Foi assim que o bug de precedência apareceu —
+  // "Quantas crianças estão em risco de sair?" está na lista de sugestões.
+  const { sugestoes } = R.consultar('a Ana Clara está bem?');
+  assert.ok(sugestoes.length >= 6);
+  for (const s of sugestoes) {
+    const r = R.consultar(s);
+    assert.equal(r.reconhecida, true, `o sistema sugere "${s}" e não sabe responder`);
+    assert.ok(r.fonte, `a resposta a "${s}" não cita fonte`);
+  }
+  // e cada sugestão tem de cair numa intenção DIFERENTE: seis perguntas para
+  // seis assuntos. Duas caindo na mesma é sinal de que uma engoliu a outra.
+  const intencoes = sugestoes.map(s => R.consultar(s).intencao);
+  assert.equal(new Set(intencoes).size, sugestoes.length,
+    `sugestões colidiram em intenção: ${intencoes.join(', ')}`);
+});
+
 test('relatório: o revisor barra verbo causal e exige a ressalva', () => {
   assert.equal(D.revisarSobreAlegacao('O programa causou avanço.').status, 'reprovado');
   assert.equal(D.revisarSobreAlegacao(

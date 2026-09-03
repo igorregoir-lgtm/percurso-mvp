@@ -835,6 +835,8 @@ secao('17 · Consulta sobre a camada agregada (F15)');
   const negado = await POST('maria', '/api/consulta', { pergunta: 'quantas crianças?' });
   T('educadora não usa a consulta agregada (403)', negado.status === 403);
 
+  const n0 = (await POST('rita', '/api/consulta', { pergunta: 'a Ana Clara está bem?' })).corpo;
+
   const c = (await POST('rita', '/api/consulta', { pergunta: 'Quantas crianças o instituto atende?' })).corpo;
   T('a consulta reconhece a intenção de contagem', c.reconhecida && c.intencao === 'contagem');
   T('a resposta cita a fonte do número', /crianca|matricula/i.test(c.fonte));
@@ -843,6 +845,24 @@ secao('17 · Consulta sobre a camada agregada (F15)');
 
   const r = (await POST('rita', '/api/consulta', { pergunta: 'quantas estão em risco de sair?' })).corpo;
   T('a consulta responde sobre evasão com número do banco', r.reconhecida && /em risco/i.test(r.resposta));
+
+  // A formulação natural — com "crianças" — caía em contagem até 03/09/2026,
+  // porque o termo 'quantas crianc' vencia o assunto. Ver a nota de PRECEDENCIA
+  // em src/relatorio.js.
+  const rc = (await POST('rita', '/api/consulta', { pergunta: 'Quantas crianças estão em risco de sair?' })).corpo;
+  T('o assunto vence a fórmula de contagem na consulta', rc.intencao === 'evasao', `(${rc.intencao})`);
+
+  // Auto-consistência: o sistema tem de saber responder o que ele mesmo sugere,
+  // e cada sugestão tem de cair numa intenção diferente.
+  const intencoes = [];
+  for (const s of n0.sugestoes) {
+    const x = (await POST('rita', '/api/consulta', { pergunta: s })).corpo;
+    intencoes.push(x.reconhecida ? x.intencao : 'NAO-RECONHECIDA');
+  }
+  T('o sistema responde todas as perguntas que ele mesmo sugere',
+    intencoes.every(i => i !== 'NAO-RECONHECIDA'), `(${intencoes.join(', ')})`);
+  T('cada sugestão cai numa intenção diferente',
+    new Set(intencoes).size === intencoes.length, `(${intencoes.join(', ')})`);
 
   const n = (await POST('rita', '/api/consulta', { pergunta: 'a Ana Clara está bem?' })).corpo;
   T('pergunta sobre criança individual não é reconhecida', n.reconhecida === false);
