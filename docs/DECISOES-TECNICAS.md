@@ -302,7 +302,7 @@ ANALISE-SLM-E-SROI.md, implementados na revisão de 25/08/2026 (plano auditado e
 Um SLM local (Qwen3 4B Instruct 2507, GGUF Q4_K_M, Apache-2.0) roda via `llama.cpp` em
 `127.0.0.1:8081`, atrás de `AI_ENABLED` — **desligada por padrão**. Três usos, três coleiras:
 
-- **Copilot reflexivo (Modo B, `#/copilot`)** — os 7 blocos do contrato saem por `json_schema`
+- **Copilot reflexivo (Modo B, `#/pensar`)** — os 7 blocos do contrato saem por `json_schema`
   (gramática, não boa vontade); ordem obrigatória do pipeline: filtro de perímetro sobre o texto
   ORIGINAL → recusas determinísticas → pseudonimização → RAG → modelo → verificador de citações.
   Memória só de sessão (RAM, TTL), botão "Apagar sessão", fila de 2 com teto.
@@ -513,7 +513,7 @@ para cair no mesmo template. A infraestrutura e os testes ficam prontos, e a rea
 variável de ambiente.
 
 **Adendo de 25/08/2026 — subir o porte do modelo está fora.** A conclusão original apontava um
-Qwen 14B/30B como próximo aurora, porque a máquina de desenvolvimento comporta. Está descartado
+Qwen 14B/30B como próximo passo, porque a máquina de desenvolvimento comporta. Está descartado
 por decisão de produto: a arquitetura do Percurso exige rodar **no notebook comum de uma
 organização social**, e um modelo dimensionado para a máquina de desenvolvimento não é o produto
 — é uma demonstração que o Instituto não conseguiria operar. O porte é restrição de desenho, não

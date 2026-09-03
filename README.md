@@ -21,7 +21,7 @@ encontro e **parecer a profissional parceiro** por código, sob consentimento. D
 [`docs/revisao/11-PLANO-POS-VISITA.md`](docs/revisao/11-PLANO-POS-VISITA.md).
 
 **Versão 3** (25/08/2026): a camada de IA local do plano de arquitetura, inteira e desligável —
-RAG com corpus governado por manifest (`#/copilot` cita a fonte), copilot reflexivo num Qwen3 4B
+RAG com corpus governado por manifest (`#/pensar` cita a fonte), copilot reflexivo num Qwen3 4B
 rodando **na própria máquina** (nada sai dela), SROI exploratório determinístico (`#/impacto`),
 PWA, calibração entre educadoras no painel e a infraestrutura da Fase 4 (LoRA) com os gates
 declarados. Com `AI_ENABLED` desligada — o padrão — o produto é exatamente a v2. Plano auditado e
@@ -102,7 +102,7 @@ iPhone e Android abrem, instalam como app e **a voz funciona** (HTTPS ✓). `Ctr
 a URL deixa de existir. Ferramenta de demonstração (decisão 25): pública, efêmera, sem senha —
 só com os dados sintéticos. Requisitos na máquina que apresenta: `brew install cloudflared qrencode`.
 
-Para instalar o Percurso em OUTRO computador (o do Instituto), o aurora a aurora sem jargão está em
+Para instalar o Percurso em OUTRO computador (o do Instituto), o passo a passo sem jargão está em
 [`docs/MANUAL-DE-INSTALACAO.md`](docs/MANUAL-DE-INSTALACAO.md) — inclui o início automático no
 login (`ai/scripts/instalar-inicio-automatico.sh`), para ligar o computador e o Percurso já estar
 no ar.
@@ -261,7 +261,7 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 | Peça | O que faz | Onde está |
 |---|---|---|
 | RAG governado | busca com citação num corpus aprovado por manifest (leis, BNCC, material interno) | `GET /api/rag/search`, `src/rag/`, `docs/GOVERNANCA-FONTES-RAG.md` |
-| Copilot reflexivo (Modo B) | 7 blocos por gramática: perguntas socráticas, hipóteses rotuladas, ≥3 alternativas, contraponto, fontes verificadas, escalonamento | `#/copilot` (“Refletir”), `src/copilot.js` |
+| Copilot reflexivo (Modo B) | 7 blocos por gramática: perguntas socráticas, hipóteses rotuladas, ≥3 alternativas, contraponto, fontes verificadas, escalonamento | `#/pensar` (“Refletir”), `src/copilot.js` |
 | Modo A por modelo (opt-in extra) | extração da fala sob os MESMOS catálogos fechados, fallback lexical em toda falha | `AI_EXTRATOR=1`, `extrairComModelo` |
 | Aurora, o assistente-parceiro | guia de navegação presente em todas as telas: tira dúvidas do produto, oferece "Ir para…", fala (opt-in) — responde SÓ sobre o Percurso, com fallback determinístico do guia | botão ❋, `src/assistente.js`, decisão 26 |
 | SROI exploratório | 3 cenários e faixa, motor determinístico, dupla contagem bloqueada, premissas com fonte | `#/impacto` (diretoria), `src/sroi/`, `docs/SROI-METODOLOGIA.md` |

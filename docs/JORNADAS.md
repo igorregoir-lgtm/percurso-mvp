@@ -221,7 +221,7 @@ cérebro"*); o que ela vê não vira evidência.
 ### O que a jornada de campo v2 exige e o MVP ainda não tem (02/09/2026)
 
 A jornada de campo (`docs/jornada-usuario/`) foi revista em 02/09/2026 e trouxe uma distinção que
-o aurora 3 acima ainda não respeita: **capturar não é registrar**. Capturar é apertar um botão — ou
+o passo 3 acima ainda não respeita: **capturar não é registrar**. Capturar é apertar um botão — ou
 já ter um áudio no celular. Registrar é virar relato, contagem e indicador, e isso é trabalho do
 sistema, a qualquer momento. Quem é metódico é o sistema; quem estrutura o dado é o sistema.
 

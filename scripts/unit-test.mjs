@@ -617,7 +617,7 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     'public/app.js:1014': /coordenacao.*Consentimentos|Registre abaixo/,
     'public/app.js:2202': /rota\(\/\^#\\\/scores\//,
     'public/app.js:2406': /id="pergunta"/,
-    'public/app.js:4031': /location\.hash = '#\/hoje'/,
+    'public/app.js:4044': /location\.hash = '#\/hoje'/,
     'src/api.js:308': /erro\(422.*rubrica por ciclo/,
     'src/api.js:435': /exigeCoordenacao\(req\)/,
     'src/api.js:889': /periodosSugeridos\(\)/,
@@ -1022,14 +1022,14 @@ test('aurora: diretoria + nome de criança = recusa determinística, sem fala', 
   assert.equal(r.acao, null);
 });
 
-test('aurora: pergunta reflexiva redireciona ao copilot em vez de responder', async () => {
+test('aurora: pergunta reflexiva abre o modo pensar junto em vez de responder do guia', async () => {
   const r = await A.assistente(eduAurora, { message: 'como lidar com uma criança que morde os colegas?', tela: '#/hoje' });
   assert.equal(r.tipo, 'redirecionamento');
-  assert.equal(r.acao?.id, 'copilot');
+  assert.equal(r.acao?.id, 'pensar');
   assert.equal(r.fala, null);
 });
 
-test('aurora: fora do produto = limite declarado, SEM empurrar para o copilot', async () => {
+test('aurora: fora do produto = limite declarado, SEM empurrar para o pensar junto', async () => {
   const r = await A.assistente(eduAurora, { message: 'qual é a capital da França?', tela: '#/hoje' });
   assert.equal(r.tipo, 'redirecionamento');
   assert.equal(r.acao, null);
@@ -1272,7 +1272,7 @@ test('aurora/ranking: NUNCA mais de uma pendência por painel, nem na exploraç�
 
 test('aurora/painel: nenhuma tela de nenhum papel devolve painel vazio', () => {
   const telas = {
-    educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/confirmar', '#/ciclo', '#/observacao', '#/turma', '#/criancas', '#/crianca', '#/alertas', '#/pauta', '#/copilot'],
+    educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/confirmar', '#/ciclo', '#/observacao', '#/turma', '#/criancas', '#/crianca', '#/alertas', '#/pauta', '#/pensar'],
     coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/criancas'],
     diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
   };

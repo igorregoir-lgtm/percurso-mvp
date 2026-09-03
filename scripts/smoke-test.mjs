@@ -942,9 +942,9 @@ secao('20 · Aurora — assistente-parceiro (limites no servidor)');
 
   const reflexiva = await POST('maria', '/api/assistente',
     { message: 'como lidar com uma criança que morde os colegas?', tela: '#/hoje' });
-  T('pergunta reflexiva redireciona ao copilot, sem passar por modelo',
+  T('pergunta reflexiva abre o modo pensar junto, sem passar por modelo',
     reflexiva.status === 200 && reflexiva.corpo.tipo === 'redirecionamento'
-    && reflexiva.corpo.origem === 'guia' && reflexiva.corpo.acao?.id === 'copilot');
+    && reflexiva.corpo.origem === 'guia' && reflexiva.corpo.acao?.id === 'pensar');
   T('redirecionamento nunca tem fala', reflexiva.corpo.fala === null);
 
   const fora = await POST('maria', '/api/assistente', { message: 'qual é a capital da França?', tela: '#/hoje' });

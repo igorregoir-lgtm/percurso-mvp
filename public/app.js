@@ -233,7 +233,7 @@ const barra = (pct, ok = false) =>
 // ------------------------------------------------------------------ navegacao
 const NAV_EDUCADOR = [
   ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'], ['#/pauta', '◈', 'Pauta'],
-  ['#/turma', '▥', 'Turma'], ['#/criancas', '☺', 'Crianças'], ['#/copilot', '✷', 'Refletir'],
+  ['#/turma', '▥', 'Turma'], ['#/criancas', '☺', 'Crianças'],
 ];
 // Psicóloga (decisão 31): a turma dela não entra na rubrica, então não há Ciclo;
 // e ela não pediu pauta de atividades — o que ela pediu foi registrar.
@@ -243,7 +243,7 @@ const NAV_PROFISSIONAL = [
 ];
 const NAV_COORDENACAO = [
   ['#/painel', '▦', 'Painel'], ['#/scores', '◑', 'Scores'], ['#/safras', '↝', 'Safras'],
-  ['#/sintese', '✎', 'Síntese'], ['#/consentimentos', '⚿', 'Consent.'], ['#/copilot', '✷', 'Refletir'],
+  ['#/sintese', '✎', 'Síntese'], ['#/consentimentos', '⚿', 'Consent.'],
 ];
 const NAV_DIRETORIA = [
   ['#/relatorio', '▤', 'Relatório'], ['#/impacto', '◬', 'Impacto'], ['#/consulta', '?', 'Perguntar'],
@@ -2908,22 +2908,35 @@ const copiloto = { sessao: null, trocas: [] };
 rota(/^#\/copilot/, async () => {
   const st = await api('/api/ia/status');
   if (!st.habilitada || !st.papeis?.reflexivo?.pronto) {
+    // Antes esta tela despejava `ai/scripts/start-llama.sh` e `AI_ENABLED=1` na
+    // cara de quem so' queria pensar sobre a turma. Instrucao de operacao e' da
+    // coordenacao; para quem esta em sala, o que importa e' que nada se perdeu.
+    const daCasa = sessao?.papel === 'coordenacao' || sessao?.papel === 'diretoria';
     app.innerHTML = `
-      <p class="kicker">Sala de reflexão · copilot local</p>
-      <h1>Refletir</h1>
+      <p class="kicker">Aurora · pensar junto</p>
+      <h1>Agora eu não consigo pensar junto</h1>
       <div class="cartao" style="margin-top:16px">
-        <p><b>O copilot está ${st.habilitada ? 'ligado, mas o modelo local não respondeu' : 'desligado'}.</b></p>
-        <p class="sub">O Percurso funciona por inteiro sem ele — o copilot é uma camada opcional que roda
-           num modelo local (nada sai da máquina). Para ligar: suba o modelo com
-           <code>ai/scripts/start-llama.sh</code> e inicie o servidor com <code>AI_ENABLED=1</code>.
-           Em operação real com educadoras, ligar depende do resultado da PoC (docs/POC-COPILOT.md).</p>
-        <button class="btn secundario" data-acao="recarregar" style="margin-top:10px">Verificar de novo</button>
-      </div>`;
+        <p class="sub">${st.habilitada
+          ? 'Eu estou aqui, mas a parte que consulta as fontes não respondeu agora.'
+          : 'Esta parte de mim está desligada — é opcional, e o Instituto escolhe quando ligar.'}
+          <b>Nada do seu registro depende disso.</b> A chamada, o registro por voz, a folha e o
+          relato continuam inteiros, e eu continuo respondendo do guia na gaveta.</p>
+        <div class="linha" style="margin-top:12px">
+          <button class="btn largo" data-acao="ir" data-href="#/hoje">Voltar ao que importa</button>
+          <button class="btn largo secundario" data-acao="recarregar">Tentar de novo</button>
+        </div>
+      </div>
+      ${daCasa ? `<details class="cartao compacto" style="margin-top:12px">
+        <summary>Como ligar (coordenação)</summary>
+        <p class="sub" style="margin-top:8px">Suba o modelo com <code>ai/scripts/start-llama.sh</code> e
+           inicie o servidor com <code>AI_ENABLED=1</code>. Em operação real com educadoras, ligar
+           depende do resultado da PoC — <code>docs/POC-COPILOT.md</code>.</p>
+      </details>` : ''}`;
     return;
   }
   app.innerHTML = `
-    <p class="kicker">Sala de reflexão · modelo local · nada sai da máquina</p>
-    <h1>Refletir</h1>
+    <p class="kicker">Aurora · pensar junto · modelo local, nada sai da máquina</p>
+    <h1>Pensar junto</h1>
     <div class="cartao" style="margin-top:12px">
       <p class="sub" style="margin:0"><b>Fale ou escreva</b> a <b>situação</b>, não a criança — como na
         folha do dia. Nomes do cadastro viram pseudônimos antes do modelo, mas apelidos e descrições
@@ -2940,7 +2953,7 @@ rota(/^#\/copilot/, async () => {
       </div>
       ${d.estado}`; })()}
       <div class="linha" style="margin-top:10px">
-        <button class="btn cresce" data-acao="copilot-enviar">Refletir junto</button>
+        <button class="btn cresce" data-acao="copilot-enviar">Pensar junto</button>
         <button class="btn secundario" data-acao="copilot-apagar" title="Apaga a memória desta sessão — nada dela é persistido">Apagar sessão</button>
       </div>
     </div>`;
@@ -3038,7 +3051,7 @@ async function copilotEnviar(texto) {
     if (e.cancelado) toast('Cancelado. Sua pergunta voltou para o campo.');
     else toast(e.message, 'ruim');
   }
-  if (location.hash.startsWith('#/copilot')) navegar();
+  if (location.hash.startsWith('#/pensar')) navegar();
 }
 
 function limparEstadoLocal() {
@@ -3811,13 +3824,13 @@ document.addEventListener('click', comErro(async (ev) => {
 }));
 
 const AURORA_ROTAS_POR_PAPEL = {
-  educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/pauta', '#/ciclo', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
-  profissional: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
+  educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/pauta', '#/ciclo', '#/turma', '#/criancas', '#/alertas', '#/pensar'],
+  profissional: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/turma', '#/criancas', '#/alertas', '#/pensar'],
   // '#/consulta' entrou em 03/09/2026: `exigeGestao` autoriza coordenação E
   // diretoria (src/api.js), e o painel dela já oferece o botão 'Perguntar à
   // base'. Sem a rota aqui, uma sugestão da Aurora para essa tela era engolida
   // com um `return` mudo — sem navegação e sem aviso.
-  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/pessoas', '#/arquivo', '#/criancas', '#/alertas', '#/relato', '#/consulta', '#/copilot'],
+  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/pessoas', '#/arquivo', '#/criancas', '#/alertas', '#/relato', '#/consulta', '#/pensar'],
   diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
 };
 

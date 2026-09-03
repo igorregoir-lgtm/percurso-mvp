@@ -209,9 +209,9 @@ Tudo commitado e no `main` de https://github.com/igorregoir-lgtm/percurso-mvp �
 6ce0e15  As duas pendências da revisão: controle de tipo e resumo do dia
 5051eed  Revisão da implementação: 28 achados, 4 bloqueantes corrigidos
 f4d865d  Decisão 27 e dois defeitos de integração
-d7169b7  Aurora proativo: o Qwen orquestrando o painel (aurora 6) + 17 testes
-eb71ede  Aurora proativo: a memória de uso, que nasce desligada (aurora 5)
-59294be  Aurora proativo: a superfície no cliente (aurora 4 do plano)
+d7169b7  Aurora proativo: o Qwen orquestrando o painel (passo 6) + 17 testes
+eb71ede  Aurora proativo: a memória de uso, que nasce desligada (passo 5)
+59294be  Aurora proativo: a superfície no cliente (passo 4 do plano)
 6f70e4b  Aurora proativo: 20 achados da revisão adversarial do plano
 b65cccf  Aurora proativo: fundação determinística (sinais, catálogo, ranking, painel)
 13f560a  Relatório do doador: tom de carta e ordem de leitura do doador

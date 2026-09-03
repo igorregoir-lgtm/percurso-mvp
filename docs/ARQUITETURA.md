@@ -274,7 +274,7 @@ da linha "SLM local de verdade" da tabela acima, que segue esperando o gatilho d
   operação real) não disparou. A **borda 2** (consistência entre observadores) ganhou implementação
   determinística: a leitura de calibração no painel da coordenação.
 - **O que entrou, atrás de `AI_ENABLED` (padrão: desligada):** RAG com corpus governado
-  (`src/rag/`, `docs/GOVERNANCA-FONTES-RAG.md`), copilot reflexivo Modo B (`#/copilot`,
+  (`src/rag/`, `docs/GOVERNANCA-FONTES-RAG.md`), copilot reflexivo Modo B (`#/pensar`,
   Qwen3 4B local via `llama.cpp` em `127.0.0.1`), Modo A opcional sobre o slot da decisão 13
   (`AI_EXTRATOR=1`, fallback lexical), SROI exploratório determinístico (`#/impacto`,
   `docs/SROI-METODOLOGIA.md`) e a infraestrutura da Fase 4 (`ai/training/`, treino não executado

@@ -86,7 +86,7 @@
     {
       "n": "03",
       "bruta": "Agora gere o relatório do procedimento no padrão do conselho e libere.",
-      "problema": "Usa o vocabulário das telas (\"gerar\", \"liberar\") e entrega que existe um relatório à espera. O aurora 05 é exatamente onde queremos ver se ela sabe que ainda falta algo.",
+      "problema": "Usa o vocabulário das telas (\"gerar\", \"liberar\") e entrega que existe um relatório à espera. O passo 05 é exatamente onde queremos ver se ela sabe que ainda falta algo.",
       "final": "Terminou o que você precisava fazer hoje, ou ficou faltando alguma coisa?",
       "mede": "Se o encontro registrado é lido como concluído. Quem responde \"terminei\" revela que o sistema não deixou claro que o relato ainda está em rascunho."
     }
@@ -94,7 +94,7 @@
   "ajustes": [
     "O cartão de cenário do protocolo era de professora — leitura em roda, barulho da rua. Trocado por um da Vivência: roda das emoções, duas crianças ajudaram sem ninguém pedir, seis participaram do começo ao fim, um conflito resolvido conversando.",
     "A tarefa 3 do protocolo terminava na folha confirmada. Aqui ela só termina com o relato liberado — porque é o relatório, e não a folha, que é a dor nomeada em campo.",
-    "O aurora 05 virou ponto de observação declarado, com limiar (20 s). Antes ele nem aparecia: o desenho supunha que confirmar a folha levava ao relato, e o código devolve para o Hoje.",
+    "O passo 05 virou ponto de observação declarado, com limiar (20 s). Antes ele nem aparecia: o desenho supunha que confirmar a folha levava ao relato, e o código devolve para o Hoje.",
     "Nenhuma pergunta nomeia botão, tela ou recurso. O enunciado é objetivo; a rota fica com o facilitador.",
     "As portas B (gravar o encontro inteiro) e C (importar um áudio) ficam fora do teste: não existem no MVP, e simular o que não existe contamina o dado."
   ],

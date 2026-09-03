@@ -136,8 +136,8 @@ const educadora = { id: 1, papel: 'educador' };
     r2b.origem === 'modelo' && r2b.fala === null, `fala=${JSON.stringify(r2b.fala)}`);
 
   const r3 = await A.assistente(educadora, { message: 'como lidar com uma criança que bate nos colegas?', tela: '#/hoje' });
-  T('Aurora: pergunta reflexiva NÃO vai ao modelo — redireciona ao copilot',
-    r3.origem === 'guia' && r3.tipo === 'redirecionamento' && r3.acao?.id === 'copilot');
+  T('Aurora: pergunta reflexiva NÃO vai ao modelo — abre o modo pensar junto',
+    r3.origem === 'guia' && r3.tipo === 'redirecionamento' && r3.acao?.id === 'pensar');
 
   const nomes2 = all(`SELECT nome FROM crianca WHERE ativo = 1 LIMIT 1`).map(x => x.nome);
   const r4 = await A.assistente({ id: 4, papel: 'diretoria' },

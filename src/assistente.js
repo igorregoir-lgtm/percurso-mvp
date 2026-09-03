@@ -2,7 +2,7 @@
 //
 // DOUTRINA PRÓPRIA, além da herdada (plano auditado em revisao/07):
 //   1. A Aurora responde SÓ sobre o produto. Pergunta reflexivo-pedagógica não
-//      vai ao modelo daqui: é redirecionada ao copilot (que tem RAG, 7 blocos
+//      vai ao modelo daqui: abre o modo 'pensar junto' (que tem RAG, 7 blocos
 //      e verificador) — e, para a diretoria, à camada agregada (decisão 16).
 //   2. Diretoria + nome de criança = recusa determinística. Nada vai ao modelo
 //      nem à memória.
@@ -66,7 +66,7 @@ export const CATALOGO_ACOES = [
   // A entrada de GUIA 'alertas' existia sem par aqui: validarAcao('alertas')
   // devolvia null e a oferta "Ir para Alertas" sumia em silêncio.
   { id: 'alertas', rotulo: 'Alertas de ausência', hash: '#/alertas', papeis: ['educador', 'profissional', 'coordenacao'] },
-  { id: 'copilot', rotulo: 'Refletir (copilot)', hash: '#/copilot', papeis: ['educador', 'profissional', 'coordenacao'] },
+  { id: 'pensar', rotulo: 'Pensar junto', hash: '#/pensar', papeis: ['educador', 'profissional', 'coordenacao'] },
   { id: 'painel', rotulo: 'Painel da coordenação', hash: '#/painel', papeis: ['coordenacao'] },
   { id: 'scores', rotulo: 'Scores', hash: '#/scores', papeis: ['coordenacao'] },
   { id: 'safras', rotulo: 'Safras', hash: '#/safras', papeis: ['coordenacao'] },
@@ -176,10 +176,10 @@ export const GUIA = [
   },
   {
     id: 'copilot', papeis: ['educador', 'profissional', 'coordenacao'],
-    oQueE: 'O Refletir é a sala de reflexão pedagógica: você descreve uma situação da turma e o copilot local devolve perguntas, hipóteses rotuladas, alternativas e contraponto — com fontes do corpus aprovado. A decisão é sempre sua.',
-    chips: ['O que é o Refletir?', 'O que ele nunca faz?'],
+    oQueE: 'Pensar junto é a mesma Aurora, com tempo. Aqui na gaveta eu respondo do guia, na hora. Ali eu consulto as fontes do corpus e devolvo perguntas, hipóteses rotuladas, alternativas e contraponto — leva mais tempo, e a decisão continua sendo sua.',
+    chips: ['O que é pensar junto?', 'O que a Aurora nunca faz?'],
     tarefas: [
-      { intencoes: ['refletir', 'copilot', 'reflexao', 'conversar sobre a turma'], resposta: 'Para refletir sobre uma situação pedagógica, o lugar é o Refletir: descreva a situação (sem nomear criança) e receba perguntas socráticas, hipóteses e alternativas com fontes. Eu sou só o guia do produto — a reflexão de verdade mora lá.', acao: 'copilot' },
+      { intencoes: ['refletir', 'pensar junto', 'reflexao', 'conversar sobre a turma'], resposta: 'Descreva a situação — sem nomear criança — e eu penso junto: perguntas, hipóteses e alternativas, com as fontes que eu consultei. Aqui na gaveta eu respondo do guia; para pensar junto eu preciso de mais tempo e abro a sala.', acao: 'pensar' },
     ],
   },
   {
@@ -335,7 +335,7 @@ const VOCABULARIO = new Set([
   'folha', 'voz', 'gravar', 'microfone', 'audio', 'ditado', 'terminei',
   'ciclo', 'observacao', 'observar', 'rubrica', 'ancora', 'bloquead',
   'pauta', 'sugestao', 'painel', 'ficha', 'busca',
-  'copilot', 'refletir', 'score', 'scores', 'safra', 'safras', 'evasao',
+  'pensar', 'refletir', 'score', 'scores', 'safra', 'safras', 'evasao',
   'sintese', 'revisor', 'consentimento', 'consentimentos', 'importar', 'planilha',
   'relatorio', 'doador', 'supressao', 'impacto', 'sroi', 'cenario', 'consulta',
   'cobertura', 'calibra', 'alerta', 'registro', 'registrar', 'retomar', 'navega',
@@ -349,7 +349,8 @@ export function dominioDoProduto(texto) {
 
 // Pergunta reflexivo-pedagógica tem PRECEDÊNCIA sobre o vocabulário: "como
 // lidar com uma criança que bate" menciona palavras do produto, mas é conversa
-// para o copilot (com RAG, 7 blocos e verificador) — nunca para a Aurora.
+// para o modo 'pensar junto' (com RAG, 7 blocos e verificador) — nunca para a
+// conversa da gaveta, que é CEGA ao banco e responde só do guia.
 const REFLEXIVA = /(como lidar|o que fa[çc]o com|o que fazer com|como agir|como ajudar|se comporta|comportamento|briga|bate\b|morde|birra|agressiv|agitad|dispers|nao participa|não participa|timid|conflito|disciplina)/;
 export function pareceReflexiva(texto) {
   return REFLEXIVA.test(semAcento(texto));
@@ -429,16 +430,16 @@ export function limparFala(fala, roster) {
 
 const REDIRECIONAMENTO = {
   educador: {
-    resposta: 'Essa é uma conversa para a sala de reflexão, não para mim — eu sou o guia do produto. No Refletir, o copilot pensa junto com você: perguntas, hipóteses e alternativas, com fontes. Quer ir até lá?',
-    acaoId: 'copilot',
+    resposta: 'Isso eu penso com você — mas não aqui, que é resposta de guia, na hora. Abro a sala onde eu consulto as fontes e devolvo perguntas, hipóteses e alternativas. Quer?',
+    acaoId: 'pensar',
   },
   profissional: {
-    resposta: 'Essa é uma conversa para a sala de reflexão, não para mim — eu sou o guia do produto. No Refletir, o copilot pensa junto com você: perguntas, hipóteses e alternativas, com fontes. Quer ir até lá?',
-    acaoId: 'copilot',
+    resposta: 'Isso eu penso com você — mas não aqui, que é resposta de guia, na hora. Abro a sala onde eu consulto as fontes e devolvo perguntas, hipóteses e alternativas. Quer?',
+    acaoId: 'pensar',
   },
   coordenacao: {
-    resposta: 'Essa é uma conversa para a sala de reflexão, não para mim — eu sou o guia do produto. No Refletir, o copilot pensa junto com você: perguntas, hipóteses e alternativas, com fontes. Quer ir até lá?',
-    acaoId: 'copilot',
+    resposta: 'Isso eu penso com você — mas não aqui, que é resposta de guia, na hora. Abro a sala onde eu consulto as fontes e devolvo perguntas, hipóteses e alternativas. Quer?',
+    acaoId: 'pensar',
   },
   diretoria: {
     resposta: 'Eu sou o guia do produto e a diretoria trabalha sobre a camada agregada — conversa pedagógica sobre situações de turma é da equipe que convive com as crianças. Posso te ajudar com o relatório, o impacto ou a consulta à base.',

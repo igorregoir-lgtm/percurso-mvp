@@ -239,7 +239,7 @@ só o Instituto tem. A tela mostra as premissas e diz isso, em vez de inventar a
 
 ## Bloco 5 · A camada opcional e o fecho — 0:50
 
-### 17 · Refletir — o copilot local — [0:30 · `#/copilot`]
+### 17 · Refletir — o copilot local — [0:30 · `#/pensar`]
 
 **Ação e fala, em três tempos rápidos:**
 

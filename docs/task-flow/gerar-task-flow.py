@@ -170,7 +170,7 @@ HTML = """<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 
 <div class="baixo">
   <div class="bloco">
-    <h2>O que observar, aurora a aurora</h2>
+    <h2>O que observar, passo a passo</h2>
     <p class="cap">Cada linha tem um limiar que reprova. Sem limiar, observação vira impressão.</p>
     <table>
       <tr><th>Aurora</th><th>Medida e o que reprova</th><th>Hipótese</th></tr>
