@@ -1,0 +1,102 @@
+{
+  "titulo": "Task flow — registrar a vivência de sábado falando",
+  "subtitulo": "Exercício 03 · Grupo 06 · Produto: Percurso · Instituto Ebenézer · fluxo de tarefa da jornada v2 (02/09/2026)",
+  "historia": {
+    "id": "US-6",
+    "texto": "Como psicóloga da Vivência, quero contar em 40 segundos como foi o encontro, para que o relatório no padrão do conselho exista sem eu ter que escrever à noite.",
+    "origem": "Decisão 31 de DECISOES-TECNICAS.md, aberta pela visita de 29/08/2026. Não estava nas cinco user stories da Lean Inception — aquelas são de pedagoga, e o campo mostrou que quem escreve o relatório é a psicóloga.",
+    "tarefa": "Registrar o encontro de hoje falando, e sair com o relato do procedimento liberado.",
+    "gatilho": "Sábado, 11h40. O grupo acabou de sair e ela está arrumando a sala.",
+    "fim": "Relato liberado, folha fechada e recado da turma disponível — sem ter aberto o notebook."
+  },
+  "recorte": "Task flow, não user flow: um caminho, sem losango de decisão. É o percurso de quem consegue fazer — serve para cronometrar e para observar onde a pessoa trava. As bifurcações reais (escrever em vez de falar, registrar dias depois) estão na jornada v2 e ficam fora deste desenho de propósito.",
+  "passos": [
+    {
+      "n": "início", "tipo": "inicio", "tela": "",
+      "titulo": "O grupo acabou",
+      "faz": "Ela está de pé, arrumando a sala. As mãos ficaram livres agora — não durante.",
+      "tempo": "", "estado": ""
+    },
+    {
+      "n": "01", "tipo": "passo", "tela": "#/entrar",
+      "titulo": "Entra como ela mesma",
+      "faz": "Escolhe o perfil de profissional. Sem senha — o protótipo entra por escolha de perfil.",
+      "tempo": "~10 s", "estado": "existe"
+    },
+    {
+      "n": "02", "tipo": "passo", "tela": "#/hoje",
+      "titulo": "Vê o encontro em aberto",
+      "faz": "O cartão diz \"Registro da vivência · pendente\" e oferece \"Contar como foi\". Ela toca.",
+      "tempo": "~5 s", "estado": "existe"
+    },
+    {
+      "n": "03", "tipo": "passo", "tela": "#/voz",
+      "titulo": "Fala 40 segundos",
+      "faz": "Lê o aviso do que é e do que não é gravado, aperta o microfone e conta do jeito dela. Toca \"Terminei\".",
+      "tempo": "~40 s + 5 s", "estado": "existe"
+    },
+    {
+      "n": "04", "tipo": "passo", "tela": "#/confirmar",
+      "titulo": "Confere o que o sistema entendeu",
+      "faz": "Procedimento, objetivo, check-in do grupo e marcadores já vêm marcados. Ela corrige o que estiver errado e toca \"Confirmar e guardar\".",
+      "tempo": "~45 s", "estado": "existe"
+    },
+    {
+      "n": "05", "tipo": "passo", "tela": "#/hoje",
+      "titulo": "É devolvida ao Hoje",
+      "faz": "O sistema salva e volta para a tela inicial. O relato não se abre sozinho: ela precisa achar o botão \"Revisar e liberar o relato\".",
+      "tempo": "?", "estado": "atrito"
+    },
+    {
+      "n": "06", "tipo": "passo", "tela": "#/relato",
+      "titulo": "Lê e libera o relato",
+      "faz": "O texto no padrão do conselho já está escrito, sem nome de criança. Ela lê e toca \"Revisei — liberar o relato\".",
+      "tempo": "~60 s", "estado": "existe"
+    },
+    {
+      "n": "fim", "tipo": "fim", "tela": "",
+      "titulo": "Relato liberado",
+      "faz": "Folha fechada, relato no histórico da turma, recado dos responsáveis pronto para enviar.",
+      "tempo": "≈ 3 min", "estado": ""
+    }
+  ],
+  "observar": [
+    ["03", "Ela fala sem pedir permissão nem perguntar o que dizer?", "Se ela pergunta \"o que eu falo?\", a tela não ensinou — é falha da tela, não dela", "H2"],
+    ["04", "Quantos campos ela corrige antes de confirmar", "Taxa de correção pós-extração (decisão 13). Acima de 2 campos por registro, o extrator custa mais do que poupa", "H2"],
+    ["04", "Ela entende que nada foi gravado ainda?", "O título da tela diz isso. Se ela hesita em confirmar por medo de estar errando, o texto falhou", "H6"],
+    ["05", "Segundos até achar \"Revisar e liberar o relato\" — e se pede ajuda", "Acima de 20 s ou com ajuda: é achado de navegação. A tarefa não termina na folha, e o sistema está soltando a mão dela no meio", "H1"],
+    ["06", "A primeira coisa que ela faz com o texto pronto", "No campo, a primeira pergunta espontânea diante do relato gerado foi se dava para editar depois. Se ela procurar o editar e não achar, isso é o achado", "H4"],
+    ["todos", "Tempo total do gatilho ao relato liberado", "A promessa é 40 segundos de fala. O que a tarefa mede é o custo inteiro — a promessa só se sustenta se o total couber em ~3 min", "H1"]
+  ],
+  "perguntas": [
+    {
+      "n": "01",
+      "bruta": "Você poderia usar o microfone para registrar a atividade que acabou de fazer com o grupo?",
+      "problema": "Entrega o caminho. Dizer \"microfone\" transforma em execução de instrução o que era para ser descoberta — e é justamente a descoberta que estamos medindo.",
+      "final": "O grupo acabou agora. Registre este encontro no sistema, do jeito que for mais rápido para você.",
+      "mede": "Se a porta da voz é encontrada sozinha, ou se ela vai direto para o formulário por hábito."
+    },
+    {
+      "n": "02",
+      "bruta": "Confira se o sistema entendeu corretamente o que você falou e corrija o que estiver errado.",
+      "problema": "Sugere que há erro e manda corrigir. A pessoa passa a caçar erro para agradar o facilitador, e a taxa de correção deixa de medir o extrator.",
+      "final": "Antes de guardar, me diga em voz alta o que você está vendo nesta tela — e faça o que você faria se estivesse sozinha.",
+      "mede": "Compreensão do estado (\"nada foi gravado ainda\") e a taxa real de correção, sem indução."
+    },
+    {
+      "n": "03",
+      "bruta": "Agora gere o relatório do procedimento no padrão do conselho e libere.",
+      "problema": "Usa o vocabulário das telas (\"gerar\", \"liberar\") e entrega que existe um relatório à espera. O passo 05 é exatamente onde queremos ver se ela sabe que ainda falta algo.",
+      "final": "Terminou o que você precisava fazer hoje, ou ficou faltando alguma coisa?",
+      "mede": "Se o encontro registrado é lido como concluído. Quem responde \"terminei\" revela que o sistema não deixou claro que o relato ainda está em rascunho."
+    }
+  ],
+  "ajustes": [
+    "O cartão de cenário do protocolo era de professora — leitura em roda, barulho da rua. Trocado por um da Vivência: roda das emoções, duas crianças ajudaram sem ninguém pedir, seis participaram do começo ao fim, um conflito resolvido conversando.",
+    "A tarefa 3 do protocolo terminava na folha confirmada. Aqui ela só termina com o relato liberado — porque é o relatório, e não a folha, que é a dor nomeada em campo.",
+    "O passo 05 virou ponto de observação declarado, com limiar (20 s). Antes ele nem aparecia: o desenho supunha que confirmar a folha levava ao relato, e o código devolve para o Hoje.",
+    "Nenhuma pergunta nomeia botão, tela ou recurso. O enunciado é objetivo; a rota fica com o facilitador.",
+    "As portas B (gravar o encontro inteiro) e C (importar um áudio) ficam fora do teste: não existem no MVP, e simular o que não existe contamina o dado."
+  ],
+  "fora": "O que este task flow NÃO prova: que ela faria isso sem ninguém do lado, no sábado seguinte, sem facilitador na sala. Isso é o Protocolo do Lapso (H5) e precisa de uma segunda sessão, com intervalo."
+}

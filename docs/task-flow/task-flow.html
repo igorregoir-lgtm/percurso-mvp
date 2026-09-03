@@ -1,0 +1,203 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root{
+  --bg:#F4EFE5; --card:#FFFFFF; --card2:#F7F3EA; --ink:#2E2A24; --muted:#8B8478;
+  --line:#E6DFD0; --red:#B0392C; --redsoft:#F4DCD7; --ok:#4A6B2A; --okbg:#DCE9CA;
+  --amb:#8A6316; --ambbg:#FBF1DC; --blue:#2A5570; --bluebg:#DBE7EF; --chip:#F0EBE0;
+  --disp:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:2600px;background:var(--bg);color:var(--ink);font-family:var(--body);
+     -webkit-font-smoothing:antialiased;padding:48px 56px 40px}
+.topo{background:var(--ink);border-radius:16px;padding:28px 36px;display:flex;align-items:center;gap:28px;color:#F4EFE5}
+.marca{width:66px;height:66px;border-radius:50%;background:var(--red);display:grid;place-items:center;
+       font-family:var(--disp);font-weight:700;font-size:25px;flex:none}
+.topo h1{font-family:var(--disp);font-weight:700;font-size:42px;letter-spacing:-.02em;line-height:1.05}
+.topo .sub{font-size:18px;color:#C9C0B2;margin-top:7px}
+.selo{margin-left:auto;background:var(--red);border-radius:999px;padding:11px 22px;
+      font-family:var(--disp);font-weight:600;font-size:15px;letter-spacing:.06em;text-align:right}
+.selo small{display:block;font-weight:500;font-size:12px;letter-spacing:.04em;opacity:.85;margin-top:2px}
+
+.faixa{display:grid;grid-template-columns:1.35fr 1fr;gap:0;background:var(--card);
+       border:1px solid var(--line);border-top:none;border-radius:0 0 16px 16px;overflow:hidden}
+.faixa>div{padding:24px 30px}
+.faixa>div+div{border-left:1px solid var(--line)}
+.rot{font-family:var(--disp);font-weight:600;font-size:12.5px;letter-spacing:.14em;
+     text-transform:uppercase;color:var(--red);margin-bottom:10px}
+.hist{font-size:23px;line-height:1.42;font-family:var(--disp);font-weight:500}
+.hist b{color:var(--red)}
+.orig{font-size:14px;line-height:1.5;color:var(--muted);margin-top:12px}
+.tarefa{font-size:26px;line-height:1.3;font-family:var(--disp);font-weight:700;letter-spacing:-.01em}
+.pares{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.par .k{font-family:var(--disp);font-weight:600;font-size:12px;letter-spacing:.1em;
+        text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px}
+.par p{font-size:14.5px;line-height:1.45}
+
+.recorte{margin-top:20px;background:var(--card2);border:1px solid var(--line);border-left:5px solid var(--blue);
+         border-radius:12px;padding:18px 24px;font-size:15px;line-height:1.55}
+.recorte b{font-family:var(--disp)}
+
+/* ---- o fluxo ---- */
+.fluxo{margin-top:26px;display:flex;align-items:stretch;gap:0}
+.no{flex:1 1 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;
+    display:flex;flex-direction:column;min-width:0}
+.no.inicio{background:var(--ink);color:#F4EFE5;border-color:var(--ink)}
+.no.fim{background:var(--bluebg);border-color:var(--blue)}
+.no.atrito{border-color:var(--amb);border-width:2px;background:var(--ambbg)}
+.no-h{display:flex;align-items:center;gap:8px;margin-bottom:10px;min-height:24px}
+.n{font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;
+   background:var(--chip);color:var(--ink);border-radius:999px;padding:4px 11px}
+.no.inicio .n{background:rgba(244,239,229,.16);color:#F4EFE5}
+.no.fim .n{background:var(--blue);color:#fff}
+.rota{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:var(--muted)}
+.no.atrito .rota{color:var(--amb)}
+.no h3{font-family:var(--disp);font-weight:700;font-size:20px;line-height:1.22;letter-spacing:-.01em}
+.no p{font-size:14px;line-height:1.5;margin-top:9px;color:var(--ink)}
+.no.inicio p{color:#CFC7B8}
+.no-f{margin-top:auto;padding-top:12px;display:flex;align-items:center;gap:8px}
+.t{font-family:var(--disp);font-weight:700;font-size:14px}
+.chip{font-family:var(--disp);font-weight:600;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;
+      border-radius:999px;padding:4px 10px}
+.chip.existe{background:var(--okbg);color:var(--ok)}
+.chip.atrito{background:var(--amb);color:#fff}
+.seta{flex:0 0 44px;display:grid;place-items:center;color:var(--muted);font-size:30px;font-weight:300}
+
+/* ---- blocos de baixo ---- */
+.baixo{margin-top:26px;display:grid;grid-template-columns:1.05fr 1.45fr;gap:22px;align-items:start}
+.bloco{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px 28px}
+.bloco h2{font-family:var(--disp);font-weight:700;font-size:25px;letter-spacing:-.01em;margin-bottom:4px}
+.bloco .cap{font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:16px}
+table{width:100%;border-collapse:collapse}
+th{font-family:var(--disp);font-weight:600;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+   color:var(--muted);text-align:left;padding:0 12px 8px 0;border-bottom:1px solid var(--line)}
+td{font-size:14px;line-height:1.45;padding:11px 12px 11px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td.p{font-family:var(--disp);font-weight:700;white-space:nowrap}
+td.h{font-family:var(--disp);font-weight:600;color:var(--blue);white-space:nowrap}
+td .lim{color:var(--muted);font-size:13px;display:block;margin-top:4px}
+
+.q{border:1px solid var(--line);border-radius:12px;padding:18px 20px;background:var(--card2)}
+.q+.q{margin-top:14px}
+.q-h{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.q-n{font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.1em;color:var(--red)}
+.q-bruta{font-size:14.5px;line-height:1.5;color:var(--muted);text-decoration:line-through;text-decoration-color:var(--redsoft);text-decoration-thickness:2px}
+.q-prob{font-size:13.5px;line-height:1.5;color:var(--amb);margin-top:8px;padding-left:14px;border-left:3px solid var(--ambbg)}
+.q-final{font-family:var(--disp);font-weight:600;font-size:18px;line-height:1.35;margin-top:14px;
+         background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.q-mede{font-size:13.5px;line-height:1.5;color:var(--muted);margin-top:9px}
+.q-mede b{color:var(--ink);font-family:var(--disp)}
+
+.ajustes{margin-top:22px;background:var(--ink);color:#F4EFE5;border-radius:16px;padding:26px 32px}
+.ajustes h2{font-family:var(--disp);font-weight:700;font-size:24px;margin-bottom:6px}
+.ajustes .cap{color:#C9C0B2;font-size:14px;margin-bottom:16px}
+.ajustes ol{list-style:none;counter-reset:a;display:grid;grid-template-columns:1fr 1fr;gap:12px 28px}
+.ajustes li{counter-increment:a;font-size:14.5px;line-height:1.5;padding-left:36px;position:relative;color:#E7E1D6}
+.ajustes li::before{content:counter(a,decimal-leading-zero);position:absolute;left:0;top:0;
+  font-family:var(--disp);font-weight:700;font-size:13px;color:var(--red);background:rgba(176,57,44,.18);
+  border-radius:6px;padding:3px 7px}
+.fora{margin-top:18px;padding-top:16px;border-top:1px solid rgba(244,239,229,.18);font-size:14.5px;line-height:1.55;color:#C9C0B2}
+.fora b{color:#F4EFE5;font-family:var(--disp)}
+.rod{margin-top:20px;font-size:13px;color:var(--muted);line-height:1.6}
+</style></head><body>
+
+<div class="topo">
+  <div class="marca">06</div>
+  <div><h1>Task flow — registrar a vivência de sábado falando</h1><div class="sub">Exercício 03 · Grupo 06 · Produto: Percurso · Instituto Ebenézer · fluxo de tarefa da jornada v2 (02/09/2026)</div></div>
+  <div class="selo">EXERCÍCIO 03<small>TASK FLOW DO PROJETO</small></div>
+</div>
+
+<div class="faixa">
+  <div>
+    <div class="rot">História de usuário · US-6</div>
+    <p class="hist">Como psicóloga da Vivência, quero contar em 40 segundos como foi o encontro, para que o relatório no padrão do conselho exista sem eu ter que escrever à noite.</p>
+    <p class="orig">Decisão 31 de DECISOES-TECNICAS.md, aberta pela visita de 29/08/2026. Não estava nas cinco user stories da Lean Inception — aquelas são de pedagoga, e o campo mostrou que quem escreve o relatório é a psicóloga.</p>
+  </div>
+  <div>
+    <div class="rot">Tarefa principal que ela representa</div>
+    <p class="tarefa">Registrar o encontro de hoje falando, e sair com o relato do procedimento liberado.</p>
+    <div class="pares">
+      <div class="par"><span class="k">Gatilho</span><p>Sábado, 11h40. O grupo acabou de sair e ela está arrumando a sala.</p></div>
+      <div class="par"><span class="k">Termina quando</span><p>Relato liberado, folha fechada e recado da turma disponível — sem ter aberto o notebook.</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="recorte"><b>Por que é task flow e não user flow.</b> Task flow, não user flow: um caminho, sem losango de decisão. É o percurso de quem consegue fazer — serve para cronometrar e para observar onde a pessoa trava. As bifurcações reais (escrever em vez de falar, registrar dias depois) estão na jornada v2 e ficam fora deste desenho de propósito.</div>
+
+<div class="fluxo"><div class="no inicio">
+      <div class="no-h"><span class="n">início</span></div>
+      <h3>O grupo acabou</h3><p>Ela está de pé, arrumando a sala. As mãos ficaram livres agora — não durante.</p></div><div class="seta">&#8594;</div><div class="no ">
+      <div class="no-h"><span class="n">01</span><span class="rota">#/entrar</span></div>
+      <h3>Entra como ela mesma</h3><p>Escolhe o perfil de profissional. Sem senha — o protótipo entra por escolha de perfil.</p><div class="no-f"><span class="t">~10 s</span><span class="chip existe">existe</span></div></div><div class="seta">&#8594;</div><div class="no ">
+      <div class="no-h"><span class="n">02</span><span class="rota">#/hoje</span></div>
+      <h3>Vê o encontro em aberto</h3><p>O cartão diz &quot;Registro da vivência · pendente&quot; e oferece &quot;Contar como foi&quot;. Ela toca.</p><div class="no-f"><span class="t">~5 s</span><span class="chip existe">existe</span></div></div><div class="seta">&#8594;</div><div class="no ">
+      <div class="no-h"><span class="n">03</span><span class="rota">#/voz</span></div>
+      <h3>Fala 40 segundos</h3><p>Lê o aviso do que é e do que não é gravado, aperta o microfone e conta do jeito dela. Toca &quot;Terminei&quot;.</p><div class="no-f"><span class="t">~40 s + 5 s</span><span class="chip existe">existe</span></div></div><div class="seta">&#8594;</div><div class="no ">
+      <div class="no-h"><span class="n">04</span><span class="rota">#/confirmar</span></div>
+      <h3>Confere o que o sistema entendeu</h3><p>Procedimento, objetivo, check-in do grupo e marcadores já vêm marcados. Ela corrige o que estiver errado e toca &quot;Confirmar e guardar&quot;.</p><div class="no-f"><span class="t">~45 s</span><span class="chip existe">existe</span></div></div><div class="seta">&#8594;</div><div class="no atrito">
+      <div class="no-h"><span class="n">05</span><span class="rota">#/hoje</span></div>
+      <h3>É devolvida ao Hoje</h3><p>O sistema salva e volta para a tela inicial. O relato não se abre sozinho: ela precisa achar o botão &quot;Revisar e liberar o relato&quot;.</p><div class="no-f"><span class="t">?</span><span class="chip atrito">atrito</span></div></div><div class="seta">&#8594;</div><div class="no ">
+      <div class="no-h"><span class="n">06</span><span class="rota">#/relato</span></div>
+      <h3>Lê e libera o relato</h3><p>O texto no padrão do conselho já está escrito, sem nome de criança. Ela lê e toca &quot;Revisei — liberar o relato&quot;.</p><div class="no-f"><span class="t">~60 s</span><span class="chip existe">existe</span></div></div><div class="seta">&#8594;</div><div class="no fim">
+      <div class="no-h"><span class="n">fim</span></div>
+      <h3>Relato liberado</h3><p>Folha fechada, relato no histórico da turma, recado dos responsáveis pronto para enviar.</p><div class="no-f"><span class="t">≈ 3 min</span></div></div></div>
+
+<div class="baixo">
+  <div class="bloco">
+    <h2>O que observar, passo a passo</h2>
+    <p class="cap">Cada linha tem um limiar que reprova. Sem limiar, observação vira impressão.</p>
+    <table>
+      <tr><th>Passo</th><th>Medida e o que reprova</th><th>Hipótese</th></tr>
+      <tr><td class="p">03</td><td>Ela fala sem pedir permissão nem perguntar o que dizer?<span class="lim">Se ela pergunta &quot;o que eu falo?&quot;, a tela não ensinou — é falha da tela, não dela</span></td><td class="h">H2</td></tr>
+<tr><td class="p">04</td><td>Quantos campos ela corrige antes de confirmar<span class="lim">Taxa de correção pós-extração (decisão 13). Acima de 2 campos por registro, o extrator custa mais do que poupa</span></td><td class="h">H2</td></tr>
+<tr><td class="p">04</td><td>Ela entende que nada foi gravado ainda?<span class="lim">O título da tela diz isso. Se ela hesita em confirmar por medo de estar errando, o texto falhou</span></td><td class="h">H6</td></tr>
+<tr><td class="p">05</td><td>Segundos até achar &quot;Revisar e liberar o relato&quot; — e se pede ajuda<span class="lim">Acima de 20 s ou com ajuda: é achado de navegação. A tarefa não termina na folha, e o sistema está soltando a mão dela no meio</span></td><td class="h">H1</td></tr>
+<tr><td class="p">06</td><td>A primeira coisa que ela faz com o texto pronto<span class="lim">No campo, a primeira pergunta espontânea diante do relato gerado foi se dava para editar depois. Se ela procurar o editar e não achar, isso é o achado</span></td><td class="h">H4</td></tr>
+<tr><td class="p">todos</td><td>Tempo total do gatilho ao relato liberado<span class="lim">A promessa é 40 segundos de fala. O que a tarefa mede é o custo inteiro — a promessa só se sustenta se o total couber em ~3 min</span></td><td class="h">H1</td></tr>
+    </table>
+  </div>
+  <div class="bloco">
+    <h2>As três perguntas — antes e depois</h2>
+    <p class="cap">A IA gerou as três de cima. Nenhuma sobreviveu inteira: as três entregavam o caminho que a tarefa existe para testar. Riscado é o que veio; em destaque é o que vai ser dito na sessão.</p>
+    <div class="q">
+  <div class="q-h"><span class="q-n">PERGUNTA 01</span><span class="q-n" style="color:var(--muted)">como a IA gerou</span></div>
+  <p class="q-bruta">Você poderia usar o microfone para registrar a atividade que acabou de fazer com o grupo?</p>
+  <p class="q-prob">Entrega o caminho. Dizer &quot;microfone&quot; transforma em execução de instrução o que era para ser descoberta — e é justamente a descoberta que estamos medindo.</p>
+  <p class="q-final">O grupo acabou agora. Registre este encontro no sistema, do jeito que for mais rápido para você.</p>
+  <p class="q-mede"><b>Mede:</b> Se a porta da voz é encontrada sozinha, ou se ela vai direto para o formulário por hábito.</p>
+</div>
+<div class="q">
+  <div class="q-h"><span class="q-n">PERGUNTA 02</span><span class="q-n" style="color:var(--muted)">como a IA gerou</span></div>
+  <p class="q-bruta">Confira se o sistema entendeu corretamente o que você falou e corrija o que estiver errado.</p>
+  <p class="q-prob">Sugere que há erro e manda corrigir. A pessoa passa a caçar erro para agradar o facilitador, e a taxa de correção deixa de medir o extrator.</p>
+  <p class="q-final">Antes de guardar, me diga em voz alta o que você está vendo nesta tela — e faça o que você faria se estivesse sozinha.</p>
+  <p class="q-mede"><b>Mede:</b> Compreensão do estado (&quot;nada foi gravado ainda&quot;) e a taxa real de correção, sem indução.</p>
+</div>
+<div class="q">
+  <div class="q-h"><span class="q-n">PERGUNTA 03</span><span class="q-n" style="color:var(--muted)">como a IA gerou</span></div>
+  <p class="q-bruta">Agora gere o relatório do procedimento no padrão do conselho e libere.</p>
+  <p class="q-prob">Usa o vocabulário das telas (&quot;gerar&quot;, &quot;liberar&quot;) e entrega que existe um relatório à espera. O passo 05 é exatamente onde queremos ver se ela sabe que ainda falta algo.</p>
+  <p class="q-final">Terminou o que você precisava fazer hoje, ou ficou faltando alguma coisa?</p>
+  <p class="q-mede"><b>Mede:</b> Se o encontro registrado é lido como concluído. Quem responde &quot;terminei&quot; revela que o sistema não deixou claro que o relato ainda está em rascunho.</p>
+</div>
+  </div>
+</div>
+
+<div class="ajustes">
+  <h2>Os ajustes necessários</h2>
+  <p class="cap">O que mudou no protocolo de validação depois de desenhar este fluxo e gerar as perguntas.</p>
+  <ol><li>O cartão de cenário do protocolo era de professora — leitura em roda, barulho da rua. Trocado por um da Vivência: roda das emoções, duas crianças ajudaram sem ninguém pedir, seis participaram do começo ao fim, um conflito resolvido conversando.</li>
+<li>A tarefa 3 do protocolo terminava na folha confirmada. Aqui ela só termina com o relato liberado — porque é o relatório, e não a folha, que é a dor nomeada em campo.</li>
+<li>O passo 05 virou ponto de observação declarado, com limiar (20 s). Antes ele nem aparecia: o desenho supunha que confirmar a folha levava ao relato, e o código devolve para o Hoje.</li>
+<li>Nenhuma pergunta nomeia botão, tela ou recurso. O enunciado é objetivo; a rota fica com o facilitador.</li>
+<li>As portas B (gravar o encontro inteiro) e C (importar um áudio) ficam fora do teste: não existem no MVP, e simular o que não existe contamina o dado.</li></ol>
+  <p class="fora"><b>O que este teste não prova.</b> O que este task flow NÃO prova: que ela faria isso sem ninguém do lado, no sábado seguinte, sem facilitador na sala. Isso é o Protocolo do Lapso (H5) e precisa de uma segunda sessão, com intervalo.</p>
+</div>
+
+<p class="rod">Fontes: <b>jornada de usuário v2</b> (docs/jornada-usuario) · <b>decisão 31</b> de DECISOES-TECNICAS.md · protocolo de VALIDACAO-USUARIO.md e METODOLOGIA-VALIDACAO-PERCURSO.md · rotas conferidas em public/app.js.<br>
+Dados da sessão são sintéticos: perfil <i>Carolina Duarte</i>, turma <i>Vivência · Sábado manhã</i>, ambos do seed. Nenhuma criança real é representada.</p>
+
+</body></html>
