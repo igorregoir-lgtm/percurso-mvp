@@ -33,7 +33,7 @@ avaliação acadêmica". A exigência vem da semana 5, está admitida como pende
 [`TESTES.md`](TESTES.md) ("a validação com usuário real é a etapa seguinte") e aparece como item
 1.3 do Horizonte 1 em [`ARQUITETURA.md`](ARQUITETURA.md).
 
-O motivo é simples. O MVP tem 371 asserções de fluxo e 164 testes unitários — mas teste
+O motivo é simples. O MVP tem 373 asserções de fluxo e 164 testes unitários — mas teste
 automatizado prova que o sistema faz o que o código diz, não que a profissional consegue usá-lo.
 Desde a visita, o produto está ancorado em duas frases dela, literais:
 
@@ -80,14 +80,12 @@ node scripts/reset.mjs && node scripts/preparar-sessao.mjs --lapso && node serve
   [`PROTOTIPO-FIGMA-VALIDACAO.md`](PROTOTIPO-FIGMA-VALIDACAO.md) — as 12 telas destas seis tarefas
   em iPhone 17, uma seção por tarefa. **A sessão em si roda no MVP**, não nele: tempo, taxa de
   correção e Protocolo do Lapso só existem no sistema rodando.
-- **Preferir o sábado, que é o dia da turma.** Num dia útil as tarefas 1 a 5 funcionam — a tela
+- **Preferir o sábado, que é o dia da turma.** Num dia útil as tarefas 1 a 6 funcionam — a tela
   Hoje diz "hoje não tem encontro" e oferece o sábado em aberto, que é justamente o caminho que a
-  jornada v2 chama de *nunca é tarde para registrar*. **A tarefa 6 é a exceção:** o botão do recado
-  na tela Hoje depende da chamada **de hoje** (`public/app.js:509`), e não do encontro registrado
-  como o resto do mesmo cartão — então em dia não letivo ele não aparece, e o recado só é
-  alcançável pela URL. O `preparar-sessao.mjs` avisa quando é o caso. **Isso é achado do produto,
-  já verificado, não falha da participante** — se a sessão tiver que rodar num dia útil, a tarefa 6
-  entra no formulário como "não — entrada ausente na tela Hoje", com o ajuste já identificado.
+  jornada v2 chama de *nunca é tarde para registrar*. O botão do recado acompanha o encontro da
+  folha (`data_folha`), não a "chamada de hoje": em dia não letivo ele aponta para o último
+  sábado registrado (`#/recado?data=…`). Corrigido em 03/09/2026 — antes dependia de
+  `ch.registrada` e sumia fora do sábado.
 
 **Regras do facilitador.**
 
@@ -126,7 +124,7 @@ reconhecer sucesso; não é dita a ela.
 | 3 | Registrar o encontro | "O grupo acabou agora. Registre este encontro no sistema, do jeito que for mais rápido para você." *(entregar o cartão de cenário abaixo)* | `#/hoje` → `#/voz` (≈40 s) → `#/confirmar` | Folha confirmada. **Não contar campos à mão** — o sistema conta: ver §5, medida específica |
 | 4 | O relatório do conselho | "Terminou o que você precisava fazer hoje, ou ficou faltando alguma coisa?" | `#/hoje` → `#/relato` → "Revisei — liberar o relato" | Relato liberado. **Cronometrar do "Confirmar e guardar" até ela achar o caminho** — acima de 20 s ou com ajuda é achado de navegação, não de compreensão |
 | 5 | A pergunta da assistente social | "A assistente social do projeto parceiro te pergunta como está uma criança que ela acompanha. Responda pelo sistema." | `#/criancas` → `#/crianca/:id` → cartão "Parecer a profissional parceiro", **bloqueado** | Ela chega ao parecer **e explica o bloqueio com as próprias palavras**. Anotar a explicação literal: se ela ler como erro dela, o produto está gerando culpa |
-| 6 | O recado dos responsáveis | "Antes de sair, resolva o recado que você mandaria hoje no grupo dos responsáveis." | `#/hoje` → "Recado para os responsáveis" → `#/recado` → copiar / abrir no WhatsApp. **Em dia não letivo esse botão não existe** — ver §2 | Recado copiado ou aberto. Anotar **se ela edita antes de mandar e o que edita** — é o que ela faz hoje à mão, grupo por turma |
+| 6 | O recado dos responsáveis | "Antes de sair, resolva o recado que você mandaria hoje no grupo dos responsáveis." | `#/hoje` → "Recado para os responsáveis" → `#/recado` (com `?data=` do encontro da folha, se não for hoje) → copiar / abrir no WhatsApp | Recado copiado ou aberto. Anotar **se ela edita antes de mandar e o que edita** — é o que ela faz hoje à mão, grupo por turma |
 
 **Cartão de cenário da tarefa 3** — entregar impresso, sem ler em voz alta:
 
@@ -143,7 +141,8 @@ qualquer coisa acima disso na sessão é sinal, não ruído do cenário.
 > **As seis tarefas foram percorridas no MVP antes de virarem protocolo** (02/09/2026, perfil
 > Carolina Duarte, banco preparado pelo script): entrar em lapso → chamada de 29/08 → registro por
 > voz → conferência → relato liberado → parecer bloqueado → recado. O que a caminhada encontrou
-> está escrito acima como limiar (os 20 s da tarefa 4) e como aviso (a tarefa 6 em dia não letivo).
+> está escrito acima como limiar (os 20 s da tarefa 4). O aviso antigo sobre a tarefa 6 em dia
+> não letivo caiu: o botão do recado passou a seguir o encontro da folha.
 
 > **Por que a tarefa 5 termina num bloqueio.** Ela não é usabilidade: é o teste de **H3**. A
 > psicóloga não pode registrar o consentimento — só a coordenação (`src/api.js:421`), e a tela diz

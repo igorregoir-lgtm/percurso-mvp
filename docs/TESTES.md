@@ -14,7 +14,7 @@ Em outro:
 node scripts/smoke-test.mjs
 ```
 
-Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **364 passaram,
+Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **373 passaram,
 0 falharam**.
 
 Há também uma bateria de **164 testes unitários** das regras críticas de domínio (filtro de

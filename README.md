@@ -67,7 +67,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **371 asserções de fluxo** e **164 testes unitários** — mais a avaliação do RAG
+São **373 asserções de fluxo** e **164 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização) e a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo). As quatro baterias rodam a cada push (`.github/workflows/ci.yml`), sempre com
@@ -298,7 +298,7 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    371 asserções do fluxo principal (contra o servidor no ar)
+scripts/smoke-test.mjs    373 asserções do fluxo principal (contra o servidor no ar)
 scripts/unit-test.mjs     164 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
@@ -356,7 +356,7 @@ cd prototipo-figma && python3 -m http.server 8765
 - [`docs/EVIDENCIAS-DE-TESTE.txt`](docs/EVIDENCIAS-DE-TESTE.txt) — saída da última execução
 - [`docs/ROTEIRO-DO-VIDEO.md`](docs/ROTEIRO-DO-VIDEO.md) — o roteiro do vídeo
 - [`video/percurso-demonstracao.mp4`](video/percurso-demonstracao.mp4) — vídeo demonstrativo, 6m14s, 1080p, legendado e sem áudio ([como foi gerado](video/README.md)). **Atenção: grava a v1** — não mostra voz, pauta nem relatório do doador. Regravar é item aberto da entrega.
-- [`docs/revisao/`](docs/revisao/) — revisão arquitetural completa (22/08/2026): baseline de requisitos, matriz de rastreabilidade arquitetura → implementação → teste, relatório de achados priorizados e a [auditoria adversarial da v2](docs/revisao/03-AUDITORIA-V2.md) (28 achados levantados, 19 confirmados após refutação, 19 corrigidos com teste); da v3 (25/08/2026): o [plano de complementação auditado](docs/revisao/04-PLANO-COMPLEMENTACAO-IA.md) (painel de 4 lentes, 29 achados incorporados antes da execução) e a [revisão adversarial da implementação](docs/revisao/05-REVISAO-IMPLEMENTACAO-IA.md) (35 achados confirmados, 35 tratados)
+- [`docs/revisao/`](docs/revisao/) — revisão arquitetural completa (22/08/2026): baseline de requisitos, matriz de rastreabilidade arquitetura → implementação → teste, relatório de achados priorizados e a [auditoria adversarial da v2](docs/revisao/03-AUDITORIA-V2.md) (28 achados levantados, 19 confirmados após refutação, 19 corrigidos com teste); da v3 (25/08/2026): o [plano de complementação auditado](docs/revisao/04-PLANO-COMPLEMENTACAO-IA.md) (painel de 4 lentes, 29 achados incorporados antes da execução) e a [revisão adversarial da implementação](docs/revisao/05-REVISAO-IMPLEMENTACAO-IA.md) (35 achados confirmados, 35 tratados); a mais recente: [revisão do repositório 03/09](docs/revisao/14-REVISAO-REPOSITORIO.md) (recado em dia não letivo, coerência de docs e gates)
 
 ---
 

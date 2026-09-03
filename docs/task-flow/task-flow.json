@@ -4,7 +4,7 @@
   "historia": {
     "id": "US-6",
     "texto": "Como psicóloga da Vivência, quero contar em 40 segundos como foi o encontro, para que o relatório no padrão do conselho exista sem eu ter que escrever à noite.",
-    "origem": "Decisão 31 de DECISOES-TECNICAS.md, aberta pela visita de 29/08/2026. Não estava nas cinco user stories da Lean Inception — aquelas são de pedagoga, e o campo mostrou que quem escreve o relatório é a psicóloga.",
+    "origem": "Decisão 31 de DECISOES-TECNICAS.md, aberta pela visita de 29/08/2026. As cinco user stories da Lean Inception são de pedagoga; a sexta entrou nas listas canônicas (LEAN-INCEPTION §5 e ARTEFATO-SEMANA-5 §3) em 02/09/2026, com a procedência do campo declarada.",
     "tarefa": "Registrar o encontro de hoje falando, e sair com o relato do procedimento liberado.",
     "gatilho": "Sábado, 11h40. O grupo acabou de sair e ela está arrumando a sala.",
     "fim": "Relato liberado, folha fechada e recado da turma disponível — sem ter aberto o notebook."

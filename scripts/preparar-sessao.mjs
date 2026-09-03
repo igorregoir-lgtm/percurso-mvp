@@ -116,11 +116,10 @@ if (lapsoData) console.log(`  Lapso forçado ....... última atividade em ${laps
 
 if (!diaLetivo(turma.turno, hoje())) {
   console.log(`\nAVISO — hoje não é dia de encontro desta turma (turno "${turma.turno}").`);
-  console.log('  As tarefas 1 a 5 funcionam: a tela Hoje oferece a data em aberto.');
-  console.log('  A tarefa 6 (recado) NÃO tem entrada na tela Hoje em dia não letivo — o botão');
-  console.log('  depende da chamada de HOJE (public/app.js:508), e não do encontro registrado.');
-  console.log('  Rodar a sessão no dia de encontro da turma, ou registrar a tarefa 6 como');
-  console.log('  achado de navegação do produto — nunca como falha da participante.');
+  console.log('  As tarefas 1 a 6 funcionam: a tela Hoje oferece a data em aberto, e o botão');
+  console.log('  do recado aponta para o último encontro registrado (data_folha), não para');
+  console.log('  a "chamada de hoje". Preferir o dia de encontro da turma quando der —');
+  console.log('  a chamada recria o encontro e a sequência fica a real do sábado.');
 }
 
 console.log('\nNa tela Hoje a data acima aparece em "Datas ainda sem chamada".');

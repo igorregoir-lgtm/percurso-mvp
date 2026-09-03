@@ -1,5 +1,13 @@
 # Handoff — 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
 
+> **Sessão de revisão do repositório (03/09/2026).** Varredura em busca de erros e lacunas —
+> relatório em [`docs/revisao/14-REVISAO-REPOSITORIO.md`](revisao/14-REVISAO-REPOSITORIO.md).
+> Bug corrigido: o botão do recado na tela Hoje seguia a chamada de *hoje* e sumia em dia não
+> letivo (Vivência sabática); agora segue `data_folha`. Docs vivos desalinhados (US-6 no
+> task-flow, título das stories, evidências 364→373) remedidos. Gates: **164 · 373 · 6 · 24**.
+> Armadilha de ambiente: o Node 22 do Cloud Agent não tem FTS5 em `node:sqlite` — use o 24 do
+> `.nvmrc` (o do CI) para `test:rag` / `test:ia`.
+
 > **Sessão de 02–03/09/2026 — o que mudou.** Dezesseis commits, de `1322a77` a este, todos em
 > `main` e em `pos-visita-ebenezer-e-jornada-v2` (as duas apontam para o mesmo commit). Nada de
 > arquitetura mudou: a sessão foi de **coerência, cobertura visual e um bug de classificação**.
@@ -51,9 +59,9 @@
 >
 > **5. Roteiro do vídeo v3.** Tinha 13 cenas e nenhuma da psicóloga. Agora tem o bloco dela com
 > cinco cenas, mais a consulta, **dentro dos mesmos 7m00** — o que foi cortado está declarado em
-> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; hoje são **371 · 164**.
+> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; hoje são **373 · 164**.
 >
-> **Gates: 164 unitários · 371 smoke · 6 rag · 24 ia-stub.**
+> **Gates: 164 unitários · 373 smoke · 6 rag · 24 ia-stub.**
 >
 > **Armadilhas novas — as do Figma custaram a maior parte do tempo:**
 > (1) **`SF Pro` aparece em `listAvailableFontsAsync` mas renderiza largura ZERO** nesta conta; o

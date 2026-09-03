@@ -159,7 +159,7 @@ escreve o relatório com adjetivos, porque não tem substantivos.
                                             texto liberado para o relatório
 ```
 
-### As cinco user stories que o MVP demonstra
+### As user stories que o MVP demonstra
 
 1. Como **pedagoga**, quero registrar minha observação de cada criança em minutos, com âncoras
    claras, para manter processo consistente sem tirar atenção das crianças. *(F3)*
@@ -193,11 +193,12 @@ Ao concluir a **última observação pendente da turma**, a tela inteira muda. N
 sucesso: é uma parada. Maria vê, em sequência:
 
 - **18 de 18** — a turma fechada;
-- **~54 min** — o que aquilo custou a ela no ciclo inteiro, ao lado de **5 dimensões comparáveis**;
-- as barras das cinco dimensões, ciclo 1 contra ciclo 2, aparecendo na frente dela;
-- e a frase, em serifada, entre aspas:
+- **~54 min** — o que aquilo custou a ela no ciclo inteiro, ao lado das **dimensões comparáveis**
+  (hoje são seis — decisão 34; na inception eram cinco);
+- as barras das dimensões, ciclo 1 contra ciclo 2, aparecendo na frente dela;
+- e a frase, em serifada, entre aspas, montada pelo produto a partir das médias reais:
 
-  > *"Entre o primeiro e o segundo ciclo de observação, as médias da turma subiram em 5 de 5
+  > *"Entre o primeiro e o segundo ciclo de observação, as médias da turma subiram em N de M
   > dimensões socioemocionais. 'Expressão emocional' segue como a menor média e orienta o plano do
   > próximo período. As médias descrevem o que a equipe observou, não efeito medido; fatores externos não
   > foram isolados."*

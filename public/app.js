@@ -495,6 +495,15 @@ rota(/^#\/hoje/, async () => {
   const folhaFeita = !!d.folha;
   // A folha e' do ENCONTRO: existe enquanto houver um encontro registrado,
   // mesmo que ele tenha sido no ultimo dia letivo e nao hoje.
+  // O recado segue a MESMA regra: e' do encontro de data_folha, nao da
+  // "chamada de hoje". Em dia nao letivo, data_folha aponta para o ultimo
+  // encontro (dataDaFolha); amarrar o botao a ch.registrada escondia a
+  // entrada exatamente quando a tela Hoje ainda mostra o cartao da folha.
+  const temRecado = !!d.data_folha && (
+    d.data_folha === d.hoje ? !!ch?.registrada : true
+  );
+  const hrefRecado = d.data_folha && d.data_folha !== d.hoje
+    ? `#/recado?data=${d.data_folha}` : '#/recado';
   const cartaoFolha = !d.data_folha ? '' : `
     <div class="cartao compacto">
       <div class="linha"><h2 class="cresce">${d.na_rubrica === false ? 'Registro da vivência' : 'Folha'} ${d.data_folha === d.hoje ? 'do dia' : `de ${dataBR(d.data_folha)}`}</h2>
@@ -506,7 +515,7 @@ rota(/^#\/hoje/, async () => {
         <button class="btn largo" data-acao="ir" data-href="#/voz">${folhaFeita ? 'Contar de novo' : 'Contar como foi'}</button>
         <button class="btn largo secundario" data-acao="ir" data-href="#/folha">Preencher à mão</button>
         ${folhaFeita && d.na_rubrica === false ? `<button class="btn largo ${d.folha.relato_liberado ? 'fantasma' : 'secundario'}" data-acao="ir" data-href="#/relato">${d.folha.relato_liberado ? 'Relato liberado' : 'Revisar e liberar o relato'}</button>` : ''}
-        ${ch?.registrada ? `<button class="btn largo fantasma" data-acao="ir" data-href="#/recado">Recado para os responsáveis</button>` : ''}
+        ${temRecado ? `<button class="btn largo fantasma" data-acao="ir" data-href="${hrefRecado}">Recado para os responsáveis</button>` : ''}
       </div>
     </div>`;
 
