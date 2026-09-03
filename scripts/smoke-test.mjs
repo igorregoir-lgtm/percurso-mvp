@@ -1088,7 +1088,16 @@ secao('24 · Psicóloga e Vivência terapêutica — indicador de programa, nunc
   const hoje = (await GET('carolina', '/api/hoje')).corpo;
   T('o Hoje dela abre na turma da Vivência', !!hoje.turma && /Viv[eê]ncia/i.test(hoje.turma.programa));
   T('a turma da Vivência está fora da rubrica: sem agenda de ciclo', hoje.na_rubrica === false && hoje.agenda === null);
-  T('ela não está em lapso (registrou no último sábado)', hoje.retomada.em_lapso === false);
+  // A Vivencia e' sabatica: a ultima atividade dela e' sempre o sabado anterior, e a
+  // regua de lapso e' de 5 dias (PARAMS.DIAS_LAPSO). Numa quinta-feira o lapso dispara
+  // sozinho — isso e' a regua funcionando, nao o teste quebrando. Fixar `false` aqui so'
+  // valia de sabado a quarta; a assercao passa a derivar da mesma regra.
+  const diasSemRegistro = hoje.retomada.dias_sem_registro;
+  T('a retomada dela conta a partir do último sábado (a Vivência é sabática)',
+    diasSemRegistro != null && diasSemRegistro <= 7, `(${diasSemRegistro} dias)`);
+  T('o lapso dela segue a régua de 5 dias, sem exceção para a Vivência',
+    hoje.retomada.em_lapso === (diasSemRegistro >= 5),
+    `(${diasSemRegistro} dias, em_lapso=${hoje.retomada.em_lapso})`);
 
   const agenda = await GET('carolina', `/api/ciclo/agenda?turma_id=${hoje.turma.id}`);
   T('pedir a agenda do ciclo para a Vivência é recusado com o motivo (422)',

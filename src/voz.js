@@ -178,7 +178,9 @@ function contarAntesDe(texto, termo) {
   const m = texto.match(re);
   if (!m) return null;
   if (m[1] == null) return 1;
-  const n = /^\\d+$/.test(m[1]) ? Number(m[1]) : NUMEROS[m[1]];
+  // PALAVRA_NUMERO captura digito (\d{1,2}) OU palavra; aqui o teste tem de ser
+  // regex LITERAL com \d simples — /^\\d+$/ procurava barra-invertida e virava 1.
+  const n = /^\d+$/.test(m[1]) ? Number(m[1]) : NUMEROS[m[1]];
   return Number.isInteger(n) && n >= 0 && n <= CHECKIN_MAX ? n : 1;
 }
 

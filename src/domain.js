@@ -1684,6 +1684,8 @@ export function reguaDoInstituto(opcoes = {}) {
   });
   const total = { ok: 0, atencao: 0, abaixo: 0, sem_base: 0 };
   for (const t of turmas) for (const k of Object.keys(total)) total[k] += t.resumo[k];
-  return { desde: turmas[0]?.desde ?? inicioDoSemestre(), minima_pct: PARAMS.PRESENCA_MINIMA_PCT,
+  // O objeto mapeado acima nao tem `desde`; ler dele ignorava o ?desde= e o ?ref=
+  // do chamador e o cabecalho caia sempre no inicio do semestre corrente.
+  return { desde: opcoes.desde ?? inicioDoSemestre(opcoes.ref), minima_pct: PARAMS.PRESENCA_MINIMA_PCT,
            atencao_pct: PARAMS.PRESENCA_ATENCAO_PCT, turmas, total };
 }

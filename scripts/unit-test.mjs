@@ -1747,6 +1747,24 @@ test('vivência: o extrator lê as contagens que a psicóloga respondeu ao vivo'
   assert.equal(r3.extracao.checkin.nao_observados, 0);
 });
 
+// Regressao: o ditado do celular devolve "6", nao "seis". O teste de digito em
+// contarAntesDe era /^\\d+$/ — regex LITERAL, procurava barra-invertida + 'd' —
+// entao todo numero em algarismo caia no default 1 e o check-in do sabado da
+// psicologa gravava contagem errada, calado. Achado por revisao no PR #3.
+test('vivência: contagem em algarismo vale igual à contagem por extenso', () => {
+  const porExtenso = 'Hoje fizemos o jogo da rede de apoio, sobre cidadania. Duas ajudaram sem ninguém pedir. ' +
+    'Seis participaram do começo ao fim. Teve um conflito e resolveram conversando. Uma não foi observada.';
+  const emAlgarismo = 'Hoje fizemos o jogo da rede de apoio, sobre cidadania. 2 ajudaram sem ninguém pedir. ' +
+    '6 participaram do começo ao fim. Teve 1 conflito e resolveram conversando. 1 não foi observada.';
+  const a = V.extrairDaFala(porExtenso, [], { vivencia: true }).extracao.checkin;
+  const b = V.extrairDaFala(emAlgarismo, [], { vivencia: true }).extracao.checkin;
+  assert.deepEqual(b, a, 'algarismo e palavra têm de extrair a mesma contagem');
+  assert.equal(b.participaram_inteiro, 6, 'o "6" não pode virar 1');
+  // Dois digitos tambem: a turma da Vivencia tem 24 criancas.
+  const c = V.extrairDaFala('Roda de emoções hoje. 12 participaram do começo ao fim.', [], { vivencia: true });
+  assert.equal(c.extracao.checkin.participaram_inteiro, 12);
+});
+
 test('perímetro com contexto: o nome do procedimento passa; o conteúdo sobre criança continua barrado', () => {
   const pares = [
     ['Na vivência terapêutica de hoje o grupo fez a roda de emoções.', false],
@@ -1852,6 +1870,21 @@ test('régua da turma: a Vivência da manhã tem quem está abaixo e quem está 
   const inst = D.reguaDoInstituto();
   assert.equal(inst.turmas.length, all(`SELECT COUNT(*) n FROM turma`)[0].n);
   assert.ok(!JSON.stringify(inst).includes('"nome":"' + r.criancas[0].nome), 'o painel do Instituto não carrega nome de criança');
+});
+
+// Regressao: reguaDoInstituto lia `desde` do objeto mapeado logo acima, que so'
+// tem { turma, criancas, resumo } — o cabecalho ignorava ?desde= e ?ref= e caia
+// sempre no inicio do semestre corrente. Achado por revisao no PR #3.
+test('régua do Instituto: o cabeçalho respeita o ?desde= e o ?ref= de quem pediu', () => {
+  assert.equal(D.reguaDoInstituto({ desde: '2026-03-01' }).desde, '2026-03-01',
+    'o desde pedido tem de aparecer no cabeçalho');
+  assert.equal(D.reguaDoInstituto({ ref: '2026-03-15' }).desde, D.inicioDoSemestre('2026-03-15'),
+    'sem desde, o cabeçalho segue o semestre do ref pedido');
+  assert.equal(D.reguaDoInstituto().desde, D.inicioDoSemestre(),
+    'sem nada, continua o semestre corrente');
+  // O cabecalho tem de bater com o que a turma calculou para a mesma janela.
+  assert.equal(D.reguaDoInstituto({ desde: '2026-03-01' }).desde,
+    D.reguaDaTurma(6, { desde: '2026-03-01' }).desde);
 });
 
 test('recado da turma: só agregado, nenhum nome, e um link de WhatsApp sem número', () => {
