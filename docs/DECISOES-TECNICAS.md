@@ -139,7 +139,7 @@ autenticação por senha ou SSO; (b) HTTPS; (c) registro de auditoria de acesso 
 
 ### 9. Dados sintéticos determinísticos
 
-PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 374
+PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 378
 asserções de fluxo e os 165 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
 a *hoje*, então a demonstração nunca "envelhece".
 
@@ -700,6 +700,10 @@ registro de que saiu.
 ---
 
 ### 33. A régua de 75% e o recado da turma: o produto absorve a gestão que já existe
+
+> O que a automação do envio permitiria, e o que ela veda, está levantado com fontes primárias em
+> [`PESQUISA-WHATSAPP.md`](PESQUISA-WHATSAPP.md) — por isso o recado é **gerado** aqui e **enviado**
+> pela pessoa, no grupo que já existe.
 
 **Origem:** campo (achados 6 e 7 do consolidado): planilha com % por criança, 75% para permanecer
 e para o grupo de benefícios, faixa amarela de atenção, e a devolutiva semanal aos responsáveis

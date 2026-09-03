@@ -67,7 +67,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **374 asserções de fluxo** e **165 testes unitários** — mais a avaliação do RAG
+São **378 asserções de fluxo** e **165 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização) e a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo). As quatro baterias rodam a cada push (`.github/workflows/ci.yml`), sempre com
@@ -298,7 +298,7 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    374 asserções do fluxo principal (contra o servidor no ar)
+scripts/smoke-test.mjs    378 asserções do fluxo principal (contra o servidor no ar)
 scripts/unit-test.mjs     165 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
@@ -319,14 +319,16 @@ que o governa escrita no topo.
 
 ---
 
-## Protótipo Figma (mobile)
+## Protótipos
 
-Dentro de `prototipo-figma/` há o protótipo interativo fiel ao design do Figma:
+**O canônico é o navegável em Figma** — 27 telas, os quatro papéis, 402 × 874 pt:
+[`h6AnLVYLfpeVl2N4ie0Qzv`](https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv), página
+*Protótipo completo · 4 papéis*. Qual dos três protótipos é qual, e por que os outros existem:
+[`docs/ARTEFATOS-VISUAIS.md`](docs/ARTEFATOS-VISUAIS.md) — **ler antes de abrir qualquer um.**
 
-- `completo.html` ou `percurso-prototipo.html` — abre direto no navegador (standalone)
-- `index.html` + `styles.css` + `app.js` — versão modular
-
-Telas: Entrada · Hoje · Chamada · Folha do dia · Olhar · Turma · Painel da coordenação
+`prototipo-figma/` guarda o **protótipo HTML pré-visita**, congelado como registro da etapa em que
+o protótipo era HTML (`completo.html` ou `index.html` abrem no navegador). Ele não tem a psicóloga,
+mostra a rubrica de cinco dimensões que a decisão 34 substituiu, e não deve ser atualizado.
 
 ```bash
 # opcional: servir localmente
@@ -339,7 +341,7 @@ cd prototipo-figma && python3 -m http.server 8765
 
 - [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) — **plano de arquitetura**: restrições do dossiê → respostas de desenho, arquitetura atual, invariantes e os três horizontes de evolução (entrega 09/10 → piloto real → módulos condicionados)
 - [`docs/LEAN-INCEPTION.md`](docs/LEAN-INCEPTION.md) — a análise que originou o escopo
-- [`docs/ARTEFATO-SEMANA-5.md`](docs/ARTEFATO-SEMANA-5.md) — **documentação de suporte do artefato de tecnologia da semana 5**: persona, jornadas atual e futura, as 5 User Stories com a tela e o teste que prova cada uma, fluxo de navegação por papel — e o registro da validação, que fica em branco até a sessão acontecer
+- [`docs/ARTEFATO-SEMANA-5.md`](docs/ARTEFATO-SEMANA-5.md) — **documentação de suporte do artefato de tecnologia da semana 5**: persona, jornadas atual e futura, as 6 User Stories com a tela e o teste que prova cada uma, fluxo de navegação por papel — e o registro da validação, que fica em branco até a sessão acontecer
 - [`docs/JORNADAS.md`](docs/JORNADAS.md) — jornadas atual e futura das três personas, com ganhos **e custos**
 - [`docs/O-QUE-VEIO-DA-V2.md`](docs/O-QUE-VEIO-DA-V2.md) — **matriz de adoção do `percurso-v2-pack`**: as 15 features, as 11 telas, os tokens de design, o que foi adaptado com justificativa e o que foi recusado
 - [`docs/ANALISE-BUSSOLA.md`](docs/ANALISE-BUSSOLA.md) — análise comparativa com o app Bússola: o que foi adotado (cronômetro de registro, reconciliação, plano da semana, supressão n<5, aspiração, impressão) e o que foi rejeitado, com justificativa
@@ -350,6 +352,13 @@ cd prototipo-figma && python3 -m http.server 8765
 - [`docs/GOVERNANCA-FONTES-RAG.md`](docs/GOVERNANCA-FONTES-RAG.md) — admissão de fontes ao corpus
 - [`docs/SROI-METODOLOGIA.md`](docs/SROI-METODOLOGIA.md) — o que a tela Impacto pode e não pode afirmar
 - [`docs/POC-COPILOT.md`](docs/POC-COPILOT.md) — protocolo da PoC com pedagogos (condição para ligar a IA em operação)
+- [`docs/ARTEFATOS-VISUAIS.md`](docs/ARTEFATOS-VISUAIS.md) — **qual protótipo é o canônico** e por
+  que os outros existem: ler antes de abrir qualquer um
+- [`docs/METODOLOGIA-VALIDACAO-PERCURSO.md`](docs/METODOLOGIA-VALIDACAO-PERCURSO.md) — hipóteses,
+  limiares com fonte e o Protocolo do Lapso
+- [`docs/PESQUISA-WHATSAPP.md`](docs/PESQUISA-WHATSAPP.md) — o que a Meta permite, o que o GitHub
+  oferece e o que a LGPD veda na automação das devolutivas (decisão 33)
+- [`docs/HANDOFF.md`](docs/HANDOFF.md) — estado, decisões e as armadilhas que já custaram tempo
 - [`docs/VALIDACAO-USUARIO.md`](docs/VALIDACAO-USUARIO.md) — protocolo da validação com usuária real (pendência humana)
 - [`docs/PENDENCIAS-DE-ENTREGA.md`](docs/PENDENCIAS-DE-ENTREGA.md) — o que depende de gente até 09/10
 - [`docs/MANUAL-DE-INSTALACAO.md`](docs/MANUAL-DE-INSTALACAO.md) — instalar em qualquer computador, sem jargão, com início automático

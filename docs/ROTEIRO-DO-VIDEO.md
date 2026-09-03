@@ -153,7 +153,8 @@ dela; editar a folha depois de liberar derruba a liberação.
 
 ### 9 · Recado aos responsáveis + a régua de 75% — [0:20 · `#/recado`]
 
-**Ação:** abrir `#/recado`. Mostrar o texto pronto para colar e o botão do WhatsApp. Apontar a
+**Ação:** abrir pelo botão **"Recado para os responsáveis"** no cartão da folha (ver a instrução 4 —
+abrir por URL caiu). Mostrar o texto pronto para colar e o botão do WhatsApp. Apontar a
 linha da presença do mês **contra a régua de 75%** do Instituto.
 
 **Fala:** o recado semanal por WhatsApp e a régua de 75% **já existem** na casa — são política e
@@ -257,7 +258,7 @@ só o Instituto tem. A tela mostra as premissas e diz isso, em vez de inventar a
 `data/percurso.db` — o backup é copiar um arquivo. Rodar as duas baterias e mostrar os totais:
 
 ```
-node scripts/smoke-test.mjs   → 374 passaram · 0 falharam
+node scripts/smoke-test.mjs   → 378 passaram · 0 falharam
 node scripts/unit-test.mjs    → 165 passaram · 0 falharam
 ```
 

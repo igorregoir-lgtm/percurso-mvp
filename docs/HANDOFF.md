@@ -7,7 +7,7 @@
 >
 > **1. O protocolo de validação passou para a psicóloga.** As seis tarefas eram de pedagoga e duas
 > delas são **inexecutáveis** por ela — a turma da Vivência está fora da rubrica e `#/ciclo`
-> responde 422 (`src/api.js:293`). Refeitas a partir do task flow do Exercício 03
+> responde 422 (`src/api.js:299`). Refeitas a partir do task flow do Exercício 03
 > (`docs/task-flow/`); a versão pedagoga virou a §3.4 de `VALIDACAO-USUARIO.md`. Nasceu
 > `scripts/preparar-sessao.mjs`: sem ele a sessão começa com o trabalho já feito, porque a seed
 > entrega o último sábado registrado. Com `--lapso` ele destrava o Protocolo do Lapso, que até
@@ -52,9 +52,9 @@
 >
 > **5. Roteiro do vídeo v3.** Tinha 13 cenas e nenhuma da psicóloga. Agora tem o bloco dela com
 > cinco cenas, mais a consulta, **dentro dos mesmos 7m00** — o que foi cortado está declarado em
-> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; hoje são **374 · 165**.
+> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; hoje são **378 · 165**.
 >
-> **Gates: 165 unitários · 374 smoke · 6 rag · 24 ia-stub.**
+> **Gates: 165 unitários · 378 smoke · 6 rag · 24 ia-stub.**
 >
 > **Armadilhas novas — as do Figma custaram a maior parte do tempo:**
 > (1) **`SF Pro` aparece em `listAvailableFontsAsync` mas renderiza largura ZERO** nesta conta; o
@@ -117,7 +117,7 @@
 > letivo. A branch não tinha commit próprio — o "rebase" foi mover o ponteiro 17 commits à frente
 > com o trabalho em cima (`stash` → `rebase` → `pop`, com backup do diff antes e comparação do
 > conteúdo depois: 38 linhas adicionadas, 1 removida, nenhuma alterada). Gates do conjunto: **165
-> unitários · 374 smoke**. O commit declara a autoria: o conteúdo é da sessão paralela; esta
+> unitários · 374 smoke** (378 depois da auditoria OPAR)**. O commit declara a autoria: o conteúdo é da sessão paralela; esta
 > revisou, verificou e commitou.
 >
 > **A correção derrubou uma ressalva em três documentos** — `VALIDACAO-USUARIO.md` §2 e a tarefa 6,

@@ -70,7 +70,7 @@ navegador (public/ — HTML+CSS+JS puro, hash routing, sem build)
     ▼
 server.js        HTTP puro (node:http) — estáticos + despacho de /api/*
     ▼
-src/api.js       71 rotas — sessão por perfil; RBAC educadora / coordenação /
+src/api.js       83 rotas — sessão por perfil; RBAC educadora / coordenação /
     │            diretoria (a diretoria não abre registro individual)
     ▼
     ├── src/domain.js     núcleo: elegibilidade, perímetro, alertas, safras,
@@ -87,7 +87,7 @@ data/percurso.db local ou /var/data/percurso.db no Render
                    (WAL; disco persistente; backup externo obrigatório)
 
 src/seed.js      dados 100% sintéticos, PRNG com semente fixa (regra 1 do bloco 6)
-scripts/         reset.mjs · smoke-test.mjs (374 asserções) · unit-test.mjs (165) · preparar-sessao.mjs
+scripts/         reset.mjs · smoke-test.mjs (378 asserções) · unit-test.mjs (165) · preparar-sessao.mjs
                  rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
 .github/workflows/ci.yml   as quatro baterias a cada push (AI_ENABLED=false)
 ```
@@ -130,7 +130,8 @@ profissional parceiro, sob consentimento). `src/voz.js` ganhou os catálogos da 
 filtro de perímetro com contexto. Rotas novas: `GET /api/planilha/resumo`,
 `GET /api/exportar/planilha`, `GET /api/relato`, `POST /api/relato/liberar`, `GET /api/turma/presenca`,
 `GET /api/regua`, `GET /api/recado`, `GET /api/parecer`, `GET /api/parecer/ver`,
-`POST /api/parecer/gerar`, `POST /api/parecer/liberar`. Uma tabela nova (`parecer`) e colunas novas
+`POST /api/parecer/gerar`, `POST /api/parecer/liberar`. Em 03/09/2026 entrou
+`GET /api/consulta`, que serve as sugestões da tela antes da primeira pergunta. Uma tabela nova (`parecer`) e colunas novas
 em `folha`; a assinatura do DDL mudou e o banco se recria (decisão 14). Decisões 31–34.
 
 ## 3. Invariantes — o que nenhum horizonte pode mudar

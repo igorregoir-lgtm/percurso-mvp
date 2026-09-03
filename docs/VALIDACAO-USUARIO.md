@@ -15,7 +15,7 @@
 > a **psicóloga** — e que a turma dela, a Vivência terapêutica, está **fora da rubrica** por
 > decisão de projeto ([decisão 31](DECISOES-TECNICAS.md)). Consequência dura: as antigas tarefas 4
 > e 5 (agenda do ciclo, observação com âncoras) **não são executáveis por ela** — `#/ciclo` responde
-> 422 para a turma dela, por construção (`src/api.js:293`). Não dava para trocar a persona e manter
+> 422 para a turma dela, por construção (`src/api.js:299`). Não dava para trocar a persona e manter
 > a lista. As seis tarefas foram refeitas do zero, a partir do task flow do
 > [Exercício 03](task-flow/README.md) e dos três destinos do registro que a jornada v2 nomeia:
 > o relatório do conselho, o recado aos pais e a prova para quem financia.
@@ -33,7 +33,7 @@ avaliação acadêmica". A exigência vem da semana 5, está admitida como pende
 [`TESTES.md`](TESTES.md) ("a validação com usuário real é a etapa seguinte") e aparece como item
 1.3 do Horizonte 1 em [`ARQUITETURA.md`](ARQUITETURA.md).
 
-O motivo é simples. O MVP tem 374 asserções de fluxo e 165 testes unitários — mas teste
+O motivo é simples. O MVP tem 378 asserções de fluxo e 165 testes unitários — mas teste
 automatizado prova que o sistema faz o que o código diz, não que a profissional consegue usá-lo.
 Desde a visita, o produto está ancorado em duas frases dela, literais:
 
@@ -148,7 +148,7 @@ qualquer coisa acima disso na sessão é sinal, não ruído do cenário.
 > está escrito acima como limiar (os 20 s da tarefa 4) e como aviso (a tarefa 6 em dia não letivo).
 
 > **Por que a tarefa 5 termina num bloqueio.** Ela não é usabilidade: é o teste de **H3**. A
-> psicóloga não pode registrar o consentimento — só a coordenação (`src/api.js:421`), e a tela diz
+> psicóloga não pode registrar o consentimento — só a coordenação (`src/api.js:426`), e a tela diz
 > isso a ela (`public/app.js:1014`). O sucesso da tarefa é ela entender **por que não sai**, não
 > conseguir emitir. E o destino é literal do campo: *"que daí seria entre profissionais, que é mais
 > rico ainda"*.

@@ -159,7 +159,7 @@ escreve o relatório com adjetivos, porque não tem substantivos.
                                             texto liberado para o relatório
 ```
 
-### As cinco user stories que o MVP demonstra
+### As seis user stories que o MVP demonstra
 
 1. Como **pedagoga**, quero registrar minha observação de cada criança em minutos, com âncoras
    claras, para manter processo consistente sem tirar atenção das crianças. *(F3)*

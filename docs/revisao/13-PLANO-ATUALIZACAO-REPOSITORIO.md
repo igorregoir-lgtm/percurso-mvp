@@ -56,6 +56,9 @@ npm run test:unit # tests 159 · pass 159 · fail 0
 
 **159 unitários · 365 asserções de fluxo.** Rag: 6. IA-stub: 24.
 
+> **Números de 02/09/2026, preservados de propósito.** Este é um plano datado: o gate daquele
+> momento é parte do registro. Os números vivos ficam no README, TESTES e ARQUITETURA.
+
 ### 1.5 Artefatos visuais criados fora do repositório
 
 | Artefato | Onde | Estado |
