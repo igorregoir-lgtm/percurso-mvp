@@ -597,6 +597,26 @@ test('consultar: perguntar pelo gatilho do alerta é perguntar por evasão', () 
   assert.equal(R.consultar('quantas faltas a turma teve?').intencao, 'presenca');
 });
 
+test('as perguntas do Passo classificam na intenção que declaram', async () => {
+  // `PERGUNTAS_DIRETORIA` (src/passo/catalogo.js) é uma TERCEIRA cópia manual
+  // das seis intenções, e nada a amarrava ao classificador: o chip anuncia um
+  // assunto e envia uma consulta, e se a consulta cair noutra intenção a
+  // diretoria recebe número de outra pergunta — sem erro, sem aviso.
+  // Achado E1 da auditoria OPAR de 03/09/2026.
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../src/passo/catalogo.js', import.meta.url), 'utf8');
+  const bloco = src.slice(src.indexOf('PERGUNTAS_DIRETORIA'));
+  const linhas = [...bloco.matchAll(/\['([a-z]+)', '([^']+)', '([^']+)'\]/g)].slice(0, 6);
+  assert.equal(linhas.length, 6, 'as seis perguntas da diretoria têm de estar declaradas');
+  for (const [, codigo, rotulo, consulta] of linhas) {
+    const r = R.consultar(consulta);
+    assert.equal(r.reconhecida, true, `o Passo oferece "${rotulo}" e a base não sabe responder`);
+    assert.equal(r.intencao, codigo, `o chip "${rotulo}" promete ${codigo} e a consulta cai em ${r.intencao}`);
+  }
+  // e as seis têm de ser seis assuntos diferentes, como as sugestões da tela
+  assert.equal(new Set(linhas.map(l => l[1])).size, 6);
+});
+
 test('consultar: a tela e a recusa oferecem a MESMA lista de perguntas', () => {
   // Os chips de `#/consulta` e a lista da recusa saem de R.SUGESTOES. Se um dia
   // divergirem, a base passa a ensinar duas linguagens para a mesma pergunta.

@@ -9,6 +9,18 @@
 >   o plano previa. A referência antiga apontava para a função no lugar de onde ela foi tirada.
 > - **O `GUIA` com os campos `naoEnxergo` não é mais lido de `public/app.js`**: vive em
 >   `src/assistente.js:112`. A doutrina 5 foi substituída pela 5′, como o plano pedia.
+>
+> **As outras 47 referências deste documento NÃO foram refeitas, e é deliberado.** São as escritas
+> sem caminho — `api.js:694`, `db.js:85`, `domain.js:315` — que a varredura por
+> `(src|public|scripts)/…` não alcança. Elas apontam para o código **como ele estava em
+> 25/08/2026** e valem como registro do que o plano viu, não como ponteiro para hoje: amostradas
+> quatro, as quatro já não batem. **Não siga número deste documento sem conferir o conteúdo.**
+> Corrigi-las seria carimbar linhas de hoje num plano de duas semanas atrás — apagaria justamente
+> o que ele registra. Para conferir uma:
+>
+> ```bash
+> grep -rhoE '\b[a-z-]+\.(js|mjs):[0-9]+' docs/revisao/09-PLANO-PASSO-PROATIVO.md | sort -u
+> ```
 
 
 **Arquivo alvo:** `docs/revisao/09-PLANO-PASSO-PROATIVO.md` · **Data:** 25/08/2026 · **ADR alvo:** decisão 27 (a última registrada é a 26, `docs/DECISOES-TECNICAS.md:398`)

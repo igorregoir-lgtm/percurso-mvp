@@ -3813,7 +3813,11 @@ document.addEventListener('click', comErro(async (ev) => {
 const PASSO_ROTAS_POR_PAPEL = {
   educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/pauta', '#/ciclo', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
   profissional: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
-  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/pessoas', '#/arquivo', '#/criancas', '#/alertas', '#/relato', '#/copilot'],
+  // '#/consulta' entrou em 03/09/2026: `exigeGestao` autoriza coordenação E
+  // diretoria (src/api.js), e o painel dela já oferece o botão 'Perguntar à
+  // base'. Sem a rota aqui, uma sugestão do Passo para essa tela era engolida
+  // com um `return` mudo — sem navegação e sem aviso.
+  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/pessoas', '#/arquivo', '#/criancas', '#/alertas', '#/relato', '#/consulta', '#/copilot'],
   diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
 };
 

@@ -259,7 +259,7 @@ só o Instituto tem. A tela mostra as premissas e diz isso, em vez de inventar a
 
 ```
 node scripts/smoke-test.mjs   → 381 passaram · 0 falharam
-node scripts/unit-test.mjs    → 165 passaram · 0 falharam
+node scripts/unit-test.mjs    → 166 passaram · 0 falharam
 ```
 
 > **Conferir os números antes de gravar.** Eles mudam a cada bateria nova, e o roteiro anterior

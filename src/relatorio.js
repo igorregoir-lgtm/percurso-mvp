@@ -596,7 +596,12 @@ const INTENCOES = [
       return { resposta: `${i.criancasUnicas} crianças únicas e ${i.matriculas} matrículas ativas. ${i.multi} crianças estão em mais de um programa — é essa a diferença entre os dois números.`,
                fonte: 'tabelas crianca e matricula' };
     } },
-  { codigo: 'presenca', termos: ['presenca', 'frequencia', 'comparec', 'vieram'],
+  // CRITERIO para acrescentar termo (03/09/2026): so' entra radical INEQUIVOCO
+  // dentro do conjunto fechado — palavra que nao pertence ao campo semantico de
+  // nenhuma outra intencao. 'faltas' nao passa nesse teste e por isso e' FRACA.
+  // Cada adicao roda a bateria inteira antes de entrar: tres bugs desta serie
+  // vieram de mexer nesta tabela sem conferir o efeito colateral.
+  { codigo: 'presenca', termos: ['presenca', 'frequencia', 'comparec', 'vieram', 'vindo'],
     // 'faltas' e 'faltaram' sao as palavras que presenca e evasao DIVIDEM: sao
     // evidencia FRACA, so' valem quando nenhum outro assunto se manifestou.
     // Ver EVIDENCIA. 'faltaram' era forte e, com 8 letras, vencia 'seguid' (6)
@@ -612,7 +617,7 @@ const INTENCOES = [
   { codigo: 'evasao', termos: ['evasao', 'sairam', 'estao saindo', 'risco de sair', 'abandon', 'permanencia', 'tempo de vinculo',
       // 'faltas' sozinho e' da presenca (quantas faltas houve); 'faltas seguidas'
       // e' a definicao do alerta de evasao. O termo mais longo vence — ver ESPECIFICIDADE.
-      'faltas seguidas', 'faltou seguid', 'seguid', 'em risco', 'perdeu', 'perderam', 'desistiu', 'desistir',
+      'faltas seguidas', 'faltou seguid', 'seguid', 'em risco', 'perdeu', 'perderam', 'desistiu', 'desistir', 'saindo',
       // o limiar e o alerta sao conceitos de evasao — nao existe "alerta" na
       // presenca. Perguntar pelo gatilho e' perguntar por evasao.
       'alerta', 'limiar', 'entra na lista', 'dispara'],
@@ -623,7 +628,7 @@ const INTENCOES = [
                  + `Por programa: ${s.map(p => `${p.programa} ${p.evasao_pct}% de evasão, vínculo médio de ${dec(p.meses_medios)} meses`).join('; ')}.`,
                fonte: 'score de risco de evasão e análise de safras' };
     } },
-  { codigo: 'cobertura', termos: ['cobertura', 'folhas', 'registro em dia', 'quem nao registrou',
+  { codigo: 'cobertura', termos: ['cobertura', 'folha', 'registro em dia', 'em dia', 'quem nao registrou',
       'turmas sem registro', 'sem registro', 'folha de presenca', 'folhas de presenca'],
     responder: () => {
       const c = coberturaRegistro({});
@@ -635,7 +640,7 @@ const INTENCOES = [
   // com 21 letras vencia qualquer assunto na mesma frase pelo desempate de
   // tamanho — "qual a evasao no Laboratorio de Sonhos?" respondia exposicao.
   { codigo: 'exposicao', termos: ['exposic', 'aspirac', 'sonho', 'lacuna', 'area sem atividade',
-      'cobertura de exposic', 'cobertura de aspirac'],
+      'sem atividade', 'cobertura de exposic', 'cobertura de aspirac'],
     responder: () => {
       const e = exposicao({});
       return { resposta: `${e.aspiracoes_declaradas} aspirações declaradas em ${e.areas_com_interesse} áreas; ${e.areas_cobertas} tiveram atividade — cobertura de ${e.valor}%. `
