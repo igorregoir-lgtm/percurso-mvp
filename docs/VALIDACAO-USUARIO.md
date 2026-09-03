@@ -83,7 +83,7 @@ node scripts/reset.mjs && node scripts/preparar-sessao.mjs --lapso && node serve
 - **Preferir o sábado, que é o dia da turma.** Num dia útil as tarefas 1 a 5 funcionam — a tela
   Hoje diz "hoje não tem encontro" e oferece o sábado em aberto, que é justamente o caminho que a
   jornada v2 chama de *nunca é tarde para registrar*. **A tarefa 6 é a exceção:** o botão do recado
-  na tela Hoje depende da chamada **de hoje** (`public/app.js:508`), e não do encontro registrado
+  na tela Hoje depende da chamada **de hoje** (`public/app.js:509`), e não do encontro registrado
   como o resto do mesmo cartão — então em dia não letivo ele não aparece, e o recado só é
   alcançável pela URL. O `preparar-sessao.mjs` avisa quando é o caso. **Isso é achado do produto,
   já verificado, não falha da participante** — se a sessão tiver que rodar num dia útil, a tarefa 6

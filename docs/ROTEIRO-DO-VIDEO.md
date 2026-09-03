@@ -36,7 +36,7 @@ para caber, e por quê:
    baixado, `ai/scripts/setup-model.sh` antes). **Todo o resto funciona com `AI_ENABLED=false`** — e
    vale dizer isso na cena 18.
 4. **Cena 9 (recado):** abrir `#/recado` pela URL, e não pelo cartão da tela Hoje. O botão lá
-   depende da chamada **de hoje** (`public/app.js:508`) e some em dia não letivo — achado conhecido,
+   depende da chamada **de hoje** (`public/app.js:509`) e some em dia não letivo — achado conhecido,
    registrado em §2 de [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md), com correção em andamento.
    Se a gravação for num sábado, o botão aparece e o caminho pela tela funciona.
 5. Cenas dos papéis de campo (1–10): janela estreita (≈400 px) ou celular — as personas usam o

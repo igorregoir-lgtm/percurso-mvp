@@ -1,4 +1,86 @@
-# Handoff — 02/09/2026 (pós-visita) e 25/08/2026
+# Handoff — 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
+
+> **Sessão de 02–03/09/2026 — o que mudou.** Doze commits, de `1322a77` a `5b7fc8d`, todos em
+> `main` e em `pos-visita-ebenezer-e-jornada-v2` (as duas apontam para o mesmo commit). Nada de
+> arquitetura mudou: a sessão foi de **coerência, cobertura visual e um bug de classificação**.
+>
+> **1. O protocolo de validação passou para a psicóloga.** As seis tarefas eram de pedagoga e duas
+> delas são **inexecutáveis** por ela — a turma da Vivência está fora da rubrica e `#/ciclo`
+> responde 422 (`src/api.js:293`). Refeitas a partir do task flow do Exercício 03
+> (`docs/task-flow/`); a versão pedagoga virou a §3.4 de `VALIDACAO-USUARIO.md`. Nasceu
+> `scripts/preparar-sessao.mjs`: sem ele a sessão começa com o trabalho já feito, porque a seed
+> entrega o último sábado registrado. Com `--lapso` ele destrava o Protocolo do Lapso, que até
+> então dizia "ajustar a semente" sem dizer como (a retomada lê a tabela `atividade`, não os
+> encontros).
+>
+> **2. Dois protótipos Figma, num arquivo só** — [`h6AnLVYLfpeVl2N4ie0Qzv`](https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv).
+> Página *Protótipo completo · 4 papéis*: **27 telas, 152 ligações**, nenhuma tela sem entrada nem
+> sem saída — é o **canônico**, e fecha a última pendência de artefato que não dependia de
+> terceiros. Página *Protótipo · sessão de validação*: 12 telas, uma faixa por tarefa. O protótipo
+> entregue na semana 5 (`HBBd4…`) ficou **congelado como registro**: ele mostra a rubrica de cinco
+> dimensões, que a decisão 34 substituiu, e as âncoras também mudaram. Hierarquia dos três em
+> `docs/ARTEFATOS-VISUAIS.md` — **ler isso antes de abrir qualquer protótipo.**
+>
+> **3. O plano da sessão está em `docs/revisao/13-PLANO-ATUALIZACAO-REPOSITORIO.md`, e a §6 é a
+> revisão dele contra os arquivos.** Três afirmações do próprio plano não sobreviveram, incluindo
+> um achado novo: o repositório atribuía **três papéis** ao protótipo entregue, que tem telas de
+> **dois**. Gates corrigidos em quatro lugares que estavam desatualizados.
+>
+> **4. A consulta em linguagem natural tinha três bugs de classificação — todos corrigidos.** A
+> causa era sempre a mesma: **regra de desempate implícita**. Primeiro a ordem da lista (`contagem`
+> em primeiro engolia o assunto: *"quantas crianças estão em risco de sair?"* respondia o total do
+> instituto). Depois o comprimento do termo (`'alerta'` e `'faltas'` têm seis letras e empatavam).
+> A regra agora é explícita, em três passadas: **assunto por termo forte, assunto por termo fraco,
+> fórmula de contagem** — e dentro de cada uma vence o termo mais longo. `'faltas'` é declarado
+> **fraco** porque é a única palavra que presença e evasão dividem.
+>
+> **5. Roteiro do vídeo v3.** Tinha 13 cenas e nenhuma da psicóloga. Agora tem o bloco dela com
+> cinco cenas, mais a consulta, **dentro dos mesmos 7m00** — o que foi cortado está declarado em
+> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; são **368 · 163**.
+>
+> **Gates: 163 unitários · 368 smoke · 6 rag · 24 ia-stub.**
+>
+> **Armadilhas novas — as do Figma custaram a maior parte do tempo:**
+> (1) **`SF Pro` aparece em `listAvailableFontsAsync` mas renderiza largura ZERO** nesta conta; o
+> protótipo está em **Inter**, a seguinte da mesma pilha do CSS. Ao ver texto sumindo, teste a
+> mesma string em Inter e Roboto **antes** de culpar o próprio código.
+> (2) **`textAutoResize = 'HEIGHT'` num nó de texto recém-criado trava a largura em 0** e ele nunca
+> mais cresce. A ordem correta é `characters` → `appendChild` → `FILL` → só então `'HEIGHT'`.
+> (3) **Scripts do `use_figma` são transacionais:** um erro na última linha desfaz tudo o que veio
+> antes. Um `layoutPositioning` inválido apagou dez minutos de trabalho que pareciam ter dado certo.
+> (4) **`node.query()` quebra com seletor não-ASCII** — `[name=Conteúdo]` dá `unexpected character
+> (0xc3)`. Use `children.find(...)`.
+> (5) **Clonar conteúdo troca o id do nó.** Ids guardados de chamadas anteriores viram `null` e o
+> script morre em `cannot read property of null`.
+> (6) **`appendChild` da Tab bar depois dos hotspots põe a barra POR CIMA deles e mata a
+> navegação** — e o screenshot continua idêntico. Aconteceu duas vezes; varra o z-order das telas
+> depois de qualquer edição de conteúdo.
+> (7) `overflowDirection` é **`'VERTICAL'`**, não `'VERTICAL_SCROLLING'`.
+> (8) Screenshot de **SECTION** enquadra a partir da origem da página: `original_height` vem enorme
+> e parece defeito de layout, mas não é.
+> (9) **Dois `node server.js` órfãos** ficaram servindo banco antigo e `/api/hoje` devolveu turma
+> `null` para quem tinha turma. Matar tudo antes de depurar comportamento estranho de API.
+> (10) **O smoke test estava escrito em volta do bug da consulta:** usava *"quantas estão em risco
+> de sair?"*, sem a palavra "crianças" — exatamente a formulação que desviava do termo defeituoso.
+> Teste que passa pelo caminho que ninguém usa não prova o caminho que todos usam.
+>
+> (11) **Citação `arquivo:linha` envelhece em silêncio.** O botão do recado era citado como
+> `public/app.js:508` em três documentos; a linha é a **509**. Varri todas as citações dos docs: as
+> desta sessão estão certas, e cinco de `docs/revisao/09-PLANO-PASSO-PROATIVO.md` já não batem com
+> o conteúdo (`app.js:2074` e `:2704`, `api.js:694`, `db.js:21`, `relatorio.js:500`). **Não foram
+> mexidas de propósito** — plano de sessão é registro do que se via naquele momento, não índice
+> vivo. Ao seguir uma citação de plano antigo, confira o conteúdo antes de concluir qualquer coisa.
+> Varredura que refaz a conferência:
+> ```bash
+> grep -rhoE '(src|public|scripts)/[a-z/-]+\.(js|mjs):[0-9]+' docs/*.md docs/*/*.md | sort -u
+> ```
+>
+> **Sessão paralela — não mexer.** `claude/focused-cerf-1530ff`, no worktree
+> `.claude/worktrees/focused-cerf-1530ff`, tem trabalho **não commitado** (correção da entrada do
+> recado na tela Hoje: o botão depende da chamada de hoje, `public/app.js:509`, e some em dia não
+> letivo). Rebase com árvore suja destrói trabalho em andamento. Conferido com
+> `git apply --check --3way`: o diff dela **aplica limpo** sobre `main`.
+
 
 > **Sessão de 02/09/2026 — o que mudou.** A visita ao Instituto (29/08) foi lida inteira (quatro
 > gravações, consolidado, planilha socioemocional) e virou o plano `docs/revisao/11-PLANO-POS-VISITA.md`
@@ -13,7 +95,7 @@
 > usuária real; protocolo de tarefas pendente). Gates: **159 unitários · 365 smoke · 6 rag · 24
 > ia-stub**. Revisão adversarial da implementação: `docs/revisao/12-REVISAO-POS-VISITA.md`.
 >
-> **Armadilhas novas desta sessão:** (1) a seed tem DOIS geradores — tudo o que é da Vivência
+> **Armadilhas da sessão de 02/09 (implementação pós-visita):** (1) a seed tem DOIS geradores — tudo o que é da Vivência
 > usa `randVivencia`; consumir `rand` para dado novo desloca os números documentados (38% de
 > descarte virou 19% até isso ser visto); (2) `Response.text()` descarta o BOM do CSV — teste
 > pelos bytes; (3) regex literal escrito via script com `\\s` vira barra literal — `node --check`
