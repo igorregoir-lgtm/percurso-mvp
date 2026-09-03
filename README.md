@@ -67,7 +67,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **365 asserções de fluxo** e **159 testes unitários** — mais a avaliação do RAG
+São **368 asserções de fluxo** e **162 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização) e a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo). As quatro baterias rodam a cada push (`.github/workflows/ci.yml`), sempre com
@@ -298,8 +298,8 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    365 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     159 testes unitários das regras críticas (banco temporário)
+scripts/smoke-test.mjs    368 asserções do fluxo principal (contra o servidor no ar)
+scripts/unit-test.mjs     162 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
 scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)

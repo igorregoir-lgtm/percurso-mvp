@@ -562,6 +562,19 @@ test('consultar: o assunto vence a fórmula de contagem', () => {
   assert.equal(R.consultar('quantas crianças já foram observadas no ciclo?').intencao, 'ciclo');
 });
 
+test('consultar: quando dois assuntos dividem a palavra, a frase mais longa vence', () => {
+  // 'faltas' é vocabulário da presença (quantas faltas houve) E da evasão
+  // ("duas faltas seguidas" é a definição do alerta). Com "primeira da lista que
+  // casa", quem estivesse declarada antes engolia a outra — presença chegava a
+  // roubar "em risco de sair". O desempate é pelo termo mais longo que casou.
+  assert.equal(R.consultar('quantas crianças faltaram este mês?').intencao, 'presenca');
+  assert.equal(R.consultar('quantas faltas a turma teve?').intencao, 'presenca');
+
+  assert.equal(R.consultar('quantas crianças têm faltas seguidas?').intencao, 'evasao',
+    '"faltas seguidas" é mais específico que "faltas"');
+  assert.equal(R.consultar('quem está com 2 faltas seguidas e em risco de sair?').intencao, 'evasao');
+});
+
 test('consultar: o sistema responde corretamente as perguntas que ele mesmo sugere', () => {
   // Invariante de auto-consistência: sugerir uma pergunta e classificá-la errado
   // é pior que não sugerir nada. Foi assim que o bug de precedência apareceu —

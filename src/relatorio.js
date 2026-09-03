@@ -564,6 +564,13 @@ export function publicarRelatorio(tipo, periodo, usuarioId) {
 // ser declarada GENERICA e so' e' considerada quando nenhuma intencao de assunto
 // casou. "Quantas criancas" e' formula de contagem, nao assunto; o assunto e'
 // "risco de sair", "presenca", "cobertura". O assunto vence a formula, sempre.
+//
+// ESPECIFICIDADE (03/09/2026). Dois assuntos podem dividir a mesma palavra:
+// 'faltas' e' da presenca (quantas faltas houve no mes) e 'faltas seguidas' e' a
+// definicao do alerta de evasao. Com "primeira da lista que casa", quem estivesse
+// declarada antes engolia a outra — presenca roubaria ate' "em risco de sair".
+// Por isso o desempate dentro de cada passada e' pelo TERMO MAIS LONGO que casou:
+// a frase mais especifica ganha da palavra solta, independente da ordem da lista.
 // --------------------------------------------------------------------------
 const INTENCOES = [
   { codigo: 'contagem', generica: true,
@@ -573,14 +580,17 @@ const INTENCOES = [
       return { resposta: `${i.criancasUnicas} crianças únicas e ${i.matriculas} matrículas ativas. ${i.multi} crianças estão em mais de um programa — é essa a diferença entre os dois números.`,
                fonte: 'tabelas crianca e matricula' };
     } },
-  { codigo: 'presenca', termos: ['presenca', 'frequencia', 'comparecimento', 'quantos vieram'],
+  { codigo: 'presenca', termos: ['presenca', 'frequencia', 'comparecimento', 'quantos vieram', 'faltaram', 'faltas'],
     responder: () => {
       const p = presencaMedia();
       return { resposta: p.pct == null ? 'Ainda não há presença registrada neste mês.'
                 : `A presença média do mês corrente é de ${p.pct}% (${p.presentes} de ${p.total} marcações).`,
                fonte: 'tabela presenca' };
     } },
-  { codigo: 'evasao', termos: ['evasao', 'sairam', 'estao saindo', 'risco de sair', 'abandon', 'permanencia', 'tempo de vinculo'],
+  { codigo: 'evasao', termos: ['evasao', 'sairam', 'estao saindo', 'risco de sair', 'abandon', 'permanencia', 'tempo de vinculo',
+      // 'faltas' sozinho e' da presenca (quantas faltas houve); 'faltas seguidas'
+      // e' a definicao do alerta de evasao. O termo mais longo vence — ver ESPECIFICIDADE.
+      'faltas seguidas', 'faltou seguid'],
     responder: () => {
       const r = riscoEvasao({});
       const s = safras().porPrograma;
@@ -616,11 +626,15 @@ const INTENCOES = [
 export function consultar(pergunta) {
   const t = (pergunta || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (!t.trim()) throw erro(422, 'Escreva a pergunta.');
-  // Duas passadas: assunto primeiro, formula de contagem depois. Ver a nota de
-  // PRECEDENCIA acima — sem isso, 'quantas crianc' engole o assunto da pergunta.
-  const casa = i => i.termos.some(termo => t.includes(termo));
-  const achada = INTENCOES.find(i => !i.generica && casa(i))
-              ?? INTENCOES.find(i => i.generica && casa(i));
+  // Duas passadas: assunto primeiro, formula de contagem depois (PRECEDENCIA).
+  // Dentro de cada passada, vence o termo mais longo que casou (ESPECIFICIDADE).
+  const forca = i => i.termos.reduce((m, termo) => t.includes(termo) ? Math.max(m, termo.length) : m, 0);
+  const melhor = (lista) => lista
+    .map(i => ({ i, n: forca(i) }))
+    .filter(x => x.n > 0)
+    .sort((a, b) => b.n - a.n)[0]?.i;
+  const achada = melhor(INTENCOES.filter(i => !i.generica))
+              ?? melhor(INTENCOES.filter(i => i.generica));
   if (!achada) {
     return {
       reconhecida: false,
