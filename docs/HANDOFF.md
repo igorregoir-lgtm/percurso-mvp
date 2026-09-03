@@ -10,7 +10,7 @@
 > tela de voz que diz o que grava; régua de 75% e recado da turma (decisão 33); devolução por
 > encontro; parecer a profissional parceiro por código e sob consentimento (decisão 32). A
 > documentação da semana 5 registra a validação de 29/08 como **parcial** (demonstração com
-> usuária real; protocolo de tarefas pendente). Gates: **157 unitários · 364 smoke · 6 rag · 24
+> usuária real; protocolo de tarefas pendente). Gates: **159 unitários · 365 smoke · 6 rag · 24
 > ia-stub**. Revisão adversarial da implementação: `docs/revisao/12-REVISAO-POS-VISITA.md`.
 >
 > **Armadilhas novas desta sessão:** (1) a seed tem DOIS geradores — tudo o que é da Vivência

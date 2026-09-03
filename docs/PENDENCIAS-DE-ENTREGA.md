@@ -34,8 +34,14 @@ Executar na semana da entrega. Nenhum item deste bloco é automatizável por est
       coisas"*) — combinar o canal; e a sessão com o protocolo de `VALIDACAO-USUARIO.md`, agora com
       a psicóloga como participante.
 - [ ] **Avaliar os notebooks doados** que estão parados como host do Percurso e do modelo local.
-- [ ] **Telas novas no protótipo Figma**: registro de vivência, relato, régua, recado, parecer —
-      o protótipo entregue tem nove telas e três papéis; a psicóloga é o quarto.
+- [x] **Telas novas no protótipo Figma** — *feito em 02/09/2026*. Em vez de acrescentar telas ao
+      arquivo entregue, foi construído o **protótipo completo**: 27 telas, os quatro papéis, 402 ×
+      874 pt, 152 ligações, nenhuma tela sem entrada nem sem saída. Inclui as cinco que faltavam
+      (registro de vivência, folha à mão, relato, recado, parecer) e mais as da diretoria, que
+      também não existiam. Índice e hierarquia dos três protótipos:
+      [`ARTEFATOS-VISUAIS.md`](ARTEFATOS-VISUAIS.md). O arquivo entregue fica **congelado como
+      registro** do que foi entregue em 04/09 — e ele descreve a rubrica de cinco dimensões, que a
+      decisão 34 substituiu.
 - [ ] **Registro feito pelas famílias em casa** (Grav. 84): validado como direção, fora do MVP —
       exige canal, consentimento e desenho próprios. Fica como hipótese.
 
@@ -171,7 +177,8 @@ captura por voz, copilot, calibração, SROI nem relatório do doador. O roteiro
 **O protótipo:** https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL
 
 Nove telas de 375×812 (`#/entrar`, `#/hoje`, `#/chamada`, `#/ciclo`, `#/observacao/:id`,
-`#/turma`, `#/consentimentos`, `#/painel`, `#/sintese`), três papéis, 12 ligações de clique e
+`#/turma`, `#/consentimentos`, `#/painel`, `#/sintese`), **dois papéis com tela** (educadora e
+coordenação; a diretoria aparecia só como perfil na entrada), 12 ligações de clique e
 ponto de partida definido. As cores vêm de uma coleção de variáveis com os modos Claro e Escuro,
 com os tokens verbatim de `public/styles.css` — o protótipo e o MVP não podem divergir de cor por
 acidente. A legenda no próprio arquivo mapeia cada tela à User Story que ela demonstra e ao teste

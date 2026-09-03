@@ -1,7 +1,11 @@
 # Protótipo Figma da sessão de validação — iPhone 17
 
-**Arquivo:** [Percurso — Protótipo de validação (iPhone 17)](https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv)
-· time `Inteli.MBA.2026.1` · criado em 02/09/2026.
+**Arquivo:** [`h6AnLVYLfpeVl2N4ie0Qzv`](https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv) ·
+página **Protótipo · sessão de validação** · time `Inteli.MBA.2026.1` · criado em 02/09/2026.
+
+> O mesmo arquivo passou a abrigar também o **protótipo completo** (27 telas, quatro papéis), que é
+> o canônico do artefato. Hierarquia dos três protótipos:
+> [`ARTEFATOS-VISUAIS.md`](ARTEFATOS-VISUAIS.md).
 
 > **Para que serve.** Rodar e ensaiar a sessão de [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md)
 > com a psicóloga da Vivência. Não é exploração de design: são as telas que o MVP já tem, nos
@@ -13,7 +17,8 @@
 | Página | O que tem |
 |---|---|
 | **Leia-me** | para que o arquivo existe, como usar na sessão, o que ele não substitui |
-| **Protótipo · iPhone 17** | 12 telas de 402 × 874 pt, em 6 seções — uma por tarefa do protocolo |
+| **Protótipo completo · 4 papéis** | 27 telas — o produto inteiro, papel a papel (o canônico) |
+| **Protótipo · sessão de validação** | 12 telas de 402 × 874 pt, em 6 seções — uma por tarefa do protocolo |
 | **Design system** | variáveis de cor, escala tipográfica, e os componentes Botão, Selo, Pill, Top bar, Tab bar e Status bar |
 
 As seções são as tarefas, na ordem da sessão. Cada uma traz, acima das telas, um cabeçalho com o

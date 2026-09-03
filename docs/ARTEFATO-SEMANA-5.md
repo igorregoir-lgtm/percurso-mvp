@@ -25,7 +25,8 @@ Ver também [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md) §6.
 
 **O protótipo, em Figma:** https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL
 
-Nove telas de 375×812 numa fileira, três papéis, ponto de partida em `#/entrar` e **12 ligações de
+Nove telas de 375×812 numa fileira, **dois papéis com tela** (educadora e coordenação — a diretoria
+aparece como perfil na entrada e em nenhuma tela própria), ponto de partida em `#/entrar` e **12 ligações de
 clique** — dá play e percorre. As cores não são valores soltos: são a coleção de variáveis
 `Percurso — cores`, nos modos **Claro** e **Escuro**, com os mesmos tokens declarados em
 `public/styles.css` do MVP. Com isso o item CFL-03 (protótipo entregue em HTML em vez de Figma)
@@ -109,10 +110,17 @@ demonstração verificável e não declaratória: cada história tem teste autom
 | **US-3** | Como **pedagoga**, quero ser avisada de ausências acumuladas, para agir antes da evasão. *(F6)* | `#/hoje`, `#/alertas` | smoke §6 — alerta em duas faltas, tratativa registrada, permanência por safra |
 | **US-4** | Como **coordenação**, quero painel agregado e síntese de ciclo, para demonstrar resultado sem expor nenhuma criança. *(F5, F7)* | `#/painel` → `#/sintese` | smoke §7 (revisor, ressalva, números conferidos contra o SQL) e §5b (**nenhuma média com n < 5**) |
 | **US-5** | Como **coordenação**, quero campos sem consentimento bloqueados por padrão, para que a proteção seja regra do sistema. *(F1)* | `#/consentimentos` | smoke §8 — ativação sem responsável recusada, **revogação volta a bloquear**; §3 — bloqueio aparece na agenda com o motivo |
+| **US-6** | Como **psicóloga da Vivência**, quero contar em 40 segundos como foi o encontro, para que o relatório no padrão do conselho exista sem eu ter que escrever à noite. *(decisão 31)* | `#/voz` → `#/confirmar` → `#/relato` | smoke §24 (a Vivência fora da rubrica) e §26 (check-in de grupo gravado, relato gerado dos campos fechados, liberação registrada e devolução por encontro); unit — relato sem nome por construção |
 
-**A leitura que interessa ao avaliador:** as cinco histórias saem de dois papéis e cobrem o ciclo
-inteiro do Desafio B — registrar (US-1), acompanhar (US-2, US-3), demonstrar (US-4) e proteger
+**A leitura que interessa ao avaliador:** as seis histórias saem de três papéis e cobrem o ciclo
+inteiro do Desafio B — registrar (US-1, US-6), acompanhar (US-2, US-3), demonstrar (US-4) e proteger
 (US-5). A proteção não é um requisito à parte: é uma história de usuário, pedida pela coordenação.
+
+**A US-6 tem procedência diferente das outras cinco, e isso importa.** As cinco primeiras saíram da
+Lean Inception, com a pedagoga como persona. A sexta saiu da **visita de campo de 29/08/2026**, que
+mostrou que quem escreve o relatório e nomeia o registro como a dor é a psicóloga — não a pedagoga.
+É a única história do artefato que foi levantada com a usuária na frente, e é a que a sessão de
+[`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md) foi refeita para medir.
 
 ---
 
