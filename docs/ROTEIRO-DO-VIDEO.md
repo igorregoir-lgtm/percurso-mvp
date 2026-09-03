@@ -153,8 +153,8 @@ dela; editar a folha depois de liberar derruba a liberação.
 
 ### 9 · Recado aos responsáveis + a régua de 75% — [0:20 · `#/recado`]
 
-**Ação:** abrir pelo botão **"Recado para os responsáveis"** no cartão da folha (ver a instrução 4 —
-abrir por URL caiu). Mostrar o texto pronto para colar e o botão do WhatsApp. Apontar a
+**Ação:** abrir pelo botão de recado no cartão da folha (ver a instrução 4 — abrir por URL caiu).
+Ela responde por duas turmas, então há **dois** botões, nomeados por turma; escolher o da manhã. Mostrar o texto pronto para colar e o botão do WhatsApp. Apontar a
 linha da presença do mês **contra a régua de 75%** do Instituto.
 
 **Fala:** o recado semanal por WhatsApp e a régua de 75% **já existem** na casa — são política e

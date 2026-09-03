@@ -56,7 +56,7 @@ navegáveis).
 1. [`h6AnLVYLfpeVl2N4ie0Qzv`](https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv) → página
    **Protótipo completo · 4 papéis** → modo de apresentação.
 2. O ponto de partida é a tela **01 · Entrar**. Escolher um perfil entra na faixa daquele papel.
-3. As barras inferiores navegam de verdade: **152 ligações**, nenhuma tela sem entrada e nenhuma sem
+3. As barras inferiores navegam de verdade: **153 ligações**, nenhuma tela sem entrada e nenhuma sem
    saída.
 
 > Todos os dados são sintéticos, do seed do repositório. Nenhuma criança real é representada.

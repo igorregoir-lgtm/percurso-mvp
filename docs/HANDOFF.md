@@ -23,7 +23,7 @@
 > encontros).
 >
 > **2. Dois protótipos Figma, num arquivo só** — [`h6AnLVYLfpeVl2N4ie0Qzv`](https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv).
-> Página *Protótipo completo · 4 papéis*: **27 telas, 152 ligações**, nenhuma tela sem entrada nem
+> Página *Protótipo completo · 4 papéis*: **27 telas, 153 ligações**, nenhuma tela sem entrada nem
 > sem saída — é o **canônico**, e fecha a última pendência de artefato que não dependia de
 > terceiros. Página *Protótipo · sessão de validação*: 12 telas, uma faixa por tarefa. O protótipo
 > entregue na semana 5 (`HBBd4…`) ficou **congelado como registro**: ele mostra a rubrica de cinco

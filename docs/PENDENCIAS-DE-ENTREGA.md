@@ -38,7 +38,7 @@ Executar na semana da entrega. Nenhum item deste bloco é automatizável por est
 - [ ] **Avaliar os notebooks doados** que estão parados como host do Percurso e do modelo local.
 - [x] **Telas novas no protótipo Figma** — *feito em 02/09/2026*. Em vez de acrescentar telas ao
       arquivo entregue, foi construído o **protótipo completo**: 27 telas, os quatro papéis, 402 ×
-      874 pt, 152 ligações, nenhuma tela sem entrada nem sem saída. Inclui as cinco que faltavam
+      874 pt, 153 ligações, nenhuma tela sem entrada nem sem saída. Inclui as cinco que faltavam
       (registro de vivência, folha à mão, relato, recado, parecer) e mais as da diretoria, que
       também não existiam. Índice e hierarquia dos três protótipos:
       [`ARTEFATOS-VISUAIS.md`](ARTEFATOS-VISUAIS.md). O arquivo entregue fica **congelado como
@@ -182,7 +182,8 @@ captura por voz, copilot, calibração, SROI nem relatório do doador. O roteiro
 > divergência de formato. A decisão foi revertida por escolha do grupo: o guia diz que a entrega
 > **deve** ser feita em Figma, e negociar dispensa custava mais do que construir.
 
-**O protótipo:** https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL
+**O protótipo entregue na semana 5** (congelado como registro — o canônico hoje é outro, ver
+[`ARTEFATOS-VISUAIS.md`](ARTEFATOS-VISUAIS.md)): https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL
 
 Nove telas de 375×812 (`#/entrar`, `#/hoje`, `#/chamada`, `#/ciclo`, `#/observacao/:id`,
 `#/turma`, `#/consentimentos`, `#/painel`, `#/sintese`), **dois papéis com tela** (educadora e

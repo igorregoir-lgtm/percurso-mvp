@@ -128,7 +128,9 @@ reconhecer sucesso; não é dita a ela.
 | 3 | Registrar o encontro | "O grupo acabou agora. Registre este encontro no sistema, do jeito que for mais rápido para você." *(entregar o cartão de cenário abaixo)* | `#/hoje` → `#/voz` (≈40 s) → `#/confirmar` | Folha confirmada. **Não contar campos à mão** — o sistema conta: ver §5, medida específica |
 | 4 | O relatório do conselho | "Terminou o que você precisava fazer hoje, ou ficou faltando alguma coisa?" | `#/hoje` → `#/relato` → "Revisei — liberar o relato" | Relato liberado. **Cronometrar do "Confirmar e guardar" até ela achar o caminho** — acima de 20 s ou com ajuda é achado de navegação, não de compreensão |
 | 5 | A pergunta da assistente social | "A assistente social do projeto parceiro te pergunta como está uma criança que ela acompanha. Responda pelo sistema." | `#/criancas` → `#/crianca/:id` → cartão "Parecer a profissional parceiro", **bloqueado** | Ela chega ao parecer **e explica o bloqueio com as próprias palavras**. Anotar a explicação literal: se ela ler como erro dela, o produto está gerando culpa |
-| 6 | O recado dos responsáveis | "Antes de sair, resolva o recado que você mandaria hoje no grupo dos responsáveis." | `#/hoje` → "Recado para os responsáveis" → `#/recado` → copiar / abrir no WhatsApp | Recado copiado ou aberto. Anotar **se ela edita antes de mandar e o que edita** — é o que ela faz hoje à mão, grupo por turma |
+| 6 | O recado dos responsáveis | "Antes de sair, resolva o recado que você mandaria hoje no grupo dos responsáveis." | `#/hoje` → o botão de recado **da turma da sessão** → `#/recado` → copiar / abrir no WhatsApp. Ela
+responde por duas turmas, então o cartão traz **dois** botões, nomeados: "Recado · Vivência · Sábado
+manhã" e "· Sábado tarde". **Escolher a turma certa faz parte da tarefa** — anotar se ela hesita | Recado copiado ou aberto. Anotar **se ela edita antes de mandar e o que edita** — é o que ela faz hoje à mão, grupo por turma |
 
 **Cartão de cenário da tarefa 3** — entregar impresso, sem ler em voz alta:
 
