@@ -265,7 +265,7 @@ Todos os passos da §6 foram executados nesta sessão, exceto o que depende de g
 | 4 | `prototipo-figma/README.md` | reescrito como registro histórico, com as três coisas que nele já não batem |
 | 5 | Índice dos artefatos visuais | [`ARTEFATOS-VISUAIS.md`](../ARTEFATOS-VISUAIS.md), com a hierarquia declarada e a contagem de papéis corrigida (A-07) |
 | 6 | Pendência de `PENDENCIAS-DE-ENTREGA.md:38` | fechada |
-| — | A-06 (roteiro do vídeo) | **não executado, por decisão**: depende de regravar. Registrado com o motivo correto |
+| — | A-06 (roteiro do vídeo) | **roteiro reescrito em 03/09/2026** (v3): bloco da psicóloga com cinco cenas, mais a consulta, dentro dos mesmos 7m00. **Regravar continua pendência humana** — o roteiro é o que dá para fazer aqui |
 
 ### Dois achados que só apareceram durante a construção
 

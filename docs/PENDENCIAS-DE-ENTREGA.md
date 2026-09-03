@@ -163,7 +163,11 @@ O vídeo atual (`video/percurso-demonstracao.mp4`, 6m14s) foi gravado sobre a **
 captura por voz, copilot, calibração, SROI nem relatório do doador. O roteiro v2 completo está em
 [`ROTEIRO-DO-VIDEO.md`](ROTEIRO-DO-VIDEO.md), dimensionado para até 7 minutos.
 
-- [ ] Regravar o vídeo seguindo o roteiro v2. **Pendente — humano.**
+- [ ] Regravar o vídeo seguindo o **roteiro v3** ([`ROTEIRO-DO-VIDEO.md`](ROTEIRO-DO-VIDEO.md)),
+      reescrito em 03/09/2026 com o bloco da psicóloga — cinco cenas novas (chamada da vivência,
+      captura por voz com filtro de perímetro, relato do conselho, recado com a régua de 75% e
+      parecer bloqueado) e uma da consulta em linguagem natural. Continua em 7m00: o que foi
+      cortado para caber está declarado na tabela do topo do roteiro. **Pendente — humano.**
 
 ---
 
