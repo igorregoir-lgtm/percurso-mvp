@@ -575,6 +575,28 @@ test('consultar: quando dois assuntos dividem a palavra, a frase mais longa venc
   assert.equal(R.consultar('quem está com 2 faltas seguidas e em risco de sair?').intencao, 'evasao');
 });
 
+test('consultar: perguntar pelo gatilho do alerta é perguntar por evasão', () => {
+  // 'alerta' e 'faltas' têm seis letras: o desempate por tamanho empata e não
+  // resolve. O que separa as duas é que 'alerta' só existe no vocabulário de
+  // evasão, enquanto 'faltas' é dividida — por isso 'faltas' é declarada FRACA
+  // e só vale quando nenhum outro assunto se manifestou.
+  for (const q of [
+    'o alerta dispara com quantas faltas?',
+    'qual é o limiar do alerta?',
+    'com quantas faltas a criança entra na lista?',
+    'quando a criança vira alerta?',
+    'quantos alertas estão abertos?',
+  ]) assert.equal(R.consultar(q).intencao, 'evasao', q);
+
+  // e a resposta de evasão de fato diz o limiar, não só o total
+  const r = R.consultar('qual é o limiar do alerta?');
+  assert.match(r.resposta, /faltas seguidas/i);
+  assert.match(r.resposta, /score acima de \d+/i);
+
+  // sem marca de evasão, 'faltas' continua sendo presença
+  assert.equal(R.consultar('quantas faltas a turma teve?').intencao, 'presenca');
+});
+
 test('consultar: o sistema responde corretamente as perguntas que ele mesmo sugere', () => {
   // Invariante de auto-consistência: sugerir uma pergunta e classificá-la errado
   // é pior que não sugerir nada. Foi assim que o bug de precedência apareceu —

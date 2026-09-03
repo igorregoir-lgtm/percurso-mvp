@@ -565,6 +565,15 @@ export function publicarRelatorio(tipo, periodo, usuarioId) {
 // casou. "Quantas criancas" e' formula de contagem, nao assunto; o assunto e'
 // "risco de sair", "presenca", "cobertura". O assunto vence a formula, sempre.
 //
+// EVIDENCIA (03/09/2026). Especificidade por tamanho nao resolve empate: 'alerta'
+// e 'faltas' tem seis letras cada, e "o alerta dispara com quantas faltas?" casa
+// nas duas. Tamanho e' proxy de especificidade, nao a coisa em si — o que separa
+// as duas palavras e' que 'alerta' so' existe no vocabulario de evasao, enquanto
+// 'faltas' e' dividida. Por isso um termo pode ser declarado FRACO: ele so' vale
+// quando NENHUM outro assunto se manifestou. 'faltas' sozinho e' presenca; ao
+// lado de qualquer marca de evasao ('alerta', 'seguidas', 'risco de sair'),
+// perde. Nao ha termo fraco em evasao: 'alerta' e 'limiar' nao sao ambiguos.
+//
 // ESPECIFICIDADE (03/09/2026). Dois assuntos podem dividir a mesma palavra:
 // 'faltas' e' da presenca (quantas faltas houve no mes) e 'faltas seguidas' e' a
 // definicao do alerta de evasao. Com "primeira da lista que casa", quem estivesse
@@ -580,7 +589,10 @@ const INTENCOES = [
       return { resposta: `${i.criancasUnicas} crianças únicas e ${i.matriculas} matrículas ativas. ${i.multi} crianças estão em mais de um programa — é essa a diferença entre os dois números.`,
                fonte: 'tabelas crianca e matricula' };
     } },
-  { codigo: 'presenca', termos: ['presenca', 'frequencia', 'comparecimento', 'quantos vieram', 'faltaram', 'faltas'],
+  { codigo: 'presenca', termos: ['presenca', 'frequencia', 'comparecimento', 'quantos vieram', 'faltaram'],
+    // 'faltas' e' a unica palavra que presenca e evasao dividem: e' evidencia
+    // FRACA, so' vale quando nenhum outro assunto se manifestou. Ver EVIDENCIA.
+    termosFracos: ['faltas'],
     responder: () => {
       const p = presencaMedia();
       return { resposta: p.pct == null ? 'Ainda não há presença registrada neste mês.'
@@ -590,7 +602,10 @@ const INTENCOES = [
   { codigo: 'evasao', termos: ['evasao', 'sairam', 'estao saindo', 'risco de sair', 'abandon', 'permanencia', 'tempo de vinculo',
       // 'faltas' sozinho e' da presenca (quantas faltas houve); 'faltas seguidas'
       // e' a definicao do alerta de evasao. O termo mais longo vence — ver ESPECIFICIDADE.
-      'faltas seguidas', 'faltou seguid'],
+      'faltas seguidas', 'faltou seguid',
+      // o limiar e o alerta sao conceitos de evasao — nao existe "alerta" na
+      // presenca. Perguntar pelo gatilho e' perguntar por evasao.
+      'alerta', 'limiar', 'entra na lista', 'dispara'],
     responder: () => {
       const r = riscoEvasao({});
       const s = safras().porPrograma;
@@ -626,15 +641,20 @@ const INTENCOES = [
 export function consultar(pergunta) {
   const t = (pergunta || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (!t.trim()) throw erro(422, 'Escreva a pergunta.');
-  // Duas passadas: assunto primeiro, formula de contagem depois (PRECEDENCIA).
-  // Dentro de cada passada, vence o termo mais longo que casou (ESPECIFICIDADE).
-  const forca = i => i.termos.reduce((m, termo) => t.includes(termo) ? Math.max(m, termo.length) : m, 0);
-  const melhor = (lista) => lista
-    .map(i => ({ i, n: forca(i) }))
+  // Tres passadas, da evidencia mais forte para a mais fraca:
+  //   1. assunto por termo forte  (PRECEDENCIA + ESPECIFICIDADE)
+  //   2. assunto por termo fraco  (EVIDENCIA)
+  //   3. formula de contagem      (a generica)
+  // Dentro de cada passada, vence o termo mais longo que casou.
+  const forca = (termos = []) => termos.reduce((m, termo) => t.includes(termo) ? Math.max(m, termo.length) : m, 0);
+  const melhor = (lista, campo) => lista
+    .map(i => ({ i, n: forca(i[campo]) }))
     .filter(x => x.n > 0)
     .sort((a, b) => b.n - a.n)[0]?.i;
-  const achada = melhor(INTENCOES.filter(i => !i.generica))
-              ?? melhor(INTENCOES.filter(i => i.generica));
+  const assuntos = INTENCOES.filter(i => !i.generica);
+  const achada = melhor(assuntos, 'termos')
+              ?? melhor(assuntos, 'termosFracos')
+              ?? melhor(INTENCOES.filter(i => i.generica), 'termos');
   if (!achada) {
     return {
       reconhecida: false,
