@@ -87,7 +87,7 @@ data/percurso.db local ou /var/data/percurso.db no Render
                    (WAL; disco persistente; backup externo obrigatório)
 
 src/seed.js      dados 100% sintéticos, PRNG com semente fixa (regra 1 do bloco 6)
-scripts/         reset.mjs · smoke-test.mjs (381 asserções) · unit-test.mjs (166) · preparar-sessao.mjs
+scripts/         reset.mjs · smoke-test.mjs (381 asserções) · unit-test.mjs (167) · preparar-sessao.mjs
                  rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
 .github/workflows/ci.yml   as quatro baterias a cada push (AI_ENABLED=false)
 ```

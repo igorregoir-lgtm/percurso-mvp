@@ -36,7 +36,7 @@ início → #/entrar → #/hoje → #/voz → #/confirmar → #/hoje → #/relat
 ```
 
 Os seis passos, com o tempo esperado, estão no PNG. **O passo 05 é o achado:** ao confirmar a folha,
-`public/app.js:4027` faz `location.hash = '#/hoje'`. O relato **não abre sozinho** — ela precisa
+`public/app.js:4031` faz `location.hash = '#/hoje'`. O relato **não abre sozinho** — ela precisa
 achar o botão "Revisar e liberar o relato" no cartão do Hoje. O desenho supunha continuidade; o
 código devolve para a tela inicial. Está marcado em âmbar no fluxo, com limiar próprio de
 observação (20 s).

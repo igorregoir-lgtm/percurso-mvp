@@ -15,7 +15,7 @@
 >
 > **1. O protocolo de validação passou para a psicóloga.** As seis tarefas eram de pedagoga e duas
 > delas são **inexecutáveis** por ela — a turma da Vivência está fora da rubrica e `#/ciclo`
-> responde 422 (`src/api.js:299`). Refeitas a partir do task flow do Exercício 03
+> responde 422 (`src/api.js:308`). Refeitas a partir do task flow do Exercício 03
 > (`docs/task-flow/`); a versão pedagoga virou a §3.4 de `VALIDACAO-USUARIO.md`. Nasceu
 > `scripts/preparar-sessao.mjs`: sem ele a sessão começa com o trabalho já feito, porque a seed
 > entrega o último sábado registrado. Com `--lapso` ele destrava o Protocolo do Lapso, que até
@@ -60,9 +60,9 @@
 >
 > **5. Roteiro do vídeo v3.** Tinha 13 cenas e nenhuma da psicóloga. Agora tem o bloco dela com
 > cinco cenas, mais a consulta, **dentro dos mesmos 7m00** — o que foi cortado está declarado em
-> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; hoje são **381 · 166**.
+> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; hoje são **381 · 167**.
 >
-> **Gates: 166 unitários · 381 smoke · 6 rag · 24 ia-stub.**
+> **Gates: 167 unitários · 381 smoke · 6 rag · 24 ia-stub.**
 >
 > **Armadilhas novas — as do Figma custaram a maior parte do tempo:**
 > (1) **`SF Pro` aparece em `listAvailableFontsAsync` mas renderiza largura ZERO** nesta conta; o
@@ -88,7 +88,11 @@
 > de sair?"*, sem a palavra "crianças" — exatamente a formulação que desviava do termo defeituoso.
 > Teste que passa pelo caminho que ninguém usa não prova o caminho que todos usam.
 >
-> (11) **Citação `arquivo:linha` envelhece em silêncio.** O botão do recado era citado como
+> (11) **Citação `arquivo:linha` envelhece em silêncio — agora com teste.** Desde 03/09/2026 o
+> unitário *"as citações arquivo:linha da documentação apontam para o que prometem"* amarra cada
+> uma ao CONTEÚDO esperado e recusa citação nova sem âncora. Renumerar sem conferir passou a
+> quebrar o teste, que diz qual saiu do lugar. **Ao mover código, rode `npm run test:unit` antes de
+> concluir que a documentação está certa.** O histórico do problema: O botão do recado era citado como
 > `public/app.js:508` em três documentos; a linha é a **509**. Varri todas as **18** citações dos
 > docs e corrigi todas — inclusive as cinco de `docs/revisao/09-PLANO-PASSO-PROATIVO.md`, por
 > decisão sua. Duas delas **não eram erro de numeração**, e é o achado que vale guardar:

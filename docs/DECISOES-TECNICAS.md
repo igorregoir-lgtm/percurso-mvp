@@ -140,7 +140,7 @@ autenticação por senha ou SSO; (b) HTTPS; (c) registro de auditoria de acesso 
 ### 9. Dados sintéticos determinísticos
 
 PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 381
-asserções de fluxo e os 166 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
+asserções de fluxo e os 167 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
 a *hoje*, então a demonstração nunca "envelhece".
 
 ---

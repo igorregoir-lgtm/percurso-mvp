@@ -597,6 +597,60 @@ test('consultar: perguntar pelo gatilho do alerta é perguntar por evasão', () 
   assert.equal(R.consultar('quantas faltas a turma teve?').intencao, 'presenca');
 });
 
+test('as citações arquivo:linha da documentação apontam para o que prometem', async () => {
+  // Esta é a defesa contra o modo de falha que mais se repetiu na sessão de
+  // 02–03/09/2026: uma citação `arquivo:linha` num documento envelhece em
+  // SILÊNCIO a cada linha inserida acima dela. Foi corrigida quatro vezes em um
+  // dia — inclusive logo depois de um commit declarar "as 18 caem no símbolo
+  // certo", porque os commits seguintes moveram tudo de novo.
+  //
+  // A tabela abaixo amarra cada citação ao CONTEÚDO que o documento promete
+  // encontrar ali. Renumerar sem conferir passa a quebrar o teste, em vez de
+  // enganar quem lê. Quando o código se mover, corrija o número aqui e nos docs
+  // — o teste diz exatamente qual saiu do lugar.
+  const { readFileSync } = await import('node:fs');
+  const raiz = new URL('../', import.meta.url);
+  const ANCORAS = {
+    'public/app.js:423': /rota\(\/\^#\\\/hoje\//,
+    'public/app.js:508': /Revisar e liberar o relato|relato_liberado/,
+    'public/app.js:509': /recados|#\/recado/,
+    'public/app.js:1014': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:2202': /rota\(\/\^#\\\/scores\//,
+    'public/app.js:2406': /id="pergunta"/,
+    'public/app.js:4031': /location\.hash = '#\/hoje'/,
+    'src/api.js:308': /erro\(422.*rubrica por ciclo/,
+    'src/api.js:435': /exigeCoordenacao\(req\)/,
+    'src/api.js:889': /periodosSugeridos\(\)/,
+    'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
+    'src/assistente.js:112': /export const GUIA/,
+    'src/db.js:22': /export function getDb/,
+    'src/domain.js:141': /a folha e' do ENCONTRO|A folha e' do ENCONTRO/i,
+    'src/domain.js:937': /export function estadoDeRetomada/,
+    'src/relatorio.js:440': /export function periodosSugeridos/,
+    'src/relatorio.js:584': /const INTENCOES/,
+    'src/seed.js:74': /rubrica_socioemocional/,
+  };
+  const erradas = [];
+  for (const [ref, esperado] of Object.entries(ANCORAS)) {
+    const [arq, num] = ref.split(':');
+    const linha = readFileSync(new URL(arq, raiz), 'utf8').split('\n')[Number(num) - 1] ?? '';
+    if (!esperado.test(linha)) erradas.push(`${ref} deveria casar ${esperado} — está: ${linha.trim().slice(0, 60)}`);
+  }
+  assert.deepEqual(erradas, [], 'citação da documentação apontando para o lugar errado');
+
+  // e toda citação que aparece nos docs tem de estar nesta tabela: citação nova
+  // sem âncora volta a poder derivar em silêncio.
+  const docs = [
+    ...(await import('node:fs')).readdirSync(new URL('docs/', raiz)).filter(f => f.endsWith('.md')).map(f => 'docs/' + f),
+  ];
+  const vistas = new Set();
+  for (const d of docs)
+    for (const m of readFileSync(new URL(d, raiz), 'utf8').matchAll(/(?:src|public|scripts)\/[a-z/-]+\.(?:js|mjs):\d+/g))
+      vistas.add(m[0]);
+  const semAncora = [...vistas].filter(v => !(v in ANCORAS));
+  assert.deepEqual(semAncora, [], 'citação em docs/*.md sem âncora declarada no teste');
+});
+
 test('as perguntas do Passo classificam na intenção que declaram', async () => {
   // `PERGUNTAS_DIRETORIA` (src/passo/catalogo.js) é uma TERCEIRA cópia manual
   // das seis intenções, e nada a amarrava ao classificador: o chip anuncia um
