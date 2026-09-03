@@ -1,5 +1,12 @@
 # Handoff — 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
 
+> **Auditoria OPAR desta sessão:** `~/.claude/AUDITORIA-OPAR-sessao-2026-09-03.md` — três eixos
+> adversariais, **45 achados, 44 confirmados e 1 refutado**, 43 corrigidos em `b657846` (infra),
+> `60c0cf3` (domínio) e `f481bec` (docs). Três itens ficaram **abertos por decisão** e estão
+> nomeados lá: o recado só alcança `turmas[0]`, 46 citações sem caminho em `revisao/09`, e o
+> vocabulário do classificador por radical fixo. **Ler a §4 antes de retomar** — aberto nomeado é
+> trabalho conhecido; aberto esquecido é dívida.
+>
 > **Sessão de 02–03/09/2026 — o que mudou.** De `1322a77` até este commit — **dezenove até
 > aqui**; a faixa é o que vale, o número envelhece a cada commit novo. Todos em
 > `main` e em `pos-visita-ebenezer-e-jornada-v2` (as duas apontam para o mesmo commit). Nada de
@@ -94,7 +101,10 @@
 > ARQUITETURA, DECISOES, METODOLOGIA, VALIDACAO, roteiro do vídeo) têm de ser remedidas. Varreduras
 > que refazem as duas conferências:
 > ```bash
+> # com caminho (as que a sessão corrigiu):
 > grep -rhoE '(src|public|scripts)/[a-z/-]+\.(js|mjs):[0-9]+' docs/*.md docs/*/*.md | sort -u
+> # SEM caminho — o regex acima não pega, e é onde mora mais erro:
+> grep -rhoE '\b[a-z-]+\.(js|mjs):[0-9]+' docs/*.md docs/*/*.md | sort -u
 > ```
 >
 > (12) **Rodada de smoke ABORTADA envenena a próxima.** A armadilha (4) do bloco de 02/09 diz que
