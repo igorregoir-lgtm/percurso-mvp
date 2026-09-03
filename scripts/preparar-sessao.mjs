@@ -24,7 +24,7 @@
 //
 // Uso: node scripts/preparar-sessao.mjs [--turma N] [--lapso [dias]]
 import { getDb, closeDb, get, all, run, tx } from '../src/db.js';
-import { hoje, addDias, recalcularAlertas } from '../src/domain.js';
+import { hoje, addDias, diaLetivo, recalcularAlertas, criancasDaTurma } from '../src/domain.js';
 
 const argv = process.argv.slice(2);
 const iTurma = argv.indexOf('--turma');
@@ -63,9 +63,27 @@ tx(() => {
 });
 
 // Os alertas de falta sao derivados dos encontros e foram calculados pela
-// semente COM o encontro que acabou de sair. Sem recalcular, a tela Hoje cita
-// "faltou no encontro de <data>" para um encontro que nao existe mais — e a
-// participante encontraria uma incoerencia que nao e' do produto, e' do preparo.
+// semente COM o encontro que acabou de sair. Sem recalcular, a tela Hoje mostra
+// uma contagem que os dados nao sustentam mais — incoerencia que nao e' do
+// produto, e' do preparo, bem na tela que a sessao vai medir.
+//
+// Recalcular sozinho NAO basta. `recalcularAlertas` (src/domain.js:246) reescreve
+// o detalhe quando as faltas seguem em 2+ e so' RESOLVE quando caem a ZERO: quem
+// estava em 2 faltas e caiu para 1 por causa do encontro apagado nao entra em
+// nenhum dos dois ramos e fica com o alerta aberto dizendo "faltou nos 2 ultimos
+// encontros". Medido na semente: EBZ-0006 e EBZ-0011 caem para n=1 e ficam assim.
+//
+// A correcao e' aqui, no preparo, e nao na regra do produto: em operacao normal
+// o 2->1 com alerta aberto nao acontece, porque quem comparece ao encontro mais
+// recente cai direto para n=0 (ausenciasConsecutivas para no primeiro 'P') e o
+// alerta se resolve. O estado so' existe porque apagamos um encontro. Entao
+// zeramos os alertas de ausencia EM ABERTO das criancas da turma e deixamos
+// recalcularAlertas reconstruir do zero, a partir do dado que sobrou.
+const daTurma = criancasDaTurma(turma.id).map(c => c.id);
+if (daTurma.length) {
+  run(`DELETE FROM alerta WHERE tipo = 'ausencia' AND status <> 'resolvido'
+        AND crianca_id IN (${daTurma.map(() => '?').join(',')})`, ...daTurma);
+}
 const alertas = recalcularAlertas(turma.id);
 
 const anterior = get(`SELECT data FROM encontro WHERE turma_id = ? ORDER BY data DESC LIMIT 1`, turma.id);
@@ -95,6 +113,15 @@ console.log(`  Folha apagada ....... ${folha ? `sim${folha.relato_liberado_em ? 
 console.log(`  Encontro anterior ... ${anterior?.data ?? '—'} (segue registrado — é a base de comparação da devolução)`);
 console.log(`  Alertas recalculados  ${alertas.alertasAbertos} em aberto`);
 if (lapsoData) console.log(`  Lapso forçado ....... última atividade em ${lapsoData} (${LAPSO} dias) — a tela Hoje abre com a retomada`);
+
+if (!diaLetivo(turma.turno, hoje())) {
+  console.log(`\nAVISO — hoje não é dia de encontro desta turma (turno "${turma.turno}").`);
+  console.log('  As tarefas 1 a 5 funcionam: a tela Hoje oferece a data em aberto.');
+  console.log('  A tarefa 6 (recado) NÃO tem entrada na tela Hoje em dia não letivo — o botão');
+  console.log('  depende da chamada de HOJE (public/app.js:508), e não do encontro registrado.');
+  console.log('  Rodar a sessão no dia de encontro da turma, ou registrar a tarefa 6 como');
+  console.log('  achado de navegação do produto — nunca como falha da participante.');
+}
 
 console.log('\nNa tela Hoje a data acima aparece em "Datas ainda sem chamada".');
 console.log('A sequência da sessão é a real: chamada (recria o encontro) → registro por voz → relato → recado.');
