@@ -1,6 +1,7 @@
 # Handoff — 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
 
-> **Sessão de 02–03/09/2026 — o que mudou.** Dezesseis commits, de `1322a77` a este, todos em
+> **Sessão de 02–03/09/2026 — o que mudou.** De `1322a77` até este commit — **dezenove até
+> aqui**; a faixa é o que vale, o número envelhece a cada commit novo. Todos em
 > `main` e em `pos-visita-ebenezer-e-jornada-v2` (as duas apontam para o mesmo commit). Nada de
 > arquitetura mudou: a sessão foi de **coerência, cobertura visual e um bug de classificação**.
 >
@@ -95,6 +96,20 @@
 > ```bash
 > grep -rhoE '(src|public|scripts)/[a-z/-]+\.(js|mjs):[0-9]+' docs/*.md docs/*/*.md | sort -u
 > ```
+>
+> (12) **Rodada de smoke ABORTADA envenena a próxima.** A armadilha (4) do bloco de 02/09 diz que
+> a seção 21 troca a professora da turma 1 — mas o que custa tempo é a consequência, que não estava
+> escrita: o smoke **muta o banco enquanto roda**, então uma rodada interrompida no meio (erro,
+> `pkill`, servidor órfão) deixa a turma 1 com **"Íris Camargo"** no lugar da Maria. A rodada
+> seguinte quebra na **seção 2**, em `hoje.turma.id`, com `turma` nulo — e o sintoma aponta para o
+> lugar errado: parece defeito de sessão ou de permissão, e é resíduo da rodada anterior.
+> **Sempre `node scripts/reset.mjs` imediatamente antes do smoke, em comando sequencial** — não em
+> cadeia com `&`, que backgrounda o `&&` inteiro e faz o reset correr junto com o que vem depois.
+> Diagnóstico em uma linha:
+> ```bash
+> node -e "import('./src/db.js').then(m=>{m.getDb();console.log(m.get('SELECT e.nome FROM turma t JOIN educador e ON e.id=t.educador_id WHERE t.id=1'))})"
+> ```
+> Se não devolver **Maria Silvia**, o banco está sujo — resete antes de investigar qualquer coisa.
 >
 > **A sessão paralela foi fechada — `48ec1dd`, já em `main`.** `claude/focused-cerf-1530ff` tinha
 > trabalho **não commitado** e parado havia 3h30, sem processo ativo: a correção do botão do recado
