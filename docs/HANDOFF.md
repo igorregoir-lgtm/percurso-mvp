@@ -65,12 +65,14 @@
 > Teste que passa pelo caminho que ninguém usa não prova o caminho que todos usam.
 >
 > (11) **Citação `arquivo:linha` envelhece em silêncio.** O botão do recado era citado como
-> `public/app.js:508` em três documentos; a linha é a **509**. Varri todas as citações dos docs: as
-> desta sessão estão certas, e cinco de `docs/revisao/09-PLANO-PASSO-PROATIVO.md` já não batem com
-> o conteúdo (`app.js:2074` e `:2704`, `api.js:694`, `db.js:21`, `relatorio.js:500`). **Não foram
-> mexidas de propósito** — plano de sessão é registro do que se via naquele momento, não índice
-> vivo. Ao seguir uma citação de plano antigo, confira o conteúdo antes de concluir qualquer coisa.
-> Varredura que refaz a conferência:
+> `public/app.js:508` em três documentos; a linha é a **509**. Varri todas as **18** citações dos
+> docs e corrigi todas — inclusive as cinco de `docs/revisao/09-PLANO-PASSO-PROATIVO.md`, por
+> decisão sua. Duas delas **não eram erro de numeração**, e é o achado que vale guardar:
+> `periodosSugeridos()` tinha saído mesmo de `src/api.js` para `src/relatorio.js:440`, e o `GUIA`
+> com os campos `naoEnxergo` deixou de ser lido de `public/app.js` e vive em
+> `src/assistente.js:112` — os dois porque **o próprio plano foi executado**. Renumerar às cegas
+> teria produzido citação falsa, que é pior que citação velha. O plano ganhou uma nota de
+> procedência no topo: a análise não foi tocada, só os ponteiros. Varredura que refaz a conferência:
 > ```bash
 > grep -rhoE '(src|public|scripts)/[a-z/-]+\.(js|mjs):[0-9]+' docs/*.md docs/*/*.md | sort -u
 > ```

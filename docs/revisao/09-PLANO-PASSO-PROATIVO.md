@@ -1,5 +1,16 @@
 # Plano — o Passo proativo: parceiro por papel, que aprende sem vigiar
 
+> **Ponteiros de código refeitos em 03/09/2026.** Este documento continua sendo o **plano como foi
+> escrito** — a análise, as decisões e a ordem de execução não foram tocadas. O que foi atualizado
+> são as cinco referências `arquivo:linha`, que tinham derivado do código. Duas delas não eram erro
+> de numeração e valem como registro do que aconteceu depois:
+>
+> - **`periodosSugeridos()` saiu mesmo de `src/api.js`** para `src/relatorio.js:440`, exportada, como
+>   o plano previa. A referência antiga apontava para a função no lugar de onde ela foi tirada.
+> - **O `GUIA` com os campos `naoEnxergo` não é mais lido de `public/app.js`**: vive em
+>   `src/assistente.js:112`. A doutrina 5 foi substituída pela 5′, como o plano pedia.
+
+
 **Arquivo alvo:** `docs/revisao/09-PLANO-PASSO-PROATIVO.md` · **Data:** 25/08/2026 · **ADR alvo:** decisão 27 (a última registrada é a 26, `docs/DECISOES-TECNICAS.md:398`)
 **Repositório:** `/Users/igorrego/DEV/allla/Inteli - Artefato Modulo III/2 - MVP Funcional`
 
@@ -10,7 +21,7 @@
 ## 0. As quatro decisões de princípio (tudo o mais decorre delas)
 
 **D-A · O Passo passa a enxergar CONTADORES, e a doutrina 5 é substituída, não relaxada.**
-Hoje `src/assistente.js:13-15` declara *"O Passo NÃO enxerga dado nenhum"* — e a UI repete isso à pessoa (`public/app.js:2704`, campos `naoEnxergo` do `GUIA`). Ancorar sugestão em estado real torna essa frase falsa. Num produto cuja história inteira de privacidade repousa em **limites declarados serem verdadeiros**, um limite que virou mentira é pior que a mudança. A frase é trocada nos quatro lugares onde aparece, no mesmo commit:
+Hoje `src/assistente.js:13-15` declara *"O Passo NÃO enxerga dado nenhum"* — e a UI repete isso à pessoa (campos `naoEnxergo` do `GUIA`, hoje em `src/assistente.js:112` — o `GUIA` deixou de ser lido de `public/app.js`). Ancorar sugestão em estado real torna essa frase falsa. Num produto cuja história inteira de privacidade repousa em **limites declarados serem verdadeiros**, um limite que virou mentira é pior que a mudança. A frase é trocada nos quatro lugares onde aparece, no mesmo commit:
 
 ```
 //   5. Dois canais, duas permissões.
@@ -29,7 +40,7 @@ Hoje `src/assistente.js:13-15` declara *"O Passo NÃO enxerga dado nenhum"* — 
 
 **D-C · Sugestão não é cobrança — e a garantia é de composição, não de tom.** Lint de palavra pega "você não fez"; não pega o **somatório**. Regra dura: **no máximo UM item de pendência (trabalho não feito pela própria pessoa) por painel**, e as outras duas vagas são obrigatoriamente pergunta / aprimoramento / dúvida / alívio. E: a sugestão é **suprimida na tela que já mostra o mesmo fato** — `#/hoje` já pinta retomada, chamada, folha, ciclo, alertas e pauta (`public/app.js:407-545`); repetir isso dentro de um painel flutuante é ruído com um toque a mais.
 
-**D-D · O aprendizado mora fora do banco principal e é apagável.** `getDb()` (`src/db.js:21-40`) derruba **todas** as tabelas quando a assinatura do DDL muda, e `scripts/reset.mjs` limpa. Precedente correto já existe: `data/rag/corpus.db`, conexão própria (decisão 20). O perfil de uso vive em `data/passo/uso.db`, com `PERCURSO_PASSO_DB` para os testes, vocabulário fechado, decaimento e apagamento pela própria pessoa.
+**D-D · O aprendizado mora fora do banco principal e é apagável.** `getDb()` (`src/db.js:22-41`) derruba **todas** as tabelas quando a assinatura do DDL muda, e `scripts/reset.mjs` limpa. Precedente correto já existe: `data/rag/corpus.db`, conexão própria (decisão 20). O perfil de uso vive em `data/passo/uso.db`, com `PERCURSO_PASSO_DB` para os testes, vocabulário fechado, decaimento e apagamento pela própria pessoa.
 
 ---
 
@@ -67,11 +78,11 @@ O `#/painel` mostra alertas, cobertura e calibração; nenhuma tela mostra **o q
 
 ### 1.3 Solange Ribeiro (diretoria) — o papel mais pobre vira o mais bem servido, e com número de verdade
 
-Hoje ela tem 3 telas no `GUIA` e 5 chips. O ganho maior do plano está aqui, e vem de uma fonte que já é 100% SQL: as seis `INTENCOES` de `src/relatorio.js:500-546`, que `consultar()` responde com número vindo do banco.
+Hoje ela tem 3 telas no `GUIA` e 5 chips. O ganho maior do plano está aqui, e vem de uma fonte que já é 100% SQL: as seis `INTENCOES` de `src/relatorio.js:584-639`, que `consultar()` responde com número vindo do banco.
 
 | tipo | id | o que ela lê / o que acontece |
 |---|---|---|
-| **pergunta** | `dir.pergunta.evasao` (rotativa entre 6) | Chip: *"Quantas crianças estão em risco de sair?"* — e o Passo **responde ali mesmo**, com o retorno literal de `R.consultar()`: *"7 matrículas em risco de evasão de 118 avaliadas…"* + a oferta **Ir para Perguntar à base**. Hoje o chip a levaria para um campo de texto vazio (`public/app.js:2074`) para redigitar a pergunta que ela acabou de tocar. |
+| **pergunta** | `dir.pergunta.evasao` (rotativa entre 6) | Chip: *"Quantas crianças estão em risco de sair?"* — e o Passo **responde ali mesmo**, com o retorno literal de `R.consultar()`: *"7 matrículas em risco de evasão de 118 avaliadas…"* + a oferta **Ir para Perguntar à base**. Hoje o chip a levaria para um campo de texto vazio (`public/app.js:2401`, na rota `#/consulta`) para redigitar a pergunta que ela acabou de tocar. |
 | **ação** | `dir.periodo_descoberto` | *"O 1º semestre de 2026 ainda não tem relatório publicado. O rascunho leva um toque."* → **Ir para Relatório** |
 | **ação** | `dir.revisor_barrou` | *"O revisor de sobre-alegação barrou o rascunho. Ele barra verbo causal forte — é a linguagem protegendo o Instituto perante quem financia."* → **Ir para Relatório** |
 | **aprimoramento** | `dir.custo_ausente` | *"Sem o custo do período, o bloco de eficiência publica só os denominadores. É o número que o doador pergunta primeiro."* → **Ir para Relatório** |
@@ -104,7 +115,7 @@ Nada individual entra aqui. A recusa da decisão 16 continua valendo na conversa
 | `src/assistente.js` | doutrinas 5 e 7 reescritas no cabeçalho e nos `naoEnxergo` afetados; `CATALOGO_ACOES` ganha `alertas` (**hoje não existe** — `validarAcao('alertas', …)` devolveria `null` e a oferta sumiria em silêncio); pipeline chama J1 só quando `casarIntencao()` falha; `chipsDe` **intocado** | ~60 linhas |
 | `src/copilot.js` | passa a reexportar `comVaga` de `src/fila-modelo.js` (compatibilidade total: `api.js:31` e `assistente.js` continuam importando de lá) | 3 linhas |
 | `src/ai-client.js` | `conversar({ …, timeoutMs })` sobrepondo `TIMEOUT_MS[papel]` (`ai-client.js:88`). Sem isso o cliente desiste em 2,5 s e o slot da fila fica preso por até 90 s | 2 linhas |
-| `src/relatorio.js` | `periodosSugeridos()` **move de `src/api.js:694`** (onde é função privada) para cá, exportada; `diasDesdeUltimoPublicado()`; `INTENCOES` ganha `id` estável por item (os códigos já existem) | ~20 linhas |
+| `src/relatorio.js` | `periodosSugeridos()` **movida de `src/api.js`** (onde era função privada) para cá, exportada — **feito**: hoje é `src/relatorio.js:440`, e `src/api.js:875` a consome; `diasDesdeUltimoPublicado()`; `INTENCOES` ganha `id` estável por item (os códigos já existem) | ~20 linhas |
 | `src/api.js` | importa `periodosSugeridos` de `relatorio.js`; 5 rotas novas (§5.5); invalidação do memo de sinais em todo POST/DELETE do usuário | ~35 linhas |
 | `public/app.js` | painel com sugestões tipadas, card de oferta, "Hoje não", ponto no FAB, resumo do dia, balão do momento, seção "o que eu lembro de você", invalidação de cache em POST de estado; `PASSO_ROTAS_POR_PAPEL` ganha `#/alertas` (**hoje ausente** — `app.js:2859`) | ~140 linhas |
 | `public/styles.css` | `.passo-ponto`, `.passo-card`, `.passo-chip[data-tipo]`, `.passo-resumo`, `.passo-porque` — só variáveis existentes (`styles.css:13-20`, com par em `prefers-color-scheme: dark` em `:31-38`) | ~18 linhas |
