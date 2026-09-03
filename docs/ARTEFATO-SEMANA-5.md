@@ -217,7 +217,7 @@ participantes**, além de uma educadora; e o retorno dela sobre o protótipo, qu
 Este documento consolida, sem duplicar: [`JORNADAS.md`](JORNADAS.md) (jornadas completas das três
 personas), [`LEAN-INCEPTION.md`](LEAN-INCEPTION.md) (origem das User Stories e do escopo),
 [`MVP-CANVAS.md`](MVP-CANVAS.md) (proposta e hipóteses), [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md)
-(protocolo da sessão), [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) (saída das 378
+(protocolo da sessão), [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) (saída das 381
 asserções citadas na §3) e [`PENDENCIAS-DE-ENTREGA.md`](PENDENCIAS-DE-ENTREGA.md) (CFL-03 e o
 checklist do processo de entrega).
 

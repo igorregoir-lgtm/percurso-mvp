@@ -1269,6 +1269,20 @@ secao('27 · Régua de presença do Instituto (75%) e recado da turma aos respon
   T('o "próximo encontro" do recado está no futuro',
     !rec.corpo.proximo_encontro || rec.corpo.proximo_encontro > hoje.hoje,
     `(${rec.corpo.proximo_encontro})`);
+
+  // A-1 da auditoria OPAR: quem responde por VARIAS turmas tinha porta so' para
+  // `turmas[0]`. A psicologa cobre a Vivencia de manha E de tarde; os
+  // responsaveis da tarde nao recebiam nada pela interface.
+  T('/api/hoje declara um recado por turma com encontro, não só a primeira',
+    Array.isArray(hoje.recados) && hoje.recados.length === hoje.turmas.length,
+    `(${hoje.recados?.length} recados para ${hoje.turmas.length} turmas)`);
+  const outra = hoje.recados.find(r => r.turma_id !== hoje.turma.id);
+  T('a segunda turma da psicóloga tem recado alcançável', !!outra, `(${JSON.stringify(hoje.recados)})`);
+  if (outra) {
+    const r2 = await GET('carolina', `/api/recado?turma_id=${outra.turma_id}&data=${outra.data}`);
+    T('o recado da segunda turma é gerado e fala DELA', r2.status === 200 && r2.corpo.texto.includes(outra.turma),
+      `(${r2.status})`);
+  }
   T('o recado não tem nome de criança', !r.corpo.criancas.some(c => rec.corpo.texto.includes(c.nome.split(' ')[0])));
   T('o recado abre no WhatsApp sem número (a pessoa escolhe o grupo)', /^https:\/\/wa\.me\/\?text=/.test(rec.corpo.whatsapp_url));
   T('a governança declara o recado da turma (sem consentimento; não persiste)',

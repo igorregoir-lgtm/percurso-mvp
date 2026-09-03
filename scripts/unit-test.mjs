@@ -772,9 +772,13 @@ test('o botão do recado segue o ENCONTRO da folha, não o dia de hoje', async (
   const botao = front.split('\n').find(l =>
     l.includes('Recado para os responsáveis') && l.includes('data-acao="ir"'));
   assert.ok(botao, 'o botão do recado sumiu do cartão da folha em public/app.js');
-  assert.match(botao, /d\.encontro_registrado/);
-  assert.doesNotMatch(botao, /ch\?\.registrada/);
-  assert.match(botao, /#\/recado\?turma_id=\$\{d\.turma\.id\}&data=\$\{d\.data_folha\}/);
+  assert.doesNotMatch(botao, /ch\?\.registrada/, 'o botão não pode voltar a depender da chamada de HOJE');
+  // Achado A-1 da auditoria OPAR: quem responde por várias turmas tinha porta só
+  // para `turmas[0]`. Agora é um botão por turma COM ENCONTRO, e cada href leva
+  // a turma e a data daquele recado — não as da primeira turma.
+  assert.match(botao, /d\.recados/, 'o botão tem de iterar as turmas, não usar d.turma');
+  assert.match(botao, /turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}/);
+  assert.doesNotMatch(botao, /\$\{d\.turma\.id\}/, 'o href não pode fixar a primeira turma');
 });
 
 test('relatório: a supressão roda antes da redação e é declarada', async () => {

@@ -237,6 +237,15 @@ export const rotas = {
       // da Vivencia ainda tem o recado do sabado. Sem encontro nenhum na turma,
       // `dataDaFolha` devolve hoje e este campo e' falso — nao ha o que mandar.
       encontro_registrado: turma ? !!D.encontroDe(turma.id, D.dataDaFolha(turma.id)) : false,
+      // O recado e' de TURMA, e quem responde por varias tinha porta so' para a
+      // primeira (`turmas[0]`): a psicologa cobre a Vivencia de manha E de tarde,
+      // e a Cleide, quatro turmas — os responsaveis das demais nao recebiam nada
+      // pela interface. Achado A-1 da auditoria OPAR de 03/09/2026. Aqui vai uma
+      // linha por turma que TEM encontro registrado; sem encontro nao ha recado.
+      recados: turmas.map(t => {
+        const data = D.dataDaFolha(t.id);
+        return D.encontroDe(t.id, data) ? { turma_id: t.id, turma: t.nome, data } : null;
+      }).filter(Boolean),
       // E6: a devolucao do ultimo encontro com folha, para a tela de abertura.
       devolucao: (() => {
         if (!turma) return null;

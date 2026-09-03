@@ -506,7 +506,7 @@ rota(/^#\/hoje/, async () => {
         <button class="btn largo" data-acao="ir" data-href="#/voz">${folhaFeita ? 'Contar de novo' : 'Contar como foi'}</button>
         <button class="btn largo secundario" data-acao="ir" data-href="#/folha">Preencher à mão</button>
         ${folhaFeita && d.na_rubrica === false ? `<button class="btn largo ${d.folha.relato_liberado ? 'fantasma' : 'secundario'}" data-acao="ir" data-href="#/relato">${d.folha.relato_liberado ? 'Relato liberado' : 'Revisar e liberar o relato'}</button>` : ''}
-        ${d.encontro_registrado ? `<button class="btn largo fantasma" data-acao="ir" data-href="#/recado?turma_id=${d.turma.id}&data=${d.data_folha}">Recado para os responsáveis</button>` : ''}
+        ${(d.recados ?? []).map(r => `<button class="btn largo fantasma" data-acao="ir" data-href="#/recado?turma_id=${r.turma_id}&data=${r.data}">Recado para os responsáveis${d.recados.length > 1 ? ` · ${esc(r.turma)}` : ''}</button>`).join('')}
       </div>
     </div>`;
 

@@ -33,7 +33,7 @@ jornada, e testar o opcional antes do fluxo principal inverte a pergunta.
 
 As duas metades importam separadamente. A primeira é medida por tempo e conclusão de tarefa. A
 segunda é medida pelo **Protocolo do Lapso** (§5.5) e não é medida por nenhum outro instrumento
-deste documento — nem por nenhum dos 165 testes unitários ou das 378 asserções de fluxo do
+deste documento — nem por nenhum dos 165 testes unitários ou das 381 asserções de fluxo do
 repositório.
 
 **Por que teste automatizado não responde.** Ele prova que o sistema faz o que o código diz. O

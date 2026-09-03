@@ -1,9 +1,11 @@
 # Handoff — 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
 
 > **Auditoria OPAR desta sessão:** `~/.claude/AUDITORIA-OPAR-sessao-2026-09-03.md` — três eixos
-> adversariais, **45 achados, 44 confirmados e 1 refutado**, 43 corrigidos em `b657846` (infra),
+> adversariais, **45 achados, 44 confirmados e 1 refutado**, 44 corrigidos em `b657846` (infra),
 > `60c0cf3` (domínio) e `f481bec` (docs). Três itens ficaram **abertos por decisão** e estão
-> nomeados lá: o recado só alcança `turmas[0]`, 46 citações sem caminho em `revisao/09`, e o
+> nomeados lá — e o primeiro, o recado que só alcançava `turmas[0]`, foi **fechado depois**
+> (`/api/hoje` devolve `recados`, um por turma com encontro). Seguem abertos: 46 citações sem
+> caminho em `revisao/09`, e o
 > vocabulário do classificador por radical fixo. **Ler a §4 antes de retomar** — aberto nomeado é
 > trabalho conhecido; aberto esquecido é dívida.
 >
@@ -59,9 +61,9 @@
 >
 > **5. Roteiro do vídeo v3.** Tinha 13 cenas e nenhuma da psicóloga. Agora tem o bloco dela com
 > cinco cenas, mais a consulta, **dentro dos mesmos 7m00** — o que foi cortado está declarado em
-> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; hoje são **378 · 165**.
+> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; hoje são **381 · 165**.
 >
-> **Gates: 165 unitários · 378 smoke · 6 rag · 24 ia-stub.**
+> **Gates: 165 unitários · 381 smoke · 6 rag · 24 ia-stub.**
 >
 > **Armadilhas novas — as do Figma custaram a maior parte do tempo:**
 > (1) **`SF Pro` aparece em `listAvailableFontsAsync` mas renderiza largura ZERO** nesta conta; o
