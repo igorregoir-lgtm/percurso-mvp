@@ -76,6 +76,10 @@ node scripts/reset.mjs && node scripts/preparar-sessao.mjs --lapso && node serve
   mais fácil do que você parar aí pro notebook"* (gravação 82). Notebook como fallback declarado.
 - Cronômetro. Este documento aberto em segunda tela; termo da §4 assinado **antes** da tarefa 1;
   formulário da §5 à mão.
+- **Protótipo Figma** para ensaiar a sessão e alinhar o grupo antes dela:
+  [`PROTOTIPO-FIGMA-VALIDACAO.md`](PROTOTIPO-FIGMA-VALIDACAO.md) — as 12 telas destas seis tarefas
+  em iPhone 17, uma seção por tarefa. **A sessão em si roda no MVP**, não nele: tempo, taxa de
+  correção e Protocolo do Lapso só existem no sistema rodando.
 - **Preferir o sábado, que é o dia da turma.** Num dia útil as tarefas 1 a 5 funcionam — a tela
   Hoje diz "hoje não tem encontro" e oferece o sábado em aberto, que é justamente o caminho que a
   jornada v2 chama de *nunca é tarde para registrar*. **A tarefa 6 é a exceção:** o botão do recado
