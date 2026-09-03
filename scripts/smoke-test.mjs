@@ -1113,6 +1113,17 @@ secao('24 · Psicóloga e Vivência terapêutica — indicador de programa, nunc
   const hoje = (await GET('carolina', '/api/hoje')).corpo;
   T('o Hoje dela abre na turma da Vivência', !!hoje.turma && /Viv[eê]ncia/i.test(hoje.turma.programa));
   T('a turma da Vivência está fora da rubrica: sem agenda de ciclo', hoje.na_rubrica === false && hoje.agenda === null);
+  // Contrato do botao "Recado" na tela Hoje: o encontro relevante e' data_folha,
+  // nao a chamada de hoje. Em dia nao letivo, chamada.registrada e' false e
+  // data_folha aponta para o ultimo sabado — o recado desse dia tem de responder
+  // (e a UI oferece o botao; public/app.js, temRecado). Antes sumia.
+  T('o Hoje carrega data_folha do encontro da folha', !!hoje.data_folha);
+  {
+    const recFolha = await GET('carolina', `/api/recado?turma_id=${hoje.turma.id}&data=${hoje.data_folha}`);
+    T('o recado do encontro da folha responde — base do botão na tela Hoje, inclusive fora do sábado',
+      recFolha.status === 200 && recFolha.corpo.data === hoje.data_folha,
+      `(${recFolha.status}, data=${recFolha.corpo?.data})`);
+  }
   // A Vivencia e' sabatica: a ultima atividade dela e' sempre o sabado anterior, e a
   // regua de lapso e' de 5 dias (PARAMS.DIAS_LAPSO). Numa quinta-feira o lapso dispara
   // sozinho — isso e' a regua funcionando, nao o teste quebrando. Fixar `false` aqui so'

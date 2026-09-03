@@ -14,12 +14,13 @@ Artefato do **Grupo 06** para o exercício de task flow. Sai da **jornada de usu
 > **US-6 — Como psicóloga da Vivência, quero contar em 40 segundos como foi o encontro, para que o
 > relatório no padrão do conselho exista sem eu ter que escrever à noite.**
 
-Ela **não está** nas cinco user stories de [`../LEAN-INCEPTION.md`](../LEAN-INCEPTION.md) §5 nem em
-[`../ARTEFATO-SEMANA-5.md`](../ARTEFATO-SEMANA-5.md) §3. Aquelas cinco são de **pedagoga**, e a
-visita de 29/08/2026 derrubou essa premissa: quem escreve o relatório é a psicóloga, e é ela quem
-nomeia o registro como a dor (*"o maior desafio aqui é registrar o que você fez, né?"*). A história
-existe no código desde a **decisão 31** de [`../DECISOES-TECNICAS.md`](../DECISOES-TECNICAS.md); o
-que faltava era ela estar escrita como história. Este exercício escreve.
+Ela **está** nas listas canônicas desde 02/09/2026: [`../LEAN-INCEPTION.md`](../LEAN-INCEPTION.md) §5
+(item 6, com a procedência declarada) e [`../ARTEFATO-SEMANA-5.md`](../ARTEFATO-SEMANA-5.md) §3.
+As cinco primeiras são de **pedagoga** ou coordenação; a sexta chegou pelo campo — a visita de
+29/08/2026 mostrou que quem escreve o relatório é a psicóloga, e é ela quem nomeia o registro como
+a dor (*"o maior desafio aqui é registrar o que você fez, né?"*). A história existe no código desde
+a **decisão 31** de [`../DECISOES-TECNICAS.md`](../DECISOES-TECNICAS.md); este exercício desenha o
+fluxo que a sessão de validação cronometra.
 
 **Tarefa principal:** registrar o encontro de hoje falando, e sair com o relato do procedimento
 liberado.
