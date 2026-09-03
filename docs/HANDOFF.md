@@ -131,9 +131,9 @@
 > na tela Hoje, que era o único elemento do cartão preso à chamada **de hoje** e sumia em dia não
 > letivo. A branch não tinha commit próprio — o "rebase" foi mover o ponteiro 17 commits à frente
 > com o trabalho em cima (`stash` → `rebase` → `pop`, com backup do diff antes e comparação do
-> conteúdo depois: 38 linhas adicionadas, 1 removida, nenhuma alterada). Gates do conjunto: **165
-> unitários · 374 smoke** (378 depois da auditoria OPAR)**. O commit declara a autoria: o conteúdo é da sessão paralela; esta
-> revisou, verificou e commitou.
+> conteúdo depois: 38 linhas adicionadas, 1 removida, nenhuma alterada). Gates do conjunto naquele
+> momento: **165 unitários · 374 smoke** — a auditoria OPAR que veio depois os levou a 167 · 381. O
+> commit declara a autoria: o conteúdo é da sessão paralela; esta revisou, verificou e commitou.
 >
 > **A correção derrubou uma ressalva em três documentos** — `VALIDACAO-USUARIO.md` §2 e a tarefa 6,
 > e a instrução 4 do roteiro do vídeo, que mandavam abrir `#/recado` pela URL. Todas atualizadas no
