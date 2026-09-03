@@ -274,7 +274,14 @@ Todos os passos da §6 foram executados nesta sessão, exceto o que depende de g
   sente, mesmo perguntada"* e hoje é *"Não nomeia o que sente; demonstra por reação física (chorar,
   sair, bater na mesa)"*. Está registrado em `ARTEFATOS-VISUAIS.md`.
 - **A consulta em linguagem natural classifica mal uma pergunta plausível.** `POST /api/consulta`
-  com *"quantas crianças estão em risco de sair?"* devolve a intenção `contagem` e responde com o
-  total de crianças únicas e matrículas — resposta correta para outra pergunta. Não é erro de dado
-  (o número vem de SQL), é de classificação de intenção. **Não corrigido aqui** — é mudança de
-  produto, não de coerência documental. Fica como achado para a próxima sessão.
+  com *"quantas crianças estão em risco de sair?"* devolvia a intenção `contagem` e respondia com o
+  total de crianças únicas e matrículas — resposta correta para outra pergunta. Não era erro de dado
+  (o número vem de SQL), era de classificação de intenção.
+
+  > **Corrigido em 03/09/2026**, em três commits (`82ae4fa`, `db2fb30`, `939e6d9`). A causa de fundo
+  > era sempre a mesma: regra de desempate implícita. Primeiro a ordem da lista (`contagem` estava em
+  > primeiro e engolia o assunto), depois o comprimento do termo (`'alerta'` e `'faltas'` têm seis
+  > letras e empatavam). A regra agora é explícita e está declarada no código, em três passadas:
+  > assunto por termo forte, assunto por termo fraco, fórmula de contagem. A tela 27 do protótipo
+  > completo mostra o comportamento corrigido — duas perguntas que começam igual caindo em assuntos
+  > diferentes. Gates: 163 unitários · 368 smoke.
