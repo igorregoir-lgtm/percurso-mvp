@@ -761,6 +761,22 @@ test('a INTERFACE não escreve à mão o que o revisor barra (rodada 2)', async 
     assert.doesNotMatch(front, re, `frase causal escrita à mão em public/app.js: ${re}`);
 });
 
+test('o botão do recado segue o ENCONTRO da folha, não o dia de hoje', async () => {
+  // O cartão da folha em #/hoje é montado do ENCONTRO (`data_folha`), que pode
+  // ser de outro dia. O botão do recado estava preso à chamada de HOJE
+  // (`ch?.registrada`): numa terça, a psicóloga da Vivência (turma de sábado)
+  // via o cartão inteiro do sábado registrado e nenhum botão de recado — o
+  // recado só sobrava pela URL. A data também vai no href, como #/relato faz.
+  const { readFileSync } = await import('node:fs');
+  const front = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  const botao = front.split('\n').find(l =>
+    l.includes('Recado para os responsáveis') && l.includes('data-acao="ir"'));
+  assert.ok(botao, 'o botão do recado sumiu do cartão da folha em public/app.js');
+  assert.match(botao, /d\.encontro_registrado/);
+  assert.doesNotMatch(botao, /ch\?\.registrada/);
+  assert.match(botao, /#\/recado\?turma_id=\$\{d\.turma\.id\}&data=\$\{d\.data_folha\}/);
+});
+
 test('relatório: a supressão roda antes da redação e é declarada', async () => {
   const fim = D.hoje(), inicio = D.addDias(fim, -180);
   const r = await R.gerarRelatorio({ tipo: 'ciclo', inicio, fim });

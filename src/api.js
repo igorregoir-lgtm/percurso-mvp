@@ -232,6 +232,11 @@ export const rotas = {
                       : { ...S.pautaDaSemana(turma.id), exposicao: null, sugestao: null }) : null,
       folha: turma ? V.folhaDaTurma(turma.id, D.dataDaFolha(turma.id)) : null,
       data_folha: turma ? D.dataDaFolha(turma.id) : null,
+      // A chamada do encontro da folha — que nem sempre e' a de hoje. O recado
+      // aos responsaveis (decisao 33) e' do ENCONTRO: numa terca, a psicologa
+      // da Vivencia ainda tem o recado do sabado. Sem encontro nenhum na turma,
+      // `dataDaFolha` devolve hoje e este campo e' falso — nao ha o que mandar.
+      encontro_registrado: turma ? !!D.encontroDe(turma.id, D.dataDaFolha(turma.id)) : false,
       // E6: a devolucao do ultimo encontro com folha, para a tela de abertura.
       devolucao: (() => {
         if (!turma) return null;

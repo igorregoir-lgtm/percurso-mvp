@@ -1254,6 +1254,22 @@ secao('27 · Régua de presença do Instituto (75%) e recado da turma aos respon
   T('a governança declara o recado da turma (sem consentimento; não persiste)',
     (await GET('rita', '/api/consentimentos')).corpo.governanca.some(g => g.campo === 'recado_da_turma' && /persiste/i.test(g.retencao)));
   T('a professora de outra turma NÃO gera o recado da Vivência (403)', (await GET('maria', `/api/recado?turma_id=${tid}`)).status === 403);
+
+  // Regressao: o recado e' do ENCONTRO, nao do dia do calendario. Numa terca, a
+  // psicologa da Vivencia (turma de sabado) nao tem chamada de hoje — e o recado
+  // do sabado continua existindo. O cartao de Hoje condiciona o botao a
+  // `encontro_registrado` (a chamada da data_folha), nao a `chamada.registrada`
+  // (a de hoje); antes disso o botao sumia num dia util e o recado so' era
+  // alcancavel pela URL.
+  const recFolha = await GET('carolina', `/api/recado?turma_id=${tid}&data=${hoje.data_folha}`);
+  T('/api/hoje declara o encontro DA FOLHA, e ele decide o botão do recado',
+    hoje.encontro_registrado === (recFolha.status === 200),
+    `(encontro_registrado=${hoje.encontro_registrado}, recado=${recFolha.status})`);
+  T('o recado do encontro da folha existe mesmo sem chamada de hoje',
+    hoje.encontro_registrado === true && recFolha.status === 200 && recFolha.corpo.data === hoje.data_folha,
+    `(hoje=${hoje.hoje}, data_folha=${hoje.data_folha}, chamada_de_hoje=${hoje.chamada?.registrada})`);
+  T('sem encontro na data, o recado recusa (404) — o botão não teria o que abrir',
+    (await GET('carolina', `/api/recado?turma_id=${tid}&data=1999-01-04`)).status === 404);
 }
 
 // ----------------------- 28. parecer profissional-a-profissional (decisão 32)
