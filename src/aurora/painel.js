@@ -1,4 +1,4 @@
-// Percurso — a cola do painel do Passo: sinais → catálogo → ranking → resposta.
+// Percurso — a cola do painel da Aurora: sinais → catálogo → ranking → resposta.
 //
 // Determinístico de ponta a ponta. NÃO fala com o modelo (o refinamento de
 // rótulo é rota separada, assíncrona e opcional) e NÃO escreve em banco nenhum.
@@ -10,11 +10,11 @@ import { CATALOGO, doPapel, semCobranca, IDS_CATALOGO, TIPOS } from './catalogo.
 import { ordenar, compor, explorar, SLOTS } from './ranking.js';
 import { validarAcao, chipsDe } from '../assistente.js';
 import * as P from './perfil.js';
-import { ROTAS_CONHECIDAS_PASSO } from '../assistente.js';
+import { ROTAS_CONHECIDAS_AURORA } from '../assistente.js';
 
 // O vocabulário fechado do perfil nasce do catálogo: sem esta ligação,
 // `registrar()` recusa tudo — é o que garante que só id conhecido vira chave.
-P.ligarVocabulario({ ids: IDS_CATALOGO, tipos: TIPOS, rotas: ROTAS_CONHECIDAS_PASSO });
+P.ligarVocabulario({ ids: IDS_CATALOGO, tipos: TIPOS, rotas: ROTAS_CONHECIDAS_AURORA });
 
 const maiuscula = (s) => s ? s[0].toUpperCase() + s.slice(1) : s;
 
@@ -54,13 +54,13 @@ function resumoDe(env, escolhidas, resumoOnly = []) {
  *
  * @returns {{tela, papel, origem, badge, hash, resumo, sugestoes: Array}}
  */
-export function painelDoPasso(u, tela = '', opcoes = {}) {
+export function painelDoAurora(u, tela = '', opcoes = {}) {
   const ref = opcoes.ref ?? D.hoje();
   // O perfil é opcional em todos os sentidos: desligado por padrão, e o painel
   // funciona idêntico sem ele (pesos vazios ⇒ ranking determinístico puro).
   // O perfil é ACESSÓRIO: banco corrompido, disco cheio ou diretório sem
   // permissão não podem derrubar o painel. Sem este try, uma falha ao abrir
-  // data/passo/uso.db virava 5xx no Passo e gaveta de chips vazia — o oposto
+  // data/aurora/uso.db virava 5xx na Aurora e gaveta de chips vazia — o oposto
   // da doutrina de fallback determinístico em 100% das falhas.
   let prefs = {}, pesos = {}, silenciadas = new Set();
   try {
@@ -68,11 +68,11 @@ export function painelDoPasso(u, tela = '', opcoes = {}) {
     pesos = opcoes.pesos ?? P.pesosDe(u.id, ref);
     silenciadas = opcoes.silenciadas ?? P.silenciadasDe(u.id, ref);
   } catch (e) {
-    console.error('[percurso] perfil do Passo indisponível:', e.message);
+    console.error('[percurso] perfil da Aurora indisponível:', e.message);
   }
   try { return montar(u, tela, { pesos, prefs, silenciadas, ref }); }
   catch (e) {
-    console.error('[percurso] painel do Passo falhou:', e.message);
+    console.error('[percurso] painel da Aurora falhou:', e.message);
     return fallbackDoGuia(u, tela);
   }
 }

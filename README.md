@@ -102,7 +102,7 @@ iPhone e Android abrem, instalam como app e **a voz funciona** (HTTPS ✓). `Ctr
 a URL deixa de existir. Ferramenta de demonstração (decisão 25): pública, efêmera, sem senha —
 só com os dados sintéticos. Requisitos na máquina que apresenta: `brew install cloudflared qrencode`.
 
-Para instalar o Percurso em OUTRO computador (o do Instituto), o passo a passo sem jargão está em
+Para instalar o Percurso em OUTRO computador (o do Instituto), o aurora a aurora sem jargão está em
 [`docs/MANUAL-DE-INSTALACAO.md`](docs/MANUAL-DE-INSTALACAO.md) — inclui o início automático no
 login (`ai/scripts/instalar-inicio-automatico.sh`), para ligar o computador e o Percurso já estar
 no ar.
@@ -263,7 +263,7 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 | RAG governado | busca com citação num corpus aprovado por manifest (leis, BNCC, material interno) | `GET /api/rag/search`, `src/rag/`, `docs/GOVERNANCA-FONTES-RAG.md` |
 | Copilot reflexivo (Modo B) | 7 blocos por gramática: perguntas socráticas, hipóteses rotuladas, ≥3 alternativas, contraponto, fontes verificadas, escalonamento | `#/copilot` (“Refletir”), `src/copilot.js` |
 | Modo A por modelo (opt-in extra) | extração da fala sob os MESMOS catálogos fechados, fallback lexical em toda falha | `AI_EXTRATOR=1`, `extrairComModelo` |
-| Passo, o assistente-parceiro | guia de navegação presente em todas as telas: tira dúvidas do produto, oferece "Ir para…", fala (opt-in) — responde SÓ sobre o Percurso, com fallback determinístico do guia | botão ❋, `src/assistente.js`, decisão 26 |
+| Aurora, o assistente-parceiro | guia de navegação presente em todas as telas: tira dúvidas do produto, oferece "Ir para…", fala (opt-in) — responde SÓ sobre o Percurso, com fallback determinístico do guia | botão ❋, `src/assistente.js`, decisão 26 |
 | SROI exploratório | 3 cenários e faixa, motor determinístico, dupla contagem bloqueada, premissas com fonte | `#/impacto` (diretoria), `src/sroi/`, `docs/SROI-METODOLOGIA.md` |
 | Calibração entre educadoras | borda 2 da doutrina, determinística — pauta de reunião, nunca ranking | `#/painel` |
 | LoRA (Fase 4) | infraestrutura, funil de doação explícita e gates — **treino não executado por gate** | `ai/training/` |
@@ -288,8 +288,8 @@ src/seed.js               geração dos dados sintéticos
 src/api.js                rotas HTTP/JSON
 src/ai-client.js          cliente do modelo local (fetch nativo, json_schema, timeouts) (v3)
 src/copilot.js            copilot reflexivo, recusas, pseudonimização, doação de interação (v3)
-src/assistente.js         Passo, o assistente-parceiro de navegação (guia + modelo, decisão 26)
-src/sessoes.js            sessões de conversa em memória com TTL (copilot e Passo)
+src/assistente.js         Aurora, o assistente-parceiro de navegação (guia + modelo, decisão 26)
+src/sessoes.js            sessões de conversa em memória com TTL (copilot e Aurora)
 src/rag/                  preparação de fontes, ingestão FTS5, busca e anonimizador (v3)
 src/sroi/calculator.js    motor SROI determinístico versionado (v3)
 ai/                       manifest de modelos, scripts do llama.cpp, prompts, treino (v3)

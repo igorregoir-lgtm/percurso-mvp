@@ -173,7 +173,7 @@ servidor autoriza são a mesma regra, verificada por teste (smoke §0, §19).
 ```
 
 **Telas comuns aos dois primeiros papéis:** `#/criancas` e `#/crianca/:id` (ficha viva, com escopo
-de turma para a educadora) e `#/alertas`. **Presente em todas:** o **Passo**, assistente de
+de turma para a educadora) e `#/alertas`. **Presente em todas:** o **Aurora**, assistente de
 navegação que responde só sobre o produto e oferece "Ir para…" — nunca grava nada.
 
 **Os dois cruzamentos que contam a tese do produto**, e que a demonstração deve mostrar nesta

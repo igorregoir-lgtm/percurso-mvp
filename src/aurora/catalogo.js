@@ -1,6 +1,6 @@
-// Percurso — o catálogo de sugestões do Passo.
+// Percurso — o catálogo de sugestões da Aurora.
 //
-// Cada entrada é uma coisa que o Passo pode oferecer a UMA pessoa, em UMA tela,
+// Cada entrada é uma coisa que a Aurora pode oferecer a UMA pessoa, em UMA tela,
 // QUANDO o estado real acender o gatilho. É escrito à mão de propósito: a
 // urgência institucional (`base`) é decisão humana auditável, não saída de
 // modelo. O modelo, quando ligado, só REORDENA candidatos e pode encurtar o
@@ -252,7 +252,7 @@ const EDUCADOR = [
     porque: () => 'é o que mais confunde nesta tela',
     acao: null,
   },
-  // A tela #/hoje é onde ela mais abre o Passo — e é a que já pinta seis
+  // A tela #/hoje é onde ela mais abre a Aurora — e é a que já pinta seis
   // cartões. Sem entradas próprias, o painel caía nos chips estáticos de
   // sempre justamente ali. Estas três dizem o que a TELA NÃO diz.
   {
@@ -278,7 +278,7 @@ const EDUCADOR = [
     nucleo: false, base: 45, telas: ['#/hoje', '#/turma'], suprimidoEm: [],
     gatilho: SEMPRE,
     rotulo: 'Quem enxerga o que eu escrevo?',
-    texto: () => 'A coordenação enxerga o agregado da turma e as fichas do escopo dela; a diretoria só vê número agregado, nunca criança. Eu, o Passo, não abro ficha nenhuma — só sei contar quantas coisas estão em aberto, nunca quem.',
+    texto: () => 'A coordenação enxerga o agregado da turma e as fichas do escopo dela; a diretoria só vê número agregado, nunca criança. Eu, a Aurora, não abro ficha nenhuma — só sei contar quantas coisas estão em aberto, nunca quem.',
     porque: () => 'é a dúvida mais comum de quem começa a registrar',
     acao: null,
   },
@@ -457,7 +457,7 @@ const COORDENACAO = [
 
 // --------------------------------------------------------------------------
 // DIRETORIA — 12 entradas. As seis `pergunta` são as INTENCOES de
-// relatorio.js: o Passo responde ali mesmo, com número vindo de SQL.
+// relatorio.js: a Aurora responde ali mesmo, com número vindo de SQL.
 // Nada individual entra aqui — a recusa da decisão 16 segue intocada.
 // --------------------------------------------------------------------------
 // [codigo, rótulo do chip (≤44, cabe em 375px), pergunta enviada a consultar()]
@@ -470,7 +470,7 @@ const PERGUNTAS_DIRETORIA = [
   // genérica 'contagem' engolia o assunto, e o chip prometia evasão entregando
   // o inventário. Corrigido em 82ae4fa (assunto vence fórmula), então o rótulo
   // e a consulta voltam a ser a MESMA frase — o desvio era o bug, não o desenho.
-  // O teste 'as perguntas do Passo classificam na intenção que declaram' trava.
+  // O teste 'as perguntas da Aurora classificam na intenção que declaram' trava.
   ['evasao', 'Quantas crianças estão em risco de sair?', 'Quantas crianças estão em risco de sair?'],
   ['cobertura', 'Como está a cobertura do registro?', 'Como está a cobertura do registro?'],
   ['exposicao', 'Que áreas de sonho estão em aberto?', 'Quais áreas do Laboratório de Sonhos estão em aberto?'],

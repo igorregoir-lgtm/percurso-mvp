@@ -929,13 +929,13 @@ secao('19 · Escopo de turma nas rotas de leitura individual (decisão 22)');
   T('educadora NÃO abre observação de criança de outra turma (403)', obs.status === 403, `(${obs.status})`);
 }
 
-// ------------------------------------------------ 20. Passo (assistente)
-// Só os caminhos que NUNCA chegam ao modelo — o Passo com modelo é coberto
+// ------------------------------------------------ 20. Aurora (assistente)
+// Só os caminhos que NUNCA chegam ao modelo — a Aurora com modelo é coberto
 // pelo ai-stub-test. Assim o bloco passa igual com AI_ENABLED ligado ou não.
-secao('20 · Passo — assistente-parceiro (limites no servidor)');
+secao('20 · Aurora — assistente-parceiro (limites no servidor)');
 {
-  const anon = await POST('anon-passo', '/api/assistente', { message: 'oi', tela: '#/hoje' });
-  T('sem sessão, o Passo responde 401', anon.status === 401, `(${anon.status})`);
+  const anon = await POST('anon-aurora', '/api/assistente', { message: 'oi', tela: '#/hoje' });
+  T('sem sessão, a Aurora responde 401', anon.status === 401, `(${anon.status})`);
 
   const vazio = await POST('maria', '/api/assistente', { message: '   ', tela: '#/hoje' });
   T('pergunta vazia responde 422', vazio.status === 422, `(${vazio.status})`);
@@ -948,7 +948,7 @@ secao('20 · Passo — assistente-parceiro (limites no servidor)');
   T('redirecionamento nunca tem fala', reflexiva.corpo.fala === null);
 
   const fora = await POST('maria', '/api/assistente', { message: 'qual é a capital da França?', tela: '#/hoje' });
-  T('fora do produto: o Passo declara o próprio limite, sem ação',
+  T('fora do produto: a Aurora declara o próprio limite, sem ação',
     fora.status === 200 && fora.corpo.tipo === 'redirecionamento' && fora.corpo.acao === null);
 
   const criancas = (await GET('maria', '/api/criancas')).corpo.criancas;
@@ -966,7 +966,7 @@ secao('20 · Passo — assistente-parceiro (limites no servidor)');
 
   const del = await req('maria', '/api/assistente/sessao',
     { method: 'DELETE', body: JSON.stringify({ session_id: reflexiva.corpo.session_id }) });
-  T('apagar a sessão do Passo responde 200', del.status === 200, `(${del.status})`);
+  T('apagar a sessão da Aurora responde 200', del.status === 200, `(${del.status})`);
 }
 
 // ------------------------------------- 21. cadastro de pessoas (equipe/criancas)

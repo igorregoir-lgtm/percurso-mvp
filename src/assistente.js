@@ -1,7 +1,7 @@
-// Percurso — "Passo", o parceiro de percurso (assistente de navegação e uso).
+// Percurso — "Aurora", o parceiro de percurso (assistente de navegação e uso).
 //
 // DOUTRINA PRÓPRIA, além da herdada (plano auditado em revisao/07):
-//   1. O Passo responde SÓ sobre o produto. Pergunta reflexivo-pedagógica não
+//   1. A Aurora responde SÓ sobre o produto. Pergunta reflexivo-pedagógica não
 //      vai ao modelo daqui: é redirecionada ao copilot (que tem RAG, 7 blocos
 //      e verificador) — e, para a diretoria, à camada agregada (decisão 16).
 //   2. Diretoria + nome de criança = recusa determinística. Nada vai ao modelo
@@ -9,15 +9,15 @@
 //   3. A FALA é mais restrita que a tela: perímetro/recusa saem com fala nula;
 //      fala que contenha pseudônimo ou nome do roster é descartada no servidor.
 //   4. Ação é um catálogo FECHADO de navegação (enum na gramática) e sempre
-//      OFERTA — quem navega é o toque da pessoa, nunca o Passo.
+//      OFERTA — quem navega é o toque da pessoa, nunca a Aurora.
 //   5′. DOIS CANAIS, DUAS PERMISSÕES (substitui a doutrina 5 antiga, que dizia
-//      "o Passo não enxerga dado nenhum" e virou mentira no instante em que a
+//      "a Aurora não enxerga dado nenhum" e virou mentira no instante em que a
 //      sugestão passou a nascer de estado real — e limite declarado que virou
 //      mentira é pior do que a mudança):
 //      · CONVERSA (assistente(), este arquivo) continua CEGA: nada do banco
 //        entra no prompt de uma resposta a pergunta. Pergunta sobre um caso
 //        específico recebe o limite declarado, nunca um motivo inventado.
-//      · SUGESTÃO (src/passo/) enxerga CONTADORES do próprio dia da pessoa —
+//      · SUGESTÃO (src/aurora/) enxerga CONTADORES do próprio dia da pessoa —
 //        quantos, quantas datas, quantos dias. Nunca um nome, nunca uma ficha,
 //        nunca um nível, nunca um escore individual. Conta quantos, nunca quem.
 //      A exceção declarada: coordenação e diretoria recebem, no portão 3.5,
@@ -36,7 +36,7 @@ import { criarSessoes } from './sessoes.js';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-// O Passo com modelo herda o gate da PoC (decisão 19); AI_ASSISTENTE=0 desliga
+// A Aurora com modelo herda o gate da PoC (decisão 19); AI_ASSISTENTE=0 desliga
 // só ele, mantendo o copilot — kill switch independente.
 export const AI_ASSISTENTE = AI_ENABLED &&
   !['0', 'false'].includes(String(process.env.AI_ASSISTENTE ?? '').toLowerCase());
@@ -46,11 +46,11 @@ const MAX_TROCAS = 4;
 
 export function apagarSessaoAssistente(u, sessaoId) {
   memoria.apagar(u, String(sessaoId || ''));
-  return { ok: true, aviso: 'Conversa com o Passo apagada. Nada dela foi persistido.' };
+  return { ok: true, aviso: 'Conversa com a Aurora apagada. Nada dela foi persistido.' };
 }
 
 // ---------------------------------------------------------------------------
-// CATÁLOGO DE AÇÕES — fechado, só navegação. O Passo nunca grava nada.
+// CATÁLOGO DE AÇÕES — fechado, só navegação. A Aurora nunca grava nada.
 // ---------------------------------------------------------------------------
 export const CATALOGO_ACOES = [
   { id: 'hoje', rotulo: 'Hoje', hash: '#/hoje', papeis: ['educador', 'profissional'] },
@@ -96,7 +96,7 @@ const ROTAS_CONHECIDAS = new Set([
   '#/entrar', '#/alertas', '#/confirmar', '#/observacao', '#/crianca', '#/parecer',
 ]);
 /** Mesmo conjunto, exportado: é o vocabulário fechado de `tela` no perfil. */
-export const ROTAS_CONHECIDAS_PASSO = ROTAS_CONHECIDAS;
+export const ROTAS_CONHECIDAS_AURORA = ROTAS_CONHECIDAS;
 export function telaSegura(tela) {
   const rota = String(tela ?? '').split('?')[0];
   if (ROTAS_CONHECIDAS.has(rota)) return rota;
@@ -105,9 +105,9 @@ export function telaSegura(tela) {
 }
 
 // ---------------------------------------------------------------------------
-// GUIA — fonte única de conhecimento do Passo. Dois níveis: a TELA (o que é)
+// GUIA — fonte única de conhecimento da Aurora. Dois níveis: a TELA (o que é)
 // e as TAREFAS (como fazer), com intenções para o casamento determinístico.
-// `naoEnxergo`: o limite declarado — o Passo não vê dado nenhum.
+// `naoEnxergo`: o limite declarado — a Aurora não vê dado nenhum.
 // ---------------------------------------------------------------------------
 export const GUIA = [
   {
@@ -328,9 +328,9 @@ const semAcento = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(
 const guiaDe = (tela) => GUIA.find(g => tela && tela.startsWith(`#/${g.id}`)) ?? null;
 export const guiaDoPapel = (papel) => GUIA.filter(g => g.papeis.includes(papel));
 
-// Vocabulário do produto — o domínio do Passo. Fora dele, o modelo não responde.
+// Vocabulário do produto — o domínio da Aurora. Fora dele, o modelo não responde.
 const VOCABULARIO = new Set([
-  'percurso', 'tela', 'app', 'aplicativo', 'sistema', 'ajuda', 'passo',
+  'percurso', 'tela', 'app', 'aplicativo', 'sistema', 'ajuda', 'aurora',
   'chamada', 'presenca', 'presente', 'falta', 'cronometro', 'salvar',
   'folha', 'voz', 'gravar', 'microfone', 'audio', 'ditado', 'terminei',
   'ciclo', 'observacao', 'observar', 'rubrica', 'ancora', 'bloquead',
@@ -349,7 +349,7 @@ export function dominioDoProduto(texto) {
 
 // Pergunta reflexivo-pedagógica tem PRECEDÊNCIA sobre o vocabulário: "como
 // lidar com uma criança que bate" menciona palavras do produto, mas é conversa
-// para o copilot (com RAG, 7 blocos e verificador) — nunca para o Passo.
+// para o copilot (com RAG, 7 blocos e verificador) — nunca para a Aurora.
 const REFLEXIVA = /(como lidar|o que fa[çc]o com|o que fazer com|como agir|como ajudar|se comporta|comportamento|briga|bate\b|morde|birra|agressiv|agitad|dispers|nao participa|não participa|timid|conflito|disciplina)/;
 export function pareceReflexiva(texto) {
   return REFLEXIVA.test(semAcento(texto));
@@ -446,7 +446,7 @@ const REDIRECIONAMENTO = {
   },
 };
 
-let PROMPT_PASSO = null;
+let PROMPT_AURORA = null;
 
 // Import tardio de propósito: relatorio.js importa domain/scores/db, e o topo
 // deste arquivo é lido por módulos que não querem esse peso. `consultar` lança
@@ -473,7 +473,7 @@ export function pareceQuantitativa(texto) {
 }
 
 // ---------------------------------------------------------------------------
-// O pipeline do Passo.
+// O pipeline da Aurora.
 // ---------------------------------------------------------------------------
 export async function assistente(u, { message, session_id, tela }) {
   const texto = String(message ?? '').trim();
@@ -562,7 +562,7 @@ export async function assistente(u, { message, session_id, tela }) {
   // 4. porta lateral fechada. Dois casos distintos, duas respostas distintas:
   //    (a) pergunta REFLEXIVA (precedência sobre o vocabulário) → o lugar é o
   //        copilot (educador/coordenação) ou a equipe (diretoria);
-  //    (b) fora do produto de modo geral → o Passo declara o próprio limite,
+  //    (b) fora do produto de modo geral → a Aurora declara o próprio limite,
   //        SEM empurrar para o copilot (capital da França não é reflexão).
   if (pareceReflexiva(pergunta)) {
     const red = REDIRECIONAMENTO[u.papel] ?? REDIRECIONAMENTO.educador;
@@ -606,17 +606,17 @@ export async function assistente(u, { message, session_id, tela }) {
   };
 
   // 6. com modelo: o Qwen refina dentro do domínio; QUALQUER falha (fora do
-  //    ar, timeout, fila cheia, saída ruim) cai no guia — nunca 503 para o Passo.
+  //    ar, timeout, fila cheia, saída ruim) cai no guia — nunca 503 para a Aurora.
   if (AI_ASSISTENTE) {
     try {
-      PROMPT_PASSO ??= readFileSync(join(RAIZ, 'ai', 'prompts', 'assistente-passo.md'), 'utf8')
+      PROMPT_AURORA ??= readFileSync(join(RAIZ, 'ai', 'prompts', 'assistente-aurora.md'), 'utf8')
         .split('\n---\n').pop().trim();
       const catalogo = catalogoDoPapel(u.papel);
       const guiaCompacto = guiaDoPapel(u.papel).map(g =>
         `[${g.id}] ${g.oQueE}${g.naoEnxergo ? ' LIMITE: ' + g.naoEnxergo : ''}\n` +
         g.tarefas.map(tf => `  - ${tf.resposta}`).join('\n')).join('\n');
       const schema = {
-        name: 'assistente_passo',
+        name: 'assistente_aurora',
         schema: {
           type: 'object',
           required: ['resposta', 'fala', 'acao'],
@@ -635,7 +635,7 @@ export async function assistente(u, { message, session_id, tela }) {
       const { objeto } = await comVaga(() => conversar({
         papel: 'reflexivo', schema, maxTokens: 320,
         mensagens: [
-          { role: 'system', content: PROMPT_PASSO },
+          { role: 'system', content: PROMPT_AURORA },
           { role: 'system', content: `GUIA DO PRODUTO (sua única fonte — não invente nada fora dele):\n${guiaCompacto}\n\nTELA ATUAL da pessoa: ${tela || 'desconhecida'} · PAPEL: ${u.papel}\nAÇÕES possíveis (ids): ${catalogo.map(a => `${a.id}=${a.rotulo}`).join(', ')}` },
           ...historico,
           { role: 'user', content: pergunta },

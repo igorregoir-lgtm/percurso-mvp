@@ -1,13 +1,13 @@
-// Percurso — o ENVELOPE do Passo: o único ponto em que o assistente toca o domínio.
+// Percurso — o ENVELOPE da Aurora: o único ponto em que o assistente toca o domínio.
 //
-// DOUTRINA 5′ (substitui a 5 antiga, que dizia "o Passo não enxerga dado nenhum"
+// DOUTRINA 5′ (substitui a 5 antiga, que dizia "a Aurora não enxerga dado nenhum"
 // e virou mentira no instante em que a sugestão passou a nascer de estado real —
 // e limite declarado que virou mentira é pior do que a mudança):
 //
 //   Dois canais, duas permissões.
 //   · CONVERSA (assistente()) continua CEGA: nada do banco entra no prompt de
 //     uma resposta a pergunta.
-//   · SUGESTÃO (painel do Passo) enxerga um ENVELOPE de CONTADORES do próprio dia
+//   · SUGESTÃO (painel da Aurora) enxerga um ENVELOPE de CONTADORES do próprio dia
 //     da pessoa — quantos, quantas datas, quantos dias — e nada mais.
 //     Nunca um nome de criança. Nunca um nome de TURMA (turma.educador_id é 1:1:
 //     "a turma Girassol está sem registro" É "a educadora X não registrou").
@@ -265,7 +265,7 @@ export function sinaisDe(u, tela = '', ref = D.hoje()) {
         : congelar(doEducador(u, tela, ref));
   } catch (e) {
     falhas++;
-    console.error('[percurso] envelope do Passo falhou:', e.message);
+    console.error('[percurso] envelope da Aurora falhou:', e.message);
     env = ENVELOPE_VAZIO;
   }
   memo.set(chave, { env, em: Date.now() });

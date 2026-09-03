@@ -60,7 +60,7 @@ nada de volta pelo que observa.
 7. **`#/turma`** — vê as médias por dimensão mudarem ciclo a ciclo. Ao fechar a última observação
    da turma, a tela devolve em números o que ela sabia e não conseguia provar.
 
-**Passo opcional (v3, se `AI_ENABLED=1`):** na aba **Refletir**, descrever uma situação da
+**Aurora opcional (v3, se `AI_ENABLED=1`):** na aba **Refletir**, descrever uma situação da
 turma (sem nomear a criança — nomes viram pseudônimo antes do modelo) e receber perguntas
 socráticas, hipóteses rotuladas e alternativas com citação do corpus aprovado. A decisão
 pedagógica continua dela; situação de risco escala para o caminho humano.
@@ -108,7 +108,7 @@ entra por incentivo fiscal cobra prestação de contas, e prestação de contas 
    modelo), passa pelo revisor de sobre-alegação e **aprova ou devolve** — a aprovação é dela.
 6. **Fecho do ciclo** — fecha o ciclo, a retenção declarada é executada e o próximo abre.
 
-**Passo opcional (v3, se `AI_ENABLED=1`):** a mesma sala **Refletir** para preparar conversas
+**Aurora opcional (v3, se `AI_ENABLED=1`):** a mesma sala **Refletir** para preparar conversas
 de calibração — e, no painel, a leitura de divergência entre educadoras por dimensão (pauta de
 reunião, nunca ranking).
 
@@ -145,7 +145,7 @@ Perfil que entrou com a v2. Existe para uma coisa: prestar contas a quem financi
    perfil dela, por decisão de desenho (decisão 16): quem presta contas trabalha sobre a camada
    agregada, então não precisa de acesso individual — e por isso não tem.
 
-**Passo novo (v3):** na aba **Impacto**, montar os três cenários exploratórios de SROI com
+**Aurora novo (v3):** na aba **Impacto**, montar os três cenários exploratórios de SROI com
 premissas expostas (faixa, nunca número único; revisão humana antes de uso externo) — e, com a
 camada de IA ligada, pedir a explicação das premissas (texto rotulado, fora do export padrão).
 
@@ -221,7 +221,7 @@ cérebro"*); o que ela vê não vira evidência.
 ### O que a jornada de campo v2 exige e o MVP ainda não tem (02/09/2026)
 
 A jornada de campo (`docs/jornada-usuario/`) foi revista em 02/09/2026 e trouxe uma distinção que
-o passo 3 acima ainda não respeita: **capturar não é registrar**. Capturar é apertar um botão — ou
+o aurora 3 acima ainda não respeita: **capturar não é registrar**. Capturar é apertar um botão — ou
 já ter um áudio no celular. Registrar é virar relato, contagem e indicador, e isso é trabalho do
 sistema, a qualquer momento. Quem é metódico é o sistema; quem estrutura o dado é o sistema.
 

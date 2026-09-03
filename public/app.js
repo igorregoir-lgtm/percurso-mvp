@@ -179,7 +179,7 @@ async function api(caminho, opcoes = {}) {
 // servidor seria um cache com defasagem.
 const post = async (c, dados, opts = {}) => {
   const r = await api(c, { ...opts, method: 'POST', body: JSON.stringify(dados || {}) });
-  if (!c.startsWith('/api/passo/')) passo.badgeRota = null;
+  if (!c.startsWith('/api/aurora/')) aurora.badgeRota = null;
   return r;
 };
 
@@ -250,8 +250,8 @@ const NAV_DIRETORIA = [
 ];
 
 function pintarNav(rotaAtual) {
-  if (!sessao) { navEl.hidden = true; pintarPassoFab(false); return; }
-  pintarPassoFab(!rotaAtual.startsWith('#/entrar'));
+  if (!sessao) { navEl.hidden = true; pintarAuroraFab(false); return; }
+  pintarAuroraFab(!rotaAtual.startsWith('#/entrar'));
   const itens = sessao.papel === 'coordenacao' ? NAV_COORDENACAO
               : sessao.papel === 'diretoria' ? NAV_DIRETORIA
               : sessao.papel === 'profissional' ? NAV_PROFISSIONAL : NAV_EDUCADOR;
@@ -306,20 +306,20 @@ async function navegar() {
           }, 240);
           try {
             // Overlay esquecido não atravessa navegação: modal, festa, magia,
-            // ditado e o Passo são fechados (com cleanup) antes da rota nova.
+            // ditado e a Aurora são fechados (com cleanup) antes da rota nova.
             // REPINTURA da mesma tela (fila drenada no evento `online`,
-            // resposta do copilot chegando) NÃO é navegação: o Passo — que
+            // resposta do copilot chegando) NÃO é navegação: a Aurora — que
             // vive fora do #app — fica aberto, falando e ouvindo.
             const mesmaTela = hash === hashRenderizado;
             if (!mesmaTela) {
-              if (document.querySelector('.passo-veu')) fecharPasso({ foco: false });
+              if (document.querySelector('.aurora-veu')) fecharAurora({ foco: false });
               cancelarFala();
             }
-            // Ditado no painel do Passo sobrevive à repintura (o campo dele
+            // Ditado no painel da Aurora sobrevive à repintura (o campo dele
             // não é re-renderizado); ditado em campo da TELA não — o elemento
             // fica órfão no re-render.
-            if (!mesmaTela || !(ditadoAtivo?.botao?.closest('.passo-veu'))) pararDitado();
-            document.querySelectorAll(mesmaTela ? '.veu:not(.passo-veu)' : '.veu').forEach(v => v.remove());
+            if (!mesmaTela || !(ditadoAtivo?.botao?.closest('.aurora-veu'))) pararDitado();
+            document.querySelectorAll(mesmaTela ? '.veu:not(.aurora-veu)' : '.veu').forEach(v => v.remove());
             pararFesta();
             pararVoz();       // gravação da folha não sobrevive a re-render
             hashRenderizado = hash;
@@ -1537,15 +1537,15 @@ function efeitosFesta(el, concluidas) {
   if (alvo && concluidas > 0) {
     let rafContagem = null;
     const t0 = performance.now() + 150;
-    const passo = (agora) => {
+    const aurora = (agora) => {
       if (!alvo.isConnected) return;
       const p = Math.min(1, Math.max(0, (agora - t0) / 900));
       const e = 1 - Math.pow(1 - p, 3); // easeOutCubic
       alvo.textContent = Math.round(e * concluidas);
-      if (p < 1) rafContagem = requestAnimationFrame(passo);
+      if (p < 1) rafContagem = requestAnimationFrame(aurora);
       else alvo.textContent = concluidas;
     };
-    rafContagem = requestAnimationFrame(passo);
+    rafContagem = requestAnimationFrame(aurora);
     cancelamentos.push(() => cancelAnimationFrame(rafContagem));
   }
 
@@ -2001,13 +2001,13 @@ async function magiaExtracao(texto, promessaPost, catalogos) {
       if (ajuda) {
         const t0 = performance.now() + campos.length * 160;
         let raf = null;
-        const passo = (agora) => {
+        const aurora = (agora) => {
           if (!ajuda.isConnected || st.pulado) { ajuda.textContent = ex.pediram_ajuda; return; }
           const p = Math.min(1, Math.max(0, (agora - t0) / 500));
           ajuda.textContent = Math.round((1 - Math.pow(1 - p, 3)) * ex.pediram_ajuda);
-          if (p < 1) raf = requestAnimationFrame(passo);
+          if (p < 1) raf = requestAnimationFrame(aurora);
         };
-        raf = requestAnimationFrame(passo);
+        raf = requestAnimationFrame(aurora);
         st.cancels.push(() => cancelAnimationFrame(raf));
       }
       await dorme(400 + campos.length * 160 + 500);
@@ -2982,7 +2982,7 @@ function pintarTroca(t, i) {
       ${bloco('Alternativas', (r.alternativas || []).map(a =>
         `<div style="margin:0 0 8px"><b>→ ${esc(a.acao)}</b><p class="sub" style="margin:2px 0 0">limites: ${esc(a.limites)}</p></div>`).join(''))}
       ${bloco('Contraponto', `<p style="margin:0">${esc(r.contraponto || '')}</p>`)}
-      ${bloco('Próximo passo seguro', `<p style="margin:0">${esc(r.proximo_passo || '')}</p>`)}
+      ${bloco('Próximo aurora seguro', `<p style="margin:0">${esc(r.proximo_passo || '')}</p>`)}
       ${r.escalonamento ? `<div style="margin-top:12px;border-left:4px solid var(--red,#b3402a);padding-left:10px"><b>Escalonamento humano</b><p class="sub" style="margin:2px 0 0">${esc(r.escalonamento)}</p></div>` : ''}
       ${bloco('Fontes do corpus aprovado', r.sem_fonte_no_corpus
         ? '<p class="sub" style="margin:0">Nenhum trecho do corpus sustentou esta resposta — leia como opinião do modelo, não como material documentado.</p>'
@@ -3047,14 +3047,14 @@ function limparEstadoLocal() {
   copiloto.sessao = null; copiloto.trocas = []; copiloto.rascunho = '';
   sroi.resultado = null; sroi.explicacao = null;
   sroi.n = sroi.inv = sroi.anos = sroi.proxy_ids = undefined;
-  passo.sessao = null; passo.trocas = []; passo.rascunho = '';
-  // A voz do Passo é opt-in POR PESSOA, não do aparelho: quem entra depois
+  aurora.sessao = null; aurora.trocas = []; aurora.rascunho = '';
+  // A voz da Aurora é opt-in POR PESSOA, não do aparelho: quem entra depois
   // não herda o som ligado por quem saiu. O painel também não: ele é o estado
   // do dia de UMA pessoa.
-  passo.som = false;
-  passo.painel = null; passo.resumo = null; passo.badge = false; passo.badgeRota = null;
-  localStorage.removeItem('percurso_passo_som');
-  document.querySelector('.passo-ponto')?.remove();
+  aurora.som = false;
+  aurora.painel = null; aurora.resumo = null; aurora.badge = false; aurora.badgeRota = null;
+  localStorage.removeItem('percurso_aurora_som');
+  document.querySelector('.aurora-ponto')?.remove();
 }
 
 document.addEventListener('click', comErro(async (ev) => {
@@ -3210,106 +3210,106 @@ function modalEncaminhamento(trechos) {
 }
 
 // ======================================================================
-// PASSO — assistente-parceiro que flutua em todas as telas
+// AURORA — assistente-parceiro que flutua em todas as telas
 // ======================================================================
 // A persona e TODOS os limites moram no servidor (src/assistente.js): aqui é
 // só a concha — botão flutuante, painel, fio de conversa, chips da tela, voz
 // de entrada (o MESMO blocoDitado de sempre) e voz de saída (speechSynthesis,
 // desligada por padrão, nunca por cima do microfone aberto). A ação que o
-// Passo sugere é uma OFERTA: vira botão "Ir para…", e é a pessoa quem toca.
-const passo = {
+// Aurora sugere é uma OFERTA: vira botão "Ir para…", e é a pessoa quem toca.
+const aurora = {
   sessao: null, trocas: [], rascunho: '',
-  som: localStorage.getItem('percurso_passo_som') === '1',
+  som: localStorage.getItem('percurso_aurora_som') === '1',
   ocupado: false, ctl: null, vozTts: null, ttsDestravado: false, falaGen: 0,
   bolhaNestaAbertura: false,   // balão de saudação: uma vez por abertura do app
   painel: null, badge: false, badgeRota: null,
 };
 
-function vozDoPasso() {
-  if (passo.vozTts) return passo.vozTts;
+function vozDoAurora() {
+  if (aurora.vozTts) return aurora.vozTts;
   const vozes = speechSynthesis.getVoices();
-  passo.vozTts = vozes.find(v => /pt[-_]BR/i.test(v.lang) && v.localService)
+  aurora.vozTts = vozes.find(v => /pt[-_]BR/i.test(v.lang) && v.localService)
               || vozes.find(v => /pt[-_]BR/i.test(v.lang))
               || vozes.find(v => /^pt/i.test(v.lang)) || null;
-  return passo.vozTts;
+  return aurora.vozTts;
 }
 if ('speechSynthesis' in window) {
-  speechSynthesis.addEventListener?.('voiceschanged', () => { passo.vozTts = null; });
+  speechSynthesis.addEventListener?.('voiceschanged', () => { aurora.vozTts = null; });
 }
 
 function cancelarFala() {
-  passo.falaGen++;
+  aurora.falaGen++;
   try { window.speechSynthesis?.cancel(); } catch {}
 }
 
 // iOS só solta a síntese depois de um speak() DENTRO de um gesto — destravar
 // no toque (ligar o som, enviar, chip) libera a fala que chega assíncrona.
 function destravarTts() {
-  if (passo.ttsDestravado || !('speechSynthesis' in window)) return;
+  if (aurora.ttsDestravado || !('speechSynthesis' in window)) return;
   try {
     const u = new SpeechSynthesisUtterance(' ');
     u.volume = 0;
     speechSynthesis.speak(u);
-    passo.ttsDestravado = true;
+    aurora.ttsDestravado = true;
   } catch {}
 }
 
 function falar(texto) {
-  if (!passo.som || !texto || !('speechSynthesis' in window)) return;
+  if (!aurora.som || !texto || !('speechSynthesis' in window)) return;
   // Nunca por cima de microfone aberto (eco): nem o ditado compartilhado,
   // nem a gravação de 40s da folha (#/voz), que tem reconhecimento próprio.
   if (ditadoAtivo || ctx.voz?.gravando) return;
   cancelarFala();
-  const gen = passo.falaGen;
+  const gen = aurora.falaGen;
   const u = new SpeechSynthesisUtterance(texto);
   u.lang = 'pt-BR';
   u.rate = 0.97;
-  const voz = vozDoPasso();
+  const voz = vozDoAurora();
   if (voz) u.voice = voz;
   // Respiro pós-cancel (iOS engasga com speak colado no cancel). Se nesse
   // meio tempo a pessoa navegou, ligou o mic ou pediu outra fala, não fala.
   setTimeout(() => {
-    if (gen !== passo.falaGen || ditadoAtivo || ctx.voz?.gravando || document.hidden) return;
+    if (gen !== aurora.falaGen || ditadoAtivo || ctx.voz?.gravando || document.hidden) return;
     try { speechSynthesis.speak(u); } catch {}
   }, 120);
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) cancelarFala(); });
 
-function pintarPassoFab(visivel) {
-  let fab = document.getElementById('passo-fab');
-  if (!visivel) { fab?.remove(); document.getElementById('passo-bolha')?.remove(); return; }
+function pintarAuroraFab(visivel) {
+  let fab = document.getElementById('aurora-fab');
+  if (!visivel) { fab?.remove(); document.getElementById('aurora-bolha')?.remove(); return; }
   // O FAB atravessa as rotas, mas o PONTO é por tela: sem esta linha antes do
   // early return, o badge era buscado uma única vez na vida da aba.
   if (fab) { buscarBadge(); return; }
   fab = document.createElement('button');
-  fab.id = 'passo-fab';
-  fab.className = 'passo-fab';
+  fab.id = 'aurora-fab';
+  fab.className = 'aurora-fab';
   fab.type = 'button';
-  fab.dataset.acao = 'passo-abrir';
-  fab.setAttribute('aria-label', 'Abrir o Passo, guia do Percurso');
+  fab.dataset.acao = 'aurora-abrir';
+  fab.setAttribute('aria-label', 'Abrir a Aurora, guia do Percurso');
   fab.innerHTML = '<span aria-hidden="true">❋</span>';
   document.body.appendChild(fab);
   // O balão aparece UMA vez por abertura do app (flag em memória — reabrir a
-  // página traz o Passo se apresentando de novo) e some sozinho. Na primeira
+  // página traz a Aurora se apresentando de novo) e some sozinho. Na primeira
   // vez de todas, o texto é a apresentação completa; nas voltas, uma saudação
   // curta pelo horário — o mesmo tom do "Bom dia, Maria" da tela Hoje.
-  if (!passo.bolhaNestaAbertura) {
-    passo.bolhaNestaAbertura = true;
-    const primeira = !localStorage.getItem('percurso_passo_apresentado');
-    if (primeira) localStorage.setItem('percurso_passo_apresentado', '1');
-    // A apresentação é a única vez em que o Passo diz o que ELE é. O badge
+  if (!aurora.bolhaNestaAbertura) {
+    aurora.bolhaNestaAbertura = true;
+    const primeira = !localStorage.getItem('percurso_aurora_apresentado');
+    if (primeira) localStorage.setItem('percurso_aurora_apresentado', '1');
+    // A apresentação é a única vez em que a Aurora diz o que ELE é. O badge
     // chegava ~3 ms depois e a sobrescrevia — a apresentação era gasta sem ter
     // sido lida, e o flag já estava consumido.
-    passo.balaoDeApresentacao = primeira;
+    aurora.balaoDeApresentacao = primeira;
     const h = new Date().getHours();
     const saudacao = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
     const b = document.createElement('div');
-    b.id = 'passo-bolha';
-    b.className = 'passo-bolha';
-    b.dataset.acao = 'passo-abrir';
+    b.id = 'aurora-bolha';
+    b.className = 'aurora-bolha';
+    b.dataset.acao = 'aurora-abrir';
     b.textContent = primeira
-      ? 'Oi! Eu sou o Passo — toque aqui quando tiver uma dúvida sobre o app.'
-      : `${saudacao}! Eu sou o Passo — qualquer dúvida no caminho, toque aqui.`;
+      ? 'Oi! Eu sou a Aurora — toque aqui quando tiver uma dúvida sobre o app.'
+      : `${saudacao}! Eu sou a Aurora — qualquer dúvida no caminho, toque aqui.`;
     document.body.appendChild(b);
     setTimeout(() => b.remove(), 12000);
   }
@@ -3322,109 +3322,109 @@ function pintarPassoFab(visivel) {
 // chamada foi feita), não quando a pessoa clica.
 async function buscarBadge() {
   const rota = location.hash || '#/hoje';
-  if (!sessao || passo.badgeRota === rota) return;
-  passo.badgeRota = rota;
+  if (!sessao || aurora.badgeRota === rota) return;
+  aurora.badgeRota = rota;
   try {
-    const p = await api(`/api/passo/painel?tela=${encodeURIComponent(rota)}`, { timeoutMs: 8000 });
-    if (passo.badgeRota !== rota) return;          // navegou no meio: descarta
-    passo.badge = !!p.badge;
-    passo.painel = p;
+    const p = await api(`/api/aurora/painel?tela=${encodeURIComponent(rota)}`, { timeoutMs: 8000 });
+    if (aurora.badgeRota !== rota) return;          // navegou no meio: descarta
+    aurora.badge = !!p.badge;
+    aurora.painel = p;
     pintarPonto();
     // Quando há algo relevante, o balão de saudação carrega a sugestão do dia
     // em vez da frase genérica — é a diferença entre "oi" e "olha isto aqui".
-    const b = document.getElementById('passo-bolha');
-    if (b && p.badge && p.sugestoes?.[0] && !passo.balaoDeApresentacao)
+    const b = document.getElementById('aurora-bolha');
+    if (b && p.badge && p.sugestoes?.[0] && !aurora.balaoDeApresentacao)
       b.textContent = `${p.sugestoes[0].rotulo} — toque para ver.`;
   } catch { /* badge é enfeite: falha de rede não pode virar erro na tela */ }
 }
 
 function pintarPonto() {
-  const fab = document.getElementById('passo-fab');
+  const fab = document.getElementById('aurora-fab');
   if (!fab) return;
-  const tem = fab.querySelector('.passo-ponto');
-  if (passo.badge && !tem) {
+  const tem = fab.querySelector('.aurora-ponto');
+  if (aurora.badge && !tem) {
     const d = document.createElement('i');
-    d.className = 'passo-ponto';
+    d.className = 'aurora-ponto';
     d.setAttribute('aria-hidden', 'true');
     fab.appendChild(d);
-    fab.setAttribute('aria-label', 'Abrir o Passo — há algo que vale a pena ver');
-  } else if (!passo.badge && tem) {
+    fab.setAttribute('aria-label', 'Abrir a Aurora — há algo que vale a pena ver');
+  } else if (!aurora.badge && tem) {
     tem.remove();
-    fab.setAttribute('aria-label', 'Abrir o Passo, guia do Percurso');
+    fab.setAttribute('aria-label', 'Abrir a Aurora, guia do Percurso');
   }
 }
 
-function fecharPasso({ foco = true } = {}) {
-  const veu = document.querySelector('.passo-veu');
+function fecharAurora({ foco = true } = {}) {
+  const veu = document.querySelector('.aurora-veu');
   if (!veu) return;
   pararDitado();
   cancelarFala();
-  const campo = document.getElementById('passo-texto');
-  if (campo) passo.rascunho = campo.value;
+  const campo = document.getElementById('aurora-texto');
+  if (campo) aurora.rascunho = campo.value;
   veu.remove();
-  if (foco) document.getElementById('passo-fab')?.focus();
+  if (foco) document.getElementById('aurora-fab')?.focus();
 }
 
-async function abrirPasso() {
-  if (document.querySelector('.passo-veu')) return;
-  document.getElementById('passo-bolha')?.remove();
+async function abrirAurora() {
+  if (document.querySelector('.aurora-veu')) return;
+  document.getElementById('aurora-bolha')?.remove();
   // O painel é da TELA: sem zerar aqui, o resumo e as sugestões da tela
-  // anterior ficavam na gaveta e o Passo afirmava o estado de ontem como se
+  // anterior ficavam na gaveta e a Aurora afirmava o estado de ontem como se
   // fosse o de hoje quando a busca falhasse.
-  passo.painel = null; passo.resumo = null;
-  const dit = blocoDitado('passo-texto', 'passo-ditado-estado');
+  aurora.painel = null; aurora.resumo = null;
+  const dit = blocoDitado('aurora-texto', 'aurora-ditado-estado');
   const veu = document.createElement('div');
-  veu.className = 'veu passo-veu';
+  veu.className = 'veu aurora-veu';
   veu.innerHTML = `
-    <div class="passo-sheet" role="dialog" aria-modal="true" aria-labelledby="passo-titulo">
-      <div class="passo-cabeca">
+    <div class="aurora-sheet" role="dialog" aria-modal="true" aria-labelledby="aurora-titulo">
+      <div class="aurora-cabeca">
         <div>
-          <h2 id="passo-titulo">Passo</h2>
-          <p class="sub" id="passo-sub">seu parceiro no Percurso</p>
+          <h2 id="aurora-titulo">Aurora</h2>
+          <p class="sub" id="aurora-sub">seu parceiro no Percurso</p>
         </div>
         <div class="linha" style="gap:8px;flex-wrap:nowrap">
-          <button type="button" class="passo-som" data-acao="passo-som" aria-pressed="${passo.som}"
-                  aria-label="${passo.som ? 'Desligar a voz do Passo' : 'Ligar a voz do Passo'}">voz</button>
-          <button type="button" class="passo-fechar" data-acao="passo-fechar" aria-label="Fechar o Passo">×</button>
+          <button type="button" class="aurora-som" data-acao="aurora-som" aria-pressed="${aurora.som}"
+                  aria-label="${aurora.som ? 'Desligar a voz da Aurora' : 'Ligar a voz da Aurora'}">voz</button>
+          <button type="button" class="aurora-fechar" data-acao="aurora-fechar" aria-label="Fechar a Aurora">×</button>
         </div>
       </div>
-      <div class="passo-fio" id="passo-fio"></div>
-      <p class="oculto-acessivel" id="passo-vivo" aria-live="polite"></p>
-      <div class="passo-chips" id="passo-chips"></div>
-      <div class="passo-entrada">
-        <textarea id="passo-texto" rows="1" maxlength="500" placeholder="Pergunte aqui…"
-                  aria-label="Sua pergunta para o Passo"></textarea>
+      <div class="aurora-fio" id="aurora-fio"></div>
+      <p class="oculto-acessivel" id="aurora-vivo" aria-live="polite"></p>
+      <div class="aurora-chips" id="aurora-chips"></div>
+      <div class="aurora-entrada">
+        <textarea id="aurora-texto" rows="1" maxlength="500" placeholder="Pergunte aqui…"
+                  aria-label="Sua pergunta para a Aurora"></textarea>
         ${dit.botao}
-        <button type="button" class="btn passo-enviar" data-acao="passo-enviar" ${passo.ocupado ? 'disabled' : ''}>Enviar</button>
+        <button type="button" class="btn aurora-enviar" data-acao="aurora-enviar" ${aurora.ocupado ? 'disabled' : ''}>Enviar</button>
       </div>
       ${dit.estado}
     </div>`;
   document.body.appendChild(veu);
   prenderFoco(veu);
-  veu.addEventListener('click', (e) => { if (e.target === veu) fecharPasso(); });
-  if (!passo.trocas.length) {
-    passo.trocas.push({ quem: 'passo', semente: true, resposta:
-      'Oi! Eu sou o Passo, seu parceiro aqui no Percurso. Eu conheço as telas e as tarefas do app, e sei contar quantas coisas estão em aberto — nunca quem. Não abro a ficha de ninguém. Pergunte, por exemplo: "como faço a chamada?"' });
+  veu.addEventListener('click', (e) => { if (e.target === veu) fecharAurora(); });
+  if (!aurora.trocas.length) {
+    aurora.trocas.push({ quem: 'aurora', semente: true, resposta:
+      'Oi! Eu sou a Aurora, seu parceiro aqui no Percurso. Eu conheço as telas e as tarefas do app, e sei contar quantas coisas estão em aberto — nunca quem. Não abro a ficha de ninguém. Pergunte, por exemplo: "como faço a chamada?"' });
   }
-  pintarPassoFio();
-  const campo = document.getElementById('passo-texto');
-  campo.value = passo.rascunho || '';
+  pintarAuroraFio();
+  const campo = document.getElementById('aurora-texto');
+  campo.value = aurora.rascunho || '';
   campo.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      document.querySelector('[data-acao="passo-enviar"]')?.click();
+      document.querySelector('[data-acao="aurora-enviar"]')?.click();
     }
   });
   campo.focus();
   try {
-    const p = await api(`/api/passo/painel?tela=${encodeURIComponent(location.hash || '#/hoje')}`);
-    passo.painel = p;
-    passo.resumo = p.resumo || null;
-    pintarPassoSugestoes();
+    const p = await api(`/api/aurora/painel?tela=${encodeURIComponent(location.hash || '#/hoje')}`);
+    aurora.painel = p;
+    aurora.resumo = p.resumo || null;
+    pintarAuroraSugestoes();
     // Com resumo do dia, a saudação-semente sai: as duas abrem o fio e dizer a
     // mesma coisa duas vezes é o defeito que o painel existe para não ter.
-    if (p.resumo && passo.trocas.length === 1 && passo.trocas[0].semente) passo.trocas = [];
-    pintarPassoFio();
+    if (p.resumo && aurora.trocas.length === 1 && aurora.trocas[0].semente) aurora.trocas = [];
+    pintarAuroraFio();
   } catch { /* sem painel não é erro: o campo continua lá */ }
   // O refinamento pelo Qwen roda DEPOIS de a tela estar pintada e nunca é
   // esperado: se chegar, troca rótulos no lugar; se falhar, sumir ou demorar,
@@ -3432,8 +3432,8 @@ async function abrirPasso() {
   // um painel que já mudou de tela.
   refinarPainel();
   try {
-    const m = await api('/api/passo/memoria');
-    passo.memoria = m;
+    const m = await api('/api/aurora/memoria');
+    aurora.memoria = m;
     // O convite acontece UMA vez, em primeiro plano, e a resposta padrão é
     // "agora não". A única coisa deste produto que grava algo sobre a pessoa
     // não pode nascer ligada com o aviso enterrado numa seção que ela talvez
@@ -3443,13 +3443,13 @@ async function abrirPasso() {
   } catch {}
 }
 
-// Telemetria do Passo: SÓ o que a pessoa faz com ele. `keepalive` e falha
+// Telemetria da Aurora: SÓ o que a pessoa faz com ele. `keepalive` e falha
 // engolida — isto nunca pode virar toast nem travar a tela. No servidor é
 // no-op silencioso enquanto o aprendizado está desligado (o padrão).
 function marcarUso(id, evento) {
   if (!id || id.startsWith('guia:')) return;
   try {
-    fetch('/api/passo/uso', {
+    fetch('/api/aurora/uso', {
       method: 'POST', keepalive: true,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, evento, tela: location.hash || '#/hoje' }),
@@ -3458,28 +3458,28 @@ function marcarUso(id, evento) {
 }
 
 /** Os chips deixam de ser lista fixa e passam a ser o painel do estado real. */
-function pintarPassoSugestoes() {
-  const el = document.getElementById('passo-chips');
-  const p = passo.painel;
+function pintarAuroraSugestoes() {
+  const el = document.getElementById('aurora-chips');
+  const p = aurora.painel;
   if (!el || !p) return;
   for (const s of p.sugestoes || []) marcarUso(s.id, 'mostrada');
   el.innerHTML = (p.sugestoes || []).map(s => `
-    <span class="passo-sug" data-id="${esc(s.id)}">
-      <button type="button" class="passo-chip" data-acao="passo-sug" data-tipo="${esc(s.tipo)}"
+    <span class="aurora-sug" data-id="${esc(s.id)}">
+      <button type="button" class="aurora-chip" data-acao="aurora-sug" data-tipo="${esc(s.tipo)}"
         >${esc(s.rotulo)}</button>${s.silenciavel && !s.id.startsWith('guia:')
-      ? `<button type="button" class="passo-adiar" data-acao="passo-adiar"
+      ? `<button type="button" class="aurora-adiar" data-acao="aurora-adiar"
            aria-label="Hoje não: ${esc(s.rotulo)}">×</button>` : ''}
     </span>`).join('');
 }
 
 async function refinarPainel() {
-  const p = passo.painel;
+  const p = aurora.painel;
   if (!p || !p.sugestoes?.length) return;
   const hash = p.hash;
   try {
-    const r = await post('/api/passo/refinar', { tela: location.hash || '#/hoje' }, { timeoutMs: 9000 });
-    if (!r.refinado || passo.painel?.hash !== hash) return;   // painel trocou: descarta
-    const porId = new Map(passo.painel.sugestoes.map(s => [s.id, s]));
+    const r = await post('/api/aurora/refinar', { tela: location.hash || '#/hoje' }, { timeoutMs: 9000 });
+    if (!r.refinado || aurora.painel?.hash !== hash) return;   // painel trocou: descarta
+    const porId = new Map(aurora.painel.sugestoes.map(s => [s.id, s]));
     // `rotuloBase` preservado: o rótulo do modelo é superfície do CHIP e nada
     // mais. Sem isto, ele era empurrado no fio como `quem: 'voce'` — a pessoa
     // via, atribuída a si, uma frase que ela nunca escreveu ("O áudio tá
@@ -3489,30 +3489,30 @@ async function refinarPainel() {
       if (s) { s.rotuloBase ??= s.rotulo; s.rotulo = rotulo; }
     }
     const ordem = (r.ordem || []).map(id => porId.get(id)).filter(Boolean);
-    const resto = passo.painel.sugestoes.filter(s => !ordem.includes(s));
-    passo.painel.sugestoes = [...ordem, ...resto];
-    passo.painel.origem = 'modelo';
-    pintarPassoSugestoes();
+    const resto = aurora.painel.sugestoes.filter(s => !ordem.includes(s));
+    aurora.painel.sugestoes = [...ordem, ...resto];
+    aurora.painel.origem = 'modelo';
+    pintarAuroraSugestoes();
   } catch { /* refinamento é enfeite: falhar é gratuito e invisível */ }
 }
 
 function pintarConvite() {
-  const el = document.getElementById('passo-chips');
-  if (!el || document.getElementById('passo-convite')) return;
+  const el = document.getElementById('aurora-chips');
+  if (!el || document.getElementById('aurora-convite')) return;
   el.insertAdjacentHTML('beforebegin', `
-    <div class="passo-convite" id="passo-convite">
-      <p><b>Posso ficar mais útil?</b> Se você deixar, eu passo a reparar no que você toca
+    <div class="aurora-convite" id="aurora-convite">
+      <p><b>Posso ficar mais útil?</b> Se você deixar, eu aurora a reparar no que você toca
       aqui dentro para trazer primeiro o que costuma te servir. Eu conto só o que você faz
       COMIGO — nunca o que você faz no Percurso, nunca o texto das suas perguntas, nunca
       nome de criança, e nem a hora, só o dia.</p>
       <div class="linha" style="margin-top:10px">
-        <button type="button" class="btn pequeno" data-acao="passo-aprender" data-v="1">Pode reparar</button>
-        <button type="button" class="btn pequeno secundario" data-acao="passo-aprender" data-v="0">Agora não</button>
+        <button type="button" class="btn pequeno" data-acao="aurora-aprender" data-v="1">Pode reparar</button>
+        <button type="button" class="btn pequeno secundario" data-acao="aurora-aprender" data-v="0">Agora não</button>
       </div>
     </div>`);
 }
 
-const PASSO_TIPOS = [
+const AURORA_TIPOS = [
   ['acao', 'Atalhos de ação'],
   ['duvida', 'Dúvidas da tela'],
   ['aprimoramento', 'Pontos de melhoria'],
@@ -3521,156 +3521,156 @@ const PASSO_TIPOS = [
 
 /** "O que eu lembro de você" — leitura E controle, no mesmo lugar. */
 async function abrirMemoria({ recarregar = false } = {}) {
-  const m = (recarregar ? null : passo.memoria) || await api('/api/passo/memoria').catch(() => null);
+  const m = (recarregar ? null : aurora.memoria) || await api('/api/aurora/memoria').catch(() => null);
   if (!m) return;
-  passo.memoria = m;
-  document.getElementById('passo-memoria')?.remove();
+  aurora.memoria = m;
+  document.getElementById('aurora-memoria')?.remove();
   const tocadas = m.linhas.filter(l => l.familia === 'sugestao' && l.evento === 'aceita').slice(0, 4);
   const tipos = m.linhas.filter(l => l.familia === 'tipo' && l.evento === 'aceita');
-  const rotuloTipo = (k) => PASSO_TIPOS.find(t => t[0] === k)?.[1] ?? k;
+  const rotuloTipo = (k) => AURORA_TIPOS.find(t => t[0] === k)?.[1] ?? k;
 
   const html = `
-    <div class="passo-memoria" id="passo-memoria">
+    <div class="aurora-memoria" id="aurora-memoria">
       <div class="linha" style="justify-content:space-between;align-items:flex-start">
         <b>O que eu lembro de você</b>
-        <button type="button" class="passo-fechar" data-acao="passo-fechar-memoria" aria-label="Fechar">×</button>
+        <button type="button" class="aurora-fechar" data-acao="aurora-fechar-memoria" aria-label="Fechar">×</button>
       </div>
 
-      <div class="passo-opcao">
+      <div class="aurora-opcao">
         <span>Aprender com o meu uso</span>
-        <button type="button" class="p ${m.aprender ? 'on' : 'off'}" data-acao="passo-aprender"
+        <button type="button" class="p ${m.aprender ? 'on' : 'off'}" data-acao="aurora-aprender"
           data-v="${m.aprender ? 0 : 1}" aria-pressed="${!!m.aprender}">${m.aprender ? 'ligado' : 'desligado'}</button>
       </div>
-      <div class="passo-opcao">
+      <div class="aurora-opcao">
         <span>Abrir com o resumo do dia</span>
-        <button type="button" class="p ${m.resumo_do_dia ? 'on' : 'off'}" data-acao="passo-resumo-dia"
+        <button type="button" class="p ${m.resumo_do_dia ? 'on' : 'off'}" data-acao="aurora-resumo-dia"
           data-v="${m.resumo_do_dia ? 0 : 1}" aria-pressed="${!!m.resumo_do_dia}">${m.resumo_do_dia ? 'ligado' : 'desligado'}</button>
       </div>
 
       <p class="lbl" style="margin-top:12px">Eu gosto mais de…</p>
-      <div class="passo-chips" style="padding:6px 0">
-        ${PASSO_TIPOS.map(([k, rot]) => `<button type="button" class="passo-chip ${m.prefere_tipo === k ? 'on' : ''}"
-            data-acao="passo-prefere" data-v="${k}" aria-pressed="${m.prefere_tipo === k}">${esc(rot)}</button>`).join('')}
-        <button type="button" class="passo-chip ${!m.prefere_tipo ? 'on' : ''}" data-acao="passo-prefere"
+      <div class="aurora-chips" style="padding:6px 0">
+        ${AURORA_TIPOS.map(([k, rot]) => `<button type="button" class="aurora-chip ${m.prefere_tipo === k ? 'on' : ''}"
+            data-acao="aurora-prefere" data-v="${k}" aria-pressed="${m.prefere_tipo === k}">${esc(rot)}</button>`).join('')}
+        <button type="button" class="aurora-chip ${!m.prefere_tipo ? 'on' : ''}" data-acao="aurora-prefere"
           aria-pressed="${!m.prefere_tipo}">Sem preferência</button>
       </div>
-      <p class="passo-porque">Isto vale já na próxima vez que você me abrir, e não depende de eu ter aprendido nada.</p>
+      <p class="aurora-porque">Isto vale já na próxima vez que você me abrir, e não depende de eu ter aprendido nada.</p>
 
       ${m.aprender ? `
         <p class="lbl" style="margin-top:12px">O que eu já reparei</p>
-        <p class="passo-porque">
+        <p class="aurora-porque">
           ${tocadas.length ? `Você tocou: ${tocadas.map(l => `${esc(l.chave)} (${l.n}×)`).join(' · ')}.` : 'Ainda não sei nada do seu uso.'}
           ${tipos.length ? ` Tipos que você mais usa: ${tipos.map(l => `${esc(rotuloTipo(l.chave))} ${l.n}×`).join(' · ')}.` : ''}
           ${m.silenciadas.length ? ` ${m.silenciadas.length} silenciada(s) — a mais próxima volta em ${dataBR(m.silenciadas[0].ate)}.` : ''}
         </p>` : ''}
 
-      <p class="passo-porque" style="margin-top:10px">${esc(m.politica)}</p>
+      <p class="aurora-porque" style="margin-top:10px">${esc(m.politica)}</p>
       <div class="linha" style="margin-top:10px">
-        <button type="button" class="btn pequeno fantasma" data-acao="passo-esquecer">Esquecer tudo o que eu aprendi</button>
+        <button type="button" class="btn pequeno fantasma" data-acao="aurora-esquecer">Esquecer tudo o que eu aprendi</button>
       </div>
     </div>`;
-  document.getElementById('passo-chips')?.insertAdjacentHTML('beforebegin', html);
-  document.getElementById('passo-memoria')?.scrollIntoView({ block: 'nearest' });
+  document.getElementById('aurora-chips')?.insertAdjacentHTML('beforebegin', html);
+  document.getElementById('aurora-memoria')?.scrollIntoView({ block: 'nearest' });
 }
 
 function pintarRodapeMemoria() {
-  const sheet = document.querySelector('.passo-sheet');
-  const m = passo.memoria;
-  if (!sheet || !m?.ligada || document.getElementById('passo-memoria-link')) return;
+  const sheet = document.querySelector('.aurora-sheet');
+  const m = aurora.memoria;
+  if (!sheet || !m?.ligada || document.getElementById('aurora-memoria-link')) return;
   sheet.insertAdjacentHTML('beforeend',
-    `<button type="button" class="passo-memlink" id="passo-memoria-link" data-acao="passo-memoria"
+    `<button type="button" class="aurora-memlink" id="aurora-memoria-link" data-acao="aurora-memoria"
       >o que eu lembro de você${m.aprender ? '' : ' · não estou aprendendo'}</button>`);
 }
 
-function pintarPassoFio() {
-  const fio = document.getElementById('passo-fio');
+function pintarAuroraFio() {
+  const fio = document.getElementById('aurora-fio');
   if (!fio) return;
   // O resumo do dia abre o fio e sobrevive à repintura — ele é o estado da
   // pessoa hoje, não uma mensagem da conversa.
-  fio.innerHTML = (passo.resumo ? `<p class="passo-resumo">${esc(passo.resumo)}</p>` : '')
-    + passo.trocas.map(t => {
-    if (t.quem === 'voce') return `<div class="passo-msg voce">${esc(t.texto)}</div>`;
-    if (t.pensando) return `<div class="passo-msg passo">✷ pensando…
-        <button type="button" class="btn pequeno fantasma" data-acao="passo-cancelar" style="margin-left:8px">Cancelar</button></div>`;
+  fio.innerHTML = (aurora.resumo ? `<p class="aurora-resumo">${esc(aurora.resumo)}</p>` : '')
+    + aurora.trocas.map(t => {
+    if (t.quem === 'voce') return `<div class="aurora-msg voce">${esc(t.texto)}</div>`;
+    if (t.pensando) return `<div class="aurora-msg aurora">✷ pensando…
+        <button type="button" class="btn pequeno fantasma" data-acao="aurora-cancelar" style="margin-left:8px">Cancelar</button></div>`;
     // A oferta some quando a pessoa JÁ está na tela oferecida — "Ir para Hoje"
     // dentro do Hoje seria botão morto.
     const oferta = t.acao && !(location.hash || '#/hoje').startsWith(t.acao.hash);
-    return `<div class="passo-msg passo">${esc(t.resposta)}${(t.trechos || []).map(x =>
+    return `<div class="aurora-msg aurora">${esc(t.resposta)}${(t.trechos || []).map(x =>
         `<div class="trecho"><b>${esc(x.categoria)}</b>${esc(x.trecho)}</div>`).join('')}${
       // "apareceu porque …": a sugestão diz de onde veio. Sem isso ela é
       // palpite; com isso é leitura de estado, e a pessoa pode discordar.
-      t.porque ? `<p class="passo-porque">apareceu porque ${esc(t.porque)}</p>` : ''}${
-      t.fonte ? `<p class="passo-porque">número vindo de ${esc(t.fonte)} — nenhum modelo participou</p>` : ''}${oferta
-      ? `<div style="margin-top:10px"><button type="button" class="btn secundario pequeno" data-acao="passo-ir"
+      t.porque ? `<p class="aurora-porque">apareceu porque ${esc(t.porque)}</p>` : ''}${
+      t.fonte ? `<p class="aurora-porque">número vindo de ${esc(t.fonte)} — nenhum modelo participou</p>` : ''}${oferta
+      ? `<div style="margin-top:10px"><button type="button" class="btn secundario pequeno" data-acao="aurora-ir"
            data-sug="${esc(t.sugestao || '')}" data-href="${esc(t.acao.hash)}">Ir para ${esc(t.acao.rotulo)}</button></div>` : ''}</div>`;
   }).join('');
   fio.scrollTop = fio.scrollHeight;
-  // aria-live num nó próprio com SÓ a última fala do Passo: reescrever o fio
+  // aria-live num nó próprio com SÓ a última fala da Aurora: reescrever o fio
   // inteiro dentro de uma região viva fazia o leitor de tela reanunciar a
   // conversa toda a cada troca.
-  const vivo = document.getElementById('passo-vivo');
+  const vivo = document.getElementById('aurora-vivo');
   if (vivo) {
-    const ultima = [...passo.trocas].reverse().find(t => t.quem === 'passo');
+    const ultima = [...aurora.trocas].reverse().find(t => t.quem === 'aurora');
     vivo.textContent = ultima ? (ultima.pensando ? 'Pensando…' : ultima.resposta) : '';
   }
 }
 
-async function passoEnviar(texto) {
+async function auroraEnviar(texto) {
   const t = String(texto || '').trim();
-  if (!t || passo.ocupado) return;
-  passo.ocupado = true;
-  passo.rascunho = '';
-  passo.trocas.push({ quem: 'voce', texto: t });
-  const pensando = { quem: 'passo', pensando: true };
-  passo.trocas.push(pensando);
-  pintarPassoFio();
-  document.querySelector('.passo-enviar')?.setAttribute('disabled', '');
+  if (!t || aurora.ocupado) return;
+  aurora.ocupado = true;
+  aurora.rascunho = '';
+  aurora.trocas.push({ quem: 'voce', texto: t });
+  const pensando = { quem: 'aurora', pensando: true };
+  aurora.trocas.push(pensando);
+  pintarAuroraFio();
+  document.querySelector('.aurora-enviar')?.setAttribute('disabled', '');
   const ctl = new AbortController();
-  passo.ctl = ctl;
+  aurora.ctl = ctl;
   try {
     const r = await post('/api/assistente',
-      { message: t, session_id: passo.sessao, tela: location.hash || '#/hoje' },
+      { message: t, session_id: aurora.sessao, tela: location.hash || '#/hoje' },
       { timeoutMs: 75000, signal: ctl.signal });
-    passo.sessao = r.session_id;
+    aurora.sessao = r.session_id;
     // Perímetro (total ou parcial): os trechos retidos e o aviso do caminho
     // humano aparecem no fio — retenção nunca é silenciosa.
     if (r.aviso_perimetro) {
-      passo.trocas.splice(passo.trocas.indexOf(pensando), 0, { quem: 'passo', resposta: r.aviso_perimetro, trechos: r.trechos_excluidos || null });
+      aurora.trocas.splice(aurora.trocas.indexOf(pensando), 0, { quem: 'aurora', resposta: r.aviso_perimetro, trechos: r.trechos_excluidos || null });
     }
     Object.assign(pensando, { pensando: false, resposta: r.resposta, acao: r.acao || null, trechos: r.trechos || null });
     // Só fala com o painel aberto: resposta que chega depois de fechar não
     // pode virar uma voz saindo do nada no meio da sala.
-    if (r.fala && document.querySelector('.passo-veu')) falar(r.fala);
+    if (r.fala && document.querySelector('.aurora-veu')) falar(r.fala);
   } catch (e) {
-    passo.trocas.splice(passo.trocas.indexOf(pensando), 1);
+    aurora.trocas.splice(aurora.trocas.indexOf(pensando), 1);
     if (e.status === 401) {
       // Mesma convenção do app inteiro: sessão expirada leva ao #/entrar —
       // nunca vira bolha de erro em loop dentro do painel.
-      fecharPasso({ foco: false });
+      fecharAurora({ foco: false });
       sessao = null;
       location.hash = '#/entrar';
       return;
     }
     if (e.cancelado) {
       // Rascunho devolvido: cancelar não come a pergunta.
-      passo.rascunho = t;
-      const campo = document.getElementById('passo-texto');
+      aurora.rascunho = t;
+      const campo = document.getElementById('aurora-texto');
       if (campo && !campo.value.trim()) campo.value = t;
     } else if (e.rede) {
-      passo.trocas.push({ quem: 'passo', resposta:
+      aurora.trocas.push({ quem: 'aurora', resposta:
         'Estou sem conexão com o servidor agora — mas o Percurso segue: registro feito sem internet entra na fila e sobe sozinho quando a conexão voltar. Me chama de novo daqui a pouco?' });
     } else {
-      passo.trocas.push({ quem: 'passo', resposta: e.message });
+      aurora.trocas.push({ quem: 'aurora', resposta: e.message });
     }
   } finally {
-    passo.ocupado = false;
-    passo.ctl = null;
-    document.querySelector('.passo-enviar')?.removeAttribute('disabled');
-    pintarPassoFio();
+    aurora.ocupado = false;
+    aurora.ctl = null;
+    document.querySelector('.aurora-enviar')?.removeAttribute('disabled');
+    pintarAuroraFio();
     // A repintura destrói o botão Cancelar: se o foco caiu no body (fora do
     // focus-trap), ele volta para o campo de pergunta.
-    const veu = document.querySelector('.passo-veu');
-    if (veu && !veu.contains(document.activeElement)) document.getElementById('passo-texto')?.focus();
+    const veu = document.querySelector('.aurora-veu');
+    if (veu && !veu.contains(document.activeElement)) document.getElementById('aurora-texto')?.focus();
   }
 }
 
@@ -3679,76 +3679,76 @@ document.addEventListener('click', comErro(async (ev) => {
   if (!alvo) return;
   const a = alvo.dataset.acao;
 
-  if (a === 'passo-abrir') {
-    if (document.querySelector('.passo-veu')) fecharPasso();
-    else await abrirPasso();
+  if (a === 'aurora-abrir') {
+    if (document.querySelector('.aurora-veu')) fecharAurora();
+    else await abrirAurora();
     return;
   }
-  if (a === 'passo-fechar') { fecharPasso(); return; }
-  if (a === 'passo-som') {
-    passo.som = !passo.som;
-    localStorage.setItem('percurso_passo_som', passo.som ? '1' : '0');
-    alvo.setAttribute('aria-pressed', String(passo.som));
-    alvo.setAttribute('aria-label', passo.som ? 'Desligar a voz do Passo' : 'Ligar a voz do Passo');
-    if (passo.som) destravarTts(); else cancelarFala();
+  if (a === 'aurora-fechar') { fecharAurora(); return; }
+  if (a === 'aurora-som') {
+    aurora.som = !aurora.som;
+    localStorage.setItem('percurso_aurora_som', aurora.som ? '1' : '0');
+    alvo.setAttribute('aria-pressed', String(aurora.som));
+    alvo.setAttribute('aria-label', aurora.som ? 'Desligar a voz da Aurora' : 'Ligar a voz da Aurora');
+    if (aurora.som) destravarTts(); else cancelarFala();
     return;
   }
-  if (a === 'passo-enviar') {
+  if (a === 'aurora-enviar') {
     pararDitado();   // fala pendente já entrou no campo; mic desliga antes do envio
     destravarTts();
-    const campo = document.getElementById('passo-texto');
+    const campo = document.getElementById('aurora-texto');
     const v = campo?.value ?? '';
     if (campo) campo.value = '';
-    await passoEnviar(v);
+    await auroraEnviar(v);
     return;
   }
-  if (a === 'passo-chip') {
+  if (a === 'aurora-chip') {
     destravarTts();
-    await passoEnviar(alvo.textContent);
+    await auroraEnviar(alvo.textContent);
     return;
   }
   // Toque numa sugestão do painel. pergunta/dúvida viram conversa (o
   // comportamento de sempre); ação/aprimoramento abrem um CARD no fio com o
   // texto completo, o porquê e a oferta — dois toques até navegar, porque a
   // oferta continua sendo oferta.
-  if (a === 'passo-sug') {
+  if (a === 'aurora-sug') {
     destravarTts();
-    const id = alvo.closest('.passo-sug')?.dataset.id;
-    const s = (passo.painel?.sugestoes || []).find(x => x.id === id);
-    if (!s) { await passoEnviar(alvo.textContent); return; }
+    const id = alvo.closest('.aurora-sug')?.dataset.id;
+    const s = (aurora.painel?.sugestoes || []).find(x => x.id === id);
+    if (!s) { await auroraEnviar(alvo.textContent); return; }
     // TOCAR já é o sinal positivo. Sem isto, 'aceita' só existia no botão
-    // "Ir para", que pergunta e dúvida nunca têm: o Passo só conseguia
+    // "Ir para", que pergunta e dúvida nunca têm: a Aurora só conseguia
     // aprender a ESCONDER — penalizava por fadiga justamente o que a pessoa
     // mais usa, e nunca recompensava.
     marcarUso(s.id, 'aceita');
     if (s.resposta) {
       // Pergunta agregada: o número já veio do banco com o painel. Não há ida
       // ao servidor nem ao modelo — e nunca é falada.
-      passo.trocas.push({ quem: 'voce', texto: s.rotuloBase ?? s.rotulo });
-      passo.trocas.push({ quem: 'passo', resposta: s.resposta.texto, acao: s.acao, fonte: s.resposta.fonte });
-      pintarPassoFio();
+      aurora.trocas.push({ quem: 'voce', texto: s.rotuloBase ?? s.rotulo });
+      aurora.trocas.push({ quem: 'aurora', resposta: s.resposta.texto, acao: s.acao, fonte: s.resposta.fonte });
+      pintarAuroraFio();
       return;
     }
     if (s.tipo === 'pergunta' || s.tipo === 'duvida') {
       if (s.texto && s.texto !== s.rotulo) {
-        passo.trocas.push({ quem: 'voce', texto: s.rotuloBase ?? s.rotulo });
-        passo.trocas.push({ quem: 'passo', resposta: s.texto, acao: s.acao, porque: s.porque });
-        pintarPassoFio();
+        aurora.trocas.push({ quem: 'voce', texto: s.rotuloBase ?? s.rotulo });
+        aurora.trocas.push({ quem: 'aurora', resposta: s.texto, acao: s.acao, porque: s.porque });
+        pintarAuroraFio();
         return;
       }
-      await passoEnviar(s.rotuloBase ?? s.rotulo);
+      await auroraEnviar(s.rotuloBase ?? s.rotulo);
       return;
     }
-    passo.trocas.push({ quem: 'passo', resposta: s.texto, acao: s.acao, porque: s.porque, sugestao: s.id });
-    pintarPassoFio();
+    aurora.trocas.push({ quem: 'aurora', resposta: s.texto, acao: s.acao, porque: s.porque, sugestao: s.id });
+    pintarAuroraFio();
     return;
   }
-  if (a === 'passo-adiar') {
-    const span = alvo.closest('.passo-sug');
+  if (a === 'aurora-adiar') {
+    const span = alvo.closest('.aurora-sug');
     const id = span?.dataset.id;
-    const s = (passo.painel?.sugestoes || []).find(x => x.id === id);
+    const s = (aurora.painel?.sugestoes || []).find(x => x.id === id);
     span?.remove();
-    if (passo.painel) passo.painel.sugestoes = passo.painel.sugestoes.filter(x => x.id !== id);
+    if (aurora.painel) aurora.painel.sugestoes = aurora.painel.sugestoes.filter(x => x.id !== id);
     marcarUso(id, 'dispensada');
     // O produto não mente sobre o que o botão faz: item núcleo volta amanhã, e
     // a frase diz isso. Nunca existe "nunca mais me mostre".
@@ -3757,65 +3757,65 @@ document.addEventListener('click', comErro(async (ev) => {
       : 'Tudo bem — eu guardo essa por umas duas semanas.');
     return;
   }
-  if (a === 'passo-aprender') {
+  if (a === 'aurora-aprender') {
     const liga = alvo.dataset.v === '1';
-    document.getElementById('passo-convite')?.remove();
-    passo.memoria = await post('/api/passo/memoria', { aprender: liga, convidado: true })
-      .then(() => api('/api/passo/memoria')).catch(() => passo.memoria);
-    document.getElementById('passo-memoria-link')?.remove();
+    document.getElementById('aurora-convite')?.remove();
+    aurora.memoria = await post('/api/aurora/memoria', { aprender: liga, convidado: true })
+      .then(() => api('/api/aurora/memoria')).catch(() => aurora.memoria);
+    document.getElementById('aurora-memoria-link')?.remove();
     pintarRodapeMemoria();
-    if (document.getElementById('passo-memoria')) await abrirMemoria({ recarregar: true });
+    if (document.getElementById('aurora-memoria')) await abrirMemoria({ recarregar: true });
     toast(liga ? 'Combinado — vou reparar no que te serve.' : 'Tudo bem, sigo sem reparar em nada.');
     return;
   }
-  if (a === 'passo-memoria') { await abrirMemoria(); return; }
-  if (a === 'passo-fechar-memoria') { document.getElementById('passo-memoria')?.remove(); return; }
+  if (a === 'aurora-memoria') { await abrirMemoria(); return; }
+  if (a === 'aurora-fechar-memoria') { document.getElementById('aurora-memoria')?.remove(); return; }
   // Os dois controles que faltavam: o tipo que a pessoa prefere (a alavanca de
   // personalização que ela SENTE no primeiro dia, sem telemetria nenhuma) e o
   // resumo do dia. Antes existiam só no servidor, alcançáveis pela API.
-  if (a === 'passo-prefere') {
+  if (a === 'aurora-prefere') {
     const v = alvo.dataset.v || null;
-    passo.memoria = await post('/api/passo/memoria', { prefere_tipo: v })
-      .then(() => api('/api/passo/memoria')).catch(() => passo.memoria);
+    aurora.memoria = await post('/api/aurora/memoria', { prefere_tipo: v })
+      .then(() => api('/api/aurora/memoria')).catch(() => aurora.memoria);
     await abrirMemoria({ recarregar: true });
     toast(v ? 'Combinado — trago esse tipo primeiro quando couber.' : 'Sem preferência: eu ordeno pelo que for mais urgente.');
     return;
   }
-  if (a === 'passo-resumo-dia') {
+  if (a === 'aurora-resumo-dia') {
     const liga = alvo.dataset.v === '1';
-    passo.memoria = await post('/api/passo/memoria', { resumo_do_dia: liga })
-      .then(() => api('/api/passo/memoria')).catch(() => passo.memoria);
+    aurora.memoria = await post('/api/aurora/memoria', { resumo_do_dia: liga })
+      .then(() => api('/api/aurora/memoria')).catch(() => aurora.memoria);
     await abrirMemoria({ recarregar: true });
     toast(liga ? 'Volto a abrir com o resumo do dia.' : 'Não abro mais com o resumo.');
     return;
   }
-  if (a === 'passo-esquecer') {
-    const r = await api('/api/passo/memoria', { method: 'DELETE' });
-    passo.memoria = await api('/api/passo/memoria').catch(() => passo.memoria);
-    if (document.getElementById('passo-memoria')) await abrirMemoria({ recarregar: true });
+  if (a === 'aurora-esquecer') {
+    const r = await api('/api/aurora/memoria', { method: 'DELETE' });
+    aurora.memoria = await api('/api/aurora/memoria').catch(() => aurora.memoria);
+    if (document.getElementById('aurora-memoria')) await abrirMemoria({ recarregar: true });
     toast(r.aviso || 'Apaguei o que eu sabia do seu uso.', 'bom');
     return;
   }
-  if (a === 'passo-cancelar') { passo.ctl?.abort(); return; }
-  if (a === 'passo-ir') {
+  if (a === 'aurora-cancelar') { aurora.ctl?.abort(); return; }
+  if (a === 'aurora-ir') {
     // Defesa em profundidade (plano rev 2): o hash vem do servidor já filtrado
     // por papel, mas o clique revalida contra o mapa local antes de navegar.
     const destino = alvo.dataset.href;
-    const permitidas = PASSO_ROTAS_POR_PAPEL[sessao?.papel] ?? [];
+    const permitidas = AURORA_ROTAS_POR_PAPEL[sessao?.papel] ?? [];
     if (!permitidas.includes(destino)) return;
     marcarUso(alvo.dataset.sug, 'aceita');
-    fecharPasso({ foco: false });
+    fecharAurora({ foco: false });
     location.hash = destino;
     return;
   }
 }));
 
-const PASSO_ROTAS_POR_PAPEL = {
+const AURORA_ROTAS_POR_PAPEL = {
   educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/pauta', '#/ciclo', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
   profissional: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
   // '#/consulta' entrou em 03/09/2026: `exigeGestao` autoriza coordenação E
   // diretoria (src/api.js), e o painel dela já oferece o botão 'Perguntar à
-  // base'. Sem a rota aqui, uma sugestão do Passo para essa tela era engolida
+  // base'. Sem a rota aqui, uma sugestão da Aurora para essa tela era engolida
   // com um `return` mudo — sem navegação e sem aviso.
   coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/pessoas', '#/arquivo', '#/criancas', '#/alertas', '#/relato', '#/consulta', '#/copilot'],
   diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
@@ -3851,8 +3851,8 @@ document.addEventListener('click', comErro(async (ev) => {
   if (a === 'sair') {
     pararDitado();
     cancelarFala();
-    passo.ctl?.abort();
-    if (passo.sessao) { try { await api('/api/assistente/sessao', { method: 'DELETE', body: JSON.stringify({ session_id: passo.sessao }) }); } catch {} }
+    aurora.ctl?.abort();
+    if (aurora.sessao) { try { await api('/api/assistente/sessao', { method: 'DELETE', body: JSON.stringify({ session_id: aurora.sessao }) }); } catch {} }
     if (copiloto.sessao) { try { await api('/api/copilot/sessao', { method: 'DELETE', body: JSON.stringify({ session_id: copiloto.sessao }) }); } catch {} }
     await post('/api/sair');
     limparEstadoLocal();
@@ -3949,7 +3949,7 @@ document.addEventListener('click', comErro(async (ev) => {
     // a gravação de 40s da folha aberta, o ditado espera a pessoa decidir.
     if (ctx.voz?.gravando) { toast('A gravação do relato está aberta — pause-a antes de ditar em outro campo.'); return; }
     pararDitado();
-    cancelarFala();   // o Passo cala quando o microfone abre (anti-eco)
+    cancelarFala();   // a Aurora cala quando o microfone abre (anti-eco)
     iniciarDitado(alvo, campo, estadoEl);
     return;
   }
@@ -4410,7 +4410,7 @@ document.addEventListener('keydown', (ev) => {
   if (ev.key !== 'Escape') return;
   const veu = document.querySelector('.veu');
   if (veu) {
-    if (veu.classList.contains('passo-veu')) fecharPasso();
+    if (veu.classList.contains('aurora-veu')) fecharAurora();
     else veu.remove();
     return;
   }
@@ -4434,7 +4434,7 @@ window.addEventListener('hashchange', navegar);
   }
   if (!sessao && location.hash !== '#/entrar') location.hash = '#/entrar';
   // Reabertura sem hash: normaliza para a rota real — senão chips, "tela
-  // atual" do Passo e a checagem de oferta trabalham com '' a sessão inteira.
+  // atual" da Aurora e a checagem de oferta trabalham com '' a sessão inteira.
   else if (sessao && !location.hash) location.hash = '#/hoje';
   navegar();
   if (sessao) drenarFila();

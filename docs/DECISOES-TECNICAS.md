@@ -395,53 +395,53 @@ KeepAlive) — autonomia de operação para uma organização sem TI — e o
 
 ---
 
-### 26. Passo — assistente-parceiro que responde SÓ sobre o produto e fala menos do que mostra
+### 26. Aurora — assistente-parceiro que responde SÓ sobre o produto e fala menos do que mostra
 
 **Origem:** demanda de um assistente presente em toda a navegação, que tira dúvidas sobre o
 artefato, ajuda na chamada e nas tarefas, e fala — usando o mesmo Qwen local open source.
 
-O **Passo** (`src/assistente.js` + bloco do cliente em `public/app.js`) é um guia do produto,
+O **Aurora** (`src/assistente.js` + bloco do cliente em `public/app.js`) é um guia do produto,
 não um chat aberto. As decisões que o mantêm dentro da doutrina:
 
 - **Fonte única = GUIA versionado no código** (telas, tarefas, limites por papel). O modelo
   refina a linguagem por cima do guia; qualquer falha (fora do ar, timeout, fila cheia, saída
-  ruim) cai na resposta determinística do guia — o Passo **nunca responde 503**.
+  ruim) cai na resposta determinística do guia — a Aurora **nunca responde 503**.
 - **Mesmo funil de proteção do copilot, na mesma ordem**: `filtrarPerimetro` no texto original →
   recusas → pseudonimização com roster completo. Diretoria + nome de criança = recusa
   (decisão 16). Pergunta pedagógico-reflexiva não é dele: redireciona ao Refletir (copilot);
   pergunta fora do produto ganha o limite declarado ("eu só sei do Percurso"), sem empurrar
   para o copilot.
 - **A fala em voz alta é MAIS restrita que a tela** (`limparFala`): pseudônimo, nome real ou
-  fala longa → o Passo simplesmente não fala aquela resposta. Encaminhamento, recusa e
+  fala longa → a Aurora simplesmente não fala aquela resposta. Encaminhamento, recusa e
   redirecionamento nunca têm fala. O som é **desligado por padrão** (toggle "voz" por pessoa,
   em `localStorage`) — um aparelho numa sala com crianças não fala sozinho.
 - **Ação = OFERTA**: o modelo só escolhe um id do catálogo do papel (enum na gramática +
-  `validarAcao` no servidor); o cliente mostra um botão "Ir para…" — o Passo nunca navega
+  `validarAcao` no servidor); o cliente mostra um botão "Ir para…" — a Aurora nunca navega
   sozinho, coerente com "IA nunca grava, pessoa confirma".
 - **Sessão só em memória com TTL** (`src/sessoes.js`, factory compartilhada com o copilot),
   apagada no sair; pergunta e resposta nunca tocam o banco.
 - **Entrada por voz** reusa o `blocoDitado` (transcrição no aparelho, nada de áudio no
   servidor); a saída de voz usa `speechSynthesis` do navegador — zero dependência nova.
-- **Kill switch independente**: `AI_ASSISTENTE=0` desliga só o modelo do Passo (o copilot
-  continua); o Passo segue respondendo pelo guia. Herda o gate da PoC (decisão 19).
+- **Kill switch independente**: `AI_ASSISTENTE=0` desliga só o modelo da Aurora (o copilot
+  continua); a Aurora segue respondendo pelo guia. Herda o gate da PoC (decisão 19).
 
 ---
 
-### 27. O Passo proativo: dois canais, contadores em vez de fichas, e o modelo onde ele não pode mentir
+### 27. A Aurora proativo: dois canais, contadores em vez de fichas, e o modelo onde ele não pode mentir
 
-**Origem:** o Passo era reativo — três chips escritos à mão por tela, iguais para todo mundo,
+**Origem:** a Aurora era reativo — três chips escritos à mão por tela, iguais para todo mundo,
 independentemente do que estivesse acontecendo. A demanda: sugerir perguntas, ações, pontos de
 aprimoramento e dúvidas a cada papel, melhorar com o uso, e ter o Qwen como orquestrador.
 
 **A troca de doutrina, e por que ela foi feita em vez de contornada.** A doutrina 5 dizia *"o
-Passo NÃO enxerga dado nenhum"*, e a UI repetia isso à pessoa. Ancorar sugestão em estado real
+Aurora NÃO enxerga dado nenhum"*, e a UI repetia isso à pessoa. Ancorar sugestão em estado real
 tornaria essa frase falsa. Num produto cuja história inteira de privacidade repousa em **limites
 declarados serem verdadeiros**, um limite que virou mentira é pior do que a mudança. Então a
 frase mudou, nos nove lugares onde aparecia, para o que passou a ser verdade:
 
 - **Canal CONVERSA** (`assistente()`) continua **cego**: nada do banco entra no prompt de uma
   resposta a pergunta.
-- **Canal SUGESTÃO** (`src/passo/`) enxerga um **envelope de contadores** do próprio dia da
+- **Canal SUGESTÃO** (`src/aurora/`) enxerga um **envelope de contadores** do próprio dia da
   pessoa — quantos, quantas datas, quantos dias. **Conta quantos, nunca quem.** Nunca um nome,
   nunca uma ficha, nunca um nível, nunca um escore individual. `congelar()` roda em **produção**
   e recusa qualquer valor fora do contrato.
@@ -453,11 +453,11 @@ Teto de **UMA pendência por painel**: cada item pode ser gentil e o somatório 
 dívida diária. Mais: a sugestão é suprimida na tela que já mostra o mesmo fato; nenhuma entrada
 de educadora nasce de cobertura, tempo de registro ou taxa de correção (as métricas que o
 próprio produto declara medirem o sistema, não a professora); e existe uma classe **alívio** nos
-três papéis, para o Passo poder dizer "está tudo em ordem".
+três papéis, para a Aurora poder dizer "está tudo em ordem".
 
 **A memória nasce desligada.** É a única coisa do produto que grava algo sobre a **pessoa** —
 não podia ser a exceção que nasce ligada num produto onde tudo é opt-in. Um convite de um toque
-na primeira abertura, com "Agora não" ao lado. Vive em `data/passo/uso.db`, banco **derivado**
+na primeira abertura, com "Agora não" ao lado. Vive em `data/aurora/uso.db`, banco **derivado**
 (mesmo motivo do corpus do RAG, decisão 20: `src/db.js` derruba todas as tabelas quando a
 assinatura do DDL muda). Vocabulário **fechado por código**: um nome de criança não tem por onde
 virar chave. Desligar **apaga**. "Hoje não" em item núcleo cala só até o fim do dia — e a tela
@@ -470,7 +470,7 @@ candidatos e reescreve rótulos. O que ele **não pode é estrutural, não verif
 é livre de dígito por construção e é o único campo que ele reescreve, enquanto o `texto` — que
 carrega as contagens — nunca vai ao prompt nem volta dele. Logo, **nenhum número exibido pode ter
 vindo de modelo**. O piso institucional e o teto de pendência rodam **depois** dele.
-`AI_ASSISTENTE=0` e `PASSO_PAINEL=0` desligam em cascata; sem modelo, o produto é idêntico.
+`AI_ASSISTENTE=0` e `AURORA_PAINEL=0` desligam em cascata; sem modelo, o produto é idêntico.
 
 **Trilha:** plano em `docs/revisao/09-PLANO-PASSO-PROATIVO.md` (painel de 4 propostas × 3 juízes),
 revisão do plano com 20 achados confirmados, revisão da implementação em `10-REVISAO-PASSO-PROATIVO.md`.
@@ -513,7 +513,7 @@ para cair no mesmo template. A infraestrutura e os testes ficam prontos, e a rea
 variável de ambiente.
 
 **Adendo de 25/08/2026 — subir o porte do modelo está fora.** A conclusão original apontava um
-Qwen 14B/30B como próximo passo, porque a máquina de desenvolvimento comporta. Está descartado
+Qwen 14B/30B como próximo aurora, porque a máquina de desenvolvimento comporta. Está descartado
 por decisão de produto: a arquitetura do Percurso exige rodar **no notebook comum de uma
 organização social**, e um modelo dimensionado para a máquina de desenvolvimento não é o produto
 — é uma demonstração que o Instituto não conseguiria operar. O porte é restrição de desenho, não

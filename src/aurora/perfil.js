@@ -1,14 +1,14 @@
-// Percurso — a memória de uso do Passo. Banco DERIVADO e próprio.
+// Percurso — a memória de uso da Aurora. Banco DERIVADO e próprio.
 //
 // POR QUE FORA DO BANCO PRINCIPAL: src/db.js derruba TODAS as tabelas quando a
 // assinatura do DDL muda, e scripts/reset.mjs limpa. Aprendizado guardado lá
 // morreria a cada mudança de esquema. O precedente correto já existe no
 // produto: data/rag/corpus.db, com conexão própria (decisão 20).
 //
-// O QUE ENTRA: só o que a pessoa faz COM O PASSO — o que ele ofereceu, o que
+// O QUE ENTRA: só o que a pessoa faz COM O AURORA — o que ele ofereceu, o que
 // ela tocou, o que ela dispensou, e em que tela ela o abriu.
 // O QUE NUNCA ENTRA: texto de pergunta, texto de resposta, transcrição, id de
-// criança, id de turma, HORA (só o dia) e navegação fora do Passo. O
+// criança, id de turma, HORA (só o dia) e navegação fora da Aurora. O
 // vocabulário é FECHADO por código, não por convenção: `registrar()` lança em
 // qualquer chave que não seja id do catálogo, tipo ou rota conhecida — um nome
 // de criança não tem por onde virar chave.
@@ -23,10 +23,10 @@ import { fileURLToPath } from 'node:url';
 import { hoje, addDias, diasEntre, erro } from '../domain.js';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-export const PERFIL_DB = process.env.PERCURSO_PASSO_DB || join(RAIZ, 'data', 'passo', 'uso.db');
+export const PERFIL_DB = process.env.PERCURSO_AURORA_DB || join(RAIZ, 'data', 'aurora', 'uso.db');
 
-export const PASSO_PERFIL = !['0', 'false'].includes(
-  String(process.env.PASSO_PERFIL ?? '').toLowerCase());
+export const AURORA_PERFIL = !['0', 'false'].includes(
+  String(process.env.AURORA_PERFIL ?? '').toLowerCase());
 
 const MEIA_VIDA_DIAS = 21;
 const RETENCAO_DIAS = 90;
@@ -107,20 +107,20 @@ export function ligarVocabulario({ ids, tipos, rotas }) {
 
 /** A fronteira, num lugar só: TODA escrita passa por aqui, sem exceção. */
 function validarChave(familia, chave) {
-  if (!VALIDA) throw erro(422, 'Vocabulário do Passo não inicializado.');
+  if (!VALIDA) throw erro(422, 'Vocabulário da Aurora não inicializado.');
   if (!FORMA.test(String(chave ?? '')) || !VALIDA[familia]?.(String(chave)))
-    throw erro(422, 'Chave de uso fora do vocabulário do Passo.');
+    throw erro(422, 'Chave de uso fora do vocabulário da Aurora.');
 }
 
 export function preferenciaDe(educadorId) {
-  if (!PASSO_PERFIL) return { aprender: 0, resumo_do_dia: 1, prefere_tipo: null, convidado: 1 };
+  if (!AURORA_PERFIL) return { aprender: 0, resumo_do_dia: 1, prefere_tipo: null, convidado: 1 };
   const d = conectar();
   const r = d.prepare(`SELECT * FROM preferencia WHERE educador_id = ?`).get(educadorId);
   return r ?? { educador_id: educadorId, aprender: 0, resumo_do_dia: 1, prefere_tipo: null, convidado: 0 };
 }
 
 export function salvarPreferencia(educadorId, mudanca = {}) {
-  if (!PASSO_PERFIL) throw erro(422, 'A memória do Passo está desligada nesta instalação.');
+  if (!AURORA_PERFIL) throw erro(422, 'A memória da Aurora está desligada nesta instalação.');
   const atual = preferenciaDe(educadorId);
   const tipos = ['acao', 'pergunta', 'aprimoramento', 'duvida'];
   const nova = {
@@ -147,10 +147,10 @@ export function salvarPreferencia(educadorId, mudanca = {}) {
 
 /** Registra um evento. No-op silencioso quando o aprendizado está desligado. */
 export function registrar(educadorId, familia, chave, evento, ref = hoje()) {
-  if (!PASSO_PERFIL) return { ok: true, gravado: false };
+  if (!AURORA_PERFIL) return { ok: true, gravado: false };
   if (!VALIDA) return { ok: true, gravado: false };
   if (!['mostrada', 'aceita', 'dispensada'].includes(evento))
-    throw erro(422, 'Evento fora do vocabulário do Passo.');
+    throw erro(422, 'Evento fora do vocabulário da Aurora.');
   validarChave(familia, chave);
   if (!preferenciaDe(educadorId).aprender) return { ok: true, gravado: false };
 
@@ -183,7 +183,7 @@ export function registrar(educadorId, familia, chave, evento, ref = hoje()) {
 
 /** "Hoje não". Silêncio SEMPRE expira — nunca existe "nunca mais me mostre". */
 export function silenciar(educadorId, sugestaoId, { nucleo = false, ref = hoje() } = {}) {
-  if (!PASSO_PERFIL) return { ate: ref };
+  if (!AURORA_PERFIL) return { ate: ref };
   // A MESMA fronteira de registrar(), e ela precisa estar AQUI: silenciar()
   // gravava string livre e passava por fora do vocabulário fechado. Um POST
   // com id = "Joao Pedro da Silva" respondia 422 (porque registrar() lançava
@@ -200,7 +200,7 @@ export function silenciar(educadorId, sugestaoId, { nucleo = false, ref = hoje()
 
 /** Pesos para o ranking. `{}` quando desligado — o ranking fica idêntico ao puro. */
 export function pesosDe(educadorId, ref = hoje()) {
-  if (!PASSO_PERFIL || !preferenciaDe(educadorId).aprender) return {};
+  if (!AURORA_PERFIL || !preferenciaDe(educadorId).aprender) return {};
   purgar(ref);
   const out = {};
   for (const r of conectar().prepare(`SELECT familia, chave, evento, peso, dia_ultimo FROM uso WHERE educador_id = ?`).all(educadorId))
@@ -209,7 +209,7 @@ export function pesosDe(educadorId, ref = hoje()) {
 }
 
 export function silenciadasDe(educadorId, ref = hoje()) {
-  if (!PASSO_PERFIL) return new Set();
+  if (!AURORA_PERFIL) return new Set();
   purgar(ref);
   return new Set(conectar().prepare(
     `SELECT sugestao_id FROM silenciada WHERE educador_id = ? AND ate >= ?`).all(educadorId, ref)
@@ -219,7 +219,7 @@ export function silenciadasDe(educadorId, ref = hoje()) {
 /** O que a pessoa vê quando pergunta "o que você sabe de mim?". */
 export function memoriaDe(educadorId, ref = hoje()) {
   const prefs = preferenciaDe(educadorId);
-  if (!PASSO_PERFIL) return { ligada: false, ...prefs, linhas: [], silenciadas: [] };
+  if (!AURORA_PERFIL) return { ligada: false, ...prefs, linhas: [], silenciadas: [] };
   purgar(ref);
   const d = conectar();
   return {
@@ -238,7 +238,7 @@ export function memoriaDe(educadorId, ref = hoje()) {
 }
 
 export function apagarMemoria(educadorId) {
-  if (!PASSO_PERFIL) return { apagados: 0 };
+  if (!AURORA_PERFIL) return { apagados: 0 };
   const d = conectar();
   let n = 0;
   for (const t of ['uso', 'silenciada', 'mostrada_dia'])

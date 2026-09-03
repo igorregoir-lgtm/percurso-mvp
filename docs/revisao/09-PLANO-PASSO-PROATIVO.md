@@ -1,5 +1,10 @@
 # Plano — o Passo proativo: parceiro por papel, que aprende sem vigiar
 
+> **Nota de 03/09/2026 — o assistente mudou de nome.** O que este documento chama de
+> **Passo** hoje se chama **Aurora**, com ícone de girassol. O texto abaixo fica como foi
+> escrito: é registro do que se decidiu na época, e reescrevê-lo apagaria a data da decisão.
+> O estado atual está em [`DECISOES-TECNICAS.md`](../DECISOES-TECNICAS.md).
+
 > **Ponteiros de código refeitos em 03/09/2026.** Este documento continua sendo o **plano como foi
 > escrito** — a análise, as decisões e a ordem de execução não foram tocadas. O que foi atualizado
 > são as cinco referências `arquivo:linha`, que tinham derivado do código. Duas delas não eram erro

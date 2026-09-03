@@ -1,5 +1,6 @@
 Percurso — evidência de teste
-Gerado em 2026-09-03 08:24 · commit 60c0cf3
+Gerado em 2026-09-03 18:48 · renomeação Passo → Aurora
+
 
 
 Percurso — testes do fluxo principal
@@ -303,16 +304,16 @@ Alvo: http://localhost:3000
   ✓ educadora NÃO abre ficha de criança de outra turma (403)
   ✓ educadora NÃO abre observação de criança de outra turma (403)
 
-20 · Passo — assistente-parceiro (limites no servidor)
-  ✓ sem sessão, o Passo responde 401
+20 · Aurora — assistente-parceiro (limites no servidor)
+  ✓ sem sessão, a Aurora responde 401
   ✓ pergunta vazia responde 422
   ✓ pergunta reflexiva redireciona ao copilot, sem passar por modelo
   ✓ redirecionamento nunca tem fala
-  ✓ fora do produto: o Passo declara o próprio limite, sem ação
+  ✓ fora do produto: a Aurora declara o próprio limite, sem ação
   ✓ diretoria + nome de criança = recusa determinística (decisão 16)
   ✓ chips da tela vêm em 3 sugestões
   ✓ chips não vazam a tela de outro papel
-  ✓ apagar a sessão do Passo responde 200
+  ✓ apagar a sessão da Aurora responde 200
 
 21 · Cadastro de pessoas — equipe e crianças
   ✓ professora NÃO abre o cadastro (403)
@@ -418,6 +419,9 @@ Alvo: http://localhost:3000
   ✓ o recado da turma é gerado do registro (presença em número, atividade)
   ✓ o recado não chama de "hoje" um encontro de outro dia
   ✓ o "próximo encontro" do recado está no futuro
+  ✓ /api/hoje declara um recado por turma com encontro, não só a primeira
+  ✓ a segunda turma da psicóloga tem recado alcançável
+  ✓ o recado da segunda turma é gerado e fala DELA
   ✓ o recado não tem nome de criança
   ✓ o recado abre no WhatsApp sem número (a pessoa escolhe o grupo)
   ✓ a governança declara o recado da turma (sem consentimento; não persiste)
@@ -442,10 +446,37 @@ Alvo: http://localhost:3000
   ✓ o histórico de pareceres da criança fica na ficha
   ✓ a governança declara o parecer com consentimento específico
 
-378 passaram · 0 falharam
+381 passaram · 0 falharam
 
 
---- unitários ---
-ℹ tests 165
-ℹ pass 165
+
+✔ turmaNaRubrica: as turmas da Vivência ficam fora; as demais, dentro (0.065875ms)
+✔ papel profissional: fica responsável por turma, não vira sucessora de nada que não seja turma (0.13175ms)
+✔ rubrica: seis dimensões, na ordem e com os nomes da planilha do Instituto (0.06575ms)
+✔ planilha: o mapeamento 1–4 → 0–2 vive num lugar só e é o declarado (0.052625ms)
+✔ planilha: as linhas saem por CÓDIGO, com 6 indicadores e totais só quando completas (1.677625ms)
+✔ planilha: o resumo replica a aba Indicadores, com supressão de célula pequena e a ressalva (1.915583ms)
+✔ planilha: o CSV abre no Excel (BOM + ";"), tem o cabeçalho da aba Avaliações e nenhum nome (3.536584ms)
+✔ vivência: os catálogos novos são fechados e o check-in é só contagem (0.127459ms)
+✔ vivência: validação recusa procedimento/objetivo fora da lista e contagens impossíveis (0.060792ms)
+✔ vivência: o extrator lê as contagens que a psicóloga respondeu ao vivo (0.434958ms)
+✔ vivência: contagem em algarismo vale igual à contagem por extenso (0.369459ms)
+✔ perímetro com contexto: o nome do procedimento passa; o conteúdo sobre criança continua barrado (0.132ms)
+✔ vivência: salvar a folha exige o procedimento, e a folha de outra turma ignora procedimento (0.798292ms)
+✔ relato: sai dos campos fechados, sem nome de criança, e só vale depois do OK (1.003292ms)
+✔ devolução por encontro: compara com as últimas folhas; sem 3 anteriores, só os números de hoje (0.356917ms)
+✔ régua: as faixas seguem a política da casa (75% / 80%) e exigem base mínima (0.04725ms)
+✔ régua da turma: a Vivência da manhã tem quem está abaixo e quem está em atenção — e soma fecha (1.36975ms)
+✔ régua do Instituto: o cabeçalho respeita o ?desde= e o ?ref= de quem pediu (4.036625ms)
+✔ recado da turma: só agregado, nenhum nome, e um link de WhatsApp sem número (0.709167ms)
+✔ parecer: sem consentimento específico, não é gerado — e o motivo é dito (0.142875ms)
+✔ parecer: com consentimento sai por CÓDIGO, sem nome, sem clínica, aprovado pelo revisor, e só vale liberado (1.925417ms)
+✔ régua: criança sem presença nesta turma aparece como sem_base, não some (0.283291ms)
+ℹ tests 167
+ℹ suites 0
+ℹ pass 167
 ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 470.194667

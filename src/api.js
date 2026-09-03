@@ -10,13 +10,13 @@ import { buscar as buscarRag, infoCorpus } from './rag/search.js';
 import { anonimizarTexto } from './rag/anonimizar.js';
 import * as C from './copilot.js';
 import * as A from './assistente.js';
-import * as PP from './passo/painel.js';
-// O Passo responde pergunta agregada com número do banco; a ligação é feita
+import * as PP from './aurora/painel.js';
+// A Aurora responde pergunta agregada com número do banco; a ligação é feita
 // aqui para evitar ciclo de import (relatorio.js → domain/scores/db).
 A.ligarConsultaAgregada(R.consultar);
-import { invalidarSinais, falhasDoEnvelope as envelopeFalhou } from './passo/sinais.js';
-import * as PF from './passo/perfil.js';
-import * as PO from './passo/orquestrador.js';
+import { invalidarSinais, falhasDoEnvelope as envelopeFalhou } from './aurora/sinais.js';
+import * as PF from './aurora/perfil.js';
+import * as PO from './aurora/orquestrador.js';
 import * as SROI from './sroi/calculator.js';
 import * as PL from './planilha.js';
 import * as REL from './relato.js';
@@ -513,7 +513,7 @@ export const rotas = {
   },
 
   // ======================================================================
-  // Passo — assistente-parceiro de navegacao (todos os papeis; responde SO
+  // Aurora — assistente-parceiro de navegacao (todos os papeis; responde SO
   // sobre o produto — plano auditado em docs/revisao/07-PLANO-ASSISTENTE.md).
   // Sempre responde: com modelo (AI_ASSISTENTE) ou pelo guia deterministico.
   // ======================================================================
@@ -528,19 +528,19 @@ export const rotas = {
   // O painel proativo: sugestões ancoradas no estado REAL da pessoa, por papel
   // e por tela. DETERMINÍSTICO PURO — nunca chama o modelo, nunca escreve em
   // banco nenhum. O refinamento por modelo é rota separada e opcional.
-  'GET /api/passo/painel': (req, _b, q) => {
+  'GET /api/aurora/painel': (req, _b, q) => {
     const u = exigeUsuario(req);
-    return PP.painelDoPasso(u, A.telaSegura(String(q.get('tela') || '')));
+    return PP.painelDoAurora(u, A.telaSegura(String(q.get('tela') || '')));
   },
 
   // O refinamento pelo Qwen — ASSÍNCRONO e opcional. O painel determinístico
   // já está pintado quando isto roda; falha, timeout, fila ocupada ou modelo
   // desligado devolvem `refinado:false` e NADA muda na tela. Nunca 5xx.
-  'POST /api/passo/refinar': async (req, body) => {
+  'POST /api/aurora/refinar': async (req, body) => {
     const u = exigeUsuario(req);
     if (!A.AI_ASSISTENTE) return { refinado: false, motivo: 'desligado' };
     const tela = A.telaSegura(String(body.tela || ''));
-    const painel = PP.painelDoPasso(u, tela);
+    const painel = PP.painelDoAurora(u, tela);
     const alvos = painel.sugestoes.filter(s => !s.id.startsWith('guia:'));
     if (alvos.length < 2) return { refinado: false, motivo: 'nada_a_fazer' };
     const porId = new Map(alvos.map(s => [s.id, s]));
@@ -557,7 +557,7 @@ export const rotas = {
         anonimizar: anonimizarTexto,
         semCobranca: PP.semCobranca,
         // O PORTÃO 4, agora de verdade. Antes isto era `(ordem) => ordem` — a
-        // identidade — enquanto o comentário e o corpo de /api/passo/qualidade
+        // identidade — enquanto o comentário e o corpo de /api/aurora/qualidade
         // afirmavam que "o piso de núcleo roda DEPOIS do modelo". A doutrina
         // publicada era mais forte que o código; o modelo definia a vaga 1.
         // Sort ESTÁVEL por núcleo: o conjunto não muda, só garante que nenhum
@@ -575,7 +575,7 @@ export const rotas = {
     };
   },
 
-  'GET /api/passo/qualidade': (req) => {
+  'GET /api/aurora/qualidade': (req) => {
     exigeCoordenacao(req);
     return {
       orquestrador: PO.estatisticas(),
@@ -587,9 +587,9 @@ export const rotas = {
     };
   },
 
-  // Telemetria do Passo — só o que a pessoa faz COM ELE. No-op silencioso
+  // Telemetria da Aurora — só o que a pessoa faz COM ELE. No-op silencioso
   // enquanto o aprendizado está desligado (que é o padrão).
-  'POST /api/passo/uso': (req, body) => {
+  'POST /api/aurora/uso': (req, body) => {
     const u = exigeUsuario(req);
     const id = String(body.id || '');
     const evento = String(body.evento || '');
@@ -609,12 +609,12 @@ export const rotas = {
 
   // A pessoa só lê e apaga a PRÓPRIA memória. Não existe rota para ver a de
   // outra pessoa — e essa ausência é a decisão, não um esquecimento.
-  'GET /api/passo/memoria': (req) => PF.memoriaDe(exigeUsuario(req).id),
-  'POST /api/passo/memoria': (req, body) => PF.salvarPreferencia(exigeUsuario(req).id, {
+  'GET /api/aurora/memoria': (req) => PF.memoriaDe(exigeUsuario(req).id),
+  'POST /api/aurora/memoria': (req, body) => PF.salvarPreferencia(exigeUsuario(req).id, {
     aprender: body.aprender, resumo_do_dia: body.resumo_do_dia,
     prefere_tipo: body.prefere_tipo, convidado: body.convidado,
   }),
-  'DELETE /api/passo/memoria': (req) => PF.apagarMemoria(exigeUsuario(req).id),
+  'DELETE /api/aurora/memoria': (req) => PF.apagarMemoria(exigeUsuario(req).id),
 
   'DELETE /api/assistente/sessao': (req, body) =>
     A.apagarSessaoAssistente(exigeUsuario(req), String(body.session_id || '')),

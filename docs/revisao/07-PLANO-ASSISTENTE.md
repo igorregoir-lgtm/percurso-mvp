@@ -1,5 +1,10 @@
 # Plano — "Passo", o parceiro de percurso (assistente falante em toda a navegação)
 
+> **Nota de 03/09/2026 — o assistente mudou de nome.** O que este documento chama de
+> **Passo** hoje se chama **Aurora**, com ícone de girassol. O texto abaixo fica como foi
+> escrito: é registro do que se decidiu na época, e reescrevê-lo apagaria a data da decisão.
+> O estado atual está em [`DECISOES-TECNICAS.md`](../DECISOES-TECNICAS.md).
+
 > **Revisão 2** (25/08/2026) — painel adversarial de 3 lentes achou 20 problemas, 17 procedentes
 > (4 bloqueantes), todos incorporados abaixo. Registro completo em `08-REVISAO-ASSISTENTE.md`.
 >

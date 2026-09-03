@@ -1,4 +1,4 @@
-// Percurso — o Qwen3-4B orquestrando o painel do Passo.
+// Percurso — o Qwen3-4B orquestrando o painel da Aurora.
 //
 // A CERCA: este é o módulo que fala com o modelo, e por isso ele NÃO alcança o
 // banco — nem transitivamente. Ele importa `conversar` (ai-client, só rede) e
@@ -34,10 +34,10 @@ const MAX_TOKENS = 320;
 // 8 s é folgado de propósito: isto é trabalho de FUNDO com prioridade 'fundo'
 // (desiste na hora se houver disputa), o painel determinístico já está pintado,
 // e ninguém está esperando.
-const TIMEOUT_MS = Number(process.env.PASSO_TIMEOUT_MS) || 8000;
+const TIMEOUT_MS = Number(process.env.AURORA_TIMEOUT_MS) || 8000;
 
-export const PASSO_PAINEL = !['0', 'false'].includes(
-  String(process.env.PASSO_PAINEL ?? '').toLowerCase());
+export const AURORA_PAINEL = !['0', 'false'].includes(
+  String(process.env.AURORA_PAINEL ?? '').toLowerCase());
 
 // Contadores de EFEITO, não só de erro. Sem eles não dá para defender que a
 // orquestração faz diferença — nem para descobrir que ela parou de fazer.
@@ -119,12 +119,12 @@ export function aceitarRotulo(novo, base, { roster = [], anonimizar = null } = {
  */
 export async function refinarPainel(candidatos, { recompor, roster = [], anonimizar = null, semCobranca = null, ligado = true } = {}) {
   const determinada = candidatos.map(c => c.id);
-  if (!ligado || !PASSO_PAINEL || candidatos.length < 2) { conta.desligado++; return { ordem: determinada, rotulos: {}, origem: 'guia' }; }
+  if (!ligado || !AURORA_PAINEL || candidatos.length < 2) { conta.desligado++; return { ordem: determinada, rotulos: {}, origem: 'guia' }; }
 
   const lista = candidatos.slice(0, 8);
   const enumIds = lista.map(c => c.id);
   const schema = {
-    name: 'passo_painel',
+    name: 'aurora_painel',
     schema: {
       type: 'object', required: ['ordem'], additionalProperties: false,
       properties: {
@@ -182,7 +182,7 @@ export async function refinarPainel(candidatos, { recompor, roster = [], anonimi
   }
 }
 
-const PROMPT = `Você organiza o painel de sugestões do Passo, o assistente do aplicativo Percurso,
+const PROMPT = `Você organiza o painel de sugestões da Aurora, o assistente do aplicativo Percurso,
 usado por educadoras, coordenação e diretoria de um instituto socioeducativo.
 
 Você recebe uma lista de sugestões que o sistema JÁ decidiu mostrar. Seu trabalho é só:

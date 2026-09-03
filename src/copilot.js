@@ -118,7 +118,7 @@ export const RECUSAS = [
 
 // ---------------------------------------------------------------------------
 // Memória só de sessão — RAM com TTL; nada persiste por padrão. A política
-// vive em src/sessoes.js, compartilhada com o assistente (Passo).
+// vive em src/sessoes.js, compartilhada com a assistente (Aurora).
 // ---------------------------------------------------------------------------
 const MAX_TROCAS = 8;
 const memoria = criarSessoes();
@@ -131,7 +131,7 @@ export function apagarSessao(u, sessaoId) {
 
 // ---------------------------------------------------------------------------
 // Fila de geração: mora em src/fila-modelo.js (módulo PURO, sem banco) para que
-// o orquestrador do Passo possa usá-la sem alcançar o domínio nem
+// o orquestrador da Aurora possa usá-la sem alcançar o domínio nem
 // transitivamente. Reexportada aqui: quem já importava `comVaga` do copilot
 // (api.js, assistente.js) continua funcionando sem uma linha alterada.
 // ---------------------------------------------------------------------------
