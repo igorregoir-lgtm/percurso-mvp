@@ -1,6 +1,6 @@
 # Handoff — 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
 
-> **Sessão de 02–03/09/2026 — o que mudou.** Doze commits, de `1322a77` a `5b7fc8d`, todos em
+> **Sessão de 02–03/09/2026 — o que mudou.** Dezesseis commits, de `1322a77` a este, todos em
 > `main` e em `pos-visita-ebenezer-e-jornada-v2` (as duas apontam para o mesmo commit). Nada de
 > arquitetura mudou: a sessão foi de **coerência, cobertura visual e um bug de classificação**.
 >
@@ -21,6 +21,12 @@
 > dimensões, que a decisão 34 substituiu, e as âncoras também mudaram. Hierarquia dos três em
 > `docs/ARTEFATOS-VISUAIS.md` — **ler isso antes de abrir qualquer protótipo.**
 >
+> **O protótipo acompanha o produto, e isso é trabalho recorrente e manual.** A tela 27
+> (`#/consulta`) foi refeita **duas vezes** nesta sessão: primeiro para mostrar a classificação
+> corrigida, depois porque a tela real mudou de estrutura (campo e chips antes das respostas).
+> Quando `public/app.js` muda uma tela que está no protótipo, ele passa a mentir até alguém ir lá.
+> Não há automação para isso, e nenhum teste pega.
+>
 > **3. O plano da sessão está em `docs/revisao/13-PLANO-ATUALIZACAO-REPOSITORIO.md`, e a §6 é a
 > revisão dele contra os arquivos.** Três afirmações do próprio plano não sobreviveram, incluindo
 > um achado novo: o repositório atribuía **três papéis** ao protótipo entregue, que tem telas de
@@ -34,9 +40,18 @@
 > fórmula de contagem** — e dentro de cada uma vence o termo mais longo. `'faltas'` é declarado
 > **fraco** porque é a única palavra que presença e evasão dividem.
 >
+> Corrigido o classificador, sobrou um problema que não era de resposta e sim de **descoberta**: as
+> seis sugestões só apareciam **na recusa**, então quem abria `#/consulta` tinha de errar uma vez
+> para saber o que a base responde. Agora `R.SUGESTOES` é constante exportada — fonte única para os
+> chips da tela e para a recusa —, `GET /api/consulta` a serve com a mesma guarda de gestão do POST,
+> e a tela mostra os chips de saída. O placeholder deixou de repetir um chip: virou *"qual é o
+> limiar do alerta de ausência?"*, formulação que **não** está na lista e que só é respondível por
+> causa do vocabulário novo — ele existe para dizer que dá para perguntar com as próprias palavras.
+> Três asserções travam isso, incluindo **o placeholder ter de ser respondível**.
+>
 > **5. Roteiro do vídeo v3.** Tinha 13 cenas e nenhuma da psicóloga. Agora tem o bloco dela com
 > cinco cenas, mais a consulta, **dentro dos mesmos 7m00** — o que foi cortado está declarado em
-> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; são **368 · 163**.
+> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; hoje são **371 · 164**.
 >
 > **Gates: 164 unitários · 371 smoke · 6 rag · 24 ia-stub.**
 >
@@ -72,7 +87,11 @@
 > com os campos `naoEnxergo` deixou de ser lido de `public/app.js` e vive em
 > `src/assistente.js:112` — os dois porque **o próprio plano foi executado**. Renumerar às cegas
 > teria produzido citação falsa, que é pior que citação velha. O plano ganhou uma nota de
-> procedência no topo: a análise não foi tocada, só os ponteiros. Varredura que refaz a conferência:
+> procedência no topo: a análise não foi tocada, só os ponteiros. **O mesmo vale para os números
+> de gate**, que derivaram três vezes só nesta sessão: os blocos de sessão do handoff guardam o
+> número **daquele momento** e ficam como estão; as afirmações **vivas** (README, TESTES,
+> ARQUITETURA, DECISOES, METODOLOGIA, VALIDACAO, roteiro do vídeo) têm de ser remedidas. Varreduras
+> que refazem as duas conferências:
 > ```bash
 > grep -rhoE '(src|public|scripts)/[a-z/-]+\.(js|mjs):[0-9]+' docs/*.md docs/*/*.md | sort -u
 > ```
