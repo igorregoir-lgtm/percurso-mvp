@@ -906,7 +906,36 @@ export const rotas = {
   },
   'POST /api/consulta': (req, body) => {
     exigeGestao(req);
-    return R.consultar(body.pergunta);
+    // PERIMETRO (auditoria OPAR de 03/09/2026). `src/assistente.js` aplica tres
+    // guardas antes de chamar `R.consultar` e o comentario de la afirma ser "o
+    // mesmo perimetro da rota /api/consulta". NAO era: esta rota chamava direto.
+    // Medido: a mesma frase nominal — "a Quezia esta em risco de sair?" — era
+    // RECUSADA pelo assistente e respondida com numero aqui. E "o que e
+    // cobertura?" devolvia "esta em 82%" em vez da definicao.
+    const pergunta = String(body.pergunta ?? '');
+    // 1. decisao 16: nome de crianca nao abre aqui, em nenhuma formulacao — que
+    //    e' exatamente o que a doutrina impressa nesta resposta ja prometia.
+    if (anonimizarTexto(pergunta, C.nomesParaAnonimizar()).substituicoes > 0) {
+      return {
+        reconhecida: false,
+        resposta: 'Não respondo sobre uma criança nomeada — esta consulta alcança só a camada agregada. Pergunte pelo grupo, pela turma ou pelo instituto.',
+        sugestoes: R.SUGESTOES,
+        doutrina: 'A consulta só alcança a camada agregada. Dado individual de criança não é respondido aqui, em nenhuma formulação.',
+      };
+    }
+    // 2. pergunta sem forma quantitativa nao vira numero. "o que e cobertura?"
+    //    pedia a definicao e recebia "esta em 82%", porque `consultar()` casa
+    //    por substring em termo generico ('cobertura'). A recusa e' a MESMA de
+    //    `consultar()` — quem pergunta merece a mesma frase nas duas portas.
+    if (pergunta.trim() && !A.pareceQuantitativa(pergunta)) {
+      return {
+        reconhecida: false,
+        resposta: 'Não sei responder isso a partir da camada agregada — e prefiro dizer que não sei a inventar um número. Se você quer um número, pergunte "quantas…" ou "como está…".',
+        sugestoes: R.SUGESTOES,
+        doutrina: 'A consulta só alcança a camada agregada. Dado individual de criança não é respondido aqui, em nenhuma formulação.',
+      };
+    }
+    return R.consultar(pergunta);
   },
 
   // F7 — ingestao retroativa.

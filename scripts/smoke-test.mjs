@@ -871,8 +871,16 @@ secao('17 · Consulta sobre a camada agregada (F15)');
 
   const n = (await POST('rita', '/api/consulta', { pergunta: 'a Ana Clara está bem?' })).corpo;
   T('pergunta sobre criança individual não é reconhecida', n.reconhecida === false);
+  // Perímetro da decisão 16 na PORTA DIRETA (auditoria OPAR 03/09/2026): até
+  // então só o assistente recusava nome de criança, e a mesma frase respondida
+  // aqui devolvia número. A recusa nominal é mais específica que "não sei".
+  T('nome de criança é recusado pelo perímetro, não por desconhecimento',
+    /camada agregada/i.test(n.resposta) && /criança nomeada/i.test(n.resposta));
+  const nq = (await POST('rita', '/api/consulta', { pergunta: 'quantos ônibus o instituto tem?' })).corpo;
   T('quando não sabe, o sistema diz que não sabe',
-    /não sei responder/i.test(n.resposta) && /inventar/i.test(n.resposta));
+    nq.reconhecida === false && /não sei responder/i.test(nq.resposta) && /inventar/i.test(nq.resposta));
+  const nd = (await POST('rita', '/api/consulta', { pergunta: 'o que é cobertura?' })).corpo;
+  T('pedido de definição não vira número', nd.reconhecida === false, `(${nd.intencao})`);
   T('a recusa oferece o que ele sabe responder', n.sugestoes.length >= 4);
   T('a doutrina de perímetro é declarada na resposta',
     /dado individual de criança não é respondido/i.test(n.doutrina));
@@ -1248,7 +1256,19 @@ secao('27 · Régua de presença do Instituto (75%) e recado da turma aos respon
   T('a professora NÃO abre a régua do Instituto (403)', (await GET('maria', '/api/regua')).status === 403);
 
   const rec = await GET('carolina', `/api/recado?turma_id=${tid}`);
-  T('o recado da turma é gerado do registro (presença em número, atividade)', rec.status === 200 && new RegExp('Presença de hoje: \\d+ de ' + r.corpo.criancas.length).test(rec.corpo.texto));
+  // A contagem sai das presencas DAQUELE encontro, e o texto so' diz "hoje"
+  // quando o encontro e' de hoje (auditoria OPAR 03/09/2026 — antes disto o
+  // recado de um sabado lido numa quinta dizia "Hoje:" e anunciava como
+  // "Proximo encontro" uma data ja passada).
+  const recDoDia = rec.corpo.data === hoje.hoje;
+  T('o recado da turma é gerado do registro (presença em número, atividade)',
+    rec.status === 200 && new RegExp(`Presença ${recDoDia ? 'de hoje' : 'no encontro'}: \\d+ de ${rec.corpo.total}`).test(rec.corpo.texto),
+    `(data=${rec.corpo.data}, hoje=${hoje.hoje})`);
+  T('o recado não chama de "hoje" um encontro de outro dia',
+    recDoDia || !/Hoje[:o]/.test(rec.corpo.texto));
+  T('o "próximo encontro" do recado está no futuro',
+    !rec.corpo.proximo_encontro || rec.corpo.proximo_encontro > hoje.hoje,
+    `(${rec.corpo.proximo_encontro})`);
   T('o recado não tem nome de criança', !r.corpo.criancas.some(c => rec.corpo.texto.includes(c.nome.split(' ')[0])));
   T('o recado abre no WhatsApp sem número (a pessoa escolhe o grupo)', /^https:\/\/wa\.me\/\?text=/.test(rec.corpo.whatsapp_url));
   T('a governança declara o recado da turma (sem consentimento; não persiste)',

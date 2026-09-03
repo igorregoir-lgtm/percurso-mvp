@@ -1990,7 +1990,20 @@ test('recado da turma: só agregado, nenhum nome, e um link de WhatsApp sem núm
   const enc = get(`SELECT * FROM encontro WHERE turma_id = 6 ORDER BY data DESC LIMIT 1`);
   const r = REC.recadoDaTurma(6, enc.data);
   assert.match(r.texto, /Recado da Vivência · Sábado manhã/);
-  assert.match(r.texto, new RegExp('Presença de hoje: \\d+ de ' + D.criancasDaTurma(6).length + ' crianças'));
+  // A contagem sai das linhas de PRESENCA daquele encontro, nao do roster ATUAL.
+  // Enquanto o recado era so' do dia os dois coincidiam; desde 48ec1dd ele pode
+  // ser de um encontro de dias atras, e uma matricula nova depois do encontro
+  // inflava o denominador de um dia em que a crianca nem estava. Auditoria OPAR
+  // de 03/09/2026: neste banco o roster tem 10 e o encontro tem 11 presencas.
+  const pres = get(`SELECT COUNT(*) AS t, SUM(CASE WHEN status='P' THEN 1 ELSE 0 END) AS p
+                      FROM presenca WHERE encontro_id = ?`, enc.id);
+  const doDia = enc.data === D.hoje();
+  assert.match(r.texto, new RegExp(`Presença ${doDia ? 'de hoje' : 'no encontro'}: ${pres.p} de ${pres.t} crianças`));
+  assert.equal(r.total, pres.t, 'o total do recado é o do encontro, não o do roster de hoje');
+  // e o texto nao pode chamar de "hoje" um encontro que nao e' de hoje
+  if (!doDia) assert.doesNotMatch(r.texto, /Hoje[:o]/, 'encontro antigo não pode ser anunciado como "Hoje"');
+  // o "proximo encontro" tem de ser FUTURO — anunciava data passada antes disto
+  assert.ok(r.proximo_encontro > D.hoje(), `próximo encontro no passado: ${r.proximo_encontro}`);
   assert.match(r.texto, /Instituto Ebenézer/);
   const nomes = all(`SELECT nome FROM crianca`).map(c => c.nome.split(' ')[0]);
   for (const n of new Set(nomes)) assert.ok(!new RegExp('\\b' + n + '\\b').test(r.texto), `nome ${n} no recado`);

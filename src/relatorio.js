@@ -583,16 +583,26 @@ export function publicarRelatorio(tipo, periodo, usuarioId) {
 // --------------------------------------------------------------------------
 const INTENCOES = [
   { codigo: 'contagem', generica: true,
-    termos: ['quantas crianc', 'quantos atendid', 'quantas matricul', 'quantos alunos', 'tamanho do instituto', 'quantas pessoas'],
+    termos: ['quantas crianc', 'quantos atendid', 'quantas matricul', 'quantos alunos', 'tamanho do instituto'],
+    // 'quantas pessoas' saiu: e' ambiguo entre crianca e equipe, e a base so'
+    // conta crianca. Perguntar por equipe agora cai em "nao sei", que e' verdade.
+    // FORA DO ALCANCE: se a pergunta fala de assunto que a camada agregada nao
+    // cobre, a formula de contagem NAO responde por ela. Antes disso, "quantas
+    // pessoas trabalham no instituto?" devolvia "106 criancas unicas".
+    foraDoAlcance: ['equipe', 'trabalham', 'voluntari', 'funcionari', 'professor', 'educador',
+                    'salario', 'custo', 'orcament', 'consentimento', 'idade'],
     responder: () => {
       const i = inventario();
       return { resposta: `${i.criancasUnicas} crianças únicas e ${i.matriculas} matrículas ativas. ${i.multi} crianças estão em mais de um programa — é essa a diferença entre os dois números.`,
                fonte: 'tabelas crianca e matricula' };
     } },
-  { codigo: 'presenca', termos: ['presenca', 'frequencia', 'comparecimento', 'quantos vieram', 'faltaram'],
-    // 'faltas' e' a unica palavra que presenca e evasao dividem: e' evidencia
-    // FRACA, so' vale quando nenhum outro assunto se manifestou. Ver EVIDENCIA.
-    termosFracos: ['faltas'],
+  { codigo: 'presenca', termos: ['presenca', 'frequencia', 'comparec', 'vieram'],
+    // 'faltas' e 'faltaram' sao as palavras que presenca e evasao DIVIDEM: sao
+    // evidencia FRACA, so' valem quando nenhum outro assunto se manifestou.
+    // Ver EVIDENCIA. 'faltaram' era forte e, com 8 letras, vencia 'seguid' (6)
+    // pelo desempate de tamanho — "faltaram tres vezes seguidas" caia em
+    // presenca, quando falta seguida e' a definicao do alerta de evasao.
+    termosFracos: ['faltas', 'faltaram'],
     responder: () => {
       const p = presencaMedia();
       return { resposta: p.pct == null ? 'Ainda não há presença registrada neste mês.'
@@ -602,7 +612,7 @@ const INTENCOES = [
   { codigo: 'evasao', termos: ['evasao', 'sairam', 'estao saindo', 'risco de sair', 'abandon', 'permanencia', 'tempo de vinculo',
       // 'faltas' sozinho e' da presenca (quantas faltas houve); 'faltas seguidas'
       // e' a definicao do alerta de evasao. O termo mais longo vence — ver ESPECIFICIDADE.
-      'faltas seguidas', 'faltou seguid',
+      'faltas seguidas', 'faltou seguid', 'seguid', 'em risco', 'perdeu', 'perderam', 'desistiu', 'desistir',
       // o limiar e o alerta sao conceitos de evasao — nao existe "alerta" na
       // presenca. Perguntar pelo gatilho e' perguntar por evasao.
       'alerta', 'limiar', 'entra na lista', 'dispara'],
@@ -610,28 +620,33 @@ const INTENCOES = [
       const r = riscoEvasao({});
       const s = safras().porPrograma;
       return { resposta: `${r.em_risco} matrículas em risco de evasão de ${r.avaliadas} avaliadas (duas ou mais faltas seguidas, ou score acima de ${r.limiar_acao}). `
-                 + `Por programa: ${s.map(p => `${p.programa} ${p.evasao_pct}% de evasão, vínculo médio de ${p.meses_medios} meses`).join('; ')}.`,
+                 + `Por programa: ${s.map(p => `${p.programa} ${p.evasao_pct}% de evasão, vínculo médio de ${dec(p.meses_medios)} meses`).join('; ')}.`,
                fonte: 'score de risco de evasão e análise de safras' };
     } },
-  { codigo: 'cobertura', termos: ['cobertura', 'folhas', 'registro em dia', 'quem nao registrou', 'turmas sem registro'],
+  { codigo: 'cobertura', termos: ['cobertura', 'folhas', 'registro em dia', 'quem nao registrou',
+      'turmas sem registro', 'sem registro', 'folha de presenca', 'folhas de presenca'],
     responder: () => {
       const c = coberturaRegistro({});
       return { resposta: `A cobertura do registro está em ${c.valor}% (${c.completas} folhas completas de ${c.total} encontros no período). `
                  + `${c.turmas_sem_registro} turma(s) sem nenhuma folha completa. ${c.doutrina}`,
                fonte: 'tabelas encontro e folha' };
     } },
-  { codigo: 'exposicao', termos: ['exposic', 'aspirac', 'sonho', 'lacuna', 'area sem atividade', 'laboratorio de sonhos'],
+  // 'laboratorio de sonhos' saiu dos termos: e' nome de PROGRAMA, nao assunto, e
+  // com 21 letras vencia qualquer assunto na mesma frase pelo desempate de
+  // tamanho — "qual a evasao no Laboratorio de Sonhos?" respondia exposicao.
+  { codigo: 'exposicao', termos: ['exposic', 'aspirac', 'sonho', 'lacuna', 'area sem atividade',
+      'cobertura de exposic', 'cobertura de aspirac'],
     responder: () => {
       const e = exposicao({});
       return { resposta: `${e.aspiracoes_declaradas} aspirações declaradas em ${e.areas_com_interesse} áreas; ${e.areas_cobertas} tiveram atividade — cobertura de ${e.valor}%. `
                  + (e.lacunas.length ? `Em aberto: ${e.lacunas.map(l => `${l.rotulo} (${l.criancas})`).join('; ')}.` : 'Nenhuma área ficou em aberto.'),
                fonte: 'tabelas aspiracao e atividade_area' };
     } },
-  { codigo: 'ciclo', termos: ['ciclo', 'observac', 'rubrica', 'dimens'],
+  { codigo: 'ciclo', termos: ['ciclo', 'observac', 'observad', 'observar', 'rubrica', 'dimens'],
     responder: () => {
       const c = cicloAberto();
       const agg = agregadoPorCiclo();
-      const ultimas = agg.series.map(s => `${s.dimensao} ${s.valores.at(-1) ?? '—'}`).join('; ');
+      const ultimas = agg.series.map(s => `${s.dimensao} ${dec(s.valores.at(-1))}`).join('; ');
       return { resposta: c ? `Ciclo aberto: ${c.nome}, janela até ${dataBR(c.fim)}. Médias de turma no ciclo mais recente — ${ultimas} (escala 1 a 4).`
                             : 'Não há ciclo de observação aberto.',
                fonte: 'tabelas ciclo, observacao e observacao_item' };
@@ -666,9 +681,11 @@ export function consultar(pergunta) {
     .filter(x => x.n > 0)
     .sort((a, b) => b.n - a.n)[0]?.i;
   const assuntos = INTENCOES.filter(i => !i.generica);
+  const genericas = INTENCOES.filter(i => i.generica)
+    .filter(i => !(i.foraDoAlcance ?? []).some(termo => t.includes(termo)));
   const achada = melhor(assuntos, 'termos')
               ?? melhor(assuntos, 'termosFracos')
-              ?? melhor(INTENCOES.filter(i => i.generica), 'termos');
+              ?? melhor(genericas, 'termos');
   if (!achada) {
     return {
       reconhecida: false,
