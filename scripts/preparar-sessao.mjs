@@ -24,7 +24,7 @@
 //
 // Uso: node scripts/preparar-sessao.mjs [--turma N] [--lapso [dias]]
 import { getDb, closeDb, get, all, run, tx } from '../src/db.js';
-import { hoje, addDias } from '../src/domain.js';
+import { hoje, addDias, recalcularAlertas } from '../src/domain.js';
 
 const argv = process.argv.slice(2);
 const iTurma = argv.indexOf('--turma');
@@ -62,6 +62,12 @@ tx(() => {
   run(`DELETE FROM encontro WHERE id = ?`, enc.id);
 });
 
+// Os alertas de falta sao derivados dos encontros e foram calculados pela
+// semente COM o encontro que acabou de sair. Sem recalcular, a tela Hoje cita
+// "faltou no encontro de <data>" para um encontro que nao existe mais — e a
+// participante encontraria uma incoerencia que nao e' do produto, e' do preparo.
+const alertas = recalcularAlertas(turma.id);
+
 const anterior = get(`SELECT data FROM encontro WHERE turma_id = ? ORDER BY data DESC LIMIT 1`, turma.id);
 
 // Provocacao Longa do Protocolo do Lapso: a retomada sem culpa em `#/hoje` le
@@ -87,6 +93,7 @@ console.log(`  Encontro zerado ..... ${enc.data} (${DOW})`);
 console.log(`  Chamada apagada ..... ${presencas ? `sim (${presencas} presenças)` : 'não havia'}`);
 console.log(`  Folha apagada ....... ${folha ? `sim${folha.relato_liberado_em ? ' — o relato liberado foi junto' : ''}` : 'não havia'}`);
 console.log(`  Encontro anterior ... ${anterior?.data ?? '—'} (segue registrado — é a base de comparação da devolução)`);
+console.log(`  Alertas recalculados  ${alertas.alertasAbertos} em aberto`);
 if (lapsoData) console.log(`  Lapso forçado ....... última atividade em ${lapsoData} (${LAPSO} dias) — a tela Hoje abre com a retomada`);
 
 console.log('\nNa tela Hoje a data acima aparece em "Datas ainda sem chamada".');
