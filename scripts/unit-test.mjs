@@ -619,16 +619,16 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     // O botão do recado. O destino virou `#/sai-daqui?aba=recado` na F2, mas o
     // que a âncora guarda é o mesmo: ele leva a TURMA e a DATA do encontro.
     'public/app.js:594': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
-    'public/app.js:1161': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:1186': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:2737': /async function telaScores\(\)/,
-    'public/app.js:2963': /id="pergunta"/,
+    'public/app.js:2805': /async function telaScores\(\)/,
+    'public/app.js:3031': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:4638': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
+    'public/app.js:4708': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
     'src/api.js:334': /erro\(422.*rubrica por ciclo/,
     'src/api.js:460': /'POST \/api\/consentimento'/,
     'src/api.js:924': /periodosSugeridos\(\)/,

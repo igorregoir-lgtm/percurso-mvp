@@ -239,15 +239,8 @@ input[type=text],input[type=date],input[type=number],select{
 .bloco-volta[open]>summary::after{transform:rotate(90deg)}
 .bloco-volta .rot-campo:first-of-type{margin-top:0}
 
-/* contador de "pediram ajuda" */
-.step{display:inline-flex; align-items:center; gap:10px}
-.step button{
-  width:44px; height:44px; border:1px solid var(--line); border-radius:7px;
-  color:var(--muted); font-size:17px; line-height:1; background:var(--card);
-  transition:transform 240ms cubic-bezier(.34,1.56,.64,1);
-}
-.step button:active{transform:scale(.94); transition-duration:60ms}
-.step b{min-width:26px; text-align:center; font-weight:600; font-size:15px}
+/* O stepper saiu na F3: check-ins e "pediram ajuda" viraram entrada direta,
+   um toque por valor. O CSS sai junto — regra morta é dívida silenciosa. */
 
 /* ---------- kpis ---------- */
 .kpis{display:grid; gap:10px; grid-template-columns:repeat(2,1fr)}

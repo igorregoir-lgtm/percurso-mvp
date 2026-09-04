@@ -712,6 +712,7 @@ rota(/^#\/chamada/, async () => {
   ctx.chamada = {
     turma, data,
     marcas: Object.fromEntries(ch.criancas.map(c => [c.id, c.status])),
+    nomes: Object.fromEntries(ch.criancas.map(c => [c.id, c.nome])),
     inicio: performance.now(),           // cronometro: comeca ao abrir a tela
   };
   clearInterval(ctx.cronometro);
@@ -746,9 +747,10 @@ rota(/^#\/chamada/, async () => {
         <button class="btn pequeno secundario" data-acao="todos" data-v="P">Todos presentes</button>
         <span class="sub" id="contador"></span>
       </div>
+      <div id="quem-falta" style="margin-top:8px"></div>
       <div class="chamada-lista" id="lista">
         ${ch.criancas.map(c => `
-          <div class="chamada-item">
+          <div class="chamada-item" id="linha-${c.id}">
             <div class="cresce"><span class="nome">${esc(c.nome)}</span><span class="cod">${esc(c.codigo)}</span></div>
             <div class="pf" role="group" aria-label="Presença de ${esc(c.nome)}">
               <button data-acao="marcar" data-id="${c.id}" data-v="P" aria-pressed="${c.status === 'P'}" aria-label="Presente">P</button>
@@ -771,6 +773,20 @@ function atualizarContador() {
   if (el) el.textContent = `${feitos}/${total} marcadas`;
   const btn = document.querySelector('[data-acao="salvar-chamada"]');
   if (btn) btn.disabled = feitos !== total;
+
+  // QUEM FALTA (F3). O servidor recusa chamada incompleta com 422, e 4xx fica
+  // FORA da fila offline por decisão 17 — numa turma de vinte, procurar a que
+  // ficou sem marcar rolando a lista é o custo que faz a educadora desistir.
+  // Aqui ela vê o nome e pula até ele. É front puro: nenhuma regra muda.
+  const faltando = document.getElementById('quem-falta');
+  if (!faltando) return;
+  const nomes = (c.nomes ?? {});
+  const pendentes = Object.keys(c.marcas).filter(id => !c.marcas[id]);
+  faltando.innerHTML = !pendentes.length ? '' : `
+    <div class="lbl">Falta marcar ${pendentes.length === 1 ? 'uma criança' : `${pendentes.length} crianças`}</div>
+    ${pendentes.slice(0, 8).map(id => `<button type="button" class="p off"
+      data-acao="ir-para-crianca" data-id="${id}">${esc(nomes[id] ?? '—')}</button>`).join('')}
+    ${pendentes.length > 8 ? `<span class="sub"> e mais ${pendentes.length - 8}</span>` : ''}`;
 }
 
 // ======================================================================
@@ -924,6 +940,15 @@ function atualizarObs() {
   if (el) el.textContent = feitos === o.total
     ? 'Tudo marcado. Pode concluir.'
     : `${feitos} de ${o.total} dimensões marcadas — o rascunho guarda o que você já fez.`;
+  // O servidor já protege (422 recuperável) — o custo era a IDA E VOLTA: tocar
+  // em "Concluir", esperar a rede e receber a recusa. O botão sabe disso aqui,
+  // sem pedir nada ao servidor. A regra continua no servidor; isto é só o
+  // aviso chegando antes.
+  const btn = document.getElementById('btn-concluir');
+  if (btn) {
+    btn.disabled = feitos !== o.total;
+    btn.title = feitos === o.total ? '' : `Faltam ${o.total - feitos} dimensão(ões)`;
+  }
 }
 
 const MUDANCA = { avancou: ['↑', 'var(--ok)'], estavel: ['→', 'var(--muted)'], recuou: ['↓', 'var(--red)'], sem_par: ['·', 'var(--muted)'] };
@@ -1880,11 +1905,14 @@ function blocosDaFolha() {
     <div class="cartao">
       <div class="dado">
         <span class="k">Pediram ajuda</span>
-        <span class="step">
-          <button type="button" data-acao="ajuda" data-d="-1" aria-label="Menos um">−</button>
-          <b id="ajuda">${f.campos.pediram_ajuda}</b>
-          <button type="button" data-acao="ajuda" data-d="1" aria-label="Mais um">+</button>
-        </span>
+        <b id="ajuda" style="font-size:15px">${f.campos.pediram_ajuda}</b>
+      </div>
+      <div role="group" aria-label="Quantas pediram ajuda" style="margin:-4px 0 4px">
+        ${Array.from({ length: CHECKIN_ATALHOS + 1 }, (_, n) => `
+        <button type="button" class="p ${f.campos.pediram_ajuda === n ? 'on' : 'off'}"
+          data-acao="ajuda-valor" data-v="${n}" aria-pressed="${f.campos.pediram_ajuda === n}">${n}</button>`).join('')}
+        <button type="button" class="p ${f.campos.pediram_ajuda > CHECKIN_ATALHOS ? 'on' : 'off'}"
+          data-acao="ajuda" data-d="1" aria-label="Mais um">${f.campos.pediram_ajuda > CHECKIN_ATALHOS ? f.campos.pediram_ajuda : '+'}</button>
       </div>
       <div class="dado">
         <span class="k">Faltaram</span>
@@ -2526,6 +2554,44 @@ async function magiaExtracao(texto, promessaPost, catalogos) {
 // ======================================================================
 // CONFIRMAR REGISTRO (F6) — nada é gravado antes de confirmar.
 // ======================================================================
+/**
+ * O QUE A FALA PREENCHEU, E O QUE NÃO (F3).
+ *
+ * A tela de conferência reusava `blocosDaFolha()` inteiro — a mesma coisa que a
+ * folha à mão. Ela tinha moldura própria ("O que entendi") e nenhuma marca:
+ * quem confere não via o que veio da fala, o que ficou em branco, nem o que o
+ * extrator arriscou. Conferir sem saber o que conferir é assinar no escuro.
+ *
+ * Compara a SUGESTÃO com o valor neutro de cada campo — não há telemetria nem
+ * campo novo no servidor; a informação já estava toda em `ctx.folha`.
+ */
+function resumoDoQueAFalaPreencheu() {
+  const f = ctx.folha;
+  const sug = f?.sugestao;
+  if (!sug) return '';
+  const NEUTRO = { atividade: 'nao_identificada', area_tematica: 'nenhuma', procedimento: 'nao_identificado', objetivo: 'nenhum' };
+  const rotulo = { atividade: 'Atividade', area_tematica: 'Área', procedimento: 'Procedimento', objetivo: 'Objetivo' };
+  const veio = [], vazio = [];
+  for (const [campo, rot] of Object.entries(rotulo)) {
+    if (f.campos[campo] == null) continue;               // campo que não vale nesta turma
+    (f.campos[campo] !== NEUTRO[campo] ? veio : vazio).push(rot);
+  }
+  if (f.campos.marcadores_turma?.length) veio.push('Como a turma esteve');
+  else vazio.push('Como a turma esteve');
+  const ck = f.campos.checkin ?? {};
+  const ckPreenchidos = Object.values(ck).filter(v => v != null).length;
+  const ckTotal = Object.keys(ck).length;
+  if (ckTotal) (ckPreenchidos ? veio : vazio).push(`Contagens do grupo (${ckPreenchidos} de ${ckTotal})`);
+
+  return `
+    <div class="aviso ${vazio.length ? '' : 'calmo'}" style="margin-top:14px">
+      <h3>O que eu tirei da sua fala</h3>
+      ${veio.length ? `<p><b>Preenchi:</b> ${esc(veio.join(' · '))}.</p>` : '<p>Não consegui preencher nada.</p>'}
+      ${vazio.length ? `<p style="margin-top:6px"><b>Ficou em branco:</b> ${esc(vazio.join(' · '))} — marque abaixo se quiser.</p>` : ''}
+      ${f.baixaConfianca ? '' : `<p class="sub" style="margin-top:6px">Nada foi gravado. Vale o que você confirmar, não o que eu sugeri.</p>`}
+    </div>`;
+}
+
 async function telaConfirmar() {
   if (!ctx.folha || !ctx.folha.sugestao) { location.hash = '#/registrar'; navegar(); return; }
   const f = ctx.folha;
@@ -2544,6 +2610,8 @@ async function telaConfirmar() {
         <h3>${f.nomesSubstituidos === 1 ? 'Um nome virou código' : `${f.nomesSubstituidos} nomes viraram código`}</h3>
         <p>Você falou o nome de ${f.nomesSubstituidos === 1 ? 'uma criança' : 'crianças'}. O nome não entrou em campo nenhum e não foi gravado — a folha é da turma.</p>
       </div>` : ''}
+
+    ${resumoDoQueAFalaPreencheu()}
 
     <div class="pilha">
       <div id="blocos-folha">${blocosDaFolha()}</div>
@@ -4492,12 +4560,12 @@ document.addEventListener('click', comErro(async (ev) => {
       const presentes = marcacoes.filter(m => m.status === 'P').length;
       const dSeg = Math.round((performance.now() - c.inicio) / 1000);
       toast(`Chamada de ${dataBR(c.data)} salva · ${presentes} presentes · ${Math.floor(dSeg / 60)}m${String(dSeg % 60).padStart(2, '0')}s de registro.`, 'bom');
+      // OFERECE, não navega (F3). Salvar a chamada e ser levada para OUTRA data
+      // sem pedir é o sistema decidindo o próximo passo pela pessoa — e ela
+      // acabou de terminar uma tarefa. A oferta fica no Hoje, onde ela já vai.
+      location.hash = '#/hoje';
       if (r.abertas?.length) {
-        location.hash = `#/chamada?data=${r.abertas[r.abertas.length - 1]}`;
-        toast(`Ainda há ${r.abertas.length} data(s) em aberto — abri a próxima para você.`);
-        navegar();
-      } else {
-        location.hash = '#/hoje';
+        toast(`Ainda há ${r.abertas.length} data(s) em aberto — estão no Hoje quando você quiser.`);
       }
     } finally { alvo.disabled = false; }
     return;
@@ -4588,10 +4656,12 @@ document.addEventListener('click', comErro(async (ev) => {
     return;
   }
 
-  if (a === 'ajuda') {
+  if (a === 'ajuda' || a === 'ajuda-valor') {
     const c = ctx.folha.campos;
-    c.pediram_ajuda = Math.max(0, Math.min(30, c.pediram_ajuda + Number(alvo.dataset.d)));
-    document.getElementById('ajuda').textContent = c.pediram_ajuda;
+    c.pediram_ajuda = a === 'ajuda-valor'
+      ? Number(alvo.dataset.v)
+      : Math.max(0, Math.min(30, c.pediram_ajuda + Number(alvo.dataset.d)));
+    repintarBlocosDaFolha();
     return;
   }
 
@@ -4782,6 +4852,16 @@ document.addEventListener('click', comErro(async (ev) => {
         if (el) el.textContent = 'Já dá para tocar em Terminei — ou siga falando';
       }
     }, 1000);
+    return;
+  }
+
+  if (a === 'ir-para-crianca') {
+    const linha = document.getElementById(`linha-${alvo.dataset.id}`);
+    if (!linha) return;
+    linha.scrollIntoView({ behavior: REDUZ.matches ? 'auto' : 'smooth', block: 'center' });
+    // Pisca só se a pessoa não pediu para reduzir movimento; o foco vai para o
+    // botão P, que é o que ela vai tocar em seguida.
+    linha.querySelector('[data-acao="marcar"]')?.focus({ preventScroll: true });
     return;
   }
 
