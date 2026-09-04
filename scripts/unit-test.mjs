@@ -627,14 +627,14 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     'public/app.js:613': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
     'public/app.js:1418': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:3222': /async function telaScores\(\)/,
-    'public/app.js:3453': /id="pergunta"/,
+    'public/app.js:3213': /async function telaScores\(\)/,
+    'public/app.js:3444': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:5530': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'public/app.js:5521': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
     'src/api.js:424': /erro\(422.*rubrica por ciclo/,
     'src/api.js:684': /'POST \/api\/consentimento'/,
     'src/api.js:1191': /periodosSugeridos\(\)/,
@@ -2819,14 +2819,27 @@ test('evidência: guarda o vídeo fora de public/, recusa formato estranho e nã
 });
 
 // --- travas de TELA, que nenhuma função de domínio pega -------------------
-test('a governança dos campos saiu da ficha (pedido do campo: "não tem utilidade para o usuário")', async () => {
+test('a tabela de governança não é renderizada em tela nenhuma (pedido do campo, 04/09/2026)', async () => {
+  // "Pode excluir tudo isso… essa parte da governança não tem qualquer tipo de
+  // utilidade para o usuário" — dito primeiro sobre a ficha e, depois, sobre a
+  // tela de Consentimentos, que era onde a tabela de fato morava.
+  //
+  // O QUE SAIU foi a EXIBIÇÃO. A governança continua sendo o mecanismo: campo
+  // sem base legal declarada não entra no sistema, e `governanca_campo` segue
+  // decidindo o que nasce bloqueado. Este gate separa as duas coisas — se
+  // alguém reintroduzir a tabela numa tela, ele falha; se alguém tirar a REGRA,
+  // falham os testes de consentimento, que são outros.
   const { readFileSync } = await import('node:fs');
   const front = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  for (const proibido of ['Governança dos campos', 'Governança por campo', 'Base legal</th>']) {
+    assert.ok(!front.includes(proibido),
+      `"${proibido}" voltou para a interface — a governança é regra do sistema, não leitura de tela`);
+  }
+  // Mas a REGRA continua de pé, e é o que a API entrega.
+  assert.ok(D.painelConsentimentos().governanca.length >= 5);
+  // E o que entrou no lugar, na ficha: a porta do olhar e o boletim.
   const ficha = front.slice(front.indexOf('async function telaFichaDaCrianca'),
                             front.indexOf('async function telaParecer'));
-  assert.ok(!ficha.includes('Governança dos campos'),
-    'a tabela de base legal voltou para a ficha — ela vive só em #/consentimentos');
-  // O que ENTROU no lugar: a porta do olhar e o boletim do responsável.
   assert.match(ficha, /blocoRegistrarOlhar/);
   assert.match(ficha, /cartaoBoletim/);
 });

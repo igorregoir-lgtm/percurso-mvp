@@ -28,9 +28,19 @@
 > apagar é apagar a prova.
 >
 > **4. *"Pode excluir tudo isso… essa parte da governança não tem utilidade para o usuário."***
-> A tabela de base legal estava **duas vezes** no produto. Em `#/consentimentos` é ferramenta de
-> trabalho; na ficha de cada criança era cinco colunas de texto jurídico entre a rubrica e o
-> parecer. Saiu **só da ficha** (**dec. 45**), com gate para não voltar.
+> Eu li isso como *"está no lugar errado"* e tirei só da ficha, alegando que em `#/consentimentos`
+> era ferramenta de trabalho. **Errado, e ele voltou no mesmo dia:** *"eu estou pedindo para excluir
+> este texto da governança por campo. Não faz sentido ele estar dentro do app. Este deve ser um app
+> profissional."* O que ele disse não era "lugar errado" — era **produto errado**. Base legal,
+> titular, acesso e retenção são a justificação do sistema, não leitura de quem está trabalhando:
+> ninguém abre Consentimentos para ler cinco colunas de texto jurídico, abre para desbloquear a
+> criança que está esperando. **Saiu de toda tela** (**dec. 45**); continua sendo regra do banco, do
+> `seed.js` e do `MODELO-DE-DADOS.md`, e o gate passou a varrer o front inteiro, separando as duas
+> coisas — tabela na tela reprova; regra removida reprova em outros testes.
+>
+> **A lição, que é sobre mim:** quando o campo diz "isto não tem utilidade para o usuário", a
+> primeira leitura tende a ser a que preserva mais do meu trabalho. Foi o que fiz, e custou uma
+> rodada.
 >
 > **5. *"Áudio pode ser importado de qualquer lugar do celular."*** Era um defeito silencioso:
 > `accept="audio/*"` parece inofensivo e, no iPhone, faz um áudio de WhatsApp (`.opus`) ou do Drive

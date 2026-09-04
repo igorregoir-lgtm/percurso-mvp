@@ -1966,16 +1966,7 @@ rota(/^#\/consentimentos/, async () => {
         </div>
       </details>` : ''}
     </div>
-
-    <div class="cartao" style="margin-top:14px">
-      <h2>Governança por campo</h2>
-      <p class="sub">Regra 3 do bloco 6: campo sem estas quatro respostas não entra no sistema.</p>
-      <div class="rolagem" style="margin-top:10px"><table>
-        <thead><tr><th>Campo</th><th>Base legal</th><th>Titular</th><th>Acesso</th><th>Retenção</th></tr></thead>
-        <tbody>${d.governanca.map(g => `<tr>
-          <td><b>${esc(g.rotulo)}</b></td><td>${esc(g.base_legal)}</td><td>${esc(g.titular)}</td>
-          <td>${esc(g.acesso)}</td><td>${esc(g.retencao)}</td></tr>`).join('')}</tbody></table></div>
-    </div>`;
+`;
 });
 
 // ======================================================================

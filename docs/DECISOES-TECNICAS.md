@@ -1200,23 +1200,36 @@ seletor de arquivo, que é justamente o que a primeira metade desta decisão con
 
 ---
 
-### 45. A governança dos campos sai da ficha (04/09/2026)
+### 45. A governança dos campos deixa de ser tela (04/09/2026)
 
-**Origem:** *"pode excluir tudo isso… essa parte da governança não tem qualquer tipo de utilidade
-para o usuário."*
+**Origem, em duas frases do dono do produto no mesmo dia.** Primeiro sobre a ficha: *"pode excluir
+tudo isso… essa parte da governança não tem qualquer tipo de utilidade para o usuário."* Removi da
+ficha e deixei em `#/consentimentos`, argumentando que ali era ferramenta de trabalho da coordenação.
+Estava errado, e ele voltou: *"eu estou pedindo para excluir este texto da governança por campo. Não
+faz sentido ele estar dentro do app. Este deve ser um app profissional."*
 
-A tabela de base legal / titular / acesso / retenção estava **duas vezes** no produto: em
-`#/consentimentos`, onde é ferramenta de trabalho da coordenação, e na **ficha de cada criança**, onde
-a professora e a psicóloga a viam toda vez que abriam uma criança. No segundo lugar ela não decide
-nada: quem abre a ficha vai olhar presença e trajetória, e cinco colunas de texto jurídico entre a
-rubrica e o parecer só empurram o resto da tela para baixo.
+**A correção do meu erro de leitura.** Eu tinha entendido "no lugar errado"; o que ele disse foi **no
+produto errado**. Base legal, titular, acesso e retenção são a **justificação** do sistema, não uma
+leitura que alguém faça durante o trabalho: ninguém abre Consentimentos para ler cinco colunas de
+texto jurídico — abre para desbloquear a criança que está esperando. Documentação dentro do produto
+faz o produto parecer um relatório de conformidade, e essa foi a palavra dele: *profissional*.
 
-**Foi removida da ficha, e só dela.** A governança continua inteira em `#/consentimentos`, continua
-sendo a regra 3 do bloco 6, e continua bloqueando campo sem base legal declarada. O que saiu foi a
-**repetição no lugar errado** — e um gate no `unit-test` impede que ela volte para lá.
+**O que saiu foi a EXIBIÇÃO, não a regra**, e a distinção é o ponto:
 
-**O que entrou no espaço que ela deixou:** a porta para registrar o olhar do ciclo (decisão 46) e o
-boletim do responsável (decisão 43).
+| Continua | Saiu |
+|---|---|
+| `governanca_campo` como tabela do banco | a tabela renderizada em `#/consentimentos` |
+| campo sem base legal declarada **não entra no sistema** (regra 3 do bloco 6) | a mesma tabela, que já tinha saído da ficha |
+| `GET /api/consentimentos` devolve `governanca` — o smoke afirma sobre ela | — |
+| a declaração por escrito, em `MODELO-DE-DADOS.md` e `seed.js` | — |
+
+O gate do `unit-test` mudou junto e passou a varrer **o front inteiro**, não só a ficha: se a tabela
+voltar a qualquer tela, ele falha; se alguém tirar a **regra**, quem falha são os testes de
+consentimento, que são outros. Separar os dois no gate é o que impede a próxima pessoa de ler "saiu
+a governança" como "acabou a governança".
+
+**O que entrou no espaço que ela deixou, na ficha:** a porta para registrar o olhar do ciclo
+(decisão 46) e o boletim do responsável (decisão 43).
 
 ---
 

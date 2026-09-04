@@ -248,6 +248,13 @@ quatro respostas do bloco 6.** A regra virou chave estrangeira.
 
 ## A tabela de governança, como está semeada
 
+> **Ela mora AQUI, não numa tela** (decisão 45, 04/09/2026). A governança é a **justificação** do
+> sistema: ela decide o que nasce bloqueado e recusa campo sem base legal declarada. Isso é
+> mecanismo, e mecanismo não precisa ser lido durante o trabalho — ninguém abre Consentimentos para
+> ler cinco colunas de texto jurídico; abre para desbloquear a criança que está esperando. A tabela
+> saiu da interface e ficou onde ela de fato serve: neste documento e em `src/seed.js`.
+
+
 | Campo | Base legal | Titular | Acesso | Retenção |
 |---|---|---|---|---|
 | Presença | Legítimo interesse (LGPD Art. 7º, IX) | Organização | Equipe do programa | 5 anos |

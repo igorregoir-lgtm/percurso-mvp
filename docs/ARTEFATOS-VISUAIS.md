@@ -52,7 +52,7 @@ aberto**, que é onde a fusão de superfícies da F6 se vê.
 
 - **A dor dela** — `#/entrar` → Carolina → `#/hoje` → *Falar agora* → `#/registrar` capturando →
   *Terminei* → `#/registrar` conferindo → *Confirmar e guardar* → **`#/sai-daqui`**. Este último
-  passo era o conserto do **passo 05** do task flow, feito em 04/09/2026: `public/app.js:5530` passou a abrir o relato e
+  passo era o conserto do **passo 05** do task flow, feito em 04/09/2026: `public/app.js:5521` passou a abrir o relato e
   o relato não abre sozinho. No v3, confirmar a folha abre o relato.
 - **A segunda turma** — `#/hoje` → chip *Sábado tarde* → `#/hoje` da tarde. Hoje esse caminho não
   existe: `GET /api/hoje` monta tudo a partir de `turmas[0]`.
@@ -135,11 +135,15 @@ mostra a origem de cada campo; e existe seletor de turma.
 > ganhou a **porta do registro** dentro do cartão do ciclo (decisão 46) — que era a pergunta do
 > campo: *"onde esses pontos são registrados?"*.
 >
-> **Duas coisas do código não têm par no desenho, e não por esquecimento:** a decisão 45 (a
-> governança dos campos sai da ficha) **não muda nada aqui**, porque o protótipo v3 nunca desenhou
-> aquela tabela na ficha — ela sempre esteve só em `#/consentimentos`, que é onde o código a deixou;
-> e a decisão 44 (áudio compartilhado pelo sistema) acontece **fora do aplicativo**, na folha de
-> compartilhamento do celular, que não é superfície que este arquivo desenhe.
+> **A decisão 45 mudou de tamanho no fim do dia, e o desenho mudou junto.** A primeira leitura foi
+> *"a tabela de governança está no lugar errado"*, e ela saiu só da ficha. A correção do dono do
+> produto foi outra: *"não faz sentido ele estar dentro do app"*. A tabela saiu de **`#/consentimentos`
+> também**, no código e aqui — e no lugar dela ficou o corte que a coordenação de fato usa naquela
+> tela: **quem tem a prova em vídeo e quem só tem a palavra de quem digitou**.
+>
+> **Uma decisão continua sem par no desenho, e não por esquecimento:** a 44 (áudio compartilhado
+> pelo sistema) acontece **fora do aplicativo**, na folha de compartilhamento do celular, que não é
+> superfície que este arquivo desenhe.
 
 > **Ressalva de leitura, registrada em 03/09/2026.** O conector do Figma expõe apenas **uma página
 > por arquivo**, e no `h6AnLVYLfpeVl2N4ie0Qzv` a página exposta é o `Leia-me` — cujo texto manda
