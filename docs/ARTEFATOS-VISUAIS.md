@@ -38,7 +38,7 @@ de **uma pendência** por painel, alívio quando não há nada pendente (*"Ningu
 semana — isso é o seu registro funcionando, não é sorte"*), **ponto** em vez de contador (contador
 lê como caixa de entrada em dívida), e o limite dito na própria tela: *"conta quantos, nunca quem"*.
 
-As três entradas contextuais que também existem (`Quem veio sábado` no cartão de captura, `Ver a
+As três entradas contextuais que também existem (`Chamada` no cartão de captura, `Ver a
 turma inteira` no cartão do grupo, `Pensar junto` no painel) são **redundância deliberada**: a Aurora
 é a porta geral, elas são a porta do contexto. Quem não descobrir o ❋ ainda chega.
 
