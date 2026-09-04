@@ -233,7 +233,8 @@ próprio, alimentado pela profissional, pela coordenação ou pela direção.
 
 Na prática, o fluxo `#/voz` de hoje só existe numa janela: durante ou logo depois do encontro. É
 exatamente a hora em que o campo mostra que ela **não tem mãos livres** — e a hora seguinte é onde
-ela responde *"Não dá, não dá"*. Faltam, portanto, seis coisas, nenhuma delas implementada:
+ela responde *"Não dá, não dá"*. Faltavam, portanto, seis coisas. Em 03/09/2026 **duas foram
+implementadas** (F1) — as duas últimas da tabela; as outras quatro seguem em aberto:
 
 | O que falta | Por quê | O que exige |
 |---|---|---|
@@ -241,13 +242,23 @@ ela responde *"Não dá, não dá"*. Faltam, portanto, seis coisas, nenhuma dela
 | **Aviso antes de cada encontro** | o lembrete precisa chegar quando ainda dá para apertar "gravar", não depois | notificação da PWA com regra de antecedência; hoje o produto não emite nenhuma notificação |
 | **O encontro nunca fecha** | registro atrasado precisa entrar com a data do encontro, não a de hoje | modelo de dados aceitar data retroativa + marca de "registrado depois"; o encontro em aberto continua aparecendo até ser registrado |
 | **A fala preenche os seis indicadores** | a rubrica é o instrumento da casa e não pode continuar dependendo de digitação | hoje os seis indicadores são respondidos à mão, criança por criança (~3 min cada, `#/observacao/:id`), e o extrator de `src/voz.js` só preenche a folha do dia e o check-in de grupo — falta extrair a escala 1–4 por indicador, com o mesmo gate de confirmação humana |
-| **Gravar o encontro inteiro** | captura de custo zero: ela aperta no começo e larga o celular na mesa | transcrição local de áudio longo — o `SpeechRecognition` do navegador não serve |
-| **Importar um áudio que ela já tem** | o áudio do gravador do celular ou do WhatsApp, de hoje ou de três semanas atrás | transcrição local **de arquivo**; `ai/model-manifest.json` não tem modelo de áudio (`#/importar` é CSV) |
+| ~~**Gravar o encontro inteiro**~~ **— existe desde 03/09/2026 (porta B)** | captura de custo zero: ela aperta no começo e larga o celular na mesa | `MediaRecorder` em blocos fechados de 5 min + `whisper.cpp` no computador do Instituto (`src/transcricao.js`, `public/audio.js`). **Nasce desligada**, liga por escolha explícita e por aparelho |
+| ~~**Importar um áudio que ela já tem**~~ **— existe desde 03/09/2026 (porta C)** | o áudio do gravador do celular ou do WhatsApp, de hoje ou de três semanas atrás | o navegador decodifica o arquivo, converte para WAV 16 kHz e manda transcrever; `ai/model-manifest.json` passou a ter whisper-small e whisper-base, com SHA-256 |
 
-**Condição inegociável para as duas últimas.** O campo chamou gravar criança de *"perigoso"*. As
-duas só podem existir com três garantias ditas na própria tela, no instante do toque: o áudio não
-sai do aparelho, é apagado assim que vira texto, e nome falado vira código antes de qualquer
-gravação. Sem essas três frases visíveis, não se constrói.
+**Condição inegociável para as duas últimas, e como ela foi cumprida.** O campo chamou gravar
+criança de *"perigoso"*. As duas só podem existir com três garantias ditas na própria tela, no
+instante do toque — e a **primeira delas mudou de conteúdo** quando a arquitetura ficou honesta
+(F0/F1): o `whisper.cpp` roda num *host*, não no celular, então o áudio **sai** do aparelho. A
+promessa verdadeira, que é a que a tela faz hoje:
+
+1. o áudio vai **só para o computador do Instituto**, pela rede daqui, e não sobe para a internet;
+2. é **apagado assim que vira texto** — e isto é mecanismo, não frase: `finally`, varredura de
+   órfãos no boot e teto de idade, com gate próprio (`npm run test:audio`) que falha se o arquivo
+   sobreviver a uma transcrição interrompida;
+3. nome falado **vira código** antes de qualquer gravação.
+
+A porta B acrescenta a quarta, porque é a única em que a sala inteira é gravada: a tela diz **quem
+está sendo gravado**, ela nasce desligada e só liga por escolha explícita, por aparelho.
 
 
 ### Ganhos e custos, honestos

@@ -1,5 +1,66 @@
 # Handoff — 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
 
+> ## Sessão de 03/09/2026 (noite) — a captura por áudio, de ponta a ponta
+>
+> Cinco commits (`1ea4041` a `4ae41a1`, mais o de documentos), executando a frente **F1** do plano
+> aprovado, na ordem que a revisão do próprio plano impôs: **HTTPS antes de tudo**, porque
+> `getUserMedia` exige contexto seguro e o IP da rede local não conta.
+>
+> **A decisão que o plano não tinha tomado, e sem a qual a frente não era executável.** O
+> `whisper.cpp` roda num *host*, não no celular. Adotá-lo em silêncio faria a F1 **falsificar a
+> frase que ela mesma declarava inegociável** — *"o áudio não sai do aparelho"*. A saída não foi
+> esconder: foi trocar a promessa por uma verdadeira, por caminho, e escrever isso como
+> **decisão 35**. A captura curta continua no aparelho quando o navegador sabe; as três portas
+> longas mandam o áudio para o computador do Instituto, pela rede daqui.
+>
+> **O que existe agora:** as portas **A′** (narrar sem pressa), **C** (trazer um áudio que ela já
+> tem) e **B** (deixar gravando o encontro, desligada por padrão) — as três terminando no MESMO
+> campo de escrever, com "Terminei" como única saída. Porta nova que virasse fluxo novo seria mais
+> tela, o contrário do que o campo pediu.
+>
+> **E os "40 segundos" deixaram de ser teto.** O relógio conta para cima e, aos 40 s, troca de
+> frase em vez de desligar o microfone. Isso obrigou a acrescentar o **religamento** do
+> reconhecimento (que só existia no ditado de campo): sem ele, tirar o limite seria prometer "fale
+> sem pressa" e desligar na primeira respirada do Safari.
+>
+> **Cinco armadilhas novas, todas encontradas verificando em vez de confiar:**
+>
+> 1. **`aoSegundo?.(++segundos)` nunca incrementava** sem callback — com encadeamento opcional o
+>    *argumento* não é avaliado. O contador ficava em zero para quem lesse `.segundos`.
+> 2. **A `reancorar.mjs` escreveu uma colisão.** Moveu `510 → 511`, onde já havia âncora, e chave
+>    duplicada em objeto JS **some em silêncio**: a tabela cairia de 18 para 17 sem sinal nenhum —
+>    exatamente a espécie de falha que essas âncoras existem para impedir. A ferramenta passa a
+>    recusar, e **o teste passa a contar as linhas escritas contra as chaves vivas**.
+> 3. **A mesma ferramenta corrompeu um intervalo** (`2234-2238` → `2468-2238`, que anda para trás)
+>    e **reescreveu história neste arquivo**. Agora ela desloca as duas pontas e nunca toca no
+>    HANDOFF — que é registro do passado. O teste passa a excluí-lo pelo mesmo motivo: até então
+>    aquilo passava por **coincidência**, porque o número antigo por acaso ainda era âncora.
+> 4. **O estágio 2 quebrou o estágio 1 sem que nada acusasse.** `/api/voz/extrair` recusava texto
+>    acima de 4000 caracteres — a medida de uma fala de 40 s. Cinco minutos de narração já passam
+>    disso: o teto antigo recusaria justamente a captura que as portas longas existem para
+>    permitir. Só apareceu porque o estágio 3 foi mexer nos "40 segundos".
+> 5. **O extrator com modelo receberia o encontro inteiro.** Este porte não lê isso; o slot
+>    falharia e cairia no extrator lexical **em silêncio**. O corte de contexto passou a ser
+>    declarado no código.
+>
+> **Gate novo: `npm run test:audio`** (15 asserções), no padrão do `ai-stub-test.mjs`. O
+> `scripts/whisper-stub.mjs` imita a interface do `whisper-cli`, e o que se testa é o que importa e
+> não depende dos 465 MB de modelo: **o ciclo de vida do arquivo**. Provado como gate de verdade —
+> removendo o `finally` de `src/transcricao.js`, quatro asserções caem.
+>
+> **O que NÃO foi feito, e por quê:**
+> - **A velocidade do whisper na máquina do Instituto não foi medida.** Não há whisper instalado
+>   aqui, e a estimativa que circulava (*"~6× tempo real"*) **não diz nem a direção**. Está na
+>   tabela de dívidas como dívida, não como número — inventar seria pior.
+> - **Capturar ainda depende de um encontro já existir** (`#/voz` redireciona sem encontro,
+>   `src/voz.js` devolve 404). A porta C — *"um áudio de três semanas atrás"* — esbarra nisso. É
+>   dependência declarada da frente do calendário, não esquecimento.
+> - **`docs/jornada-usuario/` e `docs/revisao/`** foram tocados só no que era mentira de produto;
+>   o resto é material datado e fica como está.
+>
+> **Gates: 385 smoke · 170 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.**
+>
+
 > **Auditoria OPAR desta sessão:** `~/.claude/AUDITORIA-OPAR-sessao-2026-09-03.md` — três eixos
 > adversariais, **45 achados, 44 confirmados e 1 refutado**, 44 corrigidos em `b657846` (infra),
 > `60c0cf3` (domínio) e `f481bec` (docs). Três itens ficaram **abertos por decisão** e estão

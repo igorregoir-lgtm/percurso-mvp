@@ -961,6 +961,18 @@ test('a promessa sobre o áudio não pode ser incondicional (F0)', async () => {
     'a linha de governança do áudio precisa dizer de quem é a transcrição');
   assert.doesNotMatch(linha, /base_legal: 'Não coletado —/,
     'a governança não pode afirmar "não coletado" sem qualificar o caminho remoto');
+
+  // 4. e a F1 mudou o FATO: nas portas longas o áudio CHEGA ao servidor do
+  //    Instituto. Dizer só "não é coletado" continuaria verdade para a captura
+  //    curta e viraria mentira na porta mais poderosa do produto — na mesma
+  //    tela, uma linha abaixo.
+  const longa = seed.split('\n').find((l) => l.includes("campo: 'audio_longo'")) || '';
+  assert.ok(longa, 'a governança precisa declarar o áudio das portas longas (decisão 35)');
+  assert.match(longa, /transitória|transitoria/i, 'a coleta transitória tem de estar dita');
+  assert.match(longa, /apagado ao virar texto/i, 'a retenção tem de dizer o que de fato acontece');
+  const sala = seed.split('\n').find((l) => l.includes("campo: 'audio_da_sala'")) || '';
+  assert.ok(sala, 'a porta B grava a sala inteira e precisa de linha própria');
+  assert.match(sala, /exige_consentimento: 1/, 'gravar a sala com as crianças exige consentimento');
 });
 
 test('o botão do recado segue o ENCONTRO da folha, não o dia de hoje', async () => {

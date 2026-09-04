@@ -14,7 +14,7 @@ Em outro:
 node scripts/smoke-test.mjs
 ```
 
-Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **383 passaram,
+Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **385 passaram,
 0 falharam**.
 
 Há também uma bateria de **170 testes unitários** das regras críticas de domínio (filtro de
@@ -26,7 +26,18 @@ síntese, fecho de ciclo, cadastro e arquivo de pessoas, base fixa da curva de p
 node scripts/unit-test.mjs
 ```
 
-As quatro baterias (unitária, RAG, IA com stub e smoke) rodam a cada push via [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
+E uma bateria de **15 asserções da transcrição de áudio** (decisão 35), que não precisa dos 465 MB
+do modelo — o `scripts/whisper-stub.mjs` imita a interface do `whisper-cli`, e o que se testa é o
+que importa e não depende do modelo: **o ciclo de vida do arquivo**. *"O áudio é apagado assim que
+vira texto"* é a frase que a tela mostra no instante do toque; sem este gate ela seria só frase.
+Verificado como gate de verdade: removendo o `finally` de `src/transcricao.js`, quatro asserções
+caem.
+
+```bash
+node scripts/audio-stub-test.mjs
+```
+
+As cinco baterias (unitária, RAG, IA com stub, áudio com stub e smoke) rodam a cada push via [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
 Os testes **alteram o banco** (concluem observações, aprovam a síntese, revogam consentimento).
 Para voltar ao estado de demonstração — pode rodar com o servidor no ar, é só recarregar a página:

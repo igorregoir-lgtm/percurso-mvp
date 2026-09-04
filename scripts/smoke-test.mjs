@@ -319,6 +319,15 @@ secao('8 · Consentimento desbloqueia o campo (F1 · LGPD Art. 14)');
   T('painel de consentimentos separa ativos de pendentes', c.pendentes > 0 && c.ativos > 0);
   T('a tabela de governança declara os 4 atributos de cada campo',
     c.governanca.every(g => g.base_legal && g.titular && g.acesso && g.retencao));
+  // Decisão 35: com as portas longas o áudio CHEGA ao servidor. A tela de
+  // Consentimentos é onde a organização lê o que o produto faz — se a linha não
+  // estiver ali, a mudança aconteceu escondida.
+  const gLonga = c.governanca.find(g => g.campo === 'audio_longo');
+  const gSala = c.governanca.find(g => g.campo === 'audio_da_sala');
+  T('a governança declara o áudio longo como coleta transitória, apagada ao virar texto',
+    !!gLonga && /transit/i.test(gLonga.base_legal) && /apagado ao virar texto/i.test(gLonga.retencao));
+  T('e a porta que grava a sala com as crianças exige consentimento',
+    !!gSala && gSala.exige_consentimento === 1);
 
   const semResp = await POST('rita', '/api/consentimento', {
     crianca_id: criancaBloqueada.crianca_id, campo: 'rubrica_socioemocional', status: 'ativo',

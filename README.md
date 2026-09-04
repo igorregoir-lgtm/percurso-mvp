@@ -76,17 +76,38 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **383 asserções de fluxo** e **170 testes unitários** — mais a avaliação do RAG
-(`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização) e a bateria da
+São **385 asserções de fluxo** e **170 testes unitários** — mais a avaliação do RAG
+(`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização), a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
-modelo). As quatro baterias rodam a cada push (`.github/workflows/ci.yml`), sempre com
-`AI_ENABLED=false` — os gates que exigem modelo real são locais (`ai/README.md`).
+modelo) e a da transcrição de áudio com stub (`npm run test:audio`: o ciclo de vida do arquivo, que
+é a garantia que a tela faz no instante do toque — 15 asserções, sem os 465 MB de modelo). As cinco
+baterias rodam a cada push (`.github/workflows/ci.yml`), sempre com `AI_ENABLED=false` — os gates
+que exigem modelo real são locais (`ai/README.md`).
 
 Para usar outra porta:
 
 ```bash
 PORT=8080 node server.js
 ```
+
+### Ligar a transcrição de áudio longo (opcional)
+
+As portas **A′** (narrar sem pressa), **B** (deixar gravando o encontro) e **C** (trazer um áudio
+que já existe) transcrevem no **computador do Instituto**, não no celular:
+
+```bash
+brew install whisper-cpp          # ou o equivalente da distribuição
+ai/scripts/setup-model.sh         # baixa e valida também o whisper-small (465 MB)
+PERCURSO_AUDIO=1 PERCURSO_HTTPS=1 node server.js
+```
+
+Sem `PERCURSO_AUDIO=1` o produto é idêntico ao de antes e a tela **não oferece** as três portas —
+oferecer uma porta que devolve erro seria pior que não ter porta. O áudio chega ao servidor, é
+transcrito e **apagado no mesmo instante**, sempre: `finally`, varredura de órfãos no boot e teto
+de idade. `GET /api/audio/status` diz se a máquina está pronta.
+
+A porta B é a única em que a sala inteira é gravada, com as crianças. Ela nasce **desligada mesmo
+com o recurso ligado** e só liga por escolha explícita, aparelho por aparelho.
 
 ### Ligar a camada de IA local (opcional)
 
@@ -307,7 +328,7 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    383 asserções do fluxo principal (contra o servidor no ar)
+scripts/smoke-test.mjs    385 asserções do fluxo principal (contra o servidor no ar)
 scripts/unit-test.mjs     170 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo

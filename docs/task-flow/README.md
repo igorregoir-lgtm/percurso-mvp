@@ -63,8 +63,11 @@ Os cinco ajustes feitos no protocolo depois disso estão na faixa escura do PNG.
 2. **A tarefa termina no relato liberado**, não na folha confirmada — é o relatório, não a folha,
    que é a dor nomeada em campo.
 
-E o que fica de fora: as portas **B** (gravar o encontro inteiro) e **C** (importar um áudio) da
-jornada v2 não existem no MVP. Simular o que não existe contamina o dado.
+E o que ficava de fora: as portas **B** (gravar o encontro inteiro) e **C** (importar um áudio) da
+jornada v2 **não existiam no MVP quando este protocolo foi escrito**. Passaram a existir em
+03/09/2026 (F1). O protocolo continua valendo como está — a tarefa mede a porta A′, que é a mais
+curta — mas as duas deixaram de ser simulação proibida e podem virar tarefa própria numa
+remedição.
 
 ## 4. O que este teste não prova
 

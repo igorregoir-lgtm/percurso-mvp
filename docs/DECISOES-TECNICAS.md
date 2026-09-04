@@ -139,7 +139,7 @@ autenticação por senha ou SSO; (b) HTTPS; (c) registro de auditoria de acesso 
 
 ### 9. Dados sintéticos determinísticos
 
-PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 383
+PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 385
 asserções de fluxo e os 170 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
 a *hoje*, então a demonstração nunca "envelhece".
 
@@ -783,6 +783,58 @@ registro da época.
 
 ---
 
+### 35. Áudio longo transcreve no computador do Instituto — e a tela diz isso
+
+**Origem:** a jornada v2 declarou quatro portas de entrada, e as portas **A′** (narrar sem pressa),
+**B** (deixar gravando o encontro) e **C** (trazer um áudio que ela já tem) exigem transcrever fala
+longa. O `SpeechRecognition` do navegador não serve para isso: é feito para ditado curto e, no
+caminho mais comum, nem sequer transcreve no aparelho (decisão da F0).
+
+**A escolha, e o que ela custa.** O transcritor é o `whisper.cpp` (binário do sistema, mesmo padrão
+do `llama-server` — nada entra por npm, a decisão nº 1 continua de pé). Ele roda num **host**, não
+no celular. Logo o áudio **sai do aparelho** e atravessa a rede local até o computador do
+Instituto. Isto **falsifica a frase que a jornada v2 tinha declarado inegociável** — *"o áudio não
+sai do aparelho"* — e a saída não foi esconder o custo: foi trocar a promessa por uma verdadeira.
+
+| Caminho | Onde transcreve | O que a tela promete |
+|---|---|---|
+| Ao vivo, curto | no aparelho quando o navegador sabe (`processLocally`) | *"fica no aparelho"* |
+| A′, B e C | `whisper.cpp` no computador do Instituto | *"vai só para o computador do Instituto, pela rede daqui, e é apagado assim que vira texto"* |
+
+**O ciclo de vida do arquivo é MECANISMO, não promessa.** O whisper lê arquivo — logo existe
+arquivo, logo existe janela em que ele sobrevive. Três defesas, porque uma só falha em silêncio:
+apagar no `finally` (cobre sucesso, erro e timeout), varredura de órfãos no boot (cobre a queda do
+processo no meio) e teto de idade na varredura (não apaga o arquivo de uma transcrição em curso).
+O gate `npm run test:audio` **falha se o arquivo sobreviver a uma transcrição interrompida** —
+verificado removendo o `finally`: quatro asserções caem.
+
+**Conversão no cliente, para não trazer outro binário.** O navegador decodifica o áudio já em
+16 kHz quando aceita a taxa no construtor, e só reamostra com `OfflineAudioContext` quando não
+aceita. Isso evita o `ffmpeg` — mais um binário numa casa que não tem profissional de tecnologia
+seria custo real, não detalhe.
+
+**Gravação em blocos fechados de 5 minutos**, e isto é memória: decodificar uma hora de áudio de
+uma vez custa mais de 1 GB de `Float32Array` e mata o celular. O gravador para e recomeça, cada
+bloco é um arquivo completo que vira texto sozinho, e a memória volta ao chão entre eles.
+
+**A rota de transcrição não usa a fila offline**, de propósito: a fila reenvia sozinha quando a
+rede volta, e reenviar dezenas de MB de áudio sem a pessoa mandar seria pior que perguntar. Quando
+a rede cai no meio, o pedaço fica guardado no aparelho e a tela diz isso, com "Tentar de novo".
+
+**Desligado por padrão** (`PERCURSO_AUDIO=1`), e a porta B — a única em que a sala inteira é
+gravada, com as crianças — nasce desligada **também dentro do recurso ligado**: ela só liga por
+escolha explícita de quem responde pela turma, e por aparelho. A governança em `src/seed.js` ganhou
+duas linhas (`audio_longo` e `audio_da_sala`) que a tela de Consentimentos renderiza.
+
+**Pré-requisito duro:** `getUserMedia` exige contexto seguro. Pelo IP da rede local sem HTTPS a
+captura simplesmente não existe — daí o `PERCURSO_HTTPS=1` ter vindo antes desta frente.
+
+**O que ainda não foi medido, e por isso não está prometido:** a velocidade do whisper na máquina
+do Instituto. Os notebooks doados nunca foram avaliados, e a estimativa de *"~6× tempo real"* que
+circulava **não diz nem a direção**. Fica como dívida declarada, não como número.
+
+---
+
 ---
 
 ## Dívidas técnicas conhecidas
@@ -804,3 +856,5 @@ registro da época.
 | Template do relato do procedimento é provisório | Pode não bater com o padrão que o conselho pede a ela | Quando o modelo prometido na visita chegar (decisão 31) |
 | Extrator lê contagens por padrão lexical | Fala fora do padrão ("umas seis") fica em branco | Medir a taxa de correção do check-in na operação; Modo A por modelo continua opt-in |
 | Neutralização do perímetro por lista fechada | Sintagma novo do procedimento volta a ser barrado | Ampliar `NEUTRALIZAVEIS_VIVENCIA` com a psicóloga, nunca por inferência |
+| Velocidade do whisper na máquina do Instituto nunca medida | A porta B (encontro inteiro) pode levar tempo que ninguém dimensionou; "~6× tempo real" não diz a direção | Medir com áudio de ~10 min no notebook mais fraco e escrever o número em `METODOLOGIA-VALIDACAO-PERCURSO.md` §5.3 (decisão 35) |
+| Capturar ainda depende de um encontro já existir | `#/voz` redireciona para `#/folha` sem encontro e `src/voz.js` devolve 404 — a porta C (áudio de três semanas atrás) esbarra nisso | Frente do calendário (encontro agendado + data retroativa), que é pré-requisito declarado da porta C |

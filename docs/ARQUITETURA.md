@@ -87,9 +87,19 @@ data/percurso.db local ou /var/data/percurso.db no Render
                    (WAL; disco persistente; backup externo obrigatório)
 
 src/seed.js      dados 100% sintéticos, PRNG com semente fixa (regra 1 do bloco 6)
-scripts/         reset.mjs · smoke-test.mjs (383 asserções) · unit-test.mjs (170) · preparar-sessao.mjs
+src/transcricao.js  audio longo -> texto pelo whisper.cpp do sistema (decisao 35)
+                    DESLIGADO por padrao (PERCURSO_AUDIO=1); o arquivo nao
+                    sobrevive a funcao — finally + varredura no boot + teto de idade
+data/audio-temp/    unico lugar onde audio toca disco, e sempre de passagem
+                    (fora de public/: nada de audio servido como estatico)
+public/audio.js     conversao para WAV 16 kHz no NAVEGADOR (evita o ffmpeg) e
+                    gravacao em blocos fechados de 5 min (evita 1 GB de Float32)
+
+scripts/         reset.mjs · smoke-test.mjs (385 asserções) · unit-test.mjs (170) · preparar-sessao.mjs
                  rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
-.github/workflows/ci.yml   as quatro baterias a cada push (AI_ENABLED=false)
+                 audio-stub-test.mjs (ciclo de vida do áudio, sem modelo) · reancorar.mjs
+                 whisper-stub.mjs · ai-stub.mjs (imitam a interface, não o comportamento)
+.github/workflows/ci.yml   as cinco baterias a cada push (AI_ENABLED=false)
 ```
 
 **Por que o domínio deixou de ser um arquivo só.** A revisão de 22/08 recomendava extrair por área
