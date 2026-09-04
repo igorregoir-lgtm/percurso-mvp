@@ -60,6 +60,15 @@ o banco recém-semeado — a bateria grava no banco):
 node scripts/reset.mjs && node scripts/smoke-test.mjs
 ```
 
+Para usar **no celular** (com captura de áudio), o servidor precisa de HTTPS — `getUserMedia` só
+funciona em contexto seguro, e o IP da LAN não conta como seguro:
+
+```bash
+node scripts/gerar-certificado.mjs && PERCURSO_HTTPS=1 node server.js
+```
+
+O aviso de "conexão não privada" na primeira visita é esperado: o certificado é desta máquina.
+
 Para rodar os testes unitários das regras críticas (não precisa de servidor; usa um banco
 temporário e nunca toca `data/percurso.db`):
 

@@ -1,9 +1,22 @@
 // Percurso — servidor. Node puro: nenhum framework, nenhuma dependencia.
-// Uso:  node server.js        (porta 3000, ou PORT=8080 node server.js)
+// Uso:  node server.js                        (HTTP, so' nesta maquina)
+//       PERCURSO_HTTPS=1 node server.js       (HTTPS na LAN — exige certs/)
+//
+// POR QUE HTTPS: `getUserMedia` so' funciona em CONTEXTO SEGURO. `localhost`
+// conta; o IP da LAN, que e' como o celular alcanca o servidor do Instituto,
+// nao conta. Sem isto, a captura de audio nao existe no aparelho dela.
+// Gerar o certificado: node scripts/gerar-certificado.mjs
+//
+// HTTPS e' OPT-IN de proposito: o CI e a bateria smoke batem em
+// http://localhost:3000, e um certificado esquecido no disco nao pode mudar o
+// comportamento padrao do servidor sem alguem pedir.
 import { createServer } from 'node:http';
+import { createServer as createServerHttps } from 'node:https';
+import { readFileSync, existsSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import { join, extname, normalize, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { networkInterfaces } from 'node:os';
 import { getDb, get } from './src/db.js';
 import { rotas, usuarioDa } from './src/api.js';
 import { invalidarSinais } from './src/aurora/sinais.js';
@@ -12,9 +25,25 @@ import { semear } from './src/seed.js';
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const PUBLICO = join(ROOT, 'public');
 const PORTA = Number(process.env.PORT) || 3000;
+const HTTPS = process.env.PERCURSO_HTTPS === '1';
 // Em hospedagem, PORT implica bind público (Render e plataformas equivalentes).
 // No uso local sem PORT, limita o MVP à própria máquina por segurança.
-const HOST = process.env.HOST || (process.env.PORT ? '0.0.0.0' : '127.0.0.1');
+// HTTPS existe PARA a LAN — pedir HTTPS e continuar preso a 127.0.0.1 seria
+// gerar certificado para ninguém —, então ele implica bind na rede.
+const HOST = process.env.HOST || ((process.env.PORT || HTTPS) ? '0.0.0.0' : '127.0.0.1');
+
+const CERT = { chave: join(ROOT, 'certs', 'percurso.key'), cert: join(ROOT, 'certs', 'percurso.crt') };
+if (HTTPS && !(existsSync(CERT.chave) && existsSync(CERT.cert))) {
+  console.error(`
+  PERCURSO_HTTPS=1 pedido, mas não há certificado em certs/.
+
+    node scripts/gerar-certificado.mjs
+
+  Sem ele o servidor não sobe em HTTPS — e sem HTTPS a captura de áudio não
+  funciona no celular, porque getUserMedia exige contexto seguro.
+`);
+  process.exit(1);
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -45,7 +74,7 @@ async function lerCorpo(req) {
   catch { throw Object.assign(new Error('JSON inválido no corpo da requisição.'), { status: 400 }); }
 }
 
-const servidor = createServer(async (req, res) => {
+const tratar = async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const rota = `${req.method} ${url.pathname}`;
 
@@ -95,7 +124,11 @@ const servidor = createServer(async (req, res) => {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Página não encontrada.');
   }
-});
+};
+
+const servidor = HTTPS
+  ? createServerHttps({ key: readFileSync(CERT.chave), cert: readFileSync(CERT.cert) }, tratar)
+  : createServer(tratar);
 
 // Primeira execucao: banco vazio ganha os dados sinteticos automaticamente.
 getDb();
@@ -104,4 +137,18 @@ if (!get(`SELECT COUNT(*) AS n FROM educador`).n) {
   semear();
 }
 
-servidor.listen(PORTA, HOST, () => console.log(`\n  Percurso rodando em  http://localhost:${PORTA}  (${HOST})\n`));
+const esquema = HTTPS ? 'https' : 'http';
+servidor.listen(PORTA, HOST, () => {
+  console.log(`\n  Percurso rodando em  ${esquema}://localhost:${PORTA}  (${HOST})`);
+  if (HTTPS) {
+    for (const lista of Object.values(networkInterfaces())) {
+      for (const i of lista || []) {
+        if (i.family === 'IPv4' && !i.internal) console.log(`  No celular:          ${esquema}://${i.address}:${PORTA}`);
+      }
+    }
+    console.log('  O aviso de "conexão não privada" é esperado: o certificado é desta máquina.');
+  } else {
+    console.log('  Sem HTTPS: a captura de áudio não funciona fora de localhost.');
+  }
+  console.log('');
+});

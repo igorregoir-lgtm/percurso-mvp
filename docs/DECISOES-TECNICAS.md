@@ -378,6 +378,35 @@ futuro (mkcert/túnel) registrado e não adotado.
 
 ---
 
+### 36. HTTPS local, opt-in, com certificado desta máquina (03/09/2026)
+
+**Por que existe.** `getUserMedia` — a captura de áudio — só roda em **contexto seguro**.
+`localhost` conta; **o IP da LAN não**. E o IP da LAN é exatamente como o celular da educadora
+alcança o servidor do Instituto. Sem HTTPS, as portas de áudio da F1 (narrar, importar, gravar)
+simplesmente não existem no aparelho dela. Isto é **pré-requisito da F1**, não refinamento — e por
+isso subiu na ordem do plano.
+
+**Como.** `node scripts/gerar-certificado.mjs` usa o `openssl` **do sistema** (mesmo padrão do
+`llama.cpp` em `ai/scripts/`: nada entra por npm, a decisão 1 continua de pé) e escreve
+`certs/`, que é gitignorado. O SAN inclui `localhost`, o nome da máquina, `127.0.0.1` **e os IPs
+de LAN detectados** — faltar o IP da LAN é o erro clássico, e leva à conclusão errada de que
+"HTTPS não funciona".
+
+**Opt-in de propósito.** Só sobe em HTTPS com `PERCURSO_HTTPS=1`. O CI e a bateria smoke batem em
+`http://localhost:3000`, e um certificado esquecido no disco não pode mudar o comportamento padrão
+do servidor sem alguém pedir. Pedir HTTPS implica bind em `0.0.0.0`: gerar certificado e continuar
+preso a `127.0.0.1` seria gerar certificado para ninguém.
+
+**O que isto NÃO resolve, e está declarado.** O certificado é autoassinado: na primeira visita o
+aparelho avisa que a conexão "não é privada". Aceitar uma vez basta, mas **é um passo humano**, e no
+iOS pode exigir instalar e confiar no perfil. Certificado de autoridade real depende de domínio, que
+o Instituto não tem.
+
+**O que foi verificado, e o que não foi.** Verificado: handshake TLS válido, resposta 200 em
+`https://localhost:3000` e no IP da LAN, e o SAN cobrindo ambos. **Não verificado:** que um celular
+real aceite o certificado e libere `getUserMedia` — isso exige o aparelho, e entra na mesma
+pendência dos notebooks doados, que nunca foram avaliados.
+
 ### 25. Túnel HTTPS temporário é ferramenta de DEMONSTRAÇÃO, não de operação
 
 **Origem:** demanda de mostrar o Percurso no celular (como o celular de uma professora) e
@@ -761,7 +790,7 @@ registro da época.
 | Dívida | Impacto | Quando pagar |
 |---|---|---|
 | Sem autenticação | Bloqueante para dado real | Antes do primeiro dado real |
-| Sem HTTPS | Bloqueante em rede não confiável | Junto com a autenticação |
+| HTTPS existe, mas com certificado autoassinado | O aparelho avisa "conexão não privada" na primeira visita, e alguém precisa aceitar | Certificado de autoridade real quando houver domínio; hoje o aviso é o custo declarado |
 | Sem log de auditoria de acesso individual | Exigível sob LGPD | Antes do primeiro dado real |
 | Filtro de perímetro por termo, não por sentido | Deixa passar paráfrase | Depende de avaliação com a psicóloga |
 | Sem exportação (CSV/PDF) da síntese | Copiar e colar resolve hoje | Quando o relatório anual for montado |
