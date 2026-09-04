@@ -62,6 +62,31 @@ recusa auto-referência: o chip da turma já ativa, a aba *Recado aos pais* (o r
 de `#/sai-daqui`, não uma tela), o botão *Aprovar* da síntese e a aba já ativa do relatório. São
 estados internos, não navegação — e é assim que devem ficar.
 
+### As medidas de toque, que o código tem de honrar
+
+O v3 foi conferido por script, não por olho — e as três regras abaixo saíram dessa conferência.
+Elas são **contrato**: quando a F2 e a F3 forem implementadas, é isto que o `public/app.js` e o
+`public/styles.css` precisam entregar.
+
+| Regra | Valor | De onde veio |
+|---|---|---|
+| Altura do item da barra | **50 px** | `public/styles.css:349` já define `min-height:50px` — o protótipo é que estava com 24 e foi corrigido para o produto |
+| Altura da barra | **88 px** | 50 do item + respiro; encosta no rodapé da tela |
+| Alvo mínimo de toque | **44 px** | mínimo de dedo; quatro alvos estavam em 39 e 36 e subiram |
+| Folga do girassol até a barra | **12 px** | o FAB tem 65 px e nunca encosta na barra nem em botão |
+| Último botão do cartão | **não passa sob o girassol** | largura reduzida a 289 px, deixando 7 px de folga lateral |
+
+**Conferido por script sobre as 16 telas: 0 colisões entre elementos clicáveis e 0 alvos abaixo de
+44 px.** A checagem ignora, de propósito, duas coisas: as abas entre si, que são vizinhas dentro da
+barra, e o que está sob a folha do painel da Aurora, onde sobreposição É o desenho (é modal).
+
+Duas armadilhas que a conferência revelou e que valem para o código:
+
+- **A tela de conferência do registro não tem barra.** Qualquer regra que posicione o FAB "acima da
+  barra" precisa de um caminho para esse caso, senão ele cai em cima do botão de confirmar.
+- **Mudar a altura da barra move o FAB em todas as telas.** As duas medidas são acopladas; alterar
+  uma sem a outra reintroduz sobreposição.
+
 ### O protótipo passou a vir ANTES do código (03/09/2026)
 
 Até aqui o protótipo **seguia** o código, e por isso envelhecia: o [`HANDOFF.md`](HANDOFF.md)
