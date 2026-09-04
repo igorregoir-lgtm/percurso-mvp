@@ -708,6 +708,11 @@ export const rotas = {
       vivencia: !D.turmaNaRubrica(turmaId),
       // E6: a devolucao por encontro, quando ja' ha' folha.
       devolucao: enc && V.folhaDe(enc.id) ? V.devolucaoDoEncontro(enc.id) : null,
+      // F3: o encontro anterior desta turma, para a tela oferecer "Igual ao
+      // encontro de <data>" em UM toque. So' vai quando ainda nao ha folha —
+      // oferecer copia de tres semanas atras por cima do que ela acabou de
+      // registrar seria convidar ao erro.
+      anterior: enc && !V.folhaDe(enc.id) ? V.folhaAnteriorDaTurma(turmaId, data) : null,
     };
   },
 

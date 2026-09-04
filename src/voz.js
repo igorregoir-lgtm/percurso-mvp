@@ -326,6 +326,40 @@ export function folhaDaTurma(turmaId, data) {
 }
 
 /**
+ * A ULTIMA folha da turma ANTES desta data — a matriz-prima do "Igual ao
+ * encontro de <data>".
+ *
+ * POR QUE ISTO EXISTE: hoje toda folha nasce neutra (procedimento
+ * `nao_identificado`, objetivo `nenhum`, marcadores vazios) mesmo quando ha'
+ * doze encontros iguais da mesma turma atras. Foi promessa literal na visita
+ * (Grav. 84): *"ele ja' sabe o que voce faz... e' igual a sala do passado"*.
+ *
+ * NAO usa modelo, e nao pre-grava nada: e' sugestao para a tela oferecer com um
+ * toque, e o gate de confirmacao humana continua identico.
+ */
+export function folhaAnteriorDaTurma(turmaId, data) {
+  const enc = get(
+    `SELECT e.id, e.data FROM encontro e JOIN folha f ON f.encontro_id = e.id
+      WHERE e.turma_id = ? AND e.data < ? ORDER BY e.data DESC LIMIT 1`, turmaId, data);
+  if (!enc) return null;
+  const f = folhaDe(enc.id);
+  if (!f) return null;
+  return {
+    data: enc.data,
+    campos: {
+      atividade: f.atividade,
+      area_tematica: f.area_tematica,
+      marcadores_turma: [...f.marcadores],
+      procedimento: f.procedimento ?? null,
+      objetivo: f.objetivo ?? null,
+      // As CONTAGENS nao vem: quantas ajudaram sem pedir e quantos conflitos
+      // houve sao do encontro de hoje, e repeti-las seria inventar observacao.
+      // O que se repete e' o DESENHO da atividade, nao o que aconteceu nela.
+    },
+  };
+}
+
+/**
  * Grava a folha do dia. Chamada SOMENTE depois do toque em "Confirmar e guardar".
  *
  * @param {object} p

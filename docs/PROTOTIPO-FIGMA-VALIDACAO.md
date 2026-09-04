@@ -42,7 +42,7 @@ As seções são as tarefas, na ordem da sessão. Cada uma traz, acima das telas
   (*"nomearem o que sentem"* não casa com o termo `nomear o que sente` da lista fechada). Uma
   correção em sete campos ≈ 14% — o que a sessão mede é o desvio disso.
 - **A tela 07 não leva ao relato sozinha.** Depois de "Confirmar e guardar" a pessoa cai no Hoje e
-  precisa achar "Revisar e liberar o relato" — a costura de `public/app.js:4572`
+  precisa achar "Revisar e liberar o relato" — a costura de `public/app.js:4638`
   que a tarefa 4 cronometra com limiar de 20 s.
 - **A tela 11 termina num bloqueio.** O parecer não sai sem consentimento, e quem registra
   consentimento é a coordenação (`src/api.js:460`). O sucesso da tarefa 5 é ela

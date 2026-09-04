@@ -621,17 +621,17 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     'public/app.js:594': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
     'public/app.js:1161': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:2681': /async function telaScores\(\)/,
-    'public/app.js:2907': /id="pergunta"/,
+    'public/app.js:2737': /async function telaScores\(\)/,
+    'public/app.js:2963': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:4572': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
+    'public/app.js:4638': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
     'src/api.js:334': /erro\(422.*rubrica por ciclo/,
     'src/api.js:460': /'POST \/api\/consentimento'/,
-    'src/api.js:919': /periodosSugeridos\(\)/,
+    'src/api.js:924': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:112': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
@@ -978,6 +978,27 @@ test('a promessa sobre o áudio não pode ser incondicional (F0)', async () => {
   const sala = seed.split('\n').find((l) => l.includes("campo: 'audio_da_sala'")) || '';
   assert.ok(sala, 'a porta B grava a sala inteira e precisa de linha própria');
   assert.match(sala, /exige_consentimento: 1/, 'gravar a sala com as crianças exige consentimento');
+});
+
+test('folhaAnteriorDaTurma copia o DESENHO da atividade, nunca as contagens', async () => {
+  // "Igual ao encontro de <data>" (F3) preenche o que se repete — atividade,
+  // área, marcadores, procedimento, objetivo. NÃO preenche quantas ajudaram sem
+  // pedir nem quantos conflitos houve: essas são observações DE HOJE, e copiá-las
+  // seria o produto inventando o que ninguém viu. É a única coisa que ele não
+  // pode fazer, e uma regressão aqui não daria erro em lugar nenhum.
+  const V = await import('../src/voz.js');
+  const D2 = await import('../src/domain.js');
+  const turmas = (await import('../src/db.js')).all(`SELECT id FROM turma LIMIT 1`);
+  const t = turmas[0].id;
+  const ant = V.folhaAnteriorDaTurma(t, D2.hoje());
+  if (!ant) return;   // turma sem histórico: nada a afirmar
+  const proibidos = ['ajudaram_sem_pedir', 'participaram_inteiro', 'conflitos', 'nao_observados', 'pediram_ajuda'];
+  for (const k of proibidos) {
+    assert.ok(!(k in ant.campos), `"${k}" é observação de hoje e não pode vir copiada`);
+  }
+  assert.ok('atividade' in ant.campos && 'marcadores_turma' in ant.campos,
+    'o desenho da atividade é justamente o que se repete');
+  assert.match(ant.data, /^\d{4}-\d{2}-\d{2}$/, 'a tela mostra a data, então ela tem de vir');
 });
 
 test('nenhuma rota do front é engolida por outra (despacho é o PRIMEIRO que casa)', async () => {

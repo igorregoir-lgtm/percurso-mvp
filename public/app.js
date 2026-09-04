@@ -1798,15 +1798,46 @@ function pills(lista, selecionados, grupo, unico) {
             aria-pressed="${selecionados.includes(x.codigo)}">${esc(x.rotulo)}</button>`).join('');
 }
 
+// ----------------------------------------------------------------------
+// CHECK-IN: ENTRADA DIRETA (F3) — era um stepper, e "seis" custava SETE toques.
+// Os cinco check-ins somavam 20 a 35 toques por encontro, no celular, em pé,
+// dentro da sala.
+//
+// O "primeiro + dá 0" NÃO era bug: era deliberado, e sustentava três estados —
+// `—` (não observei), `0` (observei e foi zero) e `N`. A entrada direta PRESERVA
+// os três; o que ela tira é o custo de chegar até o número.
+//
+// Acima de 10 o passo a passo volta, porque um encontro com mais de dez
+// conflitos é raro o bastante para não valer trinta botões na tela.
+// ----------------------------------------------------------------------
+const CHECKIN_ATALHOS = 10;
+
 const stepper = (campo, valor, rotulo) => `
-      <div class="dado">
-        <span class="k">${esc(rotulo)}</span>
-        <span class="step">
-          <button type="button" data-acao="checkin" data-campo="${campo}" data-d="-1" aria-label="Menos um">−</button>
-          <b id="ck-${campo}">${valor == null ? '—' : valor}</b>
-          <button type="button" data-acao="checkin" data-campo="${campo}" data-d="1" aria-label="Mais um">+</button>
-        </span>
+      <div style="margin-top:12px">
+        <div class="linha"><span class="k cresce">${esc(rotulo)}</span>
+          <b id="ck-${campo}" style="font-size:15px">${valor == null ? '—' : valor}</b></div>
+        <div role="group" aria-label="${esc(rotulo)}" style="margin-top:6px">
+          <button type="button" class="p ${valor == null ? 'on' : 'off'}" data-acao="checkin-valor"
+            data-campo="${campo}" data-v="" aria-pressed="${valor == null}"
+            aria-label="Não observei">—</button>
+          ${Array.from({ length: CHECKIN_ATALHOS + 1 }, (_, n) => `
+          <button type="button" class="p ${valor === n ? 'on' : 'off'}" data-acao="checkin-valor"
+            data-campo="${campo}" data-v="${n}" aria-pressed="${valor === n}">${n}</button>`).join('')}
+          <button type="button" class="p ${valor != null && valor > CHECKIN_ATALHOS ? 'on' : 'off'}"
+            data-acao="checkin" data-campo="${campo}" data-d="1"
+            aria-label="Mais um">${valor != null && valor > CHECKIN_ATALHOS ? valor : '+'}</button>
+        </div>
       </div>`;
+
+/** Repinta SÓ os blocos da folha. Existe porque `navegar()` recarrega a folha
+ *  do servidor — e o que a pessoa ainda não guardou (o preenchimento de "Igual
+ *  ao encontro de <data>", por exemplo) morreria no caminho. */
+function repintarBlocosDaFolha() {
+  const el = document.getElementById('blocos-folha');
+  if (el) el.innerHTML = blocosDaFolha();
+  const btn = document.getElementById('igual-anterior');
+  if (btn && !ctx.folha?.anterior) btn.remove();
+}
 
 function blocosDaFolha() {
   const f = ctx.folha, c = f.catalogos;
@@ -1875,7 +1906,7 @@ async function carregarFolha(turmaId, data) {
     // sujaria a taxa de correcao do agente com correcao que nao foi dele.
     origem: 'manual',
     sugestao: null, excluido: !!d.folha?.conteudo_excluido, trechos: [], baixaConfianca: false,
-    vivencia: !!d.vivencia, devolucao: d.devolucao ?? null,
+    vivencia: !!d.vivencia, devolucao: d.devolucao ?? null, anterior: d.anterior ?? null,
     campos: {
       atividade: d.folha?.atividade ?? 'nao_identificada',
       area_tematica: d.folha?.area_tematica ?? 'nenhuma',
@@ -1888,6 +1919,30 @@ async function carregarFolha(turmaId, data) {
     },
   };
   return d;
+}
+
+// ----------------------------------------------------------------------
+// "IGUAL AO ENCONTRO DE <data>" (F3) — a maior redução de toques disponível,
+// e promessa literal da visita (Grav. 84): *"ele já sabe o que você faz… é
+// igual a sala do passado"*.
+//
+// Hoje toda folha nasce NEUTRA — procedimento `nao_identificado`, objetivo
+// `nenhum`, marcadores vazios — mesmo com doze encontros iguais da mesma turma
+// atrás. Isto preenche o DESENHO da atividade com um toque; as contagens do dia
+// não vêm junto, porque repeti-las seria inventar observação.
+//
+// Não usa modelo e não grava nada: o gate de confirmação humana é o mesmo.
+// ----------------------------------------------------------------------
+function botaoIgualAoAnterior() {
+  const f = ctx.folha;
+  if (!f?.anterior || f.existente) return '';
+  return `
+    <div id="igual-anterior">
+      <button class="btn largo secundario" data-acao="igual-ao-anterior">
+        Igual ao encontro de ${dataBR(f.anterior.data)}
+      </button>
+      <p class="sub" style="margin:6px 0 0">Preenche a atividade e o objetivo daquele dia. As contagens de hoje continuam com você.</p>
+    </div>`;
 }
 
 // ======================================================================
@@ -1924,7 +1979,8 @@ async function telaFolhaAMao() {
     <h1>${d.vivencia ? 'Registro da vivência' : 'Folha do dia'}</h1>
     <p class="sub">${esc(d.turma.nome)} · ${esc(porExtenso(d.data))}</p>
     <div class="pilha">
-      ${blocosDaFolha()}
+      ${botaoIgualAoAnterior()}
+      <div id="blocos-folha">${blocosDaFolha()}</div>
       <div class="aviso neutro">O que cada criança fez não entra aqui. ${d.vivencia ? 'Este é o registro do procedimento — não individualizado, sem nome, como o conselho pede.' : 'Esta folha é da turma.'}</div>
       ${d.folha ? `<button class="btn largo secundario" data-acao="ir" data-href="#/sai-daqui?aba=relato&data=${d.data}">${d.vivencia ? 'Ver o relato do procedimento' : 'Ver o registro do encontro'}</button>` : ''}
       ${fechada ? `
@@ -2490,7 +2546,7 @@ async function telaConfirmar() {
       </div>` : ''}
 
     <div class="pilha">
-      ${blocosDaFolha()}
+      <div id="blocos-folha">${blocosDaFolha()}</div>
       ${f.excluido ? `
         <div class="aviso" role="alert">
           <h3>Tem algo aqui que não entra no sistema</h3>
@@ -4539,20 +4595,30 @@ document.addEventListener('click', comErro(async (ev) => {
     return;
   }
 
-  if (a === 'checkin') {
-    const ck = ctx.folha.campos.checkin, campo = alvo.dataset.campo, d = Number(alvo.dataset.d);
+  if (a === 'checkin' || a === 'checkin-valor') {
+    const ck = ctx.folha.campos.checkin, campo = alvo.dataset.campo;
     const max = ctx.folha.catalogos.checkin_max ?? 30;
-    // "—" (não informado) vira 0 no primeiro toque em "+", e volta a "—" no "−" abaixo de zero.
-    let v = ck[campo] == null ? (d > 0 ? 0 : null) : ck[campo] + d;
-    if (v != null && v < 0) v = null;
-    if (v != null && v > max) v = max;
-    if (campo === 'conflitos_resolvidos_conversando' && v != null && ck.conflitos != null && v > ck.conflitos) {
-      toast('Resolvidos conversando não passa do total de conflitos.'); return;
+    let v;
+    if (a === 'checkin-valor') {
+      v = alvo.dataset.v === '' ? null : Number(alvo.dataset.v);
+    } else {
+      const d = Number(alvo.dataset.d);
+      // "—" (não informado) vira 0 no primeiro toque em "+", e volta a "—" no "−" abaixo de zero.
+      v = ck[campo] == null ? (d > 0 ? 0 : null) : ck[campo] + d;
+      if (v != null && v < 0) v = null;
     }
+    if (v != null && v > max) v = max;
+    // REGRA SIMÉTRICA (F3). Era assimétrica: baixar `conflitos` corrigia
+    // `resolvidos` sozinho, mas subir `resolvidos` acima de `conflitos` era
+    // RECUSADO com um toast — a mesma inconsistência resolvida de dois jeitos
+    // diferentes conforme o lado por onde a pessoa chegasse. Agora os dois lados
+    // se acomodam: quem resolveu N conversando teve pelo menos N conflitos.
+    if (campo === 'conflitos_resolvidos_conversando' && v != null && ck.conflitos != null && v > ck.conflitos)
+      ck.conflitos = v;
     if (campo === 'conflitos' && v != null && ck.conflitos_resolvidos_conversando != null && v < ck.conflitos_resolvidos_conversando)
       ck.conflitos_resolvidos_conversando = v;
     ck[campo] = v;
-    for (const k of Object.keys(ck)) { const el = document.getElementById(`ck-${k}`); if (el) el.textContent = ck[k] == null ? '—' : ck[k]; }
+    repintarBlocosDaFolha();
     return;
   }
 
@@ -4716,6 +4782,26 @@ document.addEventListener('click', comErro(async (ev) => {
         if (el) el.textContent = 'Já dá para tocar em Terminei — ou siga falando';
       }
     }, 1000);
+    return;
+  }
+
+  if (a === 'igual-ao-anterior') {
+    const f = ctx.folha;
+    if (!f?.anterior) return;
+    // Preenche o DESENHO da atividade e nada mais. As contagens de hoje ficam
+    // com ela — copiar "quantas ajudaram sem pedir" de três semanas atrás seria
+    // o produto inventando observação, que é a única coisa que ele não pode
+    // fazer. Nada é gravado aqui: o botão de guardar continua sendo o dela.
+    Object.assign(f.campos, {
+      atividade: f.anterior.campos.atividade ?? f.campos.atividade,
+      area_tematica: f.anterior.campos.area_tematica ?? f.campos.area_tematica,
+      marcadores_turma: [...(f.anterior.campos.marcadores_turma ?? [])],
+      procedimento: f.anterior.campos.procedimento ?? f.campos.procedimento,
+      objetivo: f.anterior.campos.objetivo ?? f.campos.objetivo,
+    });
+    f.anterior = null;   // consumido: o botão sai e a tela para de oferecer
+    repintarBlocosDaFolha();
+    toast('Preenchi como no encontro anterior. Confira e ajuste — nada foi gravado.', 'bom');
     return;
   }
 

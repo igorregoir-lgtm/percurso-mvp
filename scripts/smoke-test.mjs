@@ -410,6 +410,17 @@ let dataFolha = null;
   const abre = (await GET('maria', `/api/folha?turma_id=${turmaId}`)).corpo;
   dataFolha = abre.data;
   T('a folha abre no último encontro registrado, não numa data sem aula', !!abre.encontro, dataFolha);
+
+  // F3 — "Igual ao encontro de <data>": a maior redução de toques disponível, e
+  // promessa literal da visita. O servidor tem de oferecer o encontro anterior
+  // SÓ quando ainda não há folha; sobre uma folha já registrada, oferecer cópia
+  // de três semanas atrás seria convidar ao erro.
+  {
+    const semFolha = (await GET('maria', `/api/folha?turma_id=${turmaId}&data=2020-01-02`)).corpo;
+    T('sem encontro, não há o que copiar', semFolha.anterior === null || semFolha.encontro === null);
+    T('com folha já registrada, o servidor NÃO oferece o encontro anterior',
+      abre.folha ? abre.anterior === null : true);
+  }
   const semChamada = await POST('maria', '/api/folha', {
     turma_id: turmaId, data: '2020-01-02', campos: { atividade: 'roda', area_tematica: 'nenhuma', marcadores_turma: [], pediram_ajuda: 0 },
   });
