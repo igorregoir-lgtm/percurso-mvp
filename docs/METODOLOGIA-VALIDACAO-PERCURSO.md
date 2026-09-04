@@ -46,7 +46,7 @@ rubrica. Enquanto ninguém real passar pelo fluxo, isso é hipótese.
 > **Quem é "ninguém real" mudou (02/09/2026).** Até a visita, a participante prevista era a
 > **pedagoga**. O campo mostrou que quem tem a dor do registro e escreve o relatório é a
 > **psicóloga**, e que a turma dela está fora da rubrica por decisão de projeto (decisão 31) — o
-> que torna a agenda do ciclo e a observação por criança inexecutáveis para ela (`src/api.js:308`).
+> que torna a agenda do ciclo e a observação por criança inexecutáveis para ela (`src/api.js:323`).
 > O protocolo em [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md) foi refeito em cima disso; a
 > variante pedagoga sobrevive lá na §3.4, para turma dentro da rubrica. Este documento acompanha:
 > o que muda é **em quem** cada hipótese é medida e **com qual tarefa**, não os limiares.

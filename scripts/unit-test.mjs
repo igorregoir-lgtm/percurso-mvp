@@ -618,9 +618,9 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     'public/app.js:2234': /rota\(\/\^#\\\/scores\//,
     'public/app.js:2438': /id="pergunta"/,
     'public/app.js:4076': /location\.hash = '#\/hoje'/,
-    'src/api.js:308': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:435': /exigeCoordenacao\(req\)/,
-    'src/api.js:889': /periodosSugeridos\(\)/,
+    'src/api.js:323': /erro\(422.*rubrica por ciclo/,
+    'src/api.js:449': /'POST \/api\/consentimento'/,
+    'src/api.js:904': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:112': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
@@ -833,6 +833,55 @@ test('a INTERFACE não escreve à mão o que o revisor barra (rodada 2)', async 
   ];
   for (const re of proibidas)
     assert.doesNotMatch(front, re, `frase causal escrita à mão em public/app.js: ${re}`);
+});
+
+test('transcrição: o áudio NÃO sobrevive a uma transcrição que falha (F1)', async () => {
+  // A revisão do plano pegou este buraco com todas as letras: "áudio apagado ao
+  // virar texto" era FRASE, não mecanismo. O whisper LÊ ARQUIVO — logo existe
+  // arquivo, logo existe uma janela em que ele sobrevive. Este teste fecha a
+  // janela do caminho de ERRO, que é o que ninguém testa e o que mais acontece.
+  const { mkdirSync, writeFileSync, rmSync, existsSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+
+  process.env.PERCURSO_AUDIO = '1';
+  process.env.PERCURSO_WHISPER = 'false';        // comando que sempre falha
+  // fileURLToPath, NAO url.pathname: o caminho deste repositorio tem espacos, e
+  // `.pathname` os devolve como %20 — o existsSync falhava ANTES de qualquer
+  // arquivo ser escrito, e o teste passava no vazio. Achado ao conferir que ele
+  // pegava a remocao do `finally`; nao pegava.
+  process.env.PERCURSO_AUDIO_MODELO = fileURLToPath(new URL('../package.json', import.meta.url));
+  const T = await import(`../src/transcricao.js?caso=falha-${Date.now()}`);
+
+  assert.ok(existsSync(process.env.PERCURSO_AUDIO_MODELO),
+    'o "modelo" de mentira do teste precisa existir, senão a transcrição nem chega a escrever arquivo');
+  mkdirSync(T.DIR, { recursive: true });
+  T.varrerOrfaos({ tudo: true });
+  assert.equal(T.pendentes(), 0, 'o diretório precisa começar limpo');
+
+  await assert.rejects(() => T.transcrever(Buffer.from('RIFFfake....')), (e) => e.status === 503);
+
+  assert.equal(T.pendentes(), 0,
+    'o arquivo sobreviveu a uma transcrição que falhou — o `finally` não está cobrindo o caminho de erro');
+
+  // e a varredura de órfãos, que cobre a queda do processo NO MEIO
+  const orfao = join(T.DIR, 'orfao-de-teste.wav');
+  writeFileSync(orfao, 'x');
+  assert.equal(T.pendentes(), 1);
+  assert.equal(T.varrerOrfaos({ tudo: true }).apagados, 1);
+  assert.equal(T.pendentes(), 0, 'a varredura de órfãos não apagou o arquivo');
+
+  rmSync(T.DIR, { recursive: true, force: true });
+  delete process.env.PERCURSO_AUDIO;
+  delete process.env.PERCURSO_WHISPER;
+  delete process.env.PERCURSO_AUDIO_MODELO;
+});
+
+test('transcrição: desligada por padrão, e recusa dizendo o que continua funcionando', async () => {
+  const T = await import(`../src/transcricao.js?caso=desligada-${Date.now()}`);
+  assert.equal(T.AUDIO_ENABLED, false, 'a transcrição não pode nascer ligada');
+  await assert.rejects(() => T.transcrever(Buffer.from('x')), (e) =>
+    e.status === 503 && /registro por escrito continua/i.test(e.message));
 });
 
 test('a promessa sobre o áudio não pode ser incondicional (F0)', async () => {

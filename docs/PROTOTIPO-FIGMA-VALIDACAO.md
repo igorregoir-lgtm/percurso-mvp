@@ -45,7 +45,7 @@ As seções são as tarefas, na ordem da sessão. Cada uma traz, acima das telas
   precisa achar "Revisar e liberar o relato" — a costura de `public/app.js:4076`
   que a tarefa 4 cronometra com limiar de 20 s.
 - **A tela 11 termina num bloqueio.** O parecer não sai sem consentimento, e quem registra
-  consentimento é a coordenação (`src/api.js:435`). O sucesso da tarefa 5 é ela
+  consentimento é a coordenação (`src/api.js:449`). O sucesso da tarefa 5 é ela
   **entender por que não sai**, não conseguir emitir.
 - **A tela 05 diz o que grava antes de gravar.** O campo chamou gravar criança de "perigoso"; sem
   essas três frases visíveis a porta da voz não existe.

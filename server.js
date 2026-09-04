@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { networkInterfaces } from 'node:os';
 import { getDb, get } from './src/db.js';
 import { rotas, usuarioDa } from './src/api.js';
+import { varrerOrfaos } from './src/transcricao.js';
 import { invalidarSinais } from './src/aurora/sinais.js';
 import { semear } from './src/seed.js';
 
@@ -58,6 +59,20 @@ function json(res, status, corpo, cookie) {
   res.end(JSON.stringify(corpo));
 }
 
+// O audio sobe como bytes crus, nao como JSON: base64 num corpo JSON inflaria
+// 33% um arquivo que ja' pode ter dezenas de MB, e o teto de 1 MB do lerCorpo
+// existe justamente para nao aceitar isso.
+async function lerBytes(req, teto) {
+  const partes = [];
+  let total = 0;
+  for await (const c of req) {
+    total += c.length;
+    if (total > teto) throw Object.assign(new Error('Áudio grande demais.'), { status: 413 });
+    partes.push(c);
+  }
+  return Buffer.concat(partes);
+}
+
 async function lerCorpo(req) {
   let dados = '';
   for await (const c of req) {
@@ -82,7 +97,10 @@ const tratar = async (req, res) => {
     try {
       const handler = rotas[rota];
       if (!handler) return json(res, 404, { erro: `Rota não encontrada: ${rota}` });
-      const corpo = ['POST', 'DELETE'].includes(req.method) ? await lerCorpo(req) : {};
+      const binaria = url.pathname === '/api/transcrever';
+      const corpo = binaria
+        ? await lerBytes(req, 120 * 1024 * 1024)
+        : (['POST', 'DELETE'].includes(req.method) ? await lerCorpo(req) : {});
       const saida = await handler(req, corpo, url.searchParams);
       // Todo POST/DELETE bem-sucedido pode ter mudado o estado que alimenta o
       // painel da Aurora. Sem esta linha, o memo de 30 s de src/aurora/sinais.js
@@ -129,6 +147,12 @@ const tratar = async (req, res) => {
 const servidor = HTTPS
   ? createServerHttps({ key: readFileSync(CERT.chave), cert: readFileSync(CERT.cert) }, tratar)
   : createServer(tratar);
+
+// Varredura de orfaos de audio no boot. E' a defesa que cobre a queda do
+// processo NO MEIO de uma transcricao — o `finally` do modulo nao roda se o
+// processo morre, e sem esta linha o arquivo ficaria em disco para sempre.
+const orfaos = varrerOrfaos();
+if (orfaos.apagados) console.log(`  ${orfaos.apagados} áudio(s) órfão(s) de execução anterior apagado(s).`);
 
 // Primeira execucao: banco vazio ganha os dados sinteticos automaticamente.
 getDb();

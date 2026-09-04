@@ -21,6 +21,7 @@ import * as SROI from './sroi/calculator.js';
 import * as PL from './planilha.js';
 import * as REL from './relato.js';
 import * as REC from './recado.js';
+import * as TRANSC from './transcricao.js';
 import * as PAR from './parecer.js';
 import { conversar, AI_ENABLED } from './ai-client.js';
 const { nomesParaAnonimizar } = C;
@@ -275,6 +276,20 @@ export const rotas = {
     exigeAcessoTurma(req, turmaId);
     return { datas: D.chamadasEmAberto(turmaId) };
   },
+
+  // ---- Transcricao de audio (F1) ---------------------------------------
+  // O corpo e' o WAV cru. Nao passa pela fila offline do cliente: audio nao e'
+  // um POST idempotente de formulario, e reenviar dezenas de MB quando a rede
+  // volta seria pior que pedir para a pessoa tentar de novo.
+  'POST /api/transcrever': async (req, corpo) => {
+    exigeUsuario(req);
+    const { texto } = await TRANSC.transcrever(corpo);
+    // A transcricao NAO e' persistida aqui: volta ao cliente, que a leva para o
+    // extrator na confirmacao. Mesma doutrina da captura ao vivo.
+    return { texto, caracteres: texto.length };
+  },
+
+  'GET /api/audio/status': (req) => { exigeUsuario(req); return TRANSC.estadoDoAudio(); },
 
   'GET /api/rubrica': (req) => { exigeUsuario(req); return { dimensoes: D.rubrica(), params: D.PARAMS }; },
 

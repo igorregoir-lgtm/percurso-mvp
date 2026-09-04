@@ -15,7 +15,7 @@
 >
 > **1. O protocolo de validação passou para a psicóloga.** As seis tarefas eram de pedagoga e duas
 > delas são **inexecutáveis** por ela — a turma da Vivência está fora da rubrica e `#/ciclo`
-> responde 422 (`src/api.js:308`). Refeitas a partir do task flow do Exercício 03
+> responde 422 (`src/api.js:323`). Refeitas a partir do task flow do Exercício 03
 > (`docs/task-flow/`); a versão pedagoga virou a §3.4 de `VALIDACAO-USUARIO.md`. Nasceu
 > `scripts/preparar-sessao.mjs`: sem ele a sessão começa com o trabalho já feito, porque a seed
 > entrega o último sábado registrado. Com `--lapso` ele destrava o Protocolo do Lapso, que até
