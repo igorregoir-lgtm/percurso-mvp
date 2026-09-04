@@ -323,6 +323,7 @@ const FUNDIDAS = {
   '#/voz': '#/registrar',
   '#/folha': '#/registrar?passo=mao',
   '#/confirmar': '#/registrar?passo=confirmar',
+  '#/copilot': '#/pensar',
 };
 
 // As que carregavam ID não cabem num mapa de strings.
@@ -599,13 +600,12 @@ rota(/^#\/hoje/, async () => {
     <div class="cartao compacto">
       <div class="linha"><h2 class="cresce">${d.na_rubrica === false ? 'Registro da vivência' : 'Folha'} ${d.data_folha === d.hoje ? 'do dia' : `de ${dataBR(d.data_folha)}`}</h2>
         <span class="selo ${folhaFeita ? 'ok' : 'pend'}">${folhaFeita ? (d.folha.origem === 'voz' ? 'por voz' : 'manual') : 'pendente'}</span></div>
-      <p class="sub">${folhaFeita
-        ? `Registrada${d.folha_registrada_depois ? ` em ${dataBR(d.folha_registrada_depois)}, depois do encontro — vale igual` : ''}. Dá para ajustar enquanto o dia não fecha.`
-        : 'Fale o quanto quiser, quando der — não há relógio correndo. O Percurso monta a folha, o relato do conselho e o recado.'}</p>
+      <p class="sub">Fale o quanto quiser, quando der — não há relógio correndo. O Percurso monta a folha, o relato do conselho e o recado.${
+        folhaFeita && d.folha_registrada_depois ? `<br>Registrada em ${dataBR(d.folha_registrada_depois)}, depois do encontro — vale igual.` : ''}</p>
       <div class="linha" style="margin-top:12px">
-        <button class="btn largo" data-acao="ir" data-href="#/registrar">${folhaFeita ? 'Contar de novo' : 'Falar agora'}</button>
-        ${folhaFeita ? '' : `<button class="btn largo secundario" data-acao="ir" data-href="#/registrar?porta=C">Importar áudio</button>`}
-        <button class="btn largo secundario" data-acao="ir" data-href="#/registrar?passo=mao">${folhaFeita ? 'Preencher à mão' : 'Escrever'}</button>
+        <button class="btn largo" data-acao="ir" data-href="#/registrar">Falar agora</button>
+        <button class="btn largo secundario" data-acao="ir" data-href="#/registrar?porta=C">Importar áudio</button>
+        <button class="btn largo secundario" data-acao="ir" data-href="#/registrar?passo=mao">Escrever</button>
         ${folhaFeita && d.na_rubrica === false ? `<button class="btn largo ${d.folha.relato_liberado ? 'fantasma' : 'secundario'}" data-acao="ir" data-href="#/sai-daqui?aba=relato">${d.folha.relato_liberado ? 'Relato liberado' : 'Revisar e liberar o relato'}</button>` : ''}
         ${(d.recados ?? []).map(r => `<button class="btn largo fantasma" data-acao="ir" data-href="#/sai-daqui?aba=recado&turma_id=${r.turma_id}&data=${r.data}">Recado para os responsáveis${d.recados.length > 1 ? ` · ${esc(r.turma)}` : ''}</button>`).join('')}
       </div>
@@ -1380,7 +1380,7 @@ async function telaFichaDaCrianca(id) {
     </div>
 
     <div class="cartao compacto" style="margin-top:14px">
-      <h2>Trajetória socioemocional</h2>
+      <h2>O olhar deste ciclo</h2>
       <p class="sub">Uso interno da equipe. Para fora, só agregado.</p>
       <div style="margin-top:10px">${tabelaTrajetoria(f.trajetoria)}</div>
     </div>
@@ -3118,8 +3118,13 @@ rota(/^#\/relatorio/, async () => {
 async function telaRelatorioDoCiclo() {
   const params = new URLSearchParams(location.hash.split('?')[1] || '');
   const tipo = params.get('tipo') || 'ciclo';
-  const periodo = params.get('periodo') || '';
-  const d = await api(`/api/relatorio?tipo=${tipo}${periodo ? `&periodo=${periodo}` : ''}`);
+  let periodo = params.get('periodo') || '';
+  let d = await api(`/api/relatorio?tipo=${tipo}${periodo ? `&periodo=${periodo}` : ''}`);
+  if (!periodo && d.periodos?.length) {
+    const p0 = d.periodos[0];
+    periodo = `${p0.inicio}..${p0.fim}`;
+    if (periodo) d = await api(`/api/relatorio?tipo=${tipo}&periodo=${encodeURIComponent(periodo)}`);
+  }
   ctx.rel = { tipo, periodo, periodos: d.periodos };
   const r = d.relatorio, n = d.previa;
 
@@ -3766,7 +3771,7 @@ document.addEventListener('click', comErro(async (ev) => {
 // ======================================================================
 const copiloto = { sessao: null, trocas: [] };
 
-rota(/^#\/copilot/, async () => {
+rota(/^#\/pensar/, async () => {
   const st = await api('/api/ia/status');
   if (!st.habilitada || !st.papeis?.reflexivo?.pronto) {
     // Antes esta tela despejava `ai/scripts/start-llama.sh` e `AI_ENABLED=1` na

@@ -617,7 +617,7 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
   const { readFileSync } = await import('node:fs');
   const raiz = new URL('../', import.meta.url);
   const ANCORAS = {
-    'public/app.js:514': /rota\(\/\^#\\\/hoje\//,
+    'public/app.js:515': /rota\(\/\^#\\\/hoje\//,
     'public/app.js:609': /Revisar e liberar o relato|relato_liberado/,
     // Regex ESTREITA de proposito: /recados|#\/recado/ casava em quatro linhas,
     // e a reancorar.mjs nao tinha como decidir qual. Ancora que casa em varios
@@ -628,13 +628,13 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     'public/app.js:1334': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
     'public/app.js:3016': /async function telaScores\(\)/,
-    'public/app.js:3242': /id="pergunta"/,
+    'public/app.js:3247': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:5067': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'public/app.js:5072': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
     'src/api.js:422': /erro\(422.*rubrica por ciclo/,
     'src/api.js:622': /'POST \/api\/consentimento'/,
     'src/api.js:1129': /periodosSugeridos\(\)/,
@@ -1216,6 +1216,39 @@ test('as medidas de toque do protótipo v3 estão no CSS (contrato do F-1)', asy
   const respiro = Number(bloco('main').match(/padding:\d+px \d+px (\d+)px/)?.[1]);
   assert.ok(respiro >= alturaBarra + 65 + 12,
     `o respiro do rodapé (${respiro}px) tem de caber barra + girassol + folga (${alturaBarra + 65 + 12}px)`);
+});
+
+test('todo destino oferecido pelo produto resolve numa rota que existe', async () => {
+  // DEFEITO REAL: `#/pensar` era oferecido no menu, na lista de destinos da
+  // Aurora, no catálogo de ações do servidor e no protótipo — e NÃO EXISTIA
+  // como rota. A rota chamava-se `#/copilot`. Clicar em "Pensar junto" não ia a
+  // lugar nenhum, e nada acusava: o gate de sombra confere rota contra rota, e
+  // um destino que não é rota nenhuma passa entre os dois.
+  //
+  // Aqui a pergunta é a inversa: todo lugar que o produto OFERECE existe?
+  const { readFileSync } = await import('node:fs');
+  const front = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  const assistente = readFileSync(new URL('../src/assistente.js', import.meta.url), 'utf8');
+
+  const rotas = [...front.matchAll(/^rota\((\/.+?\/), /gm)].map(m => m[1]);
+  const fundidas = new Set([...front.matchAll(/^\s*'(#\/[a-z-]+)':\s*'#\//gm)].map(m => m[1]));
+  const resolve = (hash) => {
+    const caminho = hash.split('?')[0];
+    if (fundidas.has(caminho)) return true;                       // apelido de rota fundida
+    if (/^#\/(observacao|parecer)\//.test(caminho)) return true;   // regra com id
+    return rotas.some(f => new RegExp(f.slice(1, f.lastIndexOf('/'))).test(caminho));
+  };
+
+  const destinos = new Set();
+  // menus, lista de destinos da Aurora e catálogo de ações do servidor
+  for (const m of front.matchAll(/\['(#\/[^']+)',\s*'[^']*',\s*'[^']*'\]/g)) destinos.add(m[1]);
+  for (const m of front.matchAll(/^\s*(?:educador|profissional|coordenacao|diretoria):\s*\[([^\]]+)\]/gm))
+    for (const h of m[1].matchAll(/'(#\/[^']+)'/g)) destinos.add(h[1]);
+  for (const m of assistente.matchAll(/hash:\s*'(#\/[^']+)'/g)) destinos.add(m[1]);
+
+  assert.ok(destinos.size >= 12, `só ${destinos.size} destinos lidos — o extrator quebrou`);
+  const orfaos = [...destinos].filter(h => !resolve(h));
+  assert.deepEqual(orfaos, [], 'destino oferecido que não resolve em rota nenhuma');
 });
 
 test('nenhuma rota do front é engolida por outra (despacho é o PRIMEIRO que casa)', async () => {
