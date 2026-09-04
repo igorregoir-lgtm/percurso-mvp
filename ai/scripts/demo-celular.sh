@@ -78,6 +78,16 @@ for i in $(seq 1 30); do
 done
 echo "  app pronto."
 
+# ---- 2b. FECHAR A JANELA DE PRIMEIRO ACESSO ---------------------------------
+# A autenticacao (decisao 39) nao semeia senha: `NULL` = "crie a sua ao entrar".
+# Na rede local isso e' o custo aceito. Numa URL PUBLICA, nao — quem achasse o
+# endereco primeiro reivindicaria a conta. A propria decisao 39 nomeia a
+# mitigacao ("a coordenacao define todas as senhas antes de entregar o
+# endereco"); aqui ela deixa de ser conselho e vira passo do script.
+SENHA_DEMO="${SENHA_DEMO:-percurso demonstracao}"
+node "$RAIZ/scripts/senhas-demo.mjs" --senha "$SENHA_DEMO" | sed 's/^/  /'
+
+
 # ---- 3. túnel HTTPS temporário ----------------------------------------------
 echo "Abrindo o túnel HTTPS (cloudflared quick tunnel)…"
 cloudflared tunnel --url "http://127.0.0.1:$PORTA" --no-autoupdate > "$SCRATCH/tunel.log" 2>&1 &
@@ -110,7 +120,12 @@ echo
 echo "  🎙  A voz funciona no celular (HTTPS ✓). Entre como Maria e toque em"
 echo "     Hoje → Contar como foi. O copilot está em Refletir$( [ "$IA" = "1" ] && echo " (IA ligada)" || echo " (IA DESLIGADA nesta execução)")."
 echo
-echo "  ⚠  URL pública e efêmera, sem senha, dados 100% sintéticos."
+echo "  🔑 Senha de todos os perfis nesta demonstração:"
+echo "     $SENHA_DEMO"
+echo "     (definida agora, não vem da semente. Cada pessoa troca a dela no"
+echo "      cabeçalho, em \"senha\".)"
+echo
+echo "  ⚠  URL pública e efêmera, dados 100% sintéticos."
 echo "     Feche com Ctrl+C — o túnel morre e a URL deixa de existir."
 echo
 echo "════════════════════════════════════════════════════════════════"
