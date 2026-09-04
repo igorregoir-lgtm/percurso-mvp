@@ -964,16 +964,33 @@ function atualizarObs() {
 
 const MUDANCA = { avancou: ['↑', 'var(--ok)'], estavel: ['→', 'var(--muted)'], recuou: ['↓', 'var(--red)'], sem_par: ['·', 'var(--muted)'] };
 
+// A EVOLUÇÃO NA LÍNGUA DELA (F5). "piorou / manteve / evoluiu" é o método que a
+// psicóloga já usou em outra organização e no qual confia. O produto calculava
+// isso desde sempre (`evolucao012`) e ela nunca via — o delta só chegava ao
+// parecer. A leitura do produto (níveis 1–4) fica ao lado, e não por
+// completude: o mapeamento 2 e 3 → 1 é LOSSY e declarado provisório (decisão
+// 34), e é vendo ONDE as duas divergem que ela pode avalizá-lo ou recusá-lo.
+const EVOLUCAO_COR = { piorou: 'var(--red)', manteve: 'var(--muted)', evoluiu: 'var(--ok)' };
+
 function tabelaTrajetoria(t) {
   if (!t.ciclos.length) return '<p class="vazio">Sem observação concluída ainda.</p>';
+  const divergentes = t.dimensoes.filter(d => d.divergente).length;
   return `<div class="rolagem"><table>
-    <thead><tr><th>Dimensão</th>${t.ciclos.map(c => `<th>${esc(c.nome)}</th>`).join('')}<th>Entre ciclos</th></tr></thead>
+    <thead><tr><th>Indicador</th>${t.ciclos.map(c => `<th>${esc(c.nome)}</th>`).join('')}
+      <th>Do 1º para o último</th><th>Níveis</th></tr></thead>
     <tbody>${t.dimensoes.map(d => {
       const [seta, cor] = MUDANCA[d.mudanca];
       return `<tr><td>${esc(d.dimensao)}</td>
         ${d.niveis.map(n => `<td><b>${n ?? '—'}</b><span style="color:var(--muted)">${n ? '/4' : ''}</span></td>`).join('')}
-        <td style="color:${cor};font-weight:700">${seta} ${d.mudanca === 'sem_par' ? '' : d.mudanca}</td></tr>`;
-    }).join('')}</tbody></table></div>`;
+        <td style="color:${EVOLUCAO_COR[d.evolucao_rotulo] ?? 'var(--muted)'};font-weight:700">
+          ${d.evolucao_rotulo ?? '—'}${d.divergente ? ' *' : ''}</td>
+        <td style="color:${cor}">${seta} ${d.mudanca === 'sem_par' ? '' : d.mudanca}</td></tr>`;
+    }).join('')}</tbody></table>
+    <p class="sub" style="margin-top:8px"><b>Piorou · manteve · evoluiu</b> é a leitura da planilha do
+      Instituto (escala 0–2). <b>Níveis</b> é a rubrica do Percurso (1 a 4), que é mais fina.
+      ${divergentes ? `<br>* Em ${divergentes} indicador(es) o nível mudou e a planilha não viu —
+        o mapeamento que faz isso (2 e 3 viram 1) está <b>declarado provisório</b> até o seu aval.` : ''}</p>
+  </div>`;
 }
 
 // ======================================================================

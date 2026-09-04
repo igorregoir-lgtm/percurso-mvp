@@ -401,6 +401,36 @@ secao('10 · Robustez');
 // 11 · v2 — folha do dia, voz, extrator e perímetro (F2, F3, F4, F5, F6)
 // ============================================================================
 // ============================================================================
+// ============================================================================
+secao('9b · A rubrica na língua dela — piorou / manteve / evoluiu (F5)');
+{
+  const lista = (await GET('maria', '/api/criancas')).corpo.criancas;
+  let comTrajetoria = null;
+  for (const c of lista.slice(0, 8)) {
+    const f = (await GET('maria', `/api/crianca?id=${c.id}`)).corpo;
+    if (f.trajetoria?.ciclos?.length >= 2) { comTrajetoria = f; break; }
+  }
+  T('há criança com dois ciclos observados para comparar', !!comTrajetoria);
+  if (comTrajetoria) {
+    const dims = comTrajetoria.trajetoria.dimensoes;
+    T('cada indicador traz a leitura DELA (piorou/manteve/evoluiu)',
+      dims.every(d => d.evolucao_rotulo === null || ['piorou', 'manteve', 'evoluiu'].includes(d.evolucao_rotulo)),
+      dims.map(d => d.evolucao_rotulo).join(', '));
+    T('e a leitura do produto (níveis 1–4) continua ao lado, não no lugar',
+      dims.every(d => 'mudanca' in d && 'niveis' in d));
+    // O caso que a decisão 34 precisa que apareça: o nível mudou (2→3) e a
+    // planilha não viu, porque 2 e 3 mapeiam para 1. É vendo a divergência que
+    // a psicóloga pode avalizar ou recusar o mapeamento provisório.
+    T('a divergência entre as duas leituras é marcada, não escondida',
+      dims.every(d => typeof d.divergente === 'boolean'));
+    const div = dims.find(d => d.divergente);
+    T('o mapeamento lossy 2/3 → 1 aparece quando acontece',
+      !div || (div.mudanca === 'avancou' && div.evolucao_rotulo === 'manteve'),
+      div ? `${div.dimensao}: níveis ${div.niveis.join('→')} = ${div.evolucao_rotulo}` : '(nenhuma nesta criança)');
+    T('a legenda da planilha viaja junto com a ficha', /provisório/i.test(comTrajetoria.legenda_planilha ?? ''));
+  }
+}
+
 secao('10b · O calendário da casa (decisão 37)');
 {
   const cal = (await GET('maria', `/api/calendario?turma_id=${turmaId}`)).corpo;

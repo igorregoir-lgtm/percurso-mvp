@@ -33,7 +33,7 @@ avaliação acadêmica". A exigência vem da semana 5, está admitida como pende
 [`TESTES.md`](TESTES.md) ("a validação com usuário real é a etapa seguinte") e aparece como item
 1.3 do Horizonte 1 em [`ARQUITETURA.md`](ARQUITETURA.md).
 
-O motivo é simples. O MVP tem 397 asserções de fluxo e 175 testes unitários — mas teste
+O motivo é simples. O MVP tem 403 asserções de fluxo e 176 testes unitários — mas teste
 automatizado prova que o sistema faz o que o código diz, não que a profissional consegue usá-lo.
 Desde a visita, o produto está ancorado em duas frases dela, literais:
 
@@ -150,8 +150,8 @@ qualquer coisa acima disso na sessão é sinal, não ruído do cenário.
 > está escrito acima como limiar (os 20 s da tarefa 4) e como aviso (a tarefa 6 em dia não letivo).
 
 > **Por que a tarefa 5 termina num bloqueio.** Ela não é usabilidade: é o teste de **H3**. A
-> psicóloga não pode registrar o consentimento — só a coordenação (`src/api.js:473`), e a tela diz
-> isso a ela (`public/app.js:1243`). O sucesso da tarefa é ela entender **por que não sai**, não
+> psicóloga não pode registrar o consentimento — só a coordenação (`src/api.js:493`), e a tela diz
+> isso a ela (`public/app.js:1260`). O sucesso da tarefa é ela entender **por que não sai**, não
 > conseguir emitir. E o destino é literal do campo: *"que daí seria entre profissionais, que é mais
 > rico ainda"*.
 

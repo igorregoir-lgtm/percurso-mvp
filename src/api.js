@@ -426,7 +426,27 @@ export const rotas = {
   'GET /api/crianca': (req, _b, q) => {
     const id = num(q.get('id'), 'id');
     exigeAcessoCrianca(req, id);
-    return D.fichaCrianca(id);
+    const ficha = D.fichaCrianca(id);
+    // F5 — A RUBRICA NA LÍNGUA DELA. O produto já calculava `evolucao012`
+    // (piorou/manteve/evoluiu) e ela nunca via: o delta só chegava ao parecer.
+    // A leitura dela é entre DUAS medições, na escala 0–2 da planilha do
+    // Instituto; a do produto é em níveis 1–4. As duas vão juntas de propósito,
+    // porque o mapeamento 2 e 3 → 1 é LOSSY e declarado provisório (decisão 34):
+    // é vendo onde elas divergem que ela pode avalizar ou recusar o mapeamento.
+    ficha.trajetoria.dimensoes = ficha.trajetoria.dimensoes.map(d => {
+      const [ant, ult] = [d.niveis.at(-2), d.niveis.at(-1)];
+      const e = (ant != null && ult != null)
+        ? PL.evolucao012(PL.NIVEL_PARA_PLANILHA[ant], PL.NIVEL_PARA_PLANILHA[ult]) : null;
+      return {
+        ...d,
+        evolucao: e,
+        evolucao_rotulo: e == null ? null : PL.ROTULO_EVOLUCAO[e],
+        // O caso que interessa à decisão 34: o nível mudou e a planilha não viu.
+        divergente: e != null && ((d.mudanca === 'avancou' && e !== 2) || (d.mudanca === 'recuou' && e !== 0)),
+      };
+    });
+    ficha.legenda_planilha = PL.LEGENDA_PLANILHA;
+    return ficha;
   },
 
   'GET /api/alertas': (req) => {

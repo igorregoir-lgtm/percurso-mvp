@@ -139,8 +139,8 @@ autenticação por senha ou SSO; (b) HTTPS; (c) registro de auditoria de acesso 
 
 ### 9. Dados sintéticos determinísticos
 
-PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 397
-asserções de fluxo e os 175 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
+PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 403
+asserções de fluxo e os 176 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
 a *hoje*, então a demonstração nunca "envelhece".
 
 ---
@@ -775,6 +775,23 @@ arbitrária, e por isso está nomeada. `GET /api/planilha/resumo` replica a aba 
 supressão de célula pequena; `GET /api/exportar/planilha` devolve a aba *Avaliações* em CSV
 (UTF-8 com BOM, `;`) **por código** — o cadastro que liga código a nome fica com a coordenação.
 O agregado interno continua na escala 1–4.
+
+**A leitura dela chegou à tela em 04/09/2026 (F5).** O produto calculava `evolucao012` desde sempre
+— *piorou · manteve · evoluiu*, as palavras dela — e ela **nunca via**: o delta só chegava ao
+parecer. Agora está na ficha de cada criança, indicador por indicador, **ao lado** da leitura do
+Percurso (níveis 1–4). As duas juntas de propósito: é vendo **onde divergem** que ela pode avalizar
+ou recusar o mapeamento. O caso aparece na primeira ficha aberta — Autoestima 2→3 mostra
+*"manteve *"* enquanto o nível diz *avançou*, porque 2 e 3 mapeiam para 1.
+
+**A colisão que travava a rubrica por voz está resolvida — e a favor do produto.** A rubrica é por
+criança, então nomear é obrigatório, e `filtrarPerimetro` bloqueia nome **mais** termo de estado
+interno: *"a Yasmin ficou triste"* é barrada, e o indicador mais atingido seria justamente
+**Expressão emocional**. Medido: as **âncoras da própria dimensão já são comportamentais**
+(*"nomeia o que sente"*, *"diz do que precisa"*, *"bate na mesa"*) e **todas passam** no perímetro.
+É essa a linguagem que a extração por voz tem de usar. O atalho afetivo continua barrado, e ali o
+bloqueio está **certo**: é conteúdo clínico, e a saída é a coordenação. Virou gate — se alguém
+reescrever uma âncora em termos de estado interno, a rubrica por voz calaria naquele indicador e
+ninguém ficaria sabendo.
 
 **Onde o número mudou.** A seed passou a ter 6 dimensões e o viés deliberado ficou: cinco sobem,
 Resiliência recua de leve, Expressão emocional segue a menor. Toda menção a "5 dimensões" nos

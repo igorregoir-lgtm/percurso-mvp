@@ -619,19 +619,19 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     // O botão do recado. O destino virou `#/sai-daqui?aba=recado` na F2, mas o
     // que a âncora guarda é o mesmo: ele leva a TURMA e a DATA do encontro.
     'public/app.js:594': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
-    'public/app.js:1243': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:1260': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:2862': /async function telaScores\(\)/,
-    'public/app.js:3088': /id="pergunta"/,
+    'public/app.js:2879': /async function telaScores\(\)/,
+    'public/app.js:3105': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:4765': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
+    'public/app.js:4782': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
     'src/api.js:347': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:473': /'POST \/api\/consentimento'/,
-    'src/api.js:966': /periodosSugeridos\(\)/,
+    'src/api.js:493': /'POST \/api\/consentimento'/,
+    'src/api.js:986': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:112': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
@@ -1058,6 +1058,39 @@ test('a semeadura limpa TODAS as tabelas do esquema, na ordem das chaves', async
         `"${tabela}" referencia "${alvo}" e é apagada DEPOIS dela — o DELETE vai falhar`);
     }
   }
+});
+
+test('o vocabulário das âncoras passa no perímetro — é o que destrava a rubrica por voz (F5)', () => {
+  // A COLISÃO QUE O PLANO MANDOU RESOLVER ANTES DE CODAR: a rubrica é POR
+  // CRIANÇA, então nomear é obrigatório — e `filtrarPerimetro` bloqueia a frase
+  // quando há nome MAIS termo de estado interno. "a Yasmin ficou triste" é
+  // barrada, e o indicador mais atingido seria justamente "Expressão emocional".
+  //
+  // A resolução: as âncoras da rubrica JÁ SÃO COMPORTAMENTAIS por desenho
+  // ("nomeia o que sente", "diz do que precisa", "bate na mesa"), e é essa a
+  // linguagem que a extração por voz tem de usar. O atalho afetivo continua
+  // barrado — e ali o bloqueio está CERTO: é conteúdo clínico, e a saída é a
+  // coordenação, não o campo.
+  //
+  // Este teste guarda a precondição: se alguém reescrever as âncoras em termos
+  // de estado interno, a rubrica por voz cala e ninguém fica sabendo.
+  const nomes = ['Yasmin Souza', 'Davi Ferreira'];
+  const dimensoes = D.rubrica();
+  assert.ok(dimensoes.length >= 6, 'a rubrica tem seis indicadores');
+  const barradas = [];
+  for (const dim of dimensoes) {
+    for (const a of dim.ancoras ?? []) {
+      // A âncora vira a frase que a educadora diria sobre UMA criança.
+      const frase = `a ${nomes[0].split(' ')[0]} ${String(a.texto).toLowerCase()}`;
+      if (D.filtrarPerimetro(frase, nomes).bloqueado) barradas.push(`${dim.dimensao ?? dim.nome} n${a.nivel}: ${a.texto}`);
+    }
+  }
+  assert.deepEqual(barradas, [],
+    'âncora que o perímetro barra com o nome junto — a rubrica por voz calaria exatamente nesse indicador');
+
+  // E o contrapeso, para o teste acima não virar prova de que o filtro não filtra:
+  assert.equal(D.filtrarPerimetro('a Yasmin ficou triste hoje', nomes).bloqueado, true,
+    'o atalho afetivo continua barrado — é conteúdo clínico, e a saída é a coordenação');
 });
 
 test('nenhuma rota do front é engolida por outra (despacho é o PRIMEIRO que casa)', async () => {
