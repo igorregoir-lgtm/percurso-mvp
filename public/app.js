@@ -285,8 +285,39 @@ const rota = (re, tela) => rotas.push([re, tela]);
 //     e o finally do navegar EXTERNO não pode apagar a marca do interno.
 let hashEmVoo = null;
 
+// ======================================================================
+// AS ROTAS QUE DEIXARAM DE EXISTIR (F2) — e para onde o conteúdo delas foi.
+//
+// Isto NÃO é ocultação. A tela sumiu de verdade: o conteúdo passou a viver
+// dentro da tela que a absorveu, e não há mais `rota()` para ela. O mapa existe
+// porque as citações de rota antiga são muitas — 49 sugestões da Aurora, o
+// protótipo, os documentos, links que a coordenação já mandou por WhatsApp — e
+// um link velho que dá tela em branco é pior que um link velho que chega no
+// lugar certo.
+//
+// Regra para quem mexer: entrada nova aqui só quando uma rota é FUNDIDA. Rota
+// nova nunca nasce com apelido.
+const FUNDIDAS = {
+  '#/arquivo': '#/pessoas?aba=arquivo',
+  '#/importar': '#/pessoas?aba=importar',
+};
+
+/** Resolve o apelido antes de casar a rota. Preserva a query que vier junto. */
+function resolverFundida(hash) {
+  const [caminho, busca] = hash.split('?');
+  const destino = FUNDIDAS[caminho];
+  if (!destino) return hash;
+  if (!busca) return destino;
+  return destino.includes('?') ? `${destino}&${busca}` : `${destino}?${busca}`;
+}
+
 async function navegar() {
-  const hash = location.hash || '#/hoje';
+  const bruto = location.hash || '#/hoje';
+  const resolvido = resolverFundida(bruto);
+  // Troca a barra de endereço também: a pessoa tem de ver onde ela está, e o
+  // botão Voltar não pode ficar preso no apelido.
+  if (resolvido !== bruto) { location.replace(resolvido); return; }
+  const hash = resolvido;
   if (!sessao && hash !== '#/entrar') { location.hash = '#/entrar'; return; }
   if (hash === hashEmVoo) return;
   hashEmVoo = hash;
@@ -1269,7 +1300,7 @@ rota(/^#\/painel/, async () => {
         <button class="btn pequeno secundario" data-acao="ir" data-href="#/scores">Ver os três scores</button>
         <button class="btn pequeno fantasma" data-acao="ir" data-href="#/consulta">Perguntar à base</button>
         <button class="btn pequeno fantasma" data-acao="ir" data-href="#/criancas">Buscar criança</button>
-        <button class="btn pequeno fantasma" data-acao="ir" data-href="#/importar">Importar planilha antiga</button>
+        <button class="btn pequeno fantasma" data-acao="ir" data-href="#/pessoas?aba=importar">Importar planilha antiga</button>
         <button class="btn pequeno fantasma" data-acao="ir" data-href="#/pessoas">Cadastrar pessoas</button>
       </div>
     </div>
@@ -2704,17 +2735,44 @@ const hojeIso = () => {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 };
 
+// ======================================================================
+// PESSOAS (F2) — cadastro, arquivo e importação eram TRÊS telas e são o mesmo
+// assunto: o elenco. Quem entra, quem saiu e o que veio de antes.
+//
+// As três continuam existindo como conteúdo; o que sumiu foi a necessidade de
+// achar três portas diferentes para o mesmo assunto. A aba vive na URL para o
+// link continuar apontando para o lugar certo.
+// ======================================================================
+const ABAS_PESSOAS = [
+  ['equipe', 'Quem entra'],
+  ['arquivo', 'Quem saiu'],
+  ['importar', 'O que veio de antes'],
+];
+
+const cabecalhoPessoas = (ativa) => `
+    <p class="kicker">Cadastro · o elenco do Instituto</p>
+    <h1>Pessoas</h1>
+    <div class="linha" style="margin-top:12px;flex-wrap:wrap;gap:8px">
+      ${ABAS_PESSOAS.map(([k, rot]) => `<button class="btn pequeno ${k === ativa ? '' : 'fantasma'}"
+        data-acao="ir" data-href="#/pessoas?aba=${k}" ${k === ativa ? 'aria-current="page"' : ''}>${rot}</button>`).join('')}
+    </div>`;
+
 rota(/^#\/pessoas/, async () => {
+  const aba = (location.hash.match(/[?&]aba=([a-z]+)/) || [])[1] || 'equipe';
+  if (aba === 'arquivo') return telaQuemSaiu();
+  if (aba === 'importar') return telaOQueVeioDeAntes();
+  return telaQuemEntra();
+});
+
+async function telaQuemEntra() {
   const d = await api('/api/cadastro');
   // O aviso de troca vale para UMA tentativa. Consumido aqui, ele não
   // reaparece quando a coordenação voltar à tela outro dia.
   const troca = cadastro.trocaPendente;
   cadastro.trocaPendente = null;
 
-  app.innerHTML = `
-    <p class="kicker">Cadastro · quem entra no Percurso</p>
-    <h1>Pessoas</h1>
-    <p class="sub">Professora, coordenação, diretoria e criança entram por aqui. Quem cadastra é a coordenação:
+  app.innerHTML = cabecalhoPessoas('equipe') + `
+    <p class="sub" style="margin-top:12px">Professora, coordenação, diretoria e criança entram por aqui. Quem cadastra é a coordenação:
       papel e matrícula são exatamente o que decide, no resto do produto, quem enxerga a ficha de quem.</p>
 
     <div class="cartao" style="margin-top:16px">
@@ -2790,8 +2848,7 @@ rota(/^#\/pessoas/, async () => {
         </div>`).join('')}
       </div>
       <p class="sub" style="margin-top:12px">Arquivar não apaga: a pessoa sai das listas vivas e o que ela
-        registrou continua no sistema, com o nome dela.</p>
-      <button class="btn secundario" data-acao="ir" data-href="#/arquivo" style="margin-top:10px">Ver o arquivo</button>
+        registrou continua no sistema, com o nome dela — está em "Quem saiu", aqui em cima.</p>
     </div>
 
     <p class="rodape">Este produto não apaga pessoa — quem sai do pipeline vai para o arquivo, e volta de lá
@@ -2820,7 +2877,7 @@ rota(/^#\/pessoas/, async () => {
   };
   prog.addEventListener('change', sincTurmas);
   sincTurmas();
-});
+}
 
 document.addEventListener('click', comErro(async (ev) => {
   const alvo = ev.target.closest('[data-acao]');
@@ -2880,15 +2937,13 @@ document.addEventListener('click', comErro(async (ev) => {
 // A tela existe para mostrar as duas coisas ao mesmo tempo: que a pessoa
 // saiu, e o que ela deixou registrado — que é o motivo de não se apagar.
 // ======================================================================
-rota(/^#\/arquivo/, async () => {
+async function telaQuemSaiu() {
   const [a, d] = await Promise.all([api('/api/arquivo'), api('/api/cadastro')]);
   const opcoesTurma = (progId) => d.turmas.filter(t => t.programa_id === progId)
     .map(t => `<option value="${t.id}">${esc(t.nome)} · ${esc(t.turno)}</option>`).join('');
 
-  app.innerHTML = `
-    <p class="kicker">Arquivo · quem saiu do pipeline</p>
-    <h1>Arquivo</h1>
-    <p class="sub">${esc(a.doutrina)}</p>
+  app.innerHTML = cabecalhoPessoas('arquivo') + `
+    <p class="sub" style="margin-top:12px">${esc(a.doutrina)}</p>
 
     <div class="cartao" style="margin-top:16px">
       <div class="linha"><h2 class="cresce">Equipe</h2><span class="sub">${a.pessoas.length}</span></div>
@@ -2948,7 +3003,7 @@ rota(/^#\/arquivo/, async () => {
         '<option value="">Sem turma por enquanto</option>' + opcoesTurma(Number(prog.value));
     });
   }
-});
+}
 
 document.addEventListener('click', comErro(async (ev) => {
   const alvo = ev.target.closest('[data-acao]');
@@ -2984,7 +3039,7 @@ document.addEventListener('click', comErro(async (ev) => {
       });
     } finally { alvo.disabled = false; }
     toast(r.aviso, 'bom');
-    location.hash = '#/arquivo';
+    location.hash = '#/pessoas?aba=arquivo';
   }
 
   if (a === 'rematricular') {
@@ -3003,12 +3058,11 @@ document.addEventListener('click', comErro(async (ev) => {
   }
 }));
 
-rota(/^#\/importar/, async () => {
+async function telaOQueVeioDeAntes() {
   const [{ importacoes }, { turmas }] = await Promise.all([api('/api/importacoes'), api('/api/turmas')]);
-  app.innerHTML = `
-    <p class="kicker">Camada 1 · a série histórica que um sistema novo só teria em 2029</p>
-    <h1>Importar planilha antiga</h1>
-    <p class="sub">Colunas escritas de qualquer jeito, nomes em três grafias, presença como P/F, 1/0 ou sim/não.
+  app.innerHTML = cabecalhoPessoas('importar') + `
+    <p class="sub" style="margin-top:12px"><b>A série histórica que um sistema novo só teria em 2029.</b>
+      Colunas escritas de qualquer jeito, nomes em três grafias, presença como P/F, 1/0 ou sim/não.
       A deduplicação é por primeiro nome mais data de nascimento — e toda decisão aparece no relatório antes de gravar.</p>
 
     <div class="cartao" style="margin-top:16px">
@@ -3034,7 +3088,7 @@ rota(/^#\/importar/, async () => {
           <td>${i.reconhecidas}</td><td>${i.duplicatas}</td><td>${dataBR(i.executado_em)}</td></tr>`).join('')}</tbody>
       </table></div></div>` : ''}
     <p class="rodape">A planilha não é guardada. O que fica é o log da decisão: quantas crianças, quantas grafias, o que foi descartado e por quê.</p>`;
-});
+}
 
 // ======================================================================
 // IMPACTO — SROI exploratorio (Fase 3). Motor deterministico; o modelo so'
@@ -4081,7 +4135,11 @@ document.addEventListener('click', comErro(async (ev) => {
     // por papel, mas o clique revalida contra o mapa local antes de navegar.
     const destino = alvo.dataset.href;
     const permitidas = AURORA_ROTAS_POR_PAPEL[sessao?.papel] ?? [];
-    if (!permitidas.includes(destino)) return;
+    // Compara o CAMINHO, não a string inteira. Com a fusão de telas (F2) um
+    // destino legítimo passou a carregar query (`#/pessoas?aba=arquivo`), e
+    // igualdade exata voltaria a engolir a sugestão com um `return` mudo — o
+    // mesmo defeito que a nota acima registra ter acontecido com `#/consulta`.
+    if (!permitidas.includes(destino.split('?')[0])) return;
     marcarUso(alvo.dataset.sug, 'aceita');
     fecharAurora({ foco: false });
     location.hash = destino;
@@ -4096,7 +4154,7 @@ const AURORA_ROTAS_POR_PAPEL = {
   // diretoria (src/api.js), e o painel dela já oferece o botão 'Perguntar à
   // base'. Sem a rota aqui, uma sugestão da Aurora para essa tela era engolida
   // com um `return` mudo — sem navegação e sem aviso.
-  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/pessoas', '#/arquivo', '#/criancas', '#/alertas', '#/relato', '#/consulta', '#/pensar'],
+  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/pessoas', '#/criancas', '#/alertas', '#/relato', '#/consulta', '#/pensar'],
   diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
 };
 

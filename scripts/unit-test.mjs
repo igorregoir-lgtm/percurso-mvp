@@ -611,19 +611,19 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
   const { readFileSync } = await import('node:fs');
   const raiz = new URL('../', import.meta.url);
   const ANCORAS = {
-    'public/app.js:426': /rota\(\/\^#\\\/hoje\//,
-    'public/app.js:511': /Revisar e liberar o relato|relato_liberado/,
+    'public/app.js:457': /rota\(\/\^#\\\/hoje\//,
+    'public/app.js:542': /Revisar e liberar o relato|relato_liberado/,
     // Regex ESTREITA de proposito: /recados|#\/recado/ casava em quatro linhas,
     // e a reancorar.mjs nao tinha como decidir qual. Ancora que casa em varios
     // lugares nao ancora nada.
-    'public/app.js:512': /data-href="#\/recado\?turma_id=/,
-    'public/app.js:1017': /coordenacao.*Consentimentos|Registre abaixo/,
-    'public/app.js:2468': /rota\(\/\^#\\\/scores\//,
-    'public/app.js:2672': /id="pergunta"/,
+    'public/app.js:543': /data-href="#\/recado\?turma_id=/,
+    'public/app.js:1048': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:2499': /rota\(\/\^#\\\/scores\//,
+    'public/app.js:2703': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
-    'public/app.js:4310': /location\.hash = '#\/hoje'; navegar\(\);/,
+    'public/app.js:4368': /location\.hash = '#\/hoje'; navegar\(\);/,
     'src/api.js:323': /erro\(422.*rubrica por ciclo/,
     'src/api.js:449': /'POST \/api\/consentimento'/,
     'src/api.js:908': /periodosSugeridos\(\)/,
@@ -1413,7 +1413,7 @@ test('aurora/ranking: NUNCA mais de uma pendência por painel, nem na exploraç�
 test('aurora/painel: nenhuma tela de nenhum papel devolve painel vazio', () => {
   const telas = {
     educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/confirmar', '#/ciclo', '#/observacao', '#/turma', '#/criancas', '#/crianca', '#/alertas', '#/pauta', '#/pensar'],
-    coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/criancas'],
+    coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/pessoas', '#/criancas'],
     diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
   };
   const uid = { educador: 1, coordenacao: 2, diretoria: 4 };
@@ -1570,16 +1570,58 @@ test('aurora/preferências: resumo_do_dia é HONRADO — e a retomada é a exce�
   PF.salvarPreferencia(1, { resumo_do_dia: true });
 });
 
-test('aurora/preferências: prefere_tipo reserva vaga e é visível no primeiro dia', () => {
-  const semPref = PP.painelDoAurora(RITA, '#/painel').sugestoes.map(s => s.tipo);
+test('aurora/preferências: prefere_tipo reserva vaga para o tipo declarado', () => {
+  // ESTE TESTE DEPENDIA DO CALENDÁRIO e mentia conforme o dia. Ele chamava o
+  // painel REAL da Rita e exigia que "dúvida" e "aprimoramento" abrissem o
+  // painel — mas os gatilhos que produzem esses dois tipos não disparam todo
+  // dia. Em 04/09/2026 o pool dela era ['acao','acao','pergunta'] e o teste
+  // caiu; nos dias anteriores passava. Gate que passa conforme a data é pior
+  // que gate que falha sempre: ele não avisa, ele sorteia.
+  //
+  // E a asserção tinha DERIVADO DO PRÓPRIO NOME: `compor` promete VAGA
+  // RESERVADA, não primeiro lugar. Quando não há pendência nenhuma, o alívio
+  // abre o painel ANTES da preferência (ranking.js:80-81) — de propósito. Aqui
+  // se testa o que o código promete, com pool sintético, sem depender do dia.
+  const pool = [
+    { id: 'a', tipo: 'acao', base: 90, nucleo: false },
+    { id: 'p', tipo: 'pergunta', base: 80, nucleo: false },
+    { id: 'd', tipo: 'duvida', base: 10, nucleo: false },
+    { id: 'm', tipo: 'aprimoramento', base: 5, nucleo: false },
+  ];
+  const tipos = (saida) => saida.map(c => c.tipo);
+  const semPref = tipos(PR.compor(PR.ordenar(pool)));
+  assert.deepEqual(semPref, ['acao', 'pergunta', 'duvida'], 'sem preferência, manda o escore');
+
   for (const tipo of ['duvida', 'aprimoramento']) {
-    PF.salvarPreferencia(2, { prefere_tipo: tipo });
-    const com = PP.painelDoAurora(RITA, '#/painel').sugestoes.map(s => s.tipo);
-    assert.equal(com[0], tipo, `${tipo} declarado tem que abrir o painel`);
+    const com = tipos(PR.compor(PR.ordenar(pool), { prefereTipo: tipo }));
+    assert.ok(com.includes(tipo), `${tipo} declarado tem que caber no painel`);
+    assert.equal(com[0], tipo, `sem alívio na mesa, o tipo declarado abre o painel`);
     assert.notDeepEqual(com, semPref, 'a preferência declarada tem que mudar algo — senão é botão morto');
   }
+
+  // O alívio continua abrindo o painel num dia sem pendência: a preferência
+  // reserva vaga, ela não atropela a única boa notícia do dia.
+  const comAlivio = [{ id: 'al', tipo: 'acao', classe: 'alivio', base: 1, nucleo: false }, ...pool];
+  const saida = PR.compor(PR.ordenar(comAlivio), { prefereTipo: 'aprimoramento' });
+  assert.equal(saida[0].id, 'al', 'dia sem pendência: o alívio abre, como ranking.js declara');
+  assert.ok(tipos(saida).includes('aprimoramento'), 'e a preferência ainda assim entra');
+});
+
+test('aurora/preferências: a preferência declarada chega ao painel de verdade', () => {
+  // A contraparte de integração do teste acima — sem depender de QUAL tipo o
+  // dia oferece. Percorre os tipos que o painel da Rita realmente produz hoje
+  // e exige que declarar um deles o traga para a frente. Se num dia nenhum
+  // tipo puder ser exercitado, o teste FALHA em vez de passar vazio.
+  const base = PP.painelDoAurora(RITA, '#/painel').sugestoes.map(s => s.tipo);
+  const atrasado = base.findIndex((t, i) => base.indexOf(t) === i && i > 0);
+  assert.ok(atrasado > 0, `painel da Rita sem nenhum tipo fora do primeiro lugar (${base})`);
+  const tipo = base[atrasado];
+  PF.salvarPreferencia(2, { prefere_tipo: tipo });
+  const com = PP.painelDoAurora(RITA, '#/painel').sugestoes.map(s => s.tipo);
+  assert.ok(com.indexOf(tipo) < atrasado,
+    `"${tipo}" estava em ${atrasado} e a preferência declarada não o trouxe para frente (${com})`);
   PF.salvarPreferencia(2, { prefere_tipo: null });
-  assert.deepEqual(PP.painelDoAurora(RITA, '#/painel').sugestoes.map(s => s.tipo), semPref,
+  assert.deepEqual(PP.painelDoAurora(RITA, '#/painel').sugestoes.map(s => s.tipo), base,
     'sem preferência, volta a ordenar por urgência');
 });
 

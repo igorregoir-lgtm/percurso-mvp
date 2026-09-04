@@ -72,9 +72,9 @@ export const CATALOGO_ACOES = [
   { id: 'safras', rotulo: 'Safras', hash: '#/safras', papeis: ['coordenacao'] },
   { id: 'sintese', rotulo: 'Síntese do ciclo', hash: '#/sintese', papeis: ['coordenacao'] },
   { id: 'consentimentos', rotulo: 'Consentimentos', hash: '#/consentimentos', papeis: ['coordenacao'] },
-  { id: 'importar', rotulo: 'Importar planilha', hash: '#/importar', papeis: ['coordenacao'] },
+  { id: 'importar', rotulo: 'Importar planilha', hash: '#/pessoas?aba=importar', papeis: ['coordenacao'] },
   { id: 'pessoas', rotulo: 'Cadastrar pessoas', hash: '#/pessoas', papeis: ['coordenacao'] },
-  { id: 'arquivo', rotulo: 'Arquivo (quem saiu)', hash: '#/arquivo', papeis: ['coordenacao'] },
+  { id: 'arquivo', rotulo: 'Arquivo (quem saiu)', hash: '#/pessoas?aba=arquivo', papeis: ['coordenacao'] },
   { id: 'relatorio', rotulo: 'Relatório do doador', hash: '#/relatorio', papeis: ['diretoria'] },
   { id: 'impacto', rotulo: 'Impacto (SROI)', hash: '#/impacto', papeis: ['diretoria'] },
   { id: 'consulta', rotulo: 'Perguntar à base', hash: '#/consulta', papeis: ['diretoria'] },
@@ -92,7 +92,7 @@ export function validarAcao(id, papel) {
 // barra de endereço não pode virar canal lateral para o modelo, nem injeção
 // de instrução em mensagem de sistema.
 const ROTAS_CONHECIDAS = new Set([
-  ...CATALOGO_ACOES.map(a => a.hash),
+  ...CATALOGO_ACOES.map(a => a.hash.split('?')[0]),
   '#/entrar', '#/alertas', '#/confirmar', '#/observacao', '#/crianca', '#/parecer',
 ]);
 /** Mesmo conjunto, exportado: é o vocabulário fechado de `tela` no perfil. */
