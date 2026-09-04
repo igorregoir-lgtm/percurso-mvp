@@ -20,7 +20,8 @@
 //     ao fim do ciclo, so' quem convive com ela. Aqui o nome nao e' risco — a
 //     crianca ja' e' o assunto; o risco e' conteudo clinico.
 import { get, all, run } from './db.js';
-import { erro, agora, filtrarPerimetro, criancasDaTurma, consentimentoDe } from './domain.js';
+import { erro, agora, filtrarPerimetro, criancasDaTurma, consentimentoDe, listarCriancas } from './domain.js';
+import { anonimizarTexto } from './rag/anonimizar.js';
 
 export const TETO = 2000;
 
@@ -108,9 +109,20 @@ export function salvarRelatoCrianca({ criancaId, educadorId, cicloId = null, tex
   if (p.bloqueado)
     throw erro(422, 'Tem algo aqui que não entra no sistema — é conteúdo de atendimento, e o sigilo é seu. O caminho é a coordenação.',
                { motivo: 'perimetro', trechos: p.trechos });
+  // NOME SAI POR CODIGO (protótipo v3): *"nome de criança continua barrado aqui
+  // — o que você escrever sai por código"*. Eu tinha gravado o texto cru,
+  // argumentando que a criança e' o assunto do registro. O desenho esta' certo e
+  // eu estava errado: o assunto e' ELA, mas o registro pode citar OUTRAS — a
+  // colega com quem brigou, o irmao que buscou. Essas nao consentiram nada, e
+  // apareceriam nominalmente numa ficha que nao e' delas.
+  //
+  // Anonimiza com o mesmo mecanismo da voz: nome vira "Criança A". O nome da
+  // PROPRIA crianca tambem vira codigo — a ficha ja' diz de quem e'.
+  const roster = listarCriancas({ educadorId, limite: 400 }).criancas.map(c => c.nome);
+  const anon = anonimizarTexto(t, roster);
   run(`INSERT INTO relato_crianca (crianca_id, educador_id, ciclo_id, texto, criado_em) VALUES (?,?,?,?,?)`,
-      criancaId, educadorId, cicloId, t, agora());
-  return { ok: true };
+      criancaId, educadorId, cicloId, anon.texto, agora());
+  return { ok: true, nomes_substituidos: anon.substituicoes };
 }
 
 export function relatosDaCrianca(criancaId, limite = 20) {
@@ -130,7 +142,9 @@ export function apagarRelatoCrianca(id, educadorId) {
   return { ok: true };
 }
 
-/** Descarte ao fim do ciclo — a retencao que a governanca declara desde a v1. */
+/** Descarte POR DECISAO da casa, nao automatico: a retencao declarada e'
+ *  "enquanto a matricula estiver ativa + 2 anos" (governanca, campo_livre).
+ *  O fecho de ciclo NAO chama isto — se chamasse, a retencao seria outra. */
 export function descartarRelatosDoCiclo(cicloId) {
   const n = all(`SELECT id FROM relato_crianca WHERE ciclo_id = ?`, cicloId).length;
   run(`DELETE FROM relato_crianca WHERE ciclo_id = ?`, cicloId);

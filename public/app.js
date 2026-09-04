@@ -234,24 +234,24 @@ const barra = (pct, ok = false) =>
   `<div class="barra ${ok ? 'ok' : ''}"><i style="width:${Math.max(0, Math.min(100, pct))}%"></i></div>`;
 
 // ------------------------------------------------------------------ navegacao
+// O MENU DO PROTÓTIPO v3, e ele é curto de propósito: três itens para quem
+// registra, quatro para a coordenação, dois para a diretoria. O que saiu daqui
+// não sumiu — a Aurora é a porta ("IR PARA: a turma inteira · chamada · pensar
+// junto"), e é isso que reconcilia "simplificar" com "não perder função".
 const NAV_EDUCADOR = [
-  ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'],
-  ['#/turma', '▥', 'Turma'], ['#/crianca', '☺', 'Crianças'],
+  ['#/hoje', '☀', 'Hoje'], ['#/registrar', '✎', 'Registrar'], ['#/crianca', '☺', 'Crianças'],
 ];
 // Psicóloga (decisão 31): a turma dela não entra na rubrica, então não há Ciclo;
 // e ela não pediu pauta de atividades — o que ela pediu foi registrar.
-const NAV_PROFISSIONAL = [
-  ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'], ['#/registrar', '✎', 'Registrar'],
-  ['#/sai-daqui', '▤', 'Saídas'], ['#/turma', '▥', 'Turma'], ['#/crianca', '☺', 'Crianças'],
-];
+const NAV_PROFISSIONAL = NAV_EDUCADOR;
 // F2: scores, safras e síntese viraram abas do Painel; impacto e consulta,
 // abas do Relatório. O menu deixa de repetir o que a tela já oferece.
 const NAV_COORDENACAO = [
-  ['#/painel', '▦', 'Painel'], ['#/crianca', '☺', 'Crianças'],
-  ['#/pessoas', '⚇', 'Pessoas'], ['#/consentimentos', '⚿', 'Consent.'],
+  ['#/painel', '▦', 'Painel'], ['#/pessoas', '⚇', 'Pessoas'],
+  ['#/consentimentos', '⚿', 'Consent.'], ['#/turma', '▥', 'Turma'],
 ];
 const NAV_DIRETORIA = [
-  ['#/relatorio', '▤', 'Relatório'],
+  ['#/relatorio', '▤', 'Relatório'], ['#/relatorio?aba=consulta', '?', 'Perguntar'],
 ];
 
 function pintarNav(rotaAtual) {
@@ -261,8 +261,14 @@ function pintarNav(rotaAtual) {
               : sessao.papel === 'diretoria' ? NAV_DIRETORIA
               : sessao.papel === 'profissional' ? NAV_PROFISSIONAL : NAV_EDUCADOR;
   navEl.hidden = false;
+  // O item ATUAL é o de casamento mais LONGO. Com `#/relatorio` e
+  // `#/relatorio?aba=consulta` no mesmo menu, `startsWith` puro marcaria os
+  // dois — e a pessoa veria duas abas acesas, sem saber onde está.
+  const atual = itens
+    .filter(([href]) => rotaAtual.startsWith(href))
+    .sort((a2, b2) => b2[0].length - a2[0].length)[0]?.[0];
   navEl.innerHTML = itens.map(([href, ic, rot]) =>
-    `<a href="${href}" ${rotaAtual.startsWith(href) ? 'aria-current="page"' : ''}>
+    `<a href="${href}" ${href === atual ? 'aria-current="page"' : ''}>
        <em aria-hidden="true">${ic}</em>${rot}</a>`).join('');
   setTimeout(pintarFila, 0);
   quemEl.innerHTML =
@@ -540,11 +546,16 @@ rota(/^#\/hoje/, async () => {
   // Sabado numa turma de semana, feriado, recesso: nao ha encontro hoje. Oferecer
   // "chamada de hoje" nesse dia seria convidar a registrar um encontro que nao
   // aconteceu — o cartao passa a apontar a data em aberto mais recente.
+  const prox0 = (d.proximos_encontros ?? [])[0];
+  const diasAte = prox0 ? Math.round((new Date(prox0 + 'T12:00:00') - new Date(d.hoje + 'T12:00:00')) / 86400000) : null;
   const cartaoChamada = !ch ? '' : !d.dia_letivo && !ch.registrada ? `
     <div class="cartao compacto">
-      <div class="linha"><h2 class="cresce">Hoje não tem encontro</h2><span class="selo bloq">${esc(diaSemana(d.hoje))}</span></div>
-      <p class="sub">${esc(d.turma?.nome || '')} não tem encontro ${esc(diaSemana(d.hoje))}.
-        ${d.chamadas_abertas.length ? 'Dá para fechar o que ficou em aberto.' : 'Nada pendente.'}</p>
+      <div class="linha"><h2 class="cresce">Chamada</h2>
+        ${prox0 ? `<span class="selo pend">${diasAte === 1 ? 'amanhã' : `em ${diasAte} dias`}</span>` : `<span class="selo bloq">${esc(diaSemana(d.hoje))}</span>`}</div>
+      ${prox0 ? `<p class="sub"><b>${esc(diaSemana(prox0))}, ${dataBR(prox0)}</b> · ${esc(d.turma?.nome || '')}.
+          No começo do encontro dá para tocar em gravar e largar o celular na mesa.</p>`
+        : `<p class="sub">${esc(d.turma?.nome || '')} não tem encontro ${esc(diaSemana(d.hoje))}.
+          ${d.chamadas_abertas.length ? 'Dá para fechar o que ficou em aberto.' : 'Nada pendente.'}</p>`}
       ${d.chamadas_abertas.length ? `<div class="linha" style="margin-top:12px">
         <button class="btn largo secundario" data-acao="ir" data-href="#/chamada?data=${d.chamadas_abertas.at(-1)}">
           Chamada de ${dataBR(d.chamadas_abertas.at(-1))}</button></div>` : ''}
@@ -590,10 +601,11 @@ rota(/^#\/hoje/, async () => {
         <span class="selo ${folhaFeita ? 'ok' : 'pend'}">${folhaFeita ? (d.folha.origem === 'voz' ? 'por voz' : 'manual') : 'pendente'}</span></div>
       <p class="sub">${folhaFeita
         ? `Registrada${d.folha_registrada_depois ? ` em ${dataBR(d.folha_registrada_depois)}, depois do encontro — vale igual` : ''}. Dá para ajustar enquanto o dia não fecha.`
-        : 'Fale enquanto arruma a sala, pelo tempo que precisar — o resto o Percurso monta.'}</p>
+        : 'Fale o quanto quiser, quando der — não há relógio correndo. O Percurso monta a folha, o relato do conselho e o recado.'}</p>
       <div class="linha" style="margin-top:12px">
-        <button class="btn largo" data-acao="ir" data-href="#/registrar">${folhaFeita ? 'Contar de novo' : 'Contar como foi'}</button>
-        <button class="btn largo secundario" data-acao="ir" data-href="#/registrar?passo=mao">Preencher à mão</button>
+        <button class="btn largo" data-acao="ir" data-href="#/registrar">${folhaFeita ? 'Contar de novo' : 'Falar agora'}</button>
+        ${folhaFeita ? '' : `<button class="btn largo secundario" data-acao="ir" data-href="#/registrar?porta=C">Importar áudio</button>`}
+        <button class="btn largo secundario" data-acao="ir" data-href="#/registrar?passo=mao">${folhaFeita ? 'Preencher à mão' : 'Escrever'}</button>
         ${folhaFeita && d.na_rubrica === false ? `<button class="btn largo ${d.folha.relato_liberado ? 'fantasma' : 'secundario'}" data-acao="ir" data-href="#/sai-daqui?aba=relato">${d.folha.relato_liberado ? 'Relato liberado' : 'Revisar e liberar o relato'}</button>` : ''}
         ${(d.recados ?? []).map(r => `<button class="btn largo fantasma" data-acao="ir" data-href="#/sai-daqui?aba=recado&turma_id=${r.turma_id}&data=${r.data}">Recado para os responsáveis${d.recados.length > 1 ? ` · ${esc(r.turma)}` : ''}</button>`).join('')}
       </div>
@@ -634,6 +646,7 @@ rota(/^#\/hoje/, async () => {
           <b>${l.hoje}${l.presentes ? `<span class="sub"> de ${l.presentes}</span>` : ''}${l.comparacao ? ` <span class="selo ${l.comparacao === 'acima' ? 'ok' : l.comparacao === 'abaixo' ? 'pend' : ''}">${l.comparacao === 'acima' ? '▲' : l.comparacao === 'abaixo' ? '▼' : '='} ${String(l.media_anteriores).replace('.', ',')}</span>` : ''}</b></div>`).join('')}
       </div>
       <p class="sub" style="margin-top:8px">${esc(dv.leitura)}</p>
+      <button class="btn largo secundario" data-acao="ir" data-href="#/turma" style="margin-top:10px">Ver a turma inteira</button>
     </div>`;
 
   const abertas = d.chamadas_abertas.length && !d.retomada.em_lapso ? `
@@ -661,11 +674,10 @@ rota(/^#\/hoje/, async () => {
   const TETO_CARTOES = 3;
   const candidatos = [
     ['registrar', cartaoFolha, 'Contar como foi'],
-    ['retomada', retomada, 'Retomar de onde parou'],
     ['chamada', cartaoChamada, 'Chamada'],
+    ['devolucao', cartaoDevolucao, 'O que o grupo mostrou'],
     ['alertas', alertas, `Quem precisa de atenção${d.alertas.length ? ` (${d.alertas.length})` : ''}`],
     ['semana', paraEstaSemana, 'Para esta semana'],
-    ['devolucao', cartaoDevolucao, 'O que o grupo mostrou'],
     ['ciclo', cartaoCiclo, 'Olhares do ciclo'],
     ['abertas', abertas, 'Datas ainda sem chamada'],
   ].filter(([, html]) => html);
@@ -703,6 +715,7 @@ rota(/^#\/hoje/, async () => {
     ${seletor}
     ${focado ? `<div class="linha" style="margin-top:12px"><button class="btn pequeno fantasma"
       data-acao="ir" data-href="#/hoje${d.turma ? `?turma_id=${d.turma.id}` : ''}">‹ Voltar ao Hoje</button></div>` : ''}
+    ${retomada}
     <div class="pilha">${mostrados.map(([, html]) => html).join('')}</div>
     ${resto.length ? `<div class="cartao compacto" style="margin-top:10px">
       <div class="lbl">Também para você</div>
@@ -1292,10 +1305,11 @@ async function telaFichaDaCrianca(id) {
         A coordenação registra em Consentimentos.</p>
     </div>` : `
     <div class="cartao compacto" style="margin-top:14px">
-      <div class="linha"><h2 class="cresce">Relato sobre ${esc(f.crianca.nome.split(' ')[0])}</h2>
-        <span class="selo ok">${rel.relatos.length}</span></div>
+      <div class="linha"><h2 class="cresce">O específico desta criança</h2>
+        <span class="selo ok">consentido</span></div>
       <p class="sub">O que os campos fechados não pegam. Fica só aqui: não vai para relatório, síntese,
-        planilha, recado nem para nenhum modelo — e é descartado no fim do ciclo.
+        planilha, recado nem para nenhum modelo. <b>Nome de criança sai por código</b> — o dela e o de
+        qualquer outra que você citar. Fica enquanto a matrícula estiver ativa, mais dois anos.
         Conteúdo de atendimento continua sendo conversa com a coordenação.</p>
       <textarea id="relato-crianca" rows="3" style="margin-top:8px"
         placeholder="Ex.: pediu para sentar perto da porta e explicou por quê."></textarea>
@@ -2017,6 +2031,26 @@ function repintarBlocosDaFolha() {
   if (btn && !ctx.folha?.anterior) btn.remove();
 }
 
+/**
+ * O SELO POR CAMPO (protótipo v3). Na conferência, cada campo diz se veio DA
+ * SUA FALA ou ficou EM BRANCO — era um parágrafo-resumo no alto da tela, e o
+ * desenho põe a marca onde a pessoa olha: no campo.
+ *
+ * Só aparece na conferência: na folha à mão não há fala, e um selo "em branco"
+ * em tudo seria ruído. Compara com o valor neutro, sem campo novo no servidor.
+ */
+const NEUTRO_DO_CAMPO = { atividade: 'nao_identificada', area_tematica: 'nenhuma', procedimento: 'nao_identificado', objetivo: 'nenhum' };
+
+function seloDaFala(campo) {
+  const f = ctx.folha;
+  if (!f?.sugestao) return '';                       // só na conferência
+  const v = f.campos[campo];
+  const veio = campo === 'marcadores_turma' ? (v ?? []).length > 0
+             : campo === 'checkin' ? Object.values(f.campos.checkin ?? {}).some(x => x != null)
+             : v != null && v !== NEUTRO_DO_CAMPO[campo];
+  return `<span class="selo ${veio ? 'ok' : 'pend'}" style="margin-left:8px">${veio ? 'da sua fala' : 'em branco'}</span>`;
+}
+
 function blocosDaFolha() {
   const f = ctx.folha, c = f.catalogos;
   // Decisão 31: na Vivência a folha é o registro do procedimento — o que a
@@ -2024,12 +2058,12 @@ function blocosDaFolha() {
   // relato no padrão do conselho.
   const blocoVivencia = !f.vivencia ? '' : `
     <div class="cartao">
-      <div class="lbl" id="lbl-procedimento">Procedimento realizado</div>
+      <div class="lbl" id="lbl-procedimento">Procedimento realizado${seloDaFala('procedimento')}</div>
       <div role="group" aria-labelledby="lbl-procedimento">${pills(c.procedimentos, [f.campos.procedimento], 'procedimento', true)}</div>
       <p class="sub" style="margin-top:4px">O que você fez com o grupo — é o que entra no relato.</p>
     </div>
     <div class="cartao">
-      <div class="lbl" id="lbl-objetivo">Objetivo</div>
+      <div class="lbl" id="lbl-objetivo">Objetivo${seloDaFala('objetivo')}</div>
       <div role="group" aria-labelledby="lbl-objetivo">${pills(c.objetivos.filter(o => o.codigo !== 'nenhum'), [f.campos.objetivo], 'objetivo', true)}</div>
     </div>`;
   // O check-in de grupo que a psicóloga validou ao vivo (campo, 29/08/2026):
@@ -2037,21 +2071,22 @@ function blocosDaFolha() {
   const ck = f.campos.checkin;
   const blocoCheckin = `
     <div class="cartao">
-      <div class="lbl">Check-in do grupo</div>
+      <div class="lbl">Quantas, no grupo${seloDaFala('checkin')}</div>
+      <p class="sub" style="margin-bottom:4px">Toque no número. "—" é não observei — diferente de zero.</p>
       ${c.checkin.map(k => stepper(k.campo, ck[k.campo], k.rotulo)).join('')}
-      <p class="sub" style="margin-top:6px">Contagens da turma, nunca de uma criança. "—" é não informado.${f.vivencia ? ' Na vivência, é o que devolve algo a cada encontro.' : ''}</p>
+      <p class="sub" style="margin-top:6px">Contagens da turma, nunca de uma criança.${f.vivencia ? ' Na vivência, é o que devolve algo a cada encontro.' : ''}</p>
     </div>`;
   return blocoVivencia + `
     <div class="cartao">
-      <div class="lbl" id="lbl-atividade">O que a turma fez</div>
+      <div class="lbl" id="lbl-atividade">O que a turma fez${seloDaFala('atividade')}</div>
       <div role="group" aria-labelledby="lbl-atividade">${pills(c.atividades, [f.campos.atividade], 'atividade', true)}</div>
     </div>
     <div class="cartao">
-      <div class="lbl" id="lbl-area">Área do encontro</div>
+      <div class="lbl" id="lbl-area">Área do encontro${seloDaFala('area_tematica')}</div>
       <div role="group" aria-labelledby="lbl-area">${pills(c.areas, [f.campos.area_tematica], 'area_tematica', true)}</div>
     </div>
     <div class="cartao">
-      <div class="lbl" id="lbl-marcadores">Como foi o grupo</div>
+      <div class="lbl" id="lbl-marcadores">Como o grupo esteve${seloDaFala('marcadores_turma')}</div>
       <div role="group" aria-labelledby="lbl-marcadores">${pills(c.marcadores, f.campos.marcadores_turma, 'marcadores_turma', false)}</div>
       <p class="sub" style="margin-top:4px">Até ${c.max_marcadores} marcadores. Descrevem o grupo, nunca uma criança.</p>
     </div>
@@ -2250,6 +2285,9 @@ async function telaContarComoFoi() {
   // devolve isso; se ela falhar, a tela segue com o que sempre teve.
   const estadoAudio = await api('/api/audio/status').catch(() => null);
   ctx.voz = { transcricao: '', gravando: false, decorridos: 0, rec: null, timer: null, onde, longa: null, estadoAudio };
+  // `?porta=A|B|C` abre a porta longa direto — é o que o cartão do Hoje usa
+  // para "Importar áudio" levar ao lugar em vez de largar a pessoa na tela.
+  const portaPedida = (location.hash.match(/[?&]porta=([ABC])/) || [])[1];
 
   app.innerHTML = `
     <p class="kicker">Folha do dia · turma</p>
@@ -2291,13 +2329,20 @@ async function telaContarComoFoi() {
 
     <div class="pilha">
       <button class="btn largo" data-acao="voz-terminei" id="btn-terminei">Terminei</button>
-      <button class="btn largo secundario" data-acao="ir" data-href="#/registrar?passo=mao">Prefiro escrever</button>
+      <button class="btn largo secundario" data-acao="ir" data-href="#/registrar?passo=mao">Preferir escrever</button>
     </div>
     <p class="rodape">O áudio é apagado assim que vira texto, aqui e no computador do Instituto.<br>
       ${onde === 'aparelho'
         ? 'A transcrição do microfone acima acontece neste aparelho.'
         : 'A transcrição do microfone acima é feita pelo serviço do seu navegador.'}
       O Percurso nunca guarda áudio.</p>`;
+
+  if (portaPedida && portasDisponiveis(estadoAudio)) abrirPorta(portaPedida);
+  else if (portaPedida) {
+    // A porta foi pedida e não existe nesta máquina. Dizer isso é melhor que
+    // abrir a tela e deixar a pessoa procurando um botão que não está lá.
+    toast('Trazer um áudio pronto depende do transcritor, que não está instalado nesta máquina. Dá para falar agora ou escrever.', 'ruim');
+  }
 }
 
 // ======================================================================
@@ -2735,51 +2780,12 @@ async function magiaExtracao(texto, promessaPost, catalogos) {
 // CONFIRMAR REGISTRO (F6) — nada é gravado antes de confirmar.
 // ======================================================================
 /**
- * O QUE A FALA PREENCHEU, E O QUE NÃO (F3).
- *
- * A tela de conferência reusava `blocosDaFolha()` inteiro — a mesma coisa que a
- * folha à mão. Ela tinha moldura própria ("O que entendi") e nenhuma marca:
- * quem confere não via o que veio da fala, o que ficou em branco, nem o que o
- * extrator arriscou. Conferir sem saber o que conferir é assinar no escuro.
- *
- * Compara a SUGESTÃO com o valor neutro de cada campo — não há telemetria nem
- * campo novo no servidor; a informação já estava toda em `ctx.folha`.
- */
-function resumoDoQueAFalaPreencheu() {
-  const f = ctx.folha;
-  const sug = f?.sugestao;
-  if (!sug) return '';
-  const NEUTRO = { atividade: 'nao_identificada', area_tematica: 'nenhuma', procedimento: 'nao_identificado', objetivo: 'nenhum' };
-  const rotulo = { atividade: 'Atividade', area_tematica: 'Área', procedimento: 'Procedimento', objetivo: 'Objetivo' };
-  const veio = [], vazio = [];
-  for (const [campo, rot] of Object.entries(rotulo)) {
-    if (f.campos[campo] == null) continue;               // campo que não vale nesta turma
-    (f.campos[campo] !== NEUTRO[campo] ? veio : vazio).push(rot);
-  }
-  if (f.campos.marcadores_turma?.length) veio.push('Como a turma esteve');
-  else vazio.push('Como a turma esteve');
-  const ck = f.campos.checkin ?? {};
-  const ckPreenchidos = Object.values(ck).filter(v => v != null).length;
-  const ckTotal = Object.keys(ck).length;
-  if (ckTotal) (ckPreenchidos ? veio : vazio).push(`Contagens do grupo (${ckPreenchidos} de ${ckTotal})`);
-
-  return `
-    <div class="aviso ${vazio.length ? '' : 'calmo'}" style="margin-top:14px">
-      <h3>O que eu tirei da sua fala</h3>
-      ${veio.length ? `<p><b>Preenchi:</b> ${esc(veio.join(' · '))}.</p>` : '<p>Não consegui preencher nada.</p>'}
-      ${vazio.length ? `<p style="margin-top:6px"><b>Ficou em branco:</b> ${esc(vazio.join(' · '))} — marque abaixo se quiser.</p>` : ''}
-      ${f.baixaConfianca ? '' : `<p class="sub" style="margin-top:6px">Nada foi gravado. Vale o que você confirmar, não o que eu sugeri.</p>`}
-    </div>`;
-}
-
-/**
  * AS FALTAS QUE ELA DISSE (F6). O campo pediu literalmente: *"Ou então você
  * marque a presença / Pelo nome, só falando"* (Grav. 82).
  *
  * OFERECE, nunca presume. Marca só quem ela CITOU, como falta, e deixa todo o
  * resto sem marcar — presença decide renovação de matrícula (régua de 75%,
- * decisão 33), e quem a fala não citou simplesmente não foi citada. Presumir
- * "P" para o resto seria o produto inventando presença.
+ * decisão 33), e quem a fala não citou simplesmente não foi citada.
  */
 function blocoFaltasDitas() {
   const f = ctx.folha;
@@ -2802,8 +2808,8 @@ async function telaConfirmar() {
   const f = ctx.folha;
   app.innerHTML = `
     <p class="kicker">Nada foi gravado ainda</p>
-    <h1>O que entendi</h1>
-    <p class="sub">Confira e ajuste antes de guardar</p>
+    <h1>O que eu entendi</h1>
+    <p class="sub">Confira e ajuste. Só o que você confirmar é guardado.</p>
 
     ${f.baixaConfianca ? `
       <div class="aviso" style="margin-top:14px">
@@ -2816,7 +2822,6 @@ async function telaConfirmar() {
         <p>Você falou o nome de ${f.nomesSubstituidos === 1 ? 'uma criança' : 'crianças'}. O nome não entrou em campo nenhum e não foi gravado — a folha é da turma.</p>
       </div>` : ''}
 
-    ${resumoDoQueAFalaPreencheu()}
     ${blocoFaltasDitas()}
 
     <div class="pilha">
