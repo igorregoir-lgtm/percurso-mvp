@@ -93,7 +93,7 @@
 > uma ao CONTEÚDO esperado e recusa citação nova sem âncora. Renumerar sem conferir passou a
 > quebrar o teste, que diz qual saiu do lugar. **Ao mover código, rode `npm run test:unit` antes de
 > concluir que a documentação está certa.** O histórico do problema: O botão do recado era citado como
-> `public/app.js:508` em três documentos; a linha é a **509**. Varri todas as **18** citações dos
+> `public/app.js:510` em três documentos; a linha é a **509**. Varri todas as **18** citações dos
 > docs e corrigi todas — inclusive as cinco de `docs/revisao/09-PLANO-PASSO-PROATIVO.md`, por
 > decisão sua. Duas delas **não eram erro de numeração**, e é o achado que vale guardar:
 > `periodosSugeridos()` tinha saído mesmo de `src/api.js` para `src/relatorio.js:440`, e o `GUIA`

@@ -86,7 +86,7 @@ contraste, para a persona principal:
 |---|---|---|
 | **Observar** | o que viu fica na cabeça | rubrica de 6 dimensões × 4 âncoras (os indicadores da planilha do Instituto), ~3 min por criança |
 | **Registrar presença** | papel ou planilha — fica quem veio, e só | um toque por criança; sem rede, entra na fila e sobe sozinho |
-| **Contar como foi o dia** | conta para a colega no corredor — a informação morre ali | fala ~40 s sobre a **turma**; o áudio é descartado no aparelho |
+| **Contar como foi o dia** | conta para a colega no corredor — a informação morre ali | fala ~40 s sobre a **turma**; o áudio é descartado ao virar texto e nunca chega ao servidor do Percurso |
 | **Perceber uma ausência** | percebe quando percebe, e age sob demanda | alerta em duas faltas seguidas, na tela de abertura |
 | **Provar evolução** | responde de memória, sem data e sem comparação | médias por dimensão, ciclo a ciclo, na tela da turma |
 | **Receber algo de volta** | nunca recebe | pauta de segunda: três linhas acionáveis e uma sugestão |

@@ -64,6 +64,8 @@ function iniciarDitado(botao, campo, estadoEl) {
   rec.lang = 'pt-BR';
   rec.continuous = true;
   rec.interimResults = false;
+  // idem no ditado de campo: preferir o aparelho sempre que ele souber.
+  try { if (typeof Rec.availableOnDevice === 'function') rec.processLocally = true; } catch {}
   let ativo = true;
   let religadas = 0;
 
@@ -1761,6 +1763,30 @@ rota(/^#\/folha/, async () => {
 // ======================================================================
 // REGISTRAR POR VOZ (F3) — 40 s, áudio descartado na transcrição.
 // ======================================================================
+// ONDE A TRANSCRICAO ACONTECE — e por que isto precisa de uma funcao.
+//
+// A tela prometia "o audio nao sai deste aparelho". Isso e' verdade so' quando o
+// navegador tem reconhecimento NO APARELHO. Com `processLocally` no padrao
+// (false), a especificacao permite que o agente processe REMOTAMENTE — e o
+// Chrome faz exatamente isso: manda o audio para o servico do fornecedor. A
+// promessa era falsa no caminho mais comum, e o cartao de campo ja' sabia disso
+// ("em parte dos navegadores a transcricao nao e' local") sem que a arquitetura
+// tivesse sido corrigida.
+//
+// Devolve: 'aparelho' | 'servico' | 'nenhum'. A tela diz o que for verdade.
+async function ondeTranscreve() {
+  const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Rec) return 'nenhum';
+  try {
+    if (typeof Rec.availableOnDevice === 'function') {
+      const r = await Rec.availableOnDevice({ langs: ['pt-BR'] });
+      const v = Array.isArray(r) ? r[0] : r;
+      if (v === 'available' || v === true) return 'aparelho';
+    }
+  } catch { /* navegador sem a API de disponibilidade: cai no caminho honesto */ }
+  return 'servico';
+}
+
 const temReconhecimento = () =>
   typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
 
@@ -1771,7 +1797,8 @@ rota(/^#\/voz/, async () => {
   if (!d.encontro) { location.hash = '#/folha'; navegar(); return; }
 
   const nativo = !!temReconhecimento();
-  ctx.voz = { transcricao: '', gravando: false, restante: d.catalogos.voz_segundos, rec: null, timer: null };
+  const onde = await ondeTranscreve();
+  ctx.voz = { transcricao: '', gravando: false, restante: d.catalogos.voz_segundos, rec: null, timer: null, onde };
 
   app.innerHTML = `
     <p class="kicker">Folha do dia · turma</p>
@@ -1789,10 +1816,15 @@ rota(/^#\/voz/, async () => {
     <div class="cartao compacto" style="margin-top:10px">
       <p class="sub">Fale enquanto arruma a sala. Diga como foi a turma, o que fizeram${d.vivencia ? ', o procedimento e as contagens do grupo (quantas ajudaram sem pedir, quantas participaram do começo ao fim, conflitos)' : ' e quem faltou'}.</p>
     </div>
-    <div class="aviso calmo" style="margin-top:10px">
+    <div class="aviso ${onde === 'aparelho' ? 'calmo' : ''}" style="margin-top:10px">
       <h3>O que este botão grava — e o que não grava</h3>
-      <p><b>Sua voz sobre a turma.</b> Nenhuma criança é gravada. O áudio não sai deste aparelho e é descartado na transcrição.
-         Se você falar um nome, ele vira código antes de qualquer gravação — e você vê isso na tela seguinte.</p>
+      <p><b>Sua voz sobre a turma.</b> Nenhuma criança é gravada.
+        ${onde === 'aparelho'
+          ? 'A transcrição acontece <b>neste aparelho</b>: o áudio não sai daqui e é descartado assim que vira texto.'
+          : 'A transcrição é feita pelo <b>serviço do seu navegador</b> — o áudio sai do aparelho para virar texto, e o Percurso nunca o recebe nem o guarda.'}
+        Se você falar um nome, ele vira código antes de qualquer gravação — e você vê isso na tela seguinte.</p>
+      ${onde === 'aparelho' ? '' : `<p style="margin-top:8px"><b>Fale as iniciais</b>, como você já faz no relatório —
+        “o D. F. ajudou” em vez do nome inteiro. É a proteção que não depende de navegador nenhum.</p>`}
     </div>
 
     <div class="cartao" style="margin-top:10px">
@@ -4118,6 +4150,9 @@ document.addEventListener('click', comErro(async (ev) => {
     if (!Rec) { toast('Este navegador não transcreve voz. Escreva no campo abaixo.'); return; }
     const rec = new Rec();
     rec.lang = 'pt-BR'; rec.continuous = true; rec.interimResults = false;
+    // Pede transcricao NO APARELHO quando o navegador souber faze-la. Sem isto,
+    // o padrao permite processamento remoto — e a tela mentia.
+    if (ctx.voz?.onde === 'aparelho') { try { rec.processLocally = true; } catch {} }
     rec.onresult = (ev) => {
       for (let i = ev.resultIndex; i < ev.results.length; i++)
         if (ev.results[i].isFinal) v.transcricao += ev.results[i][0].transcript + ' ';

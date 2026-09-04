@@ -611,13 +611,13 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
   const { readFileSync } = await import('node:fs');
   const raiz = new URL('../', import.meta.url);
   const ANCORAS = {
-    'public/app.js:423': /rota\(\/\^#\\\/hoje\//,
-    'public/app.js:508': /Revisar e liberar o relato|relato_liberado/,
-    'public/app.js:509': /recados|#\/recado/,
-    'public/app.js:1014': /coordenacao.*Consentimentos|Registre abaixo/,
-    'public/app.js:2202': /rota\(\/\^#\\\/scores\//,
-    'public/app.js:2406': /id="pergunta"/,
-    'public/app.js:4044': /location\.hash = '#\/hoje'/,
+    'public/app.js:425': /rota\(\/\^#\\\/hoje\//,
+    'public/app.js:510': /Revisar e liberar o relato|relato_liberado/,
+    'public/app.js:511': /recados|#\/recado/,
+    'public/app.js:1016': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:2234': /rota\(\/\^#\\\/scores\//,
+    'public/app.js:2438': /id="pergunta"/,
+    'public/app.js:4076': /location\.hash = '#\/hoje'/,
     'src/api.js:308': /erro\(422.*rubrica por ciclo/,
     'src/api.js:435': /exigeCoordenacao\(req\)/,
     'src/api.js:889': /periodosSugeridos\(\)/,
@@ -833,6 +833,62 @@ test('a INTERFACE não escreve à mão o que o revisor barra (rodada 2)', async 
   ];
   for (const re of proibidas)
     assert.doesNotMatch(front, re, `frase causal escrita à mão em public/app.js: ${re}`);
+});
+
+test('a promessa sobre o áudio não pode ser incondicional (F0)', async () => {
+  // O produto afirmava, na tela e em quatro documentos, que "o áudio nunca sai
+  // do aparelho". Isso só é verdade quando o navegador tem reconhecimento NO
+  // APARELHO. Com `processLocally` no padrão (false), a especificação permite
+  // processamento REMOTO — e o Chrome manda o áudio ao serviço do fornecedor.
+  //
+  // O cartão de campo já sabia ("em parte dos navegadores a transcrição não é
+  // local") e a ressalva nunca chegou à arquitetura. Pior: a linha de
+  // governança em src/seed.js dizia "Não coletado" e é RENDERIZADA na tela de
+  // Consentimentos — corrigir documento e deixar o PRODUTO mentindo seria pior
+  // que a inconsistência original. Por isso este teste varre seed.js também.
+  const { readFileSync } = await import('node:fs');
+  const raiz = new URL('../', import.meta.url);
+  const ler = (f) => readFileSync(new URL(f, raiz), 'utf8');
+
+  // 1. o código precisa PEDIR transcrição no aparelho — senão a promessa é torcida
+  const front = ler('public/app.js');
+  assert.match(front, /processLocally/,
+    'a tela promete transcrição local sem o código jamais pedir `processLocally`');
+  assert.match(front, /availableOnDevice/,
+    'sem consultar `availableOnDevice`, o produto não sabe qual promessa pode fazer');
+
+  // 2. nenhuma afirmação INCONDICIONAL, em lugar nenhum — inclusive no que a tela mostra
+  const PROIBIDAS = [
+    /o áudio nunca sai do aparelho/i,
+    /o áudio não sai deste aparelho/i,
+    /áudio é descartado no aparelho/i,
+    /transcrito no próprio aparelho e descartado/i,
+    /fala nunca sai do aparelho/i,
+  ];
+  const ALVOS = [
+    'public/app.js', 'src/seed.js', 'src/voz.js',
+    'docs/DECISOES-TECNICAS.md', 'docs/JORNADAS.md',
+    'docs/ARTEFATO-SEMANA-5.md', 'docs/ANALISE-BUSSOLA.md',
+  ];
+  const achados = [];
+  for (const alvo of ALVOS) {
+    const txt = ler(alvo);
+    for (const re of PROIBIDAS) {
+      const m = txt.match(re);
+      if (m) achados.push(`${alvo}: "${m[0]}"`);
+    }
+  }
+  assert.deepEqual(achados, [],
+    'promessa incondicional sobre o áudio — só vale dizer isso no caminho on-device');
+
+  // 3. a governança do áudio, que a tela de Consentimentos renderiza, precisa
+  //    declarar o caminho remoto em vez de afirmar que nada é coletado
+  const seed = ler('src/seed.js');
+  const linha = seed.split('\n').find((l) => l.includes("campo: 'audio_da_voz'")) || '';
+  assert.match(linha, /navegador/i,
+    'a linha de governança do áudio precisa dizer de quem é a transcrição');
+  assert.doesNotMatch(linha, /base_legal: 'Não coletado —/,
+    'a governança não pode afirmar "não coletado" sem qualificar o caminho remoto');
 });
 
 test('o botão do recado segue o ENCONTRO da folha, não o dia de hoje', async () => {

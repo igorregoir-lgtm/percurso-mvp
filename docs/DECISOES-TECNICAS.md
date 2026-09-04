@@ -194,7 +194,7 @@ extrator LLM. O Percurso implementa **o mesmo contrato** sem nenhuma das duas co
 
 | O que o pack pede | Como o Percurso entrega | Onde |
 |---|---|---|
-| Transcrição do áudio | `SpeechRecognition` do próprio navegador; o áudio nunca sai do aparelho e nunca chega ao servidor | `public/app.js` (`voz-toggle`) |
+| Transcrição do áudio | `SpeechRecognition` do navegador, pedindo `processLocally` quando ele tem reconhecimento no aparelho. Onde não tem, o áudio vai ao serviço do fornecedor do navegador — **nunca ao servidor do Percurso** | `public/app.js` (`ondeTranscreve`, `voz-toggle`) |
 | Agente extrator com schema fechado | Casamento lexical sobre listas fixas, saída validada contra o mesmo schema | `src/voz.js` (`extrairDaFala`, `validarExtracao`) |
 | Lista de exclusão | Filtro de perímetro determinístico, por categoria, antes de qualquer extração | `src/domain.js` (`filtrarPerimetro`) |
 | Estado de baixa confiança | Confiança calculada a partir de quanto do schema a fala preencheu; abaixo de 0,6 nada é pré-marcado | `src/voz.js` |

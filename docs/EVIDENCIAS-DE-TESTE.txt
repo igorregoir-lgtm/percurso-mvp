@@ -1,5 +1,5 @@
 Percurso — evidência de teste
-Gerado em 2026-09-03 19:59 · Aurora unificada (copilot vira o modo pensar junto)
+Gerado em 2026-09-03 21:48 · F0 (verdade sobre a transcrição) e HTTPS local
 
 
 
@@ -450,33 +450,33 @@ Alvo: http://localhost:3000
 
 
 
-✔ turmaNaRubrica: as turmas da Vivência ficam fora; as demais, dentro (0.086208ms)
-✔ papel profissional: fica responsável por turma, não vira sucessora de nada que não seja turma (0.134667ms)
-✔ rubrica: seis dimensões, na ordem e com os nomes da planilha do Instituto (0.101417ms)
-✔ planilha: o mapeamento 1–4 → 0–2 vive num lugar só e é o declarado (0.065709ms)
-✔ planilha: as linhas saem por CÓDIGO, com 6 indicadores e totais só quando completas (2.138333ms)
-✔ planilha: o resumo replica a aba Indicadores, com supressão de célula pequena e a ressalva (2.315458ms)
-✔ planilha: o CSV abre no Excel (BOM + ";"), tem o cabeçalho da aba Avaliações e nenhum nome (4.282083ms)
-✔ vivência: os catálogos novos são fechados e o check-in é só contagem (0.157417ms)
-✔ vivência: validação recusa procedimento/objetivo fora da lista e contagens impossíveis (0.06775ms)
-✔ vivência: o extrator lê as contagens que a psicóloga respondeu ao vivo (0.510084ms)
-✔ vivência: contagem em algarismo vale igual à contagem por extenso (0.437667ms)
-✔ perímetro com contexto: o nome do procedimento passa; o conteúdo sobre criança continua barrado (0.142167ms)
-✔ vivência: salvar a folha exige o procedimento, e a folha de outra turma ignora procedimento (0.945292ms)
-✔ relato: sai dos campos fechados, sem nome de criança, e só vale depois do OK (1.246542ms)
-✔ devolução por encontro: compara com as últimas folhas; sem 3 anteriores, só os números de hoje (0.473ms)
-✔ régua: as faixas seguem a política da casa (75% / 80%) e exigem base mínima (0.047083ms)
-✔ régua da turma: a Vivência da manhã tem quem está abaixo e quem está em atenção — e soma fecha (1.712417ms)
-✔ régua do Instituto: o cabeçalho respeita o ?desde= e o ?ref= de quem pediu (4.864791ms)
-✔ recado da turma: só agregado, nenhum nome, e um link de WhatsApp sem número (0.930416ms)
-✔ parecer: sem consentimento específico, não é gerado — e o motivo é dito (0.187458ms)
-✔ parecer: com consentimento sai por CÓDIGO, sem nome, sem clínica, aprovado pelo revisor, e só vale liberado (2.404666ms)
-✔ régua: criança sem presença nesta turma aparece como sem_base, não some (0.341583ms)
-ℹ tests 167
+✔ turmaNaRubrica: as turmas da Vivência ficam fora; as demais, dentro (0.204209ms)
+✔ papel profissional: fica responsável por turma, não vira sucessora de nada que não seja turma (0.401ms)
+✔ rubrica: seis dimensões, na ordem e com os nomes da planilha do Instituto (0.314667ms)
+✔ planilha: o mapeamento 1–4 → 0–2 vive num lugar só e é o declarado (0.138375ms)
+✔ planilha: as linhas saem por CÓDIGO, com 6 indicadores e totais só quando completas (4.514125ms)
+✔ planilha: o resumo replica a aba Indicadores, com supressão de célula pequena e a ressalva (4.87525ms)
+✔ planilha: o CSV abre no Excel (BOM + ";"), tem o cabeçalho da aba Avaliações e nenhum nome (8.819458ms)
+✔ vivência: os catálogos novos são fechados e o check-in é só contagem (0.346167ms)
+✔ vivência: validação recusa procedimento/objetivo fora da lista e contagens impossíveis (0.138292ms)
+✔ vivência: o extrator lê as contagens que a psicóloga respondeu ao vivo (1.01175ms)
+✔ vivência: contagem em algarismo vale igual à contagem por extenso (0.828666ms)
+✔ perímetro com contexto: o nome do procedimento passa; o conteúdo sobre criança continua barrado (0.312042ms)
+✔ vivência: salvar a folha exige o procedimento, e a folha de outra turma ignora procedimento (3.488417ms)
+✔ relato: sai dos campos fechados, sem nome de criança, e só vale depois do OK (3.036834ms)
+✔ devolução por encontro: compara com as últimas folhas; sem 3 anteriores, só os números de hoje (0.999333ms)
+✔ régua: as faixas seguem a política da casa (75% / 80%) e exigem base mínima (0.123833ms)
+✔ régua da turma: a Vivência da manhã tem quem está abaixo e quem está em atenção — e soma fecha (3.706292ms)
+✔ régua do Instituto: o cabeçalho respeita o ?desde= e o ?ref= de quem pediu (9.829708ms)
+✔ recado da turma: só agregado, nenhum nome, e um link de WhatsApp sem número (2.0535ms)
+✔ parecer: sem consentimento específico, não é gerado — e o motivo é dito (0.370375ms)
+✔ parecer: com consentimento sai por CÓDIGO, sem nome, sem clínica, aprovado pelo revisor, e só vale liberado (5.593917ms)
+✔ régua: criança sem presença nesta turma aparece como sem_base, não some (0.818709ms)
+ℹ tests 168
 ℹ suites 0
-ℹ pass 167
+ℹ pass 168
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 521.416375
+ℹ duration_ms 1153.404417

@@ -47,7 +47,8 @@ nada de volta pelo que observa.
 2. **`#/chamada`** — presença em um toque por criança. Sem rede, o registro entra na fila offline
    e sobe sozinho quando a conexão volta.
 3. **`#/folha` → `#/voz` → `#/confirmar`** — fala ~40 segundos sobre o dia da **turma**; o áudio é
-   transcrito no próprio aparelho e descartado; o extrator pré-preenche a folha em listas
+   transcrito pelo navegador — no aparelho quando ele sabe, no serviço do fornecedor quando não sabe,
+   e a tela diz qual dos dois — e descartado; o extrator pré-preenche a folha em listas
    fechadas; **nada é gravado antes de ela confirmar**. Se preferir, digita — o caminho manual
    está sempre visível.
 4. **`#/ciclo`** — vê quem falta observar e quem está bloqueada, com o motivo explícito (janela de
@@ -72,7 +73,7 @@ pedagógica continua dela; situação de risco escala para o caminho humano.
 | O que ela via passa a existir como dado, com data e comparação | Registrar é trabalho novo: ~3 min por observação e ~40 s por folha do dia — se isso não couber na rotina, o produto falha, e só a sessão de validação mede isso |
 | Devolução concreta: pauta de segunda, trajetória da turma | O extrator lexical entende menos variação de fala que um LLM; ela vai corrigir campos. A taxa de correção está instrumentada e o limite declarado é 40% (decisão 13) |
 | Alerta de ausência tira o "agir sob demanda" | O aviso de conteúdo sensível interrompe a fala dela e devolve encaminhamento humano — certo por proteção, mas é fricção real |
-| Proteção por construção: sem texto livre sobre criança, fala nunca sai do aparelho | O MVP não tem senha — o perfil se escolhe na tela. Aceitável na demo sintética; bloqueante antes de dado real (dívida declarada) |
+| Proteção por construção: sem texto livre sobre criança; a fala nunca chega ao servidor do Percurso | O MVP não tem senha — o perfil se escolhe na tela. Aceitável na demo sintética; bloqueante antes de dado real (dívida declarada) |
 
 ---
 
