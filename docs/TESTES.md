@@ -17,7 +17,7 @@ node scripts/smoke-test.mjs
 Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **385 passaram,
 0 falharam**.
 
-Há também uma bateria de **170 testes unitários** das regras críticas de domínio (filtro de
+Há também uma bateria de **172 testes unitários** das regras críticas de domínio (filtro de
 perímetro, validação do schema do extrator, determinismo do agente, os três scores, supressão com
 agrupamento, deduplicação da ingestão, revisor de sobre-alegação, consentimento, imutabilidade da
 síntese, fecho de ciclo, cadastro e arquivo de pessoas, base fixa da curva de permanência), que roda sem servidor, contra um banco temporário descartável:
@@ -36,6 +36,11 @@ caem.
 ```bash
 node scripts/audio-stub-test.mjs
 ```
+
+Dois gates novos de 04/09/2026 vale nomear, porque cobrem um vão que existia por construção —
+**o despacho de rotas do cliente**, que smoke (HTTP) e unitário (sem DOM) nunca alcançaram:
+nenhuma rota pode ser engolida por outra (foi assim que `#/relatorio` ficou inalcançável desde a
+v2), e a tabela de âncoras não pode encolher em silêncio por número repetido.
 
 As cinco baterias (unitária, RAG, IA com stub, áudio com stub e smoke) rodam a cada push via [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 

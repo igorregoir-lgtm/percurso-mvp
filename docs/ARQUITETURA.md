@@ -64,6 +64,9 @@ Quatro camadas em um processo, um arquivo de banco, interface servida estaticame
 
 ```
 navegador (public/ — HTML+CSS+JS puro, hash routing, sem build)
+                 12 rotas desde 04/09/2026 (eram 28; decisão 36) — o mapa
+                 FUNDIDAS traduz o endereço antigo, e um gate reprova rota
+                 engolida por outra
     │   SpeechRecognition nativo: o ÁUDIO nunca sai daqui
     │   fila offline em localStorage: falha de rede não perde registro
     │  fetch JSON
@@ -95,7 +98,7 @@ data/audio-temp/    unico lugar onde audio toca disco, e sempre de passagem
 public/audio.js     conversao para WAV 16 kHz no NAVEGADOR (evita o ffmpeg) e
                     gravacao em blocos fechados de 5 min (evita 1 GB de Float32)
 
-scripts/         reset.mjs · smoke-test.mjs (385 asserções) · unit-test.mjs (170) · preparar-sessao.mjs
+scripts/         reset.mjs · smoke-test.mjs (385 asserções) · unit-test.mjs (172) · preparar-sessao.mjs
                  rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
                  audio-stub-test.mjs (ciclo de vida do áudio, sem modelo) · reancorar.mjs
                  whisper-stub.mjs · ai-stub.mjs (imitam a interface, não o comportamento)
@@ -203,7 +206,7 @@ aceitáveis apenas porque o dado é sintético.
 | 2.5 | Consentimento de verdade | Termo impresso por campo (a tabela `consentimento` já modela), assinado pelo responsável, arquivado fisicamente; o registro no sistema aponta para o termo |
 | 2.6 | Encarregado LGPD | Nomeação formal pela coordenação; canal de requisição do titular (acesso, correção, eliminação) — a eliminação já é viável por SQL, precisa virar procedimento |
 | 2.7 | Operação no Render | O Web Service canônico usa disco persistente e uma única instância; backup externo continua obrigatório. Escala horizontal exige migrar do SQLite para banco compartilhado |
-| 2.8 | Troca da seed | **Porta manual entregue** (`#/pessoas`, `POST /api/equipe`, `POST /api/criancas`): coordenação cadastra equipe e criança uma a uma, com dedup por nome+nascimento e consentimento nascendo pendente. Desligar pessoa e encerrar matrícula também entraram, como **arquivo** e não como exclusão (`#/arquivo`, decisão 30). Falta para fechar o item: a troca da seed por dado real — que continua condicionada a 2.1–2.6 prontos; `reset.mjs` passa a ser proibido em produção (guarda por variável de ambiente) |
+| 2.8 | Troca da seed | **Porta manual entregue** (`#/pessoas`, `POST /api/equipe`, `POST /api/criancas`): coordenação cadastra equipe e criança uma a uma, com dedup por nome+nascimento e consentimento nascendo pendente. Desligar pessoa e encerrar matrícula também entraram, como **arquivo** e não como exclusão (`#/pessoas?aba=arquivo`, decisão 30). Falta para fechar o item: a troca da seed por dado real — que continua condicionada a 2.1–2.6 prontos; `reset.mjs` passa a ser proibido em produção (guarda por variável de ambiente) |
 
 Critério de saída do horizonte: uma educadora real registra uma chamada real, com consentimento
 real arquivado, num banco que sobreviveria à perda da máquina.
@@ -286,7 +289,7 @@ da linha "SLM local de verdade" da tabela acima, que segue esperando o gatilho d
 - **O que entrou, atrás de `AI_ENABLED` (padrão: desligada):** RAG com corpus governado
   (`src/rag/`, `docs/GOVERNANCA-FONTES-RAG.md`), copilot reflexivo Modo B (`#/pensar`,
   Qwen3 4B local via `llama.cpp` em `127.0.0.1`), Modo A opcional sobre o slot da decisão 13
-  (`AI_EXTRATOR=1`, fallback lexical), SROI exploratório determinístico (`#/impacto`,
+  (`AI_EXTRATOR=1`, fallback lexical), SROI exploratório determinístico (`#/relatorio?aba=impacto`,
   `docs/SROI-METODOLOGIA.md`) e a infraestrutura da Fase 4 (`ai/training/`, treino não executado
   por gate). Arquitetura em camadas: `celular/navegador → Node → RAG (SQLite/FTS5) →
   llama.cpp (127.0.0.1) → GGUF local`.

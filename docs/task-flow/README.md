@@ -32,7 +32,7 @@ a pessoa trava. As bifurcações reais (escrever em vez de falar, registrar trê
 na jornada v2 e ficam fora **de propósito**: user flow é outro desenho.
 
 ```
-início → #/entrar → #/hoje → #/voz → #/confirmar → #/hoje → #/relato → fim
+início → #/entrar → #/hoje → #/registrar (falar → conferir) → #/hoje → #/sai-daqui?aba=relato → fim
 ```
 
 Os seis passos, com o tempo esperado, estão no PNG. **O passo 05 é o achado:** ao confirmar a folha,

@@ -67,7 +67,7 @@ salvar o sistema **abre sozinho a próxima data pendente**.
 **Fala:** presença em um toque; recuperação encadeada, sem cobrança. Em ONG o registro não morre
 por rejeição — morre por lapso seguido de desistência, e o produto é desenhado contra isso.
 
-### 3 · Agenda do ciclo — [0:20 · `#/ciclo`]
+### 3 · Agenda do ciclo — [0:20 · `#/hoje?detalhe=ciclo`]
 
 **Ação:** abrir **Ciclo**. Mostrar o progresso e as crianças bloqueadas; ler os motivos em voz
 alta: **falta de consentimento do responsável (LGPD art. 14)** e **janela mínima de convívio não
@@ -75,7 +75,7 @@ cumprida**.
 
 **Fala:** bloqueio explicado nunca é erro da usuária — é protocolo, dito com todas as letras.
 
-### 4 · O olhar — âncoras + calibração — [0:25 · `#/observacao/…`]
+### 4 · O olhar — âncoras + calibração — [0:25 · `#/crianca/…?ver=observacao`]
 
 **Ação:** abrir uma observação pendente. Mostrar as **seis dimensões — os indicadores da planilha
 socioemocional que o Instituto já usa** (decisão 34) — com âncoras comportamentais. Abrir
@@ -108,7 +108,7 @@ que você fez, né? Essa é a maior dificuldade, é o registro."* A turma dela f
 por decisão: o olhar clínico não vira dado, e o sigilo profissional impede transferência. O que
 entra é presença, procedimento e check-in de grupo.
 
-### 7 · Contar como foi — voz + filtro de perímetro — [1:00 · `#/voz` → `#/confirmar`]
+### 7 · Contar como foi — voz + filtro de perímetro — [1:00 · `#/registrar` → `#/registrar?passo=confirmar`]
 
 **Ação:** tocar em **"Contar como foi"**. Ler em voz alta o aviso da tela — *o que este botão grava
 e o que não grava*. Mostrar o microfone, a onda e o relógio contando **para cima** — a janela de 40 s é sugestão, não teto. Falar (ou digitar
@@ -142,7 +142,7 @@ chamado de *"perigoso"*. Por isso a tela diz, antes do toque, que nenhuma crian�
 > com a substituição de nome nesta cena: "Ana" não está no cadastro da turma, e o trecho é excluído
 > inteiro antes disso. A pseudonimização por código vale para nomes **do cadastro**.
 
-### 8 · O relato no padrão do conselho — [0:25 · `#/relato`]
+### 8 · O relato no padrão do conselho — [0:25 · `#/sai-daqui?aba=relato`]
 
 **Ação:** da tela Hoje, **"Revisar e liberar o relato"**. Mostrar o texto gerado: procedimento,
 objetivo, desenvolvimento com as contagens, encaminhamentos e a nota de sigilo. **Liberar.**
@@ -151,7 +151,7 @@ objetivo, desenvolvimento com as contagens, encaminhamentos e a nota de sigilo. 
 folha — **não existe onde escrever o nome de uma criança**. O texto é dela e só vale depois do OK
 dela; editar a folha depois de liberar derruba a liberação.
 
-### 9 · Recado aos responsáveis + a régua de 75% — [0:20 · `#/recado`]
+### 9 · Recado aos responsáveis + a régua de 75% — [0:20 · `#/sai-daqui?aba=recado`]
 
 **Ação:** abrir pelo botão de recado no cartão da folha (ver a instrução 4 — abrir por URL caiu).
 Ela responde por duas turmas, então há **dois** botões, nomeados por turma; escolher o da manhã. Mostrar o texto pronto para colar e o botão do WhatsApp. Apontar a
@@ -161,7 +161,7 @@ linha da presença do mês **contra a régua de 75%** do Instituto.
 prática dela, feitas à mão, grupo por turma. O produto não inventou processo: absorveu o que já
 acontecia. E o recado é **da turma**, nunca de uma criança.
 
-### 10 · Parecer a profissional parceiro — [0:25 · `#/criancas` → ficha]
+### 10 · Parecer a profissional parceiro — [0:25 · `#/crianca` → ficha]
 
 **Ação:** abrir a ficha de uma criança e descer até **"Parecer a profissional parceiro"**. Mostrar
 o cartão **bloqueado**: *sem consentimento específico, não sai*.
@@ -189,13 +189,13 @@ coordenação, não ela: **a tela dela diz isso, em vez de só bloquear.**
 - Apontar a **Vivência marcada como fora da rubrica**. **Fala:** a exclusão é declarada na tela, com
   o motivo — não é ausência silenciosa.
 
-### 12 · Scores — [0:15 · `#/scores`]
+### 12 · Scores — [0:15 · `#/painel?aba=scores`]
 
 **Fala:** *nenhum destes scores pontua a criança.* O risco de evasão compara a criança **com a
 linha de base dela mesma**; a cobertura do registro **mede o sistema, não a professora** — por isso
 não aparece em tela de educadora; a exposição publica a lacuna em vez de escondê-la.
 
-### 13 · Síntese com revisor — [0:20 · `#/sintese`]
+### 13 · Síntese com revisor — [0:20 · `#/painel?aba=sintese`]
 
 **Ação:** gerar a síntese. Mostrar os selos **"revisor de sobre-alegação: aprovado"** e
 **"aprovação humana: pendente"**. Aprovar.
@@ -216,7 +216,7 @@ supressão (recortes com menos de cinco crianças são agrupados ou suprimidos).
 **Fala:** a regra zero — **o doador não entra no sistema**; ele recebe este artefato. E provar:
 tentar abrir a ficha de uma criança neste perfil devolve **403**.
 
-### 15 · Perguntar — consulta em linguagem natural — [0:15 · `#/consulta`]
+### 15 · Perguntar — consulta em linguagem natural — [0:15 · `#/relatorio?aba=consulta`]
 
 **Ação:** fazer **duas** perguntas que começam igual:
 
@@ -226,7 +226,7 @@ tentar abrir a ficha de uma criança neste perfil devolve **403**.
 **Fala:** a resposta vem de **SQL**, com a fonte citada — nada é estimado nem inferido. E quando a
 pergunta é sobre uma criança, o sistema diz que **não sabe**, em vez de arriscar.
 
-### 16 · Impacto — SROI exploratório — [0:20 · `#/impacto`]
+### 16 · Impacto — SROI exploratório — [0:20 · `#/relatorio?aba=impacto`]
 
 **Ação:** abrir **Impacto**. Ler o kicker: *cenário exploratório · associação compatível, não
 causalidade comprovada*. Mostrar as **cinco regras do cálculo** e os três cenários.
@@ -259,7 +259,7 @@ só o Instituto tem. A tela mostra as premissas e diz isso, em vez de inventar a
 
 ```
 node scripts/smoke-test.mjs   → 385 passaram · 0 falharam
-node scripts/unit-test.mjs    → 170 passaram · 0 falharam
+node scripts/unit-test.mjs    → 172 passaram · 0 falharam
 ```
 
 > **Conferir os números antes de gravar.** Eles mudam a cada bateria nova, e o roteiro anterior

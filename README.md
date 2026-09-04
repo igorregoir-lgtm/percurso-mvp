@@ -22,7 +22,7 @@ encontro e **parecer a profissional parceiro** por código, sob consentimento. D
 
 **Versão 3** (25/08/2026): a camada de IA local do plano de arquitetura, inteira e desligável —
 RAG com corpus governado por manifest (`#/pensar` cita a fonte), copilot reflexivo num Qwen3 4B
-rodando **na própria máquina** (nada sai dela), SROI exploratório determinístico (`#/impacto`),
+rodando **na própria máquina** (nada sai dela), SROI exploratório determinístico (`#/relatorio?aba=impacto`),
 PWA, calibração entre educadoras no painel e a infraestrutura da Fase 4 (LoRA) com os gates
 declarados. Com `AI_ENABLED` desligada — o padrão — o produto é exatamente a v2. Plano auditado e
 execução: [`docs/revisao/04-PLANO-COMPLEMENTACAO-IA.md`](docs/revisao/04-PLANO-COMPLEMENTACAO-IA.md);
@@ -76,7 +76,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **385 asserções de fluxo** e **170 testes unitários** — mais a avaliação do RAG
+São **385 asserções de fluxo** e **172 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização), a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo) e a da transcrição de áudio com stub (`npm run test:audio`: o ciclo de vida do arquivo, que
@@ -233,13 +233,13 @@ canal mediado responder à pergunta 2 do bloco 7.
 
 | # | Funcionalidade | Onde está |
 |---|---|---|
-| F1 | Ficha viva da criança — criança ≠ matrícula, consentimento embutido | `#/criancas`, `#/crianca/:id`, `#/consentimentos` |
+| F1 | Ficha viva da criança — criança ≠ matrícula, consentimento embutido | `#/crianca`, `#/crianca/:id`, `#/consentimentos` |
 | F2 | Presença em um toque | `#/chamada` |
-| F3 | Ciclo de observação — rubrica com âncoras comportamentais | `#/observacao/:id` |
-| F4 | Agenda do ciclo — pendências, bloqueios e janela de convívio | `#/ciclo` |
+| F3 | Ciclo de observação — rubrica com âncoras comportamentais | `#/crianca/:id?ver=observacao` |
+| F4 | Agenda do ciclo — pendências, bloqueios e janela de convívio | `#/hoje?detalhe=ciclo` |
 | F5 | Trajetórias — individual categórica, turma/programa agregada | `#/turma`, ficha da criança, `#/painel` |
-| F6 | Safras, permanência e alerta de ausência | `#/safras`, `#/alertas` |
-| F7 | Fecho do ciclo — síntese em template contido + revisor | `#/sintese` |
+| F6 | Safras, permanência e alerta de ausência | `#/painel?aba=safras`, `#/hoje?detalhe=alertas` |
+| F7 | Fecho do ciclo — síntese em template contido + revisor | `#/painel?aba=sintese` |
 
 ### As quinze da v2 (`percurso-v2-pack`)
 
@@ -248,35 +248,35 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 
 | # | Funcionalidade | Onde está |
 |---|---|---|
-| F2 | Folha do dia — registro **da turma**, sem campo sobre criança | `#/folha` |
-| F3 | Captura por voz — 40 s, áudio descartado no próprio aparelho | `#/voz` |
+| F2 | Folha do dia — registro **da turma**, sem campo sobre criança | `#/registrar?passo=mao` |
+| F3 | Captura por voz — 40 s, áudio descartado no próprio aparelho | `#/registrar` |
 | F4 | Agente extrator — schema fechado, listas fixas, confiança calculada | `src/voz.js` |
 | F5 | Lista de exclusão — devolve encaminhamento humano, não erro | `filtrarPerimetro` + aviso âmbar |
-| F6 | Confirmação humana — nada é gravado antes do toque em confirmar | `#/confirmar` |
-| F7 | Ingestão retroativa — três grafias do mesmo nome viram uma criança | `#/importar` |
-| F8 | Score de risco de evasão — compara a criança com ela mesma | `#/scores`, `#/pauta` |
-| F9 | Score de cobertura do registro — mede o sistema, não a professora | `#/scores`, `#/painel` |
-| F10 | Score de exposição — aspiração declarada × atividade realizada | `#/scores` |
-| F11 | Pauta de segunda — três linhas e uma sugestão, com descarte medido | `#/pauta` |
+| F6 | Confirmação humana — nada é gravado antes do toque em confirmar | `#/registrar?passo=confirmar` |
+| F7 | Ingestão retroativa — três grafias do mesmo nome viram uma criança | `#/pessoas?aba=importar` |
+| F8 | Score de risco de evasão — compara a criança com ela mesma | `#/painel?aba=scores`, `#/hoje?detalhe=semana` |
+| F9 | Score de cobertura do registro — mede o sistema, não a professora | `#/painel?aba=scores`, `#/painel` |
+| F10 | Score de exposição — aspiração declarada × atividade realizada | `#/painel?aba=scores` |
+| F11 | Pauta de segunda — três linhas e uma sugestão, com descarte medido | `#/hoje?detalhe=semana` |
 | F12 | Painel da coordenação com bloco de cobertura | `#/painel` |
 | F13 | Relatório do ciclo — sete blocos, supressão antes da redação | `#/relatorio` |
 | F14 | Carta do trimestre — mesmo pipeline, template curto | `#/relatorio` |
-| F15 | Consulta em linguagem natural sobre a camada agregada | `#/consulta` |
+| F15 | Consulta em linguagem natural sobre a camada agregada | `#/relatorio?aba=consulta` |
 
 ### O que a visita de campo acrescentou (02/09/2026)
 
 | # | Funcionalidade | Onde está |
 |---|---|---|
 | V1 | Papel `profissional` (psicóloga) e a Vivência terapêutica com turma, presença e folha — fora da rubrica, dentro do registro de turma | `#/hoje` da psicóloga, `GET /api/inventario` (`foraDaRubrica`), decisão 31 |
-| V2 | Registro de vivência: procedimento e objetivo em lista fechada + **check-in de grupo** (contagens, nunca quem); o extrator lê as contagens da fala | `#/folha`, `#/voz`, `POST /api/voz/extrair`, `src/voz.js` |
-| V3 | Relato do procedimento no padrão do conselho, gerado dos campos fechados, sem nome, liberado pela profissional | `#/relato`, `GET /api/relato`, `POST /api/relato/liberar`, `src/relato.js` |
+| V2 | Registro de vivência: procedimento e objetivo em lista fechada + **check-in de grupo** (contagens, nunca quem); o extrator lê as contagens da fala | `#/registrar?passo=mao`, `#/registrar`, `POST /api/voz/extrair`, `src/voz.js` |
+| V3 | Relato do procedimento no padrão do conselho, gerado dos campos fechados, sem nome, liberado pela profissional | `#/sai-daqui?aba=relato`, `GET /api/relato`, `POST /api/relato/liberar`, `src/relato.js` |
 | V4 | Filtro de perímetro com contexto: o nome do procedimento não dispara; conteúdo sobre criança continua barrado | `filtrarPerimetro(…, { contexto: 'vivencia' })` |
-| V5 | A tela de voz diz o que grava; nome falado vira código na tela e é contado (`nomes_substituidos`) | `#/voz`, `#/confirmar` |
+| V5 | A tela de voz diz o que grava; nome falado vira código na tela e é contado (`nomes_substituidos`) | `#/registrar`, `#/registrar?passo=confirmar` |
 | V6 | Rubrica com os seis indicadores da planilha do Instituto; resumo da aba Indicadores e exportação da aba Avaliações (CSV, por código) | `#/painel`, `GET /api/planilha/resumo`, `GET /api/exportar/planilha`, `src/planilha.js`, decisão 34 |
 | V7 | Régua de presença do Instituto (75% · atenção até 80%): criança com faixa para quem responde pela turma; só contagens para a diretoria | `#/turma`, `#/painel`, `GET /api/turma/presenca`, `GET /api/regua`, decisão 33 |
-| V8 | Recado da turma para o grupo dos responsáveis — gerado do registro, sem criança nomeada, link wa.me sem número | `#/recado`, `GET /api/recado`, `src/recado.js` |
+| V8 | Recado da turma para o grupo dos responsáveis — gerado do registro, sem criança nomeada, link wa.me sem número | `#/sai-daqui?aba=recado`, `GET /api/recado`, `src/recado.js` |
 | V9 | Devolução por encontro: o check-in de hoje contra as últimas folhas da turma (cala sem base) | `#/hoje`, `POST /api/folha` (`devolucao`) |
-| V10 | Parecer a profissional parceiro — por código, sob consentimento específico, revisado e liberado; registro permanente de que saiu | ficha da criança → `#/parecer/:id`, `GET/POST /api/parecer/*`, `src/parecer.js`, decisão 32 |
+| V10 | Parecer a profissional parceiro — por código, sob consentimento específico, revisado e liberado; registro permanente de que saiu | ficha da criança → `#/crianca?ver=parecer`, `GET/POST /api/parecer/*`, `src/parecer.js`, decisão 32 |
 
 ### Cadastro de pessoas
 
@@ -284,7 +284,7 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 |---|---|---|
 | C1 | Cadastro da equipe — professora, coordenação e diretoria, com apelido derivado do nome e turma opcional (troca de turma exige confirmação) | `#/pessoas`, `POST /api/equipe` |
 | C2 | Cadastro de criança — matrícula ativa no mesmo ato, dedup por nome+nascimento, rubrica socioemocional nascendo **pendente** | `#/pessoas`, `POST /api/criancas` |
-| C3 | **Arquivo — ninguém é apagado.** Quem sai do pipeline sai das listas vivas e continua no sistema; sessão aberta de pessoa arquivada morre no ato. A volta da criança é matrícula **nova**, com consentimento voltando a pendente | `#/arquivo`, `POST /api/equipe/arquivar`, `POST /api/criancas/arquivar`, `.../reativar`, `.../rematricular` |
+| C3 | **Arquivo — ninguém é apagado.** Quem sai do pipeline sai das listas vivas e continua no sistema; sessão aberta de pessoa arquivada morre no ato. A volta da criança é matrícula **nova**, com consentimento voltando a pendente | `#/pessoas?aba=arquivo`, `POST /api/equipe/arquivar`, `POST /api/criancas/arquivar`, `.../reativar`, `.../rematricular` |
 
 ### A camada de IA da v3 (opcional, `AI_ENABLED=1`)
 
@@ -294,7 +294,7 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 | Copilot reflexivo (Modo B) | 7 blocos por gramática: perguntas socráticas, hipóteses rotuladas, ≥3 alternativas, contraponto, fontes verificadas, escalonamento | `#/pensar` (“Refletir”), `src/copilot.js` |
 | Modo A por modelo (opt-in extra) | extração da fala sob os MESMOS catálogos fechados, fallback lexical em toda falha | `AI_EXTRATOR=1`, `extrairComModelo` |
 | Aurora, o assistente-parceiro | guia de navegação presente em todas as telas: tira dúvidas do produto, oferece "Ir para…", fala (opt-in) — responde SÓ sobre o Percurso, com fallback determinístico do guia | botão ❋, `src/assistente.js`, decisão 26 |
-| SROI exploratório | 3 cenários e faixa, motor determinístico, dupla contagem bloqueada, premissas com fonte | `#/impacto` (diretoria), `src/sroi/`, `docs/SROI-METODOLOGIA.md` |
+| SROI exploratório | 3 cenários e faixa, motor determinístico, dupla contagem bloqueada, premissas com fonte | `#/relatorio?aba=impacto` (diretoria), `src/sroi/`, `docs/SROI-METODOLOGIA.md` |
 | Calibração entre educadoras | borda 2 da doutrina, determinística — pauta de reunião, nunca ranking | `#/painel` |
 | LoRA (Fase 4) | infraestrutura, funil de doação explícita e gates — **treino não executado por gate** | `ai/training/` |
 
@@ -329,7 +329,7 @@ models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh b
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
 scripts/smoke-test.mjs    385 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     170 testes unitários das regras críticas (banco temporário)
+scripts/unit-test.mjs     172 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
 scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)

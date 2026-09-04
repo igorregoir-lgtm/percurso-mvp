@@ -46,17 +46,17 @@ nada de volta pelo que observa.
    aberto.
 2. **`#/chamada`** — presença em um toque por criança. Sem rede, o registro entra na fila offline
    e sobe sozinho quando a conexão volta.
-3. **`#/folha` → `#/voz` → `#/confirmar`** — fala sobre o dia da **turma**, sem teto de tempo; o áudio é
+3. **`#/registrar`** (falar → conferir → guardar, na mesma tela) — fala sobre o dia da **turma**, sem teto de tempo; o áudio é
    transcrito pelo navegador — no aparelho quando ele sabe, no serviço do fornecedor quando não sabe,
    e a tela diz qual dos dois — e descartado; o extrator pré-preenche a folha em listas
    fechadas; **nada é gravado antes de ela confirmar**. Se preferir, digita — o caminho manual
    está sempre visível.
-4. **`#/ciclo`** — vê quem falta observar e quem está bloqueada, com o motivo explícito (janela de
+4. **`#/hoje?detalhe=ciclo`** — vê quem falta observar e quem está bloqueada, com o motivo explícito (janela de
    convívio, consentimento) — bloqueio é protocolo, nunca erro dela.
-5. **`#/observacao/:id`** — rubrica de 6 dimensões × 4 âncoras comportamentais (os seis indicadores da planilha socioemocional do Instituto — decisão 34), ~3 minutos por
+5. **`#/crianca/:id?ver=observacao`** — rubrica de 6 dimensões × 4 âncoras comportamentais (os seis indicadores da planilha socioemocional do Instituto — decisão 34), ~3 minutos por
    criança; rascunho persiste se ela sair no meio. Sem campo de texto livre sobre a criança — por
    decisão de desenho (decisão 15 de [`DECISOES-TECNICAS.md`](DECISOES-TECNICAS.md)).
-6. **`#/pauta`** — toda segunda recebe três linhas acionáveis e uma sugestão de atividade, que
+6. **`#/hoje?detalhe=semana`** — toda segunda recebe três linhas acionáveis e uma sugestão de atividade, que
    aceita ou descarta. É a primeira vez que o registro devolve algo a ela.
 7. **`#/turma`** — vê as médias por dimensão mudarem ciclo a ciclo. Ao fechar a última observação
    da turma, a tela devolve em números o que ela sabia e não conseguia provar.
@@ -100,12 +100,12 @@ entra por incentivo fiscal cobra prestação de contas, e prestação de contas 
 
 1. **`#/painel`** — 106 crianças, 120 matrículas, 14 em dois programas: a reconciliação que ela
    fazia no braço, pronta. Cobertura do ciclo, presença do mês, alertas abertos.
-2. **`#/scores`** — três scores que medem vínculo, sistema e oferta — **nunca a criança**: risco
+2. **`#/painel?aba=scores`** — três scores que medem vínculo, sistema e oferta — **nunca a criança**: risco
    de evasão, cobertura do registro, exposição (aspiração declarada × atividade realizada).
-3. **`#/safras`** — permanência e evasão por safra e por programa.
+3. **`#/painel?aba=safras`** — permanência e evasão por safra e por programa.
 4. **`#/consentimentos`** — pendências de consentimento; campo sem base legal declarada nasce
    bloqueado no servidor, não no botão da tela.
-5. **`#/sintese`** — gera a síntese do ciclo em template fechado (números vêm de SQL, nunca de
+5. **`#/painel?aba=sintese`** — gera a síntese do ciclo em template fechado (números vêm de SQL, nunca de
    modelo), passa pelo revisor de sobre-alegação e **aprova ou devolve** — a aprovação é dela.
 6. **Fecho do ciclo** — fecha o ciclo, a retenção declarada é executada e o próximo abre.
 
@@ -140,7 +140,7 @@ Perfil que entrou com a v2. Existe para uma coisa: prestar contas a quem financi
    a supressão de célula pequena (n < 5) aplicada **antes** da redação e o revisor de
    sobre-alegação barrando verbo causal forte. Revisa e publica. A carta do trimestre sai do
    mesmo pipeline.
-2. **`#/consulta`** — pergunta em linguagem natural sobre a camada agregada; quando o sistema não
+2. **`#/relatorio?aba=consulta`** — pergunta em linguagem natural sobre a camada agregada; quando o sistema não
    reconhece a pergunta, diz que não sabe.
 3. **Não abre registro individual.** As rotas de ficha e lista de crianças respondem 403 para o
    perfil dela, por decisão de desenho (decisão 16): quem presta contas trabalha sobre a camada
@@ -204,14 +204,14 @@ cérebro"*); o que ela vê não vira evidência.
    ciclo**: a turma dela fica fora da rubrica por decisão (o olhar clínico não vira dado).
 2. **`#/chamada`** — presença em um toque, igual às demais turmas. É a mesma régua de 75% que o
    Instituto já usa.
-3. **`#/voz` → `#/confirmar`** — fala sobre **o grupo**, sem teto de tempo: o procedimento (lista
+3. **`#/registrar`** (falar → conferir, na mesma tela) — fala sobre **o grupo**, sem teto de tempo: o procedimento (lista
    fechada), o objetivo, como o grupo esteve, e o **check-in estruturado** que ela validou ao
    vivo — *quantas ajudaram sem ninguém pedir, quantas participaram do começo ao fim, quantos
    conflitos e quantos resolvidos conversando, quantas não observadas*. Se falar um nome, a tela
    mostra o nome virando código antes de qualquer gravação. Se falar de um caso, o filtro de
    perímetro devolve encaminhamento humano — e a frase "vivência terapêutica" não dispara o
    filtro, porque é o nome do procedimento, não conteúdo sobre criança.
-4. **`#/relato`** — o registro do procedimento nasce pronto, no padrão do conselho, sem nome por
+4. **`#/sai-daqui?aba=relato`** — o registro do procedimento nasce pronto, no padrão do conselho, sem nome por
    construção; ela **revisa e libera** (ou não). O texto é dela; a IA, quando ligada, só organiza.
 5. **`#/turma`** — a devolução por encontro: como o grupo de hoje se compara às últimas
    vivências, em contagens; e a régua de presença da turma.
@@ -231,7 +231,7 @@ Isso **não** quer dizer que o sistema fique quieto. Ele cobra — e cobrar aqui
 zero, em vez de chegar no fim do dia como dívida. Para isso o Instituto precisa de um calendário
 próprio, alimentado pela profissional, pela coordenação ou pela direção.
 
-Na prática, o fluxo `#/voz` de hoje só existe numa janela: durante ou logo depois do encontro. É
+Na prática, o fluxo `#/registrar` de hoje só existe numa janela: durante ou logo depois do encontro. É
 exatamente a hora em que o campo mostra que ela **não tem mãos livres** — e a hora seguinte é onde
 ela responde *"Não dá, não dá"*. Faltavam, portanto, seis coisas. Em 03/09/2026 **duas foram
 implementadas** (F1) — as duas últimas da tabela; as outras quatro seguem em aberto:
@@ -241,7 +241,7 @@ implementadas** (F1) — as duas últimas da tabela; as outras quatro seguem em 
 | **Calendário de encontros** | ela, a coordenação ou a direção marcam quando são os encontros, e a partir daí o sistema sabe o que vem pela frente | entidade de encontro agendado e tela de calendário para os três papéis; hoje a folha nasce do encontro do dia e não há agenda futura (`src/domain.js:145`) |
 | **Aviso antes de cada encontro** | o lembrete precisa chegar quando ainda dá para apertar "gravar", não depois | notificação da PWA com regra de antecedência; hoje o produto não emite nenhuma notificação |
 | **O encontro nunca fecha** | registro atrasado precisa entrar com a data do encontro, não a de hoje | modelo de dados aceitar data retroativa + marca de "registrado depois"; o encontro em aberto continua aparecendo até ser registrado |
-| **A fala preenche os seis indicadores** | a rubrica é o instrumento da casa e não pode continuar dependendo de digitação | hoje os seis indicadores são respondidos à mão, criança por criança (~3 min cada, `#/observacao/:id`), e o extrator de `src/voz.js` só preenche a folha do dia e o check-in de grupo — falta extrair a escala 1–4 por indicador, com o mesmo gate de confirmação humana |
+| **A fala preenche os seis indicadores** | a rubrica é o instrumento da casa e não pode continuar dependendo de digitação | hoje os seis indicadores são respondidos à mão, criança por criança (~3 min cada, `#/crianca/:id?ver=observacao`), e o extrator de `src/voz.js` só preenche a folha do dia e o check-in de grupo — falta extrair a escala 1–4 por indicador, com o mesmo gate de confirmação humana |
 | ~~**Gravar o encontro inteiro**~~ **— existe desde 03/09/2026 (porta B)** | captura de custo zero: ela aperta no começo e larga o celular na mesa | `MediaRecorder` em blocos fechados de 5 min + `whisper.cpp` no computador do Instituto (`src/transcricao.js`, `public/audio.js`). **Nasce desligada**, liga por escolha explícita e por aparelho |
 | ~~**Importar um áudio que ela já tem**~~ **— existe desde 03/09/2026 (porta C)** | o áudio do gravador do celular ou do WhatsApp, de hoje ou de três semanas atrás | o navegador decodifica o arquivo, converte para WAV 16 kHz e manda transcrever; `ai/model-manifest.json` passou a ter whisper-small e whisper-base, com SHA-256 |
 

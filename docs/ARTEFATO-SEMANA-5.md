@@ -105,12 +105,12 @@ demonstração verificável e não declaratória: cada história tem teste autom
 
 | # | História | Tela que demonstra | Prova automatizada |
 |---|---|---|---|
-| **US-1** | Como **pedagoga**, quero registrar minha observação de cada criança em minutos, com âncoras claras, para manter processo consistente sem tirar atenção das crianças. *(F3)* | `#/ciclo` → `#/observacao/:id` | smoke §4 (12 asserções) e §5b (cronômetro de registro, meta de 120 s) |
+| **US-1** | Como **pedagoga**, quero registrar minha observação de cada criança em minutos, com âncoras claras, para manter processo consistente sem tirar atenção das crianças. *(F3)* | `#/hoje?detalhe=ciclo` → `#/crianca/:id?ver=observacao` | smoke §4 (12 asserções) e §5b (cronômetro de registro, meta de 120 s) |
 | **US-2** | Como **pedagoga**, quero ver a evolução entre ciclos, para planejar pelo dado e não só pela demanda do dia. *(F5)* | `#/turma` | smoke §5 — "dois ciclos comparáveis", leitura de forças e atenção |
-| **US-3** | Como **pedagoga**, quero ser avisada de ausências acumuladas, para agir antes da evasão. *(F6)* | `#/hoje`, `#/alertas` | smoke §6 — alerta em duas faltas, tratativa registrada, permanência por safra |
-| **US-4** | Como **coordenação**, quero painel agregado e síntese de ciclo, para demonstrar resultado sem expor nenhuma criança. *(F5, F7)* | `#/painel` → `#/sintese` | smoke §7 (revisor, ressalva, números conferidos contra o SQL) e §5b (**nenhuma média com n < 5**) |
+| **US-3** | Como **pedagoga**, quero ser avisada de ausências acumuladas, para agir antes da evasão. *(F6)* | `#/hoje`, `#/hoje?detalhe=alertas` | smoke §6 — alerta em duas faltas, tratativa registrada, permanência por safra |
+| **US-4** | Como **coordenação**, quero painel agregado e síntese de ciclo, para demonstrar resultado sem expor nenhuma criança. *(F5, F7)* | `#/painel` → `#/painel?aba=sintese` | smoke §7 (revisor, ressalva, números conferidos contra o SQL) e §5b (**nenhuma média com n < 5**) |
 | **US-5** | Como **coordenação**, quero campos sem consentimento bloqueados por padrão, para que a proteção seja regra do sistema. *(F1)* | `#/consentimentos` | smoke §8 — ativação sem responsável recusada, **revogação volta a bloquear**; §3 — bloqueio aparece na agenda com o motivo |
-| **US-6** | Como **psicóloga da Vivência**, quero contar de viva voz como foi o encontro, para que o relatório no padrão do conselho exista sem eu ter que escrever à noite. *(decisão 31)* | `#/voz` → `#/confirmar` → `#/relato` | smoke §24 (a Vivência fora da rubrica) e §26 (check-in de grupo gravado, relato gerado dos campos fechados, liberação registrada e devolução por encontro); unit — relato sem nome por construção |
+| **US-6** | Como **psicóloga da Vivência**, quero contar de viva voz como foi o encontro, para que o relatório no padrão do conselho exista sem eu ter que escrever à noite. *(decisão 31)* | `#/registrar` → `#/registrar?passo=confirmar` → `#/sai-daqui?aba=relato` | smoke §24 (a Vivência fora da rubrica) e §26 (check-in de grupo gravado, relato gerado dos campos fechados, liberação registrada e devolução por encontro); unit — relato sem nome por construção |
 
 **A leitura que interessa ao avaliador:** as seis histórias saem de três papéis e cobrem o ciclo
 inteiro do Desafio B — registrar (US-1, US-6), acompanhar (US-2, US-3), demonstrar (US-4) e proteger
@@ -144,44 +144,44 @@ servidor autoriza são a mesma regra, verificada por teste (smoke §0, §19).
     └ o que falta hoje      └ alertas abertos        └ publicar (só a diretoria)
         │                       │                       │
         ▼                       ▼                       ▼
-   #/chamada               #/scores                #/impacto
+   #/chamada               #/painel?aba=scores                #/relatorio?aba=impacto
    um toque por criança    evasão · cobertura ·    SROI exploratório:
    fila offline se cair    exposição               3 cenários e faixa
         │                       │                       │
         ▼                       ▼                       ▼
-   #/voz → #/confirmar     #/safras                #/consulta
+   #/registrar → #/registrar?passo=confirmar     #/painel?aba=safras                #/relatorio?aba=consulta
    fala ~40 s da TURMA     permanência e evasão    pergunta em linguagem
    nada grava sem o toque  por safra de entrada    natural sobre o agregado
         │                       │
         ▼                       ▼
-   #/ciclo                 #/sintese
+   #/hoje?detalhe=ciclo                 #/painel?aba=sintese
    quem falta observar,    template + revisor +
    quem está bloqueada     aprovação humana
    e por quê                   │
         │                       ▼
         ▼                  #/consentimentos
-   #/observacao/:id        pendências; ativar
+   #/crianca/:id?ver=observacao        pendências; ativar
    6 dimensões × 4 âncoras aqui DESBLOQUEIA a
         │                  observação lá
         ▼                       │
-   #/turma  ◄────────────── #/pessoas · #/arquivo
+   #/turma  ◄────────────── #/pessoas · #/pessoas?aba=arquivo
    médias ciclo a ciclo     cadastro e saída de
         │                   equipe e crianças
         ▼
-   #/pauta
+   #/hoje?detalhe=semana
    três linhas e uma sugestão — a devolução de segunda
 ```
 
-**Telas comuns aos dois primeiros papéis:** `#/criancas` e `#/crianca/:id` (ficha viva, com escopo
-de turma para a educadora) e `#/alertas`. **Presente em todas:** o **Aurora**, assistente de
+**Telas comuns aos dois primeiros papéis:** `#/crianca` e `#/crianca/:id` (ficha viva, com escopo
+de turma para a educadora) e `#/hoje?detalhe=alertas`. **Presente em todas:** o **Aurora**, assistente de
 navegação que responde só sobre o produto e oferece "Ir para…" — nunca grava nada.
 
 **Os dois cruzamentos que contam a tese do produto**, e que a demonstração deve mostrar nesta
 ordem:
 
-1. `#/chamada` → `#/alertas`: a presença registrada em um toque **gera sozinha** o alerta de
+1. `#/chamada` → `#/hoje?detalhe=alertas`: a presença registrada em um toque **gera sozinha** o alerta de
    ausência. O trabalho de sempre passa a produzir sinal.
-2. `#/consentimentos` → `#/observacao/:id`: ativar o consentimento na tela da coordenação
+2. `#/consentimentos` → `#/crianca/:id?ver=observacao`: ativar o consentimento na tela da coordenação
    **desbloqueia** a observação na tela da educadora. A proteção é estado do sistema, não aviso.
 
 ---

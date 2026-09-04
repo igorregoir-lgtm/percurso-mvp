@@ -95,10 +95,9 @@ que **nenhum teste pega** a divergência. A rodada de simplificação inverteu a
 desenhado primeiro, e é ele que o código implementa. A divergência passa a ser erro de execução,
 visível, em vez de decadência silenciosa.
 
-**O que o v3 muda em relação ao v2:** 28 rotas viram 12 (`#/voz`+`#/folha`+`#/confirmar` →
-`#/registrar`; `#/criancas`+`#/observacao`+`#/parecer` → ficha da criança; `#/alertas`+`#/pauta`+
-`#/ciclo` → cartões do `#/hoje`; `#/relato`+`#/recado` → `#/sai-daqui`; scores+safras+síntese →
-`#/painel`; importar+arquivo → `#/pessoas`; impacto+perguntar → `#/relatorio`); a captura por áudio
+**O que o v3 muda em relação ao v2:** 28 rotas viram 12 — a tabela de fusão está na **decisão 36**
+de [`DECISOES-TECNICAS.md`](DECISOES-TECNICAS.md), que é a fonte; repeti-la aqui seria mais uma
+cópia para envelhecer. Em código, desde 04/09/2026. Além disso: a captura por áudio
 abre a tela em vez de ser o terceiro cartão; a janela de 40 s deixa de ser teto; as três garantias
 aparecem no instante do toque; o check-in vira entrada direta preservando `—`/`0`/`N`; a conferência
 mostra a origem de cada campo; e existe seletor de turma.
@@ -129,8 +128,8 @@ desatualizadas, e não por descuido — o produto mudou depois:
    nem parecer — as quatro telas que as decisões 31 a 33 criaram.
 3. **A contagem de papéis está errada na documentação.** `ARTEFATO-SEMANA-5.md` e
    `PENDENCIAS-DE-ENTREGA.md` descreviam aquelas nove telas como *"três papéis"*. Lidas no próprio
-   Figma, elas cobrem **dois**: educadora (`#/entrar`, `#/hoje`, `#/chamada`, `#/ciclo`,
-   `#/observacao`, `#/turma`) e coordenação (`#/consentimentos`, `#/painel`, `#/sintese`). A
+   Figma, elas cobrem **dois**: educadora (`#/entrar`, `#/hoje`, `#/chamada`, `#/hoje?detalhe=ciclo`,
+   `#/crianca?ver=observacao`, `#/turma`) e coordenação (`#/consentimentos`, `#/painel`, `#/painel?aba=sintese`). A
    diretoria aparecia como perfil na tela de entrada e em nenhuma tela própria. Corrigido em
    02/09/2026.
 

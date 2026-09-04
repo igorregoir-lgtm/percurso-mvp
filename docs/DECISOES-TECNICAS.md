@@ -140,7 +140,7 @@ autenticação por senha ou SSO; (b) HTTPS; (c) registro de auditoria de acesso 
 ### 9. Dados sintéticos determinísticos
 
 PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 385
-asserções de fluxo e os 170 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
+asserções de fluxo e os 172 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
 a *hoje*, então a demonstração nunca "envelhece".
 
 ---
@@ -207,7 +207,7 @@ LLM sobre uma criança nomeada é um erro que ninguém consegue rastrear depois;
 auditável linha a linha.
 
 **O que isso custa.** O extrator lexical entende menos variação linguística que um LLM. A taxa de
-correção pós-extração está instrumentada exatamente para medir isso (`#/scores`): se ela subir
+correção pós-extração está instrumentada exatamente para medir isso (`#/painel?aba=scores`): se ela subir
 acima de 40%, o extrator está pior que o formulário e a decisão deve ser revista.
 
 **Como trocar depois.** O contrato é `extrairDaFala(transcricao, nomesDaTurma) → { extracao }` com
@@ -835,6 +835,65 @@ circulava **não diz nem a direção**. Fica como dívida declarada, não como n
 
 ---
 
+### 36. Vinte e oito telas viram doze — fundindo, não escondendo
+
+**Origem:** a semana que mais aprendeu sobre o campo foi a que mais engordou o produto, e o campo
+pediu o contrário: *"esta forma tem que ser a mais simples e fácil possível"*. A primeira versão do
+plano propunha reduzir o MENU e deixar as 28 rotas de pé — a revisão derrubou isso com o nome certo:
+**ocultação não é simplificação**, e tela escondida continua custando código, teste e protótipo.
+
+**Decisão.** Fundir. Uma tela absorve as que são o mesmo assunto, e a rota antiga **deixa de
+existir** — não há mais `rota()` para ela. O conteúdo passa a viver dentro da tela que absorveu,
+endereçado por query.
+
+| Vira | Absorve | Por quê |
+|---|---|---|
+| `#/registrar` | `#/voz` · `#/folha` · `#/confirmar` | três estados de UMA tarefa; `#/confirmar` já renderizava os blocos idênticos aos da folha |
+| `#/crianca` | `#/criancas` · `#/observacao/:id` · `#/parecer/:id` | a busca vira campo no topo; o olhar e o parecer acontecem NA ficha, que é onde a pessoa já está |
+| `#/hoje` | `#/alertas` · `#/pauta` · `#/ciclo` | os três já eram cartão aqui; o cartão e a tela coexistiam, e a pendência de ciclo era cobrada em dois lugares |
+| `#/sai-daqui` | `#/relato` · `#/recado` | as duas saídas do mesmo encontro, do mesmo registro |
+| `#/painel` | `#/scores` · `#/safras` · `#/sintese` | a única porta para as três era uma linha de botões fantasma DENTRO do painel: um menu escondido numa tela |
+| `#/pessoas` | `#/importar` · `#/arquivo` | quem entra, quem saiu e o que veio de antes são o mesmo assunto: o elenco |
+| `#/relatorio` | `#/impacto` · `#/consulta` | o SROI é um bloco do relatório, não um destino; e perguntar é sobre aqueles números |
+
+**18 rotas somem, 2 nascem: 28 → 12.** Educadora e psicóloga passam a alcançar 4 itens de menu em
+vez de 13 e 11; coordenação, 4; diretoria, 1.
+
+**O mapa de apelidos (`FUNDIDAS`, `public/app.js`) não é ocultação disfarçada.** A tela sumiu; o mapa
+existe porque as citações de rota antiga são muitas — as sugestões da Aurora, o protótipo, os
+documentos, links que a coordenação já mandou por WhatsApp. Link velho que dá tela em branco é pior
+que link velho que chega no lugar certo. Ele **troca a barra de endereço**, para a pessoa ver onde
+está e o Voltar não ficar preso no apelido.
+
+**Teto de três cartões no `#/hoje`**, com a captura em primeiro. A tela empilhava oito cartões e até
+dez botões largos — e o comentário do cartão de voz já dizia que ele *"fica acima de tudo o que é
+tarefa"* enquanto ele era o terceiro. O excesso não some: vira "Também para você".
+
+**Seletor de turma**, que é achado de campo: a turma de sábado à tarde tem porta de entrada, nome e
+chamada na operação real — quem não a acompanhava era o produto (`GET /api/hoje` montava tudo a
+partir de `turmas[0]`).
+
+**O que a fusão revelou, e nenhum gate pegava:**
+
+1. **`/^#\/relato/` casava em `#/relatorio`**, e o despacho pega o primeiro que casa. A tela
+   principal da DIRETORIA estava **inalcançável por hash desde a v2** — quem tocava em "Relatório"
+   caía em "Sem turma atribuída". Smoke é HTTP, o unitário não tem DOM, e o defeito morava só no
+   despacho do cliente. Agora há gate: ele lê as rotas do próprio arquivo e falha se qualquer uma
+   for engolida por outra.
+2. **`guiaDe` da Aurora casava por `startsWith` puro**, segurado apenas pela ordem do array. Com
+   telas fundidas no mesmo hash, ordem deixou de bastar — passou a exigir fronteira.
+3. **Guias duplicados viram texto morto**: dois guias com o mesmo hash, e `guiaDe` responde sempre
+   pelo primeiro, sem erro nenhum. Os pares foram fundidos.
+4. **A checagem de destino da Aurora era por igualdade exata de string** — destino com query seria
+   engolido com um `return` mudo, o mesmo defeito que já tinha acontecido com `#/consulta`.
+
+**Risco assumido, e a mitigação:** `HANDOFF.md` avisa que quem simplifica sem entender reintroduz o
+defeito, e fundir é mais arriscado que esconder. A fusão foi desenhada no Figma antes (F-1), feita em
+quatro etapas verificadas no navegador, e **toda tela absorvida ganhou volta** — três delas ficaram
+sem saída na primeira tentativa, e só apareceram porque foram clicadas.
+
+---
+
 ---
 
 ## Dívidas técnicas conhecidas
@@ -857,4 +916,4 @@ circulava **não diz nem a direção**. Fica como dívida declarada, não como n
 | Extrator lê contagens por padrão lexical | Fala fora do padrão ("umas seis") fica em branco | Medir a taxa de correção do check-in na operação; Modo A por modelo continua opt-in |
 | Neutralização do perímetro por lista fechada | Sintagma novo do procedimento volta a ser barrado | Ampliar `NEUTRALIZAVEIS_VIVENCIA` com a psicóloga, nunca por inferência |
 | Velocidade do whisper na máquina do Instituto nunca medida | A porta B (encontro inteiro) pode levar tempo que ninguém dimensionou; "~6× tempo real" não diz a direção | Medir com áudio de ~10 min no notebook mais fraco e escrever o número em `METODOLOGIA-VALIDACAO-PERCURSO.md` §5.3 (decisão 35) |
-| Capturar ainda depende de um encontro já existir | `#/voz` redireciona para `#/folha` sem encontro e `src/voz.js` devolve 404 — a porta C (áudio de três semanas atrás) esbarra nisso | Frente do calendário (encontro agendado + data retroativa), que é pré-requisito declarado da porta C |
+| Capturar ainda depende de um encontro já existir | `#/registrar` redireciona para `#/registrar?passo=mao` sem encontro e `src/voz.js` devolve 404 — a porta C (áudio de três semanas atrás) esbarra nisso | Frente do calendário (encontro agendado + data retroativa), que é pré-requisito declarado da porta C |

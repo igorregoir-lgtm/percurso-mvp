@@ -185,8 +185,8 @@ captura por voz, copilot, calibração, SROI nem relatório do doador. O roteiro
 **O protótipo entregue na semana 5** (congelado como registro — o canônico hoje é outro, ver
 [`ARTEFATOS-VISUAIS.md`](ARTEFATOS-VISUAIS.md)): https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL
 
-Nove telas de 375×812 (`#/entrar`, `#/hoje`, `#/chamada`, `#/ciclo`, `#/observacao/:id`,
-`#/turma`, `#/consentimentos`, `#/painel`, `#/sintese`), **dois papéis com tela** (educadora e
+Nove telas de 375×812 (`#/entrar`, `#/hoje`, `#/chamada`, `#/hoje?detalhe=ciclo`, `#/crianca/:id?ver=observacao`,
+`#/turma`, `#/consentimentos`, `#/painel`, `#/painel?aba=sintese`), **dois papéis com tela** (educadora e
 coordenação; a diretoria aparecia só como perfil na entrada), 12 ligações de clique e
 ponto de partida definido. As cores vêm de uma coleção de variáveis com os modos Claro e Escuro,
 com os tokens verbatim de `public/styles.css` — o protótipo e o MVP não podem divergir de cor por

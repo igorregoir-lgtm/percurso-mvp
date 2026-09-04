@@ -218,8 +218,8 @@ semana, sentir que "já era", e nunca mais voltar. O produto foi desenhado contr
 | Retomada sem culpa: *"Que bom te ver de volta… Nada se perdeu"* | `#/hoje`, após 5+ dias sem registro |
 | Nenhuma data expira — chamadas atrasadas continuam registráveis | `#/chamada`, seletor com as datas em aberto |
 | Encadeamento de recuperação: ao salvar, o sistema abre a próxima pendência | após salvar a chamada |
-| Rascunho de observação: sai no meio, volta onde parou | `#/observacao/:id` |
-| Barra de progresso que só sobe — sem *streak*, sem penalidade, sem vermelho de falha | `#/hoje`, `#/ciclo` |
+| Rascunho de observação: sai no meio, volta onde parou | `#/crianca/:id?ver=observacao` |
+| Barra de progresso que só sobe — sem *streak*, sem penalidade, sem vermelho de falha | `#/hoje`, `#/hoje?detalhe=ciclo` |
 | Bloqueio explicado, nunca como erro da usuária | crianças bloqueadas na agenda do ciclo |
 
 ---
