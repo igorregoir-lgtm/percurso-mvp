@@ -139,8 +139,8 @@ autenticação por senha ou SSO; (b) HTTPS; (c) registro de auditoria de acesso 
 
 ### 9. Dados sintéticos determinísticos
 
-PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 403
-asserções de fluxo e os 176 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
+PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 407
+asserções de fluxo e os 177 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
 a *hoje*, então a demonstração nunca "envelhece".
 
 ---
@@ -259,7 +259,7 @@ de risco. Quem tentar gravar por ele recebe 422 com encaminhamento humano, não 
 ### 16. A diretoria não abre registro individual
 
 O perfil da diretoria existe para gerar, revisar e publicar o relatório do doador. As rotas de
-ficha, lista de crianças e observação respondem **403** para ele (`semAcessoIndividual` em
+ficha, lista de crianças e observação respondem **407** para ele (`semAcessoIndividual` em
 `src/api.js`).
 
 É a regra zero do `08-RELATORIO-DOADOR` levada para dentro do sistema: quem presta contas trabalha
@@ -566,7 +566,7 @@ professora nova nem uma criança nova pela interface — o item 2.8 do horizonte
 coordenação: papel e matrícula são exatamente o que decide, no resto do produto, quem enxerga a
 ficha de quem (escopo de turma, decisão 22; diretoria sem individual, decisão 16). Deixar o
 cadastro na mão de quem registra a chamada seria pôr o controle de acesso na mão de quem ele
-limita. A diretoria também não cadastra criança — 403, pela mesma regra de sempre.
+limita. A diretoria também não cadastra criança — 407, pela mesma regra de sempre.
 
 **2 · O consentimento nasce PENDENTE, e a criança entra bloqueada para observação.** A criança
 entra pela presença (legítimo interesse, LGPD Art. 7º IX) e não fica observável no mesmo gesto:

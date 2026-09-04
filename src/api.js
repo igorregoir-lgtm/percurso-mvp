@@ -807,6 +807,20 @@ export const rotas = {
       origem: origem ?? 'regras',
       vivencia,
       nomes_substituidos: substituicoes,
+      // F6 — `faltas_mencionadas` era CODIGO MORTO: o extrator devolvia, a folha
+      // gravava `[]` fixo (certo: a folha e' da turma, sem nome) e o front nunca
+      // lia. O campo pediu literalmente "ou entao voce marque a presenca / pelo
+      // nome, so falando" (Grav. 82).
+      //
+      // Volta como SUGESTAO POR CRIANCA, com id, para a tela oferecer e a pessoa
+      // confirmar. NUNCA presume 'P' para quem a fala nao citou: presenca decide
+      // renovacao de matricula (regua de 75%, decisao 33), e quem nao foi citada
+      // simplesmente nao foi citada.
+      faltas_sugeridas: (() => {
+        const ditas = new Set(extracao.faltas_mencionadas ?? []);
+        if (!ditas.size) return [];
+        return D.criancasDaTurma(turmaId).filter(c => ditas.has(c.nome)).map(c => ({ id: c.id, nome: c.nome }));
+      })(),
       procedimento_neutralizado: perimetro.neutralizados ?? 0,
       // Fato de ter havido exclusao + a categoria, para a tela devolver o
       // encaminhamento humano. O trecho volta so para a pessoa que falou ver o

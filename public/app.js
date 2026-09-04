@@ -720,9 +720,12 @@ rota(/^#\/chamada/, async () => {
   const data = params.get('data') || hojeD.hoje;
   const ch = await api(`/api/chamada?turma_id=${turma.id}&data=${data}`);
   const { datas } = await api(`/api/chamadas-abertas?turma_id=${turma.id}`);
+  // F6 — as faltas que ela DISSE, pré-marcadas. Só elas: quem a fala não citou
+  // fica sem marcar, para ela conferir. O produto não inventa presença.
+  const preFaltas = new Set((params.get('faltas') || '').split(',').filter(Boolean).map(Number));
   ctx.chamada = {
     turma, data,
-    marcas: Object.fromEntries(ch.criancas.map(c => [c.id, c.status])),
+    marcas: Object.fromEntries(ch.criancas.map(c => [c.id, preFaltas.has(c.id) ? 'F' : c.status])),
     nomes: Object.fromEntries(ch.criancas.map(c => [c.id, c.nome])),
     inicio: performance.now(),           // cronometro: comeca ao abrir a tela
   };
@@ -764,8 +767,8 @@ rota(/^#\/chamada/, async () => {
           <div class="chamada-item" id="linha-${c.id}">
             <div class="cresce"><span class="nome">${esc(c.nome)}</span><span class="cod">${esc(c.codigo)}</span></div>
             <div class="pf" role="group" aria-label="Presença de ${esc(c.nome)}">
-              <button data-acao="marcar" data-id="${c.id}" data-v="P" aria-pressed="${c.status === 'P'}" aria-label="Presente">P</button>
-              <button data-acao="marcar" data-id="${c.id}" data-v="F" aria-pressed="${c.status === 'F'}" aria-label="Faltou">F</button>
+              <button data-acao="marcar" data-id="${c.id}" data-v="P" aria-pressed="${ctx.chamada.marcas[c.id] === 'P'}" aria-label="Presente">P</button>
+              <button data-acao="marcar" data-id="${c.id}" data-v="F" aria-pressed="${ctx.chamada.marcas[c.id] === 'F'}" aria-label="Faltou">F</button>
             </div>
           </div>`).join('')}
       </div>
@@ -2666,6 +2669,31 @@ function resumoDoQueAFalaPreencheu() {
     </div>`;
 }
 
+/**
+ * AS FALTAS QUE ELA DISSE (F6). O campo pediu literalmente: *"Ou então você
+ * marque a presença / Pelo nome, só falando"* (Grav. 82).
+ *
+ * OFERECE, nunca presume. Marca só quem ela CITOU, como falta, e deixa todo o
+ * resto sem marcar — presença decide renovação de matrícula (régua de 75%,
+ * decisão 33), e quem a fala não citou simplesmente não foi citada. Presumir
+ * "P" para o resto seria o produto inventando presença.
+ */
+function blocoFaltasDitas() {
+  const f = ctx.folha;
+  const ditas = f?.faltasSugeridas ?? [];
+  if (!ditas.length) return '';
+  const ids = ditas.map(c => c.id).join(',');
+  return `
+    <div class="aviso calmo" style="margin-top:14px">
+      <h3>Você disse que ${ditas.length === 1 ? 'faltou' : 'faltaram'}</h3>
+      <p>${ditas.map(c => `<span class="p redsoft" style="margin:0 4px 0 0">${esc(c.nome)}</span>`).join('')}</p>
+      <p class="sub" style="margin-top:8px">Quer marcar na chamada? Vou marcar falta só ${ditas.length === 1 ? 'nessa criança' : 'nessas crianças'} — o resto da turma fica sem marcar, para você conferir.</p>
+      <div class="linha" style="margin-top:10px">
+        <button class="btn pequeno" data-acao="ir" data-href="#/chamada?data=${f.data}&faltas=${ids}">Abrir a chamada com elas marcadas</button>
+      </div>
+    </div>`;
+}
+
 async function telaConfirmar() {
   if (!ctx.folha || !ctx.folha.sugestao) { location.hash = '#/registrar'; navegar(); return; }
   const f = ctx.folha;
@@ -2686,6 +2714,7 @@ async function telaConfirmar() {
       </div>` : ''}
 
     ${resumoDoQueAFalaPreencheu()}
+    ${blocoFaltasDitas()}
 
     <div class="pilha">
       <div id="blocos-folha">${blocosDaFolha()}</div>
@@ -5012,6 +5041,7 @@ document.addEventListener('click', comErro(async (ev) => {
       f.trechos = r.trechos;
       f.baixaConfianca = r.baixa_confianca;
       f.nomesSubstituidos = r.nomes_substituidos ?? 0;
+      f.faltasSugeridas = r.faltas_sugeridas ?? [];
       f.campos = {
         atividade: r.extracao.atividade,
         area_tematica: r.extracao.area_tematica,

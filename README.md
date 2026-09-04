@@ -76,7 +76,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **403 asserções de fluxo** e **176 testes unitários** — mais a avaliação do RAG
+São **407 asserções de fluxo** e **177 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização), a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo) e a da transcrição de áudio com stub (`npm run test:audio`: o ciclo de vida do arquivo, que
@@ -196,7 +196,7 @@ O MVP não guarda senha — o controle de acesso real é uma decisão da coorden
 
 \* Refletir é a sala de reflexão do copilot local — só responde com `AI_ENABLED=1` (camada opcional).
 
-A diretoria recebe **403** nas rotas de ficha, lista de crianças e no chat do copilot, por decisão de desenho: quem
+A diretoria recebe **407** nas rotas de ficha, lista de crianças e no chat do copilot, por decisão de desenho: quem
 presta contas trabalha sobre a camada agregada, então não precisa de acesso individual e não tem
 (decisão técnica nº 16).
 
@@ -328,8 +328,8 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    403 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     176 testes unitários das regras críticas (banco temporário)
+scripts/smoke-test.mjs    407 asserções do fluxo principal (contra o servidor no ar)
+scripts/unit-test.mjs     177 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
 scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)

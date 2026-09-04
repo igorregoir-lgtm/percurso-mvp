@@ -619,19 +619,19 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     // O botão do recado. O destino virou `#/sai-daqui?aba=recado` na F2, mas o
     // que a âncora guarda é o mesmo: ele leva a TURMA e a DATA do encontro.
     'public/app.js:594': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
-    'public/app.js:1260': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:1263': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:2879': /async function telaScores\(\)/,
-    'public/app.js:3105': /id="pergunta"/,
+    'public/app.js:2908': /async function telaScores\(\)/,
+    'public/app.js:3134': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:4782': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
+    'public/app.js:4811': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
     'src/api.js:347': /erro\(422.*rubrica por ciclo/,
     'src/api.js:493': /'POST \/api\/consentimento'/,
-    'src/api.js:986': /periodosSugeridos\(\)/,
+    'src/api.js:1000': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:112': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
@@ -1091,6 +1091,26 @@ test('o vocabulário das âncoras passa no perímetro — é o que destrava a ru
   // E o contrapeso, para o teste acima não virar prova de que o filtro não filtra:
   assert.equal(D.filtrarPerimetro('a Yasmin ficou triste hoje', nomes).bloqueado, true,
     'o atalho afetivo continua barrado — é conteúdo clínico, e a saída é a coordenação');
+});
+
+test('faltas por voz: fronteira de palavra — "Ana" NÃO casa dentro de "semana" (F6)', async () => {
+  // DEFEITO REAL: era `limpo.includes(primeiro)`, sem fronteira. "faltou gente
+  // essa semana" marcaria a Ana como falta. Presença decide renovação de
+  // matrícula (régua de 75%, decisão 33) — falta inventada por substring não é
+  // detalhe de implementação.
+  const V = await import('../src/voz.js');
+  const nomes = ['Ana Paula Silva', 'Davi Ferreira', 'Yasmin Souza'];
+  // O prefixo existe só para a confiança passar do piso; o que se mede é a falta.
+  const base = 'hoje a gente fez uma roda de conversa sobre saude a turma colaborou participou e ficou alegre tres criancas pediram ajuda ';
+  const faltasDe = (frase) => V.extrairDaFala(base + frase, nomes, { vivencia: false }).extracao.faltas_mencionadas;
+
+  assert.deepEqual(faltasDe('faltou gente essa semana'), [], '"semana" contém "ana" e não é a Ana');
+  assert.deepEqual(faltasDe('a Ana faltou hoje'), ['Ana Paula Silva'], 'o nome dito, com fronteira, casa');
+  assert.deepEqual(faltasDe('o Davi e a Yasmin faltaram'), ['Davi Ferreira', 'Yasmin Souza']);
+  assert.deepEqual(faltasDe('a turma toda veio'), [], 'sem verbo de falta, ninguém é marcado');
+  // E o que NUNCA pode acontecer: presumir presença para quem a fala não citou.
+  assert.deepEqual(faltasDe('a Ana faltou hoje').filter(n => n !== 'Ana Paula Silva'), [],
+    'só quem foi citada entra — o produto não inventa presença nem ausência');
 });
 
 test('nenhuma rota do front é engolida por outra (despacho é o PRIMEIRO que casa)', async () => {

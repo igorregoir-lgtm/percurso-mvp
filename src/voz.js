@@ -263,11 +263,18 @@ export function extrairDaFala(transcricao, nomesDaTurma = [], { vivencia = false
   const temCheckin = Object.values(checkin).some(v => v != null);
 
   // faltas: so quando a educadora DIZ que faltou, e so para nome da turma.
+  //
+  // FRONTEIRA DE PALAVRA, obrigatoria. Era `limpo.includes(primeiro)`, e
+  // "Ana" casava dentro de "semana" — "faltou gente essa semana" marcaria a Ana
+  // como falta. Presenca decide renovacao de matricula (regua de 75%, decisao
+  // 33): uma falta inventada por substring nao e' detalhe.
   const faltas = [];
   if (/(faltou|faltaram|nao veio|nao vieram|nao apareceu)/.test(limpo)) {
     for (const nome of nomesDaTurma) {
       const primeiro = normalizar(nome).split(' ')[0];
-      if (primeiro.length >= 3 && limpo.includes(primeiro)) faltas.push(nome);
+      if (primeiro.length < 3) continue;
+      const fronteira = new RegExp(`(?:^|[^a-z0-9])${primeiro.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|[^a-z0-9])`);
+      if (fronteira.test(limpo)) faltas.push(nome);
     }
   }
 

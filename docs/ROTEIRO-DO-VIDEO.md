@@ -214,7 +214,7 @@ financiador lê, parando em dois pontos: **crianças únicas e matrículas lado 
 supressão (recortes com menos de cinco crianças são agrupados ou suprimidos).
 
 **Fala:** a regra zero — **o doador não entra no sistema**; ele recebe este artefato. E provar:
-tentar abrir a ficha de uma criança neste perfil devolve **403**.
+tentar abrir a ficha de uma criança neste perfil devolve **407**.
 
 ### 15 · Perguntar — consulta em linguagem natural — [0:15 · `#/relatorio?aba=consulta`]
 
@@ -258,8 +258,8 @@ só o Instituto tem. A tela mostra as premissas e diz isso, em vez de inventar a
 `data/percurso.db` — o backup é copiar um arquivo. Rodar as duas baterias e mostrar os totais:
 
 ```
-node scripts/smoke-test.mjs   → 403 passaram · 0 falharam
-node scripts/unit-test.mjs    → 176 passaram · 0 falharam
+node scripts/smoke-test.mjs   → 407 passaram · 0 falharam
+node scripts/unit-test.mjs    → 177 passaram · 0 falharam
 ```
 
 > **Conferir os números antes de gravar.** Eles mudam a cada bateria nova, e o roteiro anterior

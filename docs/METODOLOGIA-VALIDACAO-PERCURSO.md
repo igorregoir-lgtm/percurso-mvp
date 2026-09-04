@@ -33,7 +33,7 @@ jornada, e testar o opcional antes do fluxo principal inverte a pergunta.
 
 As duas metades importam separadamente. A primeira é medida por tempo e conclusão de tarefa. A
 segunda é medida pelo **Protocolo do Lapso** (§5.5) e não é medida por nenhum outro instrumento
-deste documento — nem por nenhum dos 176 testes unitários ou das 403 asserções de fluxo do
+deste documento — nem por nenhum dos 177 testes unitários ou das 407 asserções de fluxo do
 repositório.
 
 **Por que teste automatizado não responde.** Ele prova que o sistema faz o que o código diz. O
@@ -170,7 +170,7 @@ protocolo, nunca erro dela" chegou até a cabeça de quem usa. Se ela explicar c
 produto está gerando culpa — e culpa é o combustível do abandono medido em M5.
 
 **A tarefa 4 mede uma costura, não uma tela.** Confirmar a folha devolve a usuária a `#/hoje`
-(`public/app.js:4782`); o relato não se abre sozinho. O limiar de 20 s existe para separar "ela não
+(`public/app.js:4811`); o relato não se abre sozinho. O limiar de 20 s existe para separar "ela não
 entendeu o relatório" de "o produto soltou a mão dela no meio da tarefa" — são achados diferentes,
 com correções diferentes.
 

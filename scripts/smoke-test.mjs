@@ -402,6 +402,28 @@ secao('10 · Robustez');
 // ============================================================================
 // ============================================================================
 // ============================================================================
+secao('9c · As faltas ditas na fala viram sugestão, nunca presunção (F6)');
+{
+  const ch = (await GET('maria', `/api/chamada?turma_id=${turmaId}`)).corpo;
+  const dois = ch.criancas.slice(0, 2);
+  const base = 'hoje a gente fez uma roda de conversa sobre saude a turma colaborou participou e ficou alegre tres criancas pediram ajuda ';
+  const fala = `${base} a ${dois.map(c => c.nome.split(' ')[0]).join(' e a ')} faltaram`;
+  const r = (await POST('maria', '/api/voz/extrair', { turma_id: turmaId, transcricao: fala })).corpo;
+  T('a fala devolve as faltas como sugestão POR CRIANÇA, com id',
+    (r.faltas_sugeridas ?? []).length === 2 && r.faltas_sugeridas.every(c => c.id && c.nome),
+    JSON.stringify(r.faltas_sugeridas));
+  T('e são exatamente as citadas, ninguém mais',
+    r.faltas_sugeridas.map(c => c.id).sort().join() === dois.map(c => c.id).sort().join());
+
+  const semFalta = (await POST('maria', '/api/voz/extrair', { turma_id: turmaId, transcricao: base + ' a turma toda veio' })).corpo;
+  T('sem verbo de falta, ninguém é sugerido', (semFalta.faltas_sugeridas ?? []).length === 0);
+
+  // A guarda que importa: a folha é da TURMA e não guarda nome. A sugestão vive
+  // só no caminho da conferência.
+  T('a folha gravada continua sem nome nenhum', Array.isArray(r.extracao.faltas_mencionadas));
+}
+
+// ============================================================================
 secao('9b · A rubrica na língua dela — piorou / manteve / evoluiu (F5)');
 {
   const lista = (await GET('maria', '/api/criancas')).corpo.criancas;
