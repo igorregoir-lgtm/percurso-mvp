@@ -52,7 +52,7 @@ aberto**, que é onde a fusão de superfícies da F6 se vê.
 
 - **A dor dela** — `#/entrar` → Carolina → `#/hoje` → *Falar agora* → `#/registrar` capturando →
   *Terminei* → `#/registrar` conferindo → *Confirmar e guardar* → **`#/sai-daqui`**. Este último
-  passo era o conserto do **passo 05** do task flow, feito em 04/09/2026: `public/app.js:5072` passou a abrir o relato e
+  passo era o conserto do **passo 05** do task flow, feito em 04/09/2026: `public/app.js:5084` passou a abrir o relato e
   o relato não abre sozinho. No v3, confirmar a folha abre o relato.
 - **A segunda turma** — `#/hoje` → chip *Sábado tarde* → `#/hoje` da tarde. Hoje esse caminho não
   existe: `GET /api/hoje` monta tudo a partir de `turmas[0]`.
@@ -87,7 +87,13 @@ Elas são **contrato**: quando a F2 e a F3 forem implementadas, é isto que o `p
 > estreitou o último botão do cartão para 289 px; numa página que **rola**, estreitar um botão não
 > resolve — qualquer botão passa sob o FAB durante a rolagem. O equivalente honesto é reservar a
 > faixa no rodapé (`main{padding-bottom:181px}`), e aí nada fica coberto em repouso. Medido nas oito
-> telas, com a página rolada até o fim: 0 botões cobertos. A checagem ignora, de propósito, duas coisas: as abas entre si, que são vizinhas dentro da
+> telas, com a página rolada até o fim: 0 botões cobertos.
+>
+> **Segunda passada, 04/09 à noite, e ela achou mais.** O girassol era o caractere `❋` num círculo
+> escuro — no protótipo ele é **desenhado**: doze pétalas de 8×17 a cada 30° em `#e6a400`, miolo de
+> 17 px em `#6b4410`, sobre fundo branco. Virou SVG, e virou gate. E a **chamada tinha ficado
+> inalcançável**: o menu do v3 tem três itens, `#/chamada` saiu dele, e o cartão do Hoje só oferecia
+> o botão quando havia data em aberto. Tirar do menu só é legítimo se alguma coisa levar. A checagem ignora, de propósito, duas coisas: as abas entre si, que são vizinhas dentro da
 barra, e o que está sob a folha do painel da Aurora, onde sobreposição É o desenho (é modal).
 
 Duas armadilhas que a conferência revelou e que valem para o código:

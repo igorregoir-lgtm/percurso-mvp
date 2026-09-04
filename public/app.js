@@ -557,9 +557,12 @@ rota(/^#\/hoje/, async () => {
           No começo do encontro dá para tocar em gravar e largar o celular na mesa.</p>`
         : `<p class="sub">${esc(d.turma?.nome || '')} não tem encontro ${esc(diaSemana(d.hoje))}.
           ${d.chamadas_abertas.length ? 'Dá para fechar o que ficou em aberto.' : 'Nada pendente.'}</p>`}
-      ${d.chamadas_abertas.length ? `<div class="linha" style="margin-top:12px">
-        <button class="btn largo secundario" data-acao="ir" data-href="#/chamada?data=${d.chamadas_abertas.at(-1)}">
-          Chamada de ${dataBR(d.chamadas_abertas.at(-1))}</button></div>` : ''}
+      <div class="linha" style="margin-top:12px">
+        ${d.chamadas_abertas.length
+          ? `<button class="btn largo secundario" data-acao="ir" data-href="#/chamada?data=${d.chamadas_abertas.at(-1)}">
+               Chamada de ${dataBR(d.chamadas_abertas.at(-1))}</button>`
+          : `<button class="btn largo secundario" data-acao="ir" data-href="#/chamada">Abrir a chamada</button>`}
+      </div>
     </div>` : ch.registrada ? `
     <div class="cartao compacto">
       <div class="linha"><h2 class="cresce">Chamada de hoje</h2><span class="selo ok">registrada</span></div>
@@ -4200,6 +4203,15 @@ function falar(texto) {
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) cancelarFala(); });
 
+/** O girassol do protótipo v3, desenhado: doze pétalas de 8×17 a cada 30°
+ *  (#e6a400) e miolo de 17 px (#6b4410), num quadro de 44. Vetor e não caractere
+ *  — `❋` vira o que a fonte do aparelho quiser, e não lê como flor. */
+const SVG_GIRASSOL = `<svg viewBox="0 0 44 44" width="40" height="40" aria-hidden="true" focusable="false">
+  <g fill="#e6a400">${Array.from({ length: 12 }, (_, i) =>
+    `<rect x="18" y="1.5" width="8" height="17" rx="4" transform="rotate(${i * 30} 22 22)"/>`).join('')}</g>
+  <circle cx="22" cy="22" r="8.5" fill="#6b4410"/>
+</svg>`;
+
 function pintarAuroraFab(visivel) {
   let fab = document.getElementById('aurora-fab');
   if (!visivel) { fab?.remove(); document.getElementById('aurora-bolha')?.remove(); return; }
@@ -4212,7 +4224,7 @@ function pintarAuroraFab(visivel) {
   fab.type = 'button';
   fab.dataset.acao = 'aurora-abrir';
   fab.setAttribute('aria-label', 'Abrir a Aurora, guia do Percurso');
-  fab.innerHTML = '<span aria-hidden="true">❋</span>';
+  fab.innerHTML = SVG_GIRASSOL;
   document.body.appendChild(fab);
   // O balão aparece UMA vez por abertura do app (flag em memória — reabrir a
   // página traz a Aurora se apresentando de novo) e some sozinho. Na primeira

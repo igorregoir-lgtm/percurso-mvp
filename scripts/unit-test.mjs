@@ -618,23 +618,23 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
   const raiz = new URL('../', import.meta.url);
   const ANCORAS = {
     'public/app.js:515': /rota\(\/\^#\\\/hoje\//,
-    'public/app.js:609': /Revisar e liberar o relato|relato_liberado/,
+    'public/app.js:612': /Revisar e liberar o relato|relato_liberado/,
     // Regex ESTREITA de proposito: /recados|#\/recado/ casava em quatro linhas,
     // e a reancorar.mjs nao tinha como decidir qual. Ancora que casa em varios
     // lugares nao ancora nada.
     // O botão do recado. O destino virou `#/sai-daqui?aba=recado` na F2, mas o
     // que a âncora guarda é o mesmo: ele leva a TURMA e a DATA do encontro.
-    'public/app.js:610': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
-    'public/app.js:1334': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:613': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
+    'public/app.js:1337': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:3016': /async function telaScores\(\)/,
-    'public/app.js:3247': /id="pergunta"/,
+    'public/app.js:3019': /async function telaScores\(\)/,
+    'public/app.js:3250': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:5072': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'public/app.js:5084': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
     'src/api.js:422': /erro\(422.*rubrica por ciclo/,
     'src/api.js:622': /'POST \/api\/consentimento'/,
     'src/api.js:1129': /periodosSugeridos\(\)/,
@@ -1193,6 +1193,16 @@ test('as medidas de toque do protótipo v3 estão no CSS (contrato do F-1)', asy
     return css.slice(i, css.indexOf('}', i));
   };
 
+  // O GIRASSOL É DESENHADO, não um caractere. Era `❋` num círculo escuro: a
+  // forma vira o que a fonte de cada aparelho quiser, e no escuro nem lia como
+  // flor. Doze pétalas #e6a400 e miolo #6b4410, como o protótipo.
+  const front2 = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert.match(front2, /const SVG_GIRASSOL = /, 'o girassol tem de ser vetor, não caractere');
+  assert.match(front2, /#e6a400/, 'as pétalas são #e6a400 no protótipo');
+  assert.match(front2, /#6b4410/, 'o miolo é #6b4410 no protótipo');
+  assert.match(front2, /length: 12 \}/, 'são doze pétalas, a cada 30 graus');
+  assert.doesNotMatch(front2, /innerHTML = '<span aria-hidden="true">❋/, 'o glifo ❋ não volta');
+
   const fab = bloco('.aurora-fab');
   assert.match(fab, /width:65px/, 'o girassol tem 65 px no protótipo v3');
   assert.match(fab, /height:65px/, 'o girassol tem 65 px no protótipo v3');
@@ -1216,6 +1226,37 @@ test('as medidas de toque do protótipo v3 estão no CSS (contrato do F-1)', asy
   const respiro = Number(bloco('main').match(/padding:\d+px \d+px (\d+)px/)?.[1]);
   assert.ok(respiro >= alturaBarra + 65 + 12,
     `o respiro do rodapé (${respiro}px) tem de caber barra + girassol + folga (${alturaBarra + 65 + 12}px)`);
+});
+
+test('toda rota tem como se chegar nela — menu, link ou redirecionamento', async () => {
+  // DEFEITO REAL, e meu, desta sessão: o protótipo tem três itens de menu, eu
+  // tirei `#/chamada` dele — e o cartão do Hoje só mostrava o botão da chamada
+  // quando havia data em aberto. Num dia sem encontro e sem pendência, a
+  // CHAMADA ficava inalcançável. A pessoa não tinha como registrar presença.
+  //
+  // Tirar do menu só é legítimo se alguma coisa levar. Este gate é a pergunta
+  // que faltava: existe caminho para cada rota? O outro gate pergunta se todo
+  // destino oferecido existe; este, se toda rota é oferecida. São inversos, e
+  // um buraco cabia exatamente entre os dois.
+  const { readFileSync } = await import('node:fs');
+  const front = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+
+  const caminhoDaRota = (fonte) => {
+    const corpo = fonte.slice(1, fonte.lastIndexOf('/'));
+    return corpo.replace(/^\^/, '').split(/\(|\[|\\d|\$|\{/)[0].replace(/\\\//g, '/').replace(/\/$/, '');
+  };
+  const rotas = [...front.matchAll(/^rota\((\/.+?\/), /gm)].map(m => caminhoDaRota(m[1]));
+  assert.ok(rotas.length >= 10, `só ${rotas.length} rotas lidas — o extrator quebrou`);
+
+  // Tudo que LEVA a algum lugar: menus, data-href, location.hash e os apelidos.
+  const alcance = new Set();
+  for (const m of front.matchAll(/data-href="(#\/[^"]*)"/g)) alcance.add(m[1].split('?')[0]);
+  for (const m of front.matchAll(/location\.hash\s*=\s*[`'"](#\/[^`'"]*)/g)) alcance.add(m[1].split('?')[0]);
+  for (const m of front.matchAll(/\['(#\/[^']+)',\s*'[^']*',\s*'[^']*'\]/g)) alcance.add(m[1].split('?')[0]);
+  for (const m of front.matchAll(/'#\/[a-z-]+':\s*'(#\/[a-z-]+)/g)) alcance.add(m[1]);
+
+  const inalcancaveis = rotas.filter(r => ![...alcance].some(a => a === r || a.startsWith(r + '/')));
+  assert.deepEqual(inalcancaveis, [], 'rota sem nenhum caminho até ela — nem menu, nem link, nem redirecionamento');
 });
 
 test('todo destino oferecido pelo produto resolve numa rota que existe', async () => {

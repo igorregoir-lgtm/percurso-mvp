@@ -570,8 +570,10 @@ body{padding-bottom:calc(124px + env(safe-area-inset-bottom))}
 .aurora-fab{
   position:fixed; right:10px; bottom:calc(100px + env(safe-area-inset-bottom));
   z-index:60; width:65px; height:65px; border-radius:50%;
-  background:var(--ink); color:var(--bg); border:1px solid var(--ink);
-  font-size:22px; line-height:1; display:flex; align-items:center; justify-content:center;
+  /* FUNDO CLARO, como no protótipo (#ffffff): o girassol é a cor, e num círculo
+     escuro ele desaparecia. A borda é o que o separa do cartão branco. */
+  background:var(--card); color:var(--ink); border:1px solid var(--line);
+  line-height:1; display:flex; align-items:center; justify-content:center;
   box-shadow:0 6px 18px rgba(46,42,36,.28); cursor:pointer;
   -webkit-tap-highlight-color:transparent; touch-action:manipulation;
   transition:transform .24s cubic-bezier(.34,1.56,.64,1);
