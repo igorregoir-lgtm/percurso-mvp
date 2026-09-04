@@ -76,7 +76,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **413 asserções de fluxo** e **177 testes unitários** — mais a avaliação do RAG
+São **431 asserções de fluxo** e **177 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização), a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo) e a da transcrição de áudio com stub (`npm run test:audio`: o ciclo de vida do arquivo, que
@@ -183,8 +183,11 @@ equivalentes: **Render é o deploy de operação; Vercel é vitrine.**
 
 ## Quem entra e o que vê
 
-O MVP não guarda senha — o controle de acesso real é uma decisão da coordenação, registrada em
-`docs/DECISOES-TECNICAS.md`. Na tela inicial escolhe-se o perfil:
+**Cada pessoa entra com a própria senha** (decisão 39, 04/09/2026). Não há senha semeada: quem
+ainda não tem cria a dela na primeira entrada, e a coordenação devolve qualquer pessoa ao primeiro
+acesso quando alguém esquece — não existe "esqueci a senha" num produto que não manda e-mail. O
+cookie é um token opaco, não o id: até 04/09 bastava trocar o número no navegador para virar outra
+pessoa. Na tela inicial escolhe-se o perfil e digita-se a senha:
 
 | Perfil | Papel | Vê |
 |---|---|---|
@@ -196,7 +199,7 @@ O MVP não guarda senha — o controle de acesso real é uma decisão da coorden
 
 \* Refletir é a sala de reflexão do copilot local — só responde com `AI_ENABLED=1` (camada opcional).
 
-A diretoria recebe **413** nas rotas de ficha, lista de crianças e no chat do copilot, por decisão de desenho: quem
+A diretoria recebe **431** nas rotas de ficha, lista de crianças e no chat do copilot, por decisão de desenho: quem
 presta contas trabalha sobre a camada agregada, então não precisa de acesso individual e não tem
 (decisão técnica nº 16).
 
@@ -328,7 +331,7 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    413 asserções do fluxo principal (contra o servidor no ar)
+scripts/smoke-test.mjs    431 asserções do fluxo principal (contra o servidor no ar)
 scripts/unit-test.mjs     177 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo

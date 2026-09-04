@@ -269,6 +269,7 @@ function pintarNav(rotaAtual) {
     `<span class="sintetico" id="fila"></span>
      <span class="sintetico">dados sintéticos</span>
      <b>${esc(sessao.apelido)}</b>
+     <button class="btn pequeno fantasma" data-acao="trocar-senha">senha</button>
      <button class="btn pequeno fantasma" data-acao="sair">sair</button>`;
 }
 
@@ -454,15 +455,18 @@ rota(/^#\/entrar/, async () => {
     <p class="sub entra" style="animation-delay:.13s">Transforma a observação de minutos do educador em evidência de evolução — sem que dado de criança saia da organização.</p>
     <div class="cartao entra" style="margin-top:20px; animation-delay:.2s">
       <h2>Quem está registrando hoje?</h2>
-      <p class="sub">Escolha o perfil para entrar. O MVP não guarda senha: o controle de acesso real fica com a coordenação.</p>
-      <div class="pilha" style="margin-top:14px">
+      <p class="sub">Cada pessoa entra com a própria senha. Quem ainda não tem cria a dela na primeira entrada.</p>
+      <div class="pilha" style="margin-top:14px" id="lista-perfis">
         ${usuarios.map((u, i) => `
-          <button class="item entra" style="animation-delay:${(0.28 + Math.min(i, 6) * 0.07).toFixed(2)}s" data-acao="entrar" data-id="${u.id}">
+          <button class="item entra" style="animation-delay:${(0.28 + Math.min(i, 6) * 0.07).toFixed(2)}s"
+                  data-acao="escolher-perfil" data-id="${u.id}" data-nome="${esc(u.apelido || u.nome)}"
+                  data-primeiro="${u.primeiro_acesso ? 1 : 0}">
             <div><div class="nome">${esc(u.nome)}</div>
-              <div class="meta">${PAPEL[u.papel] ?? 'Educadora'}</div></div>
+              <div class="meta">${PAPEL[u.papel] ?? 'Educadora'}${u.primeiro_acesso ? ' · primeiro acesso' : ''}</div></div>
             <span class="seta" aria-hidden="true">›</span>
           </button>`).join('')}
       </div>
+      <div id="form-senha"></div>
     </div>
     <p class="rodape entra" style="animation-delay:.55s">Cada pessoa entra com a própria conta. O registro fica no instituto.<br>
       Todos os dados desta aplicação são sintéticos (regra 1 do bloco 6 do dossiê):<br>
@@ -3312,6 +3316,8 @@ async function telaQuemEntra() {
                   ${d.equipe.filter(o => ['educador', 'profissional'].includes(o.papel) && o.id !== p.id).map(o =>
                     `<option value="${o.id}">${esc(o.nome)} assume</option>`).join('')}
                 </select>` : ''}
+                <button class="btn pequeno fantasma" data-acao="redefinir-senha"
+                  data-id="${p.id}" data-nome="${esc(p.nome)}">Redefinir a senha</button>
                 <button class="btn pequeno fantasma" data-acao="arquivar-pessoa"
                   data-id="${p.id}" data-nome="${esc(p.nome)}">Arquivar</button>
               </div>`}
@@ -3989,6 +3995,52 @@ function modalCampo({ titulo, texto, rotulo, dica, confirmar }, aoConfirmar) {
 // Encaminhamento humano (F5). O sistema nao tenta impedir que a revelacao
 // aconteca — ela vai acontecer. Ele reconhece, nao grava, e devolve o caminho
 // certo. E' o bloco 6 do dossie virando funcionalidade.
+/** Trocar a própria senha (decisão 39). Fica no CABEÇALHO, ao lado de "sair" —
+ *  não numa tela nova. A F2 acabou de reduzir 28 rotas para 12; abrir a 13ª
+ *  para dois campos seria desfazer o que ela fez. */
+function modalTrocarSenha() {
+  const veu = document.createElement('div');
+  veu.className = 'veu';
+  veu.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ms">
+      <h2 id="ms">Trocar a minha senha</h2>
+      <p class="sub">Pede a senha de agora porque um navegador deixado aberto na sala não pode virar uma conta tomada.</p>
+      <label class="rot-campo" for="s-atual">Senha de agora</label>
+      <input type="password" id="s-atual" autocomplete="current-password">
+      <label class="rot-campo" for="s-nova">Senha nova</label>
+      <input type="password" id="s-nova" autocomplete="new-password" placeholder="pelo menos 8 caracteres">
+      <p class="sub" id="s-erro" role="alert" style="color:var(--red);min-height:18px"></p>
+      <div class="linha" style="margin-top:12px">
+        <button class="btn cresce" data-acao="senha-ok">Trocar</button>
+        <button class="btn secundario cresce" data-acao="senha-cancelar">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(veu);
+  prenderFoco(veu);
+  veu.querySelector('#s-atual').focus();
+  const erro = veu.querySelector('#s-erro');
+  const trocar = async () => {
+    try {
+      const r = await post('/api/senha', {
+        senha_atual: veu.querySelector('#s-atual').value,
+        senha_nova: veu.querySelector('#s-nova').value,
+      });
+      veu.remove();
+      // A troca derruba TODAS as sessões, inclusive esta — é o ponto dela.
+      toast(r.aviso, 'bom');
+      limparEstadoLocal();
+      sessao = null;
+      location.hash = '#/entrar';
+      navegar();
+    } catch (e) { erro.textContent = e.message; }
+  };
+  veu.addEventListener('keydown', (e) => { if (e.key === 'Enter') trocar(); });
+  veu.addEventListener('click', (e) => {
+    if (e.target.dataset.acao === 'senha-ok') trocar();
+    if (e.target.dataset.acao === 'senha-cancelar' || e.target === veu) veu.remove();
+  });
+}
+
 function modalEncaminhamento(trechos) {
   const veu = document.createElement('div');
   veu.className = 'veu';
@@ -4640,8 +4692,59 @@ document.addEventListener('click', comErro(async (ev) => {
   if (a === 'recarregar')  { navegar(); return; }
   if (a === 'imprimir')    { window.print(); return; }
 
+  // AUTENTICAÇÃO (decisão 39). Antes, "entrar" era escolher um perfil e pronto.
+  if (a === 'trocar-senha') { modalTrocarSenha(); return; }
+
+  if (a === 'redefinir-senha') {
+    // A coordenação devolve alguém ao primeiro acesso. É o caminho de
+    // recuperação: não existe "esqueci a senha" num produto que não manda
+    // e-mail — e inventar um seria inventar um servidor de e-mail.
+    if (!confirm(`Devolver ${alvo.dataset.nome} ao primeiro acesso? A senha atual dela deixa de valer e ela cria uma nova ao entrar.`)) return;
+    const r = await post('/api/senha/redefinir', { educador_id: Number(alvo.dataset.id) });
+    toast(r.aviso, 'bom');
+    navegar();
+    return;
+  }
+
+  if (a === 'escolher-perfil') {
+    const primeiro = alvo.dataset.primeiro === '1';
+    const nome = alvo.dataset.nome;
+    document.getElementById('lista-perfis').hidden = true;
+    document.getElementById('form-senha').innerHTML = `
+      <div class="linha"><button class="btn pequeno fantasma" data-acao="voltar-perfis">‹ Outra pessoa</button></div>
+      <h2 style="margin-top:12px">${esc(nome)}</h2>
+      <p class="sub">${primeiro
+        ? `Primeiro acesso: crie a sua senha. Ela vale só neste Instituto — mínimo de 8 caracteres, e uma frase curta serve.`
+        : 'Digite a sua senha.'}</p>
+      <label class="rot-campo" for="senha">Senha</label>
+      <input type="password" id="senha" autocomplete="${primeiro ? 'new-password' : 'current-password'}"
+             data-acao="senha-campo" data-id="${alvo.dataset.id}" placeholder="${primeiro ? 'pelo menos 8 caracteres' : ''}">
+      <p class="sub" id="senha-erro" role="alert" style="min-height:18px"></p>
+      <button class="btn largo" data-acao="entrar" data-id="${alvo.dataset.id}">${primeiro ? 'Criar a senha e entrar' : 'Entrar'}</button>`;
+    document.getElementById('senha').focus();
+    return;
+  }
+
+  if (a === 'voltar-perfis') {
+    document.getElementById('form-senha').innerHTML = '';
+    document.getElementById('lista-perfis').hidden = false;
+    return;
+  }
+
   if (a === 'entrar') {
-    const { usuario } = await post('/api/sessao', { educador_id: Number(alvo.dataset.id) });
+    const campo = document.getElementById('senha');
+    const erroEl = document.getElementById('senha-erro');
+    alvo.disabled = true;
+    let usuario;
+    try {
+      ({ usuario } = await post('/api/sessao', { educador_id: Number(alvo.dataset.id), senha: campo?.value ?? '' }));
+    } catch (e) {
+      // O erro fica NO FORMULÁRIO, não num toast que some: quem errou a senha
+      // precisa da mensagem enquanto digita de novo.
+      if (erroEl) erroEl.textContent = e.message;
+      campo?.select();
+      return;
+    } finally { alvo.disabled = false; }
     limparEstadoLocal();
     sessao = usuario;
     location.hash = usuario.papel === 'coordenacao' ? '#/painel'
@@ -5330,6 +5433,14 @@ document.addEventListener('input', (ev) => {
 });
 
 document.addEventListener('keydown', (ev) => {
+  // Enter no campo de senha entra. Sem isto, o teclado do celular mostra "ir" e
+  // o "ir" não faz nada — a pessoa toca, não acontece nada, e ela desconfia da
+  // senha em vez do formulário.
+  if (ev.key === 'Enter' && ev.target?.dataset?.acao === 'senha-campo') {
+    ev.preventDefault();
+    document.querySelector('[data-acao="entrar"]')?.click();
+    return;
+  }
   if (ev.key !== 'Escape') return;
   const veu = document.querySelector('.veu');
   if (veu) {

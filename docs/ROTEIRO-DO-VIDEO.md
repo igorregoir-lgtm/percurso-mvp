@@ -38,7 +38,7 @@ para caber, e por quê:
 4. **Cena 9 (recado):** abrir pelo botão **"Recado para os responsáveis"** no cartão da folha, na
    tela Hoje — o caminho que a psicóloga usaria. Funciona em qualquer dia desde `48ec1dd`
    (03/09/2026), que ligou o botão ao **encontro da folha** e não à chamada de hoje
-   (`public/app.js:594`). Até ali ele sumia em dia não letivo e a cena tinha de abrir `#/sai-daqui?aba=recado`
+   (`public/app.js:598`). Até ali ele sumia em dia não letivo e a cena tinha de abrir `#/sai-daqui?aba=recado`
    pela URL; **essa instrução caiu.**
 5. Cenas dos papéis de campo (1–10): janela estreita (≈400 px) ou celular — as personas usam o
    produto em pé, dentro da sala. Cenas de gestão (11–16): janela normal.
@@ -224,7 +224,7 @@ financiador lê, parando em dois pontos: **crianças únicas e matrículas lado 
 supressão (recortes com menos de cinco crianças são agrupados ou suprimidos).
 
 **Fala:** a regra zero — **o doador não entra no sistema**; ele recebe este artefato. E provar:
-tentar abrir a ficha de uma criança neste perfil devolve **413**.
+tentar abrir a ficha de uma criança neste perfil devolve **431**.
 
 ### 15 · Perguntar — consulta em linguagem natural — [0:15 · `#/relatorio?aba=consulta`]
 
@@ -268,7 +268,7 @@ só o Instituto tem. A tela mostra as premissas e diz isso, em vez de inventar a
 `data/percurso.db` — o backup é copiar um arquivo. Rodar as duas baterias e mostrar os totais:
 
 ```
-node scripts/smoke-test.mjs   → 413 passaram · 0 falharam
+node scripts/smoke-test.mjs   → 431 passaram · 0 falharam
 node scripts/unit-test.mjs    → 177 passaram · 0 falharam
 ```
 

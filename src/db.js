@@ -71,6 +71,12 @@ const ESQUEMA_SQL = `
     nome     TEXT NOT NULL,
     apelido  TEXT NOT NULL,
     papel    TEXT NOT NULL CHECK (papel IN ('educador','profissional','coordenacao','diretoria')),
+    -- Autenticacao (decisao 39). NULL = PRIMEIRO ACESSO: a pessoa define a
+    -- senha ao entrar pela primeira vez. Nao ha senha semeada — senha em seed
+    -- e' senha publicada, e semear uma "so' para a demonstracao" e' exatamente
+    -- como uma senha de demonstracao chega em producao.
+    senha_hash        TEXT,
+    senha_definida_em TEXT,
     -- Ninguem e' apagado deste banco. Quem sai do pipeline ganha data aqui e
     -- some das listas vivas; o que ela registrou continua de pe' e assinado
     -- com o nome dela (decisao 30). NULL = esta' na ativa.

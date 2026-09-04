@@ -139,7 +139,7 @@ autenticação por senha ou SSO; (b) HTTPS; (c) registro de auditoria de acesso 
 
 ### 9. Dados sintéticos determinísticos
 
-PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 413
+PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 431
 asserções de fluxo e os 177 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
 a *hoje*, então a demonstração nunca "envelhece".
 
@@ -259,7 +259,7 @@ de risco. Quem tentar gravar por ele recebe 422 com encaminhamento humano, não 
 ### 16. A diretoria não abre registro individual
 
 O perfil da diretoria existe para gerar, revisar e publicar o relatório do doador. As rotas de
-ficha, lista de crianças e observação respondem **413** para ele (`semAcessoIndividual` em
+ficha, lista de crianças e observação respondem **431** para ele (`semAcessoIndividual` em
 `src/api.js`).
 
 É a regra zero do `08-RELATORIO-DOADOR` levada para dentro do sistema: quem presta contas trabalha
@@ -566,7 +566,7 @@ professora nova nem uma criança nova pela interface — o item 2.8 do horizonte
 coordenação: papel e matrícula são exatamente o que decide, no resto do produto, quem enxerga a
 ficha de quem (escopo de turma, decisão 22; diretoria sem individual, decisão 16). Deixar o
 cadastro na mão de quem registra a chamada seria pôr o controle de acesso na mão de quem ele
-limita. A diretoria também não cadastra criança — 413, pela mesma regra de sempre.
+limita. A diretoria também não cadastra criança — 431, pela mesma regra de sempre.
 
 **2 · O consentimento nasce PENDENTE, e a criança entra bloqueada para observação.** A criança
 entra pela presença (legítimo interesse, LGPD Art. 7º IX) e não fica observável no mesmo gesto:
@@ -983,13 +983,56 @@ essa é decisão de quem responde pelo Instituto — não do código.
 
 ---
 
+### 39. Cada pessoa entra com a própria senha — e o cookie deixa de ser o id
+
+**Origem:** era a **dívida nº 1** do produto e o **último bloqueio** do campo livre de relato (F7).
+Até 04/09/2026, "entrar" era escolher um perfil numa lista: identificação, não autenticação.
+
+**E a senha sozinha teria sido teatro.** O cookie era `percurso_uid=5` — o **próprio id**. Qualquer
+pessoa trocava o número no navegador e virava a psicóloga; o comentário no código já chamava isso de
+dívida. Autenticar sem trocar o cookie teria posto uma porta numa parede sem fundo. As duas peças
+andam juntas: senha com `scrypt` **e** token opaco de 32 bytes.
+
+**Sem dependência nova.** `scrypt`, `randomBytes` e `timingSafeEqual` vêm do `node:crypto`. A
+decisão nº 1 (sem npm, sem build) continua de pé. Os parâmetros do scrypt ficam **gravados no
+hash**, não só no código: subir o custo depois não pode invalidar a senha de quem já entrou.
+
+**Não há senha semeada, e isso é deliberado.** Senha em seed é senha publicada — e semear uma "só
+para a demonstração" é exatamente como uma senha de demonstração chega em produção. A seed deixa
+`senha_hash = NULL`, que significa **primeiro acesso**: quem chega cria a dela.
+
+**O limite disso, declarado:** a janela de primeiro acesso significa que **quem chegar primeiro
+reivindica a conta**. Numa LAN com dado sintético é o custo aceito; com dado real, a coordenação
+define todas as senhas antes de entregar o endereço. É a mesma classe de risco de uma senha padrão,
+com a diferença de estar escrita aqui em vez de num post-it.
+
+**Recuperação sem e-mail.** A coordenação devolve alguém ao primeiro acesso em Pessoas. Não existe
+"esqueci a senha" num produto que não manda e-mail, e inventar um seria inventar um servidor.
+
+**Sessões em memória, de propósito.** Reiniciar o servidor desconecta todo mundo — e isso é melhor
+que um cookie persistente que não se pode revogar. Trocar a senha, arquivar a pessoa e redefinir a
+senha derrubam as sessões dela **agora**.
+
+**Freio de tentativa por pessoa, não por IP:** numa LAN todo mundo sai do mesmo roteador. Cinco
+erros travam a conta, e a espera dobra com a insistência até meia hora. O `scrypt` protege o
+**banco**; o freio protege o **formulário**.
+
+**Regra de senha curta, de propósito:** mínimo de 8 caracteres e nada mais. Exigir maiúscula, número
+e símbolo faz a pessoa escrever a senha num papel colado no monitor — e este produto vive numa sala
+compartilhada. Tamanho é o que de fato pesa.
+
+**O que muda para quem valida:** o protocolo e a demonstração passam a ter um passo a mais na
+entrada. `scripts/preparar-sessao.mjs` avisa disso, e o README explica o primeiro acesso.
+
+---
+
 ---
 
 ## Dívidas técnicas conhecidas
 
 | Dívida | Impacto | Quando pagar |
 |---|---|---|
-| Sem autenticação | Bloqueante para dado real — e é o **último** bloqueio do campo livre de relato (F7), já que HTTPS e log de auditoria foram pagos | Antes do primeiro dado real; ligar muda o protocolo de validação e a demonstração, então é decisão de quem responde pelo Instituto |
+| ~~Sem autenticação~~ **— paga em 04/09/2026 (decisão 39)** | Era a dívida nº 1 e o último bloqueio da F7 | Feito: senha por pessoa (`scrypt`), token opaco no lugar do id, freio de tentativa, recuperação pela coordenação. Resta a janela de primeiro acesso, declarada na decisão 39 |
 | HTTPS existe, mas com certificado autoassinado | O aparelho avisa "conexão não privada" na primeira visita, e alguém precisa aceitar | Certificado de autoridade real quando houver domínio; hoje o aviso é o custo declarado |
 | ~~Sem log de auditoria de acesso individual~~ **— pago em 04/09/2026 (decisão 38)** | Era exigível sob LGPD e bloqueava a F7 | Feito: `acesso_individual`, no portão único de acesso |
 | Filtro de perímetro por termo, não por sentido | Deixa passar paráfrase | Depende de avaliação com a psicóloga |

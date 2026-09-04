@@ -29,6 +29,12 @@ const GET = (quem, c) => req(quem, c);
 const POST = (quem, c, b) => req(quem, c, { method: 'POST', body: JSON.stringify(b || {}) });
 const DELETE = (quem, c, b) => req(quem, c, { method: 'DELETE', body: JSON.stringify(b || {}) });
 
+// AUTENTICAÇÃO (decisão 39). A seed não semeia senha — senha em seed é senha
+// publicada. Então o PRIMEIRO login de cada pessoa CRIA a senha dela, e é esse
+// o caminho que a bateria exercita: o mesmo que a educadora percorre.
+const SENHA = 'roda de conversa';
+const ENTRAR = (quem, id, senha = SENHA) => POST(quem, '/api/sessao', { educador_id: id, senha });
+
 console.log('\n\x1b[1mPercurso — testes do fluxo principal\x1b[0m');
 console.log(`Alvo: ${BASE}\n`);
 
@@ -38,16 +44,16 @@ secao('0 · Sessão e controle de acesso');
   const anon = await GET('anon', '/api/hoje');
   T('sem sessão, /api/hoje responde 401', anon.status === 401, `(${anon.status})`);
 
-  const login = await POST('maria', '/api/sessao', { educador_id: 1 });
+  const login = await ENTRAR('maria', 1);
   T('educadora entra (Maria Silvia)', login.status === 200 && login.corpo.usuario.papel === 'educador');
 
-  const coord = await POST('rita', '/api/sessao', { educador_id: 2 });
+  const coord = await ENTRAR('rita', 2);
   T('coordenação entra (Rita)', coord.status === 200 && coord.corpo.usuario.papel === 'coordenacao');
 
   const negado = await GET('maria', '/api/painel');
   T('educadora NÃO acessa o painel da coordenação (403)', negado.status === 403, `(${negado.status})`);
 
-  const inexistente = await POST('x', '/api/sessao', { educador_id: 999 });
+  const inexistente = await ENTRAR('x', 999);
   T('login com usuário inexistente responde 404', inexistente.status === 404);
 }
 
@@ -424,6 +430,76 @@ secao('9c · As faltas ditas na fala viram sugestão, nunca presunção (F6)');
 }
 
 // ============================================================================
+secao('0b · Autenticação (decisão 39)');
+{
+  // O que a autenticação PROMETE, item por item. Antes desta decisão, entrar
+  // era escolher um perfil numa lista e o cookie era o próprio id.
+  // A seção cria a PRÓPRIA pessoa: usar um id da seed amarraria o teste ao
+  // tamanho da semente, e usar um id alto amarraria à ordem das seções.
+  const criada = await POST('rita', '/api/equipe', { nome: 'Teste de Senha', papel: 'educador' });
+  T('a coordenação cria a pessoa deste teste', criada.status === 200, `(${criada.status})`);
+  const NOVA = criada.corpo?.pessoa?.id;
+
+  const semSenha = await POST('novato', '/api/sessao', { educador_id: NOVA });
+  T('sem senha e sem senha definida, a resposta é primeiro acesso (401)',
+    semSenha.status === 401 && semSenha.corpo.causa === 'primeiro_acesso', `(${semSenha.status})`);
+
+  const curta = await POST('novato', '/api/sessao', { educador_id: NOVA, senha: 'abc' });
+  T('senha curta demais é recusada (422), com o motivo', curta.status === 422 && /8 caracteres/.test(curta.corpo.erro));
+
+  const criou = await ENTRAR('novato', NOVA);
+  T('o primeiro acesso cria a senha e entra', criou.status === 200);
+
+  const errada = await POST('x2', '/api/sessao', { educador_id: NOVA, senha: 'outra coisa' });
+  T('senha errada é 401, e a causa diz que é senha', errada.status === 401 && errada.corpo.causa === 'senha');
+
+  const denovo = await ENTRAR('novato2', NOVA);
+  T('a senha criada continua valendo na entrada seguinte', denovo.status === 200);
+
+  // O COOKIE DEIXOU DE SER O ID. Este é o teste que mais importa: com o cookie
+  // antigo, trocar o número no navegador bastava para virar outra pessoa.
+  const forjado = await fetch(`${BASE}/api/hoje`, { headers: { cookie: 'percurso_uid=1' } });
+  T('cookie forjado com o id não abre sessão (401)', forjado.status === 401, `(${forjado.status})`);
+  const tokenChutado = await fetch(`${BASE}/api/hoje`, { headers: { cookie: 'percurso_uid=aaaaaaaaaaaaaaaaaaaaaaaa' } });
+  T('token inventado também não (401)', tokenChutado.status === 401, `(${tokenChutado.status})`);
+
+  // O hash nunca sai: `SELECT *` o traz, e GET /api/sessao devolve o usuário.
+  const eu = (await GET('novato', '/api/sessao')).corpo;
+  T('o hash da senha NUNCA chega ao navegador',
+    !JSON.stringify(eu).includes('scrypt') && !('senha_hash' in (eu.usuario ?? {})));
+  T('mas a lista diz quem ainda está no primeiro acesso, para a tela saber o que pedir',
+    eu.usuarios.every(u => 'primeiro_acesso' in u));
+
+  // Freio de tentativa: scrypt protege o BANCO, não o formulário.
+  let bloqueou = false;
+  for (let i = 0; i < 8; i++) {
+    const r = await POST('x3', '/api/sessao', { educador_id: NOVA, senha: `chute ${i}` });
+    if (r.status === 429) { bloqueou = true; break; }
+  }
+  T('tentativas seguidas travam a conta por um tempo (429)', bloqueou);
+
+  // Recuperação: a coordenação devolve ao primeiro acesso. Não há e-mail.
+  const porEducadora = await POST('maria', '/api/senha/redefinir', { educador_id: NOVA });
+  T('educadora NÃO redefine a senha de ninguém (403)', porEducadora.status === 403, `(${porEducadora.status})`);
+  const reset = await POST('rita', '/api/senha/redefinir', { educador_id: NOVA });
+  T('a coordenação devolve alguém ao primeiro acesso', reset.status === 200);
+  const depoisDoReset = await POST('novato3', '/api/sessao', { educador_id: NOVA });
+  T('e a pessoa volta a ser pedida a criar senha',
+    depoisDoReset.status === 401 && depoisDoReset.corpo.causa === 'primeiro_acesso');
+  T('o reset derruba a sessão que estava aberta',
+    (await GET('novato', '/api/hoje')).status === 401);
+
+  // Trocar a própria senha exige a atual.
+  await ENTRAR('novato4', NOVA, 'senha nova daqui');
+  const trocaSemAtual = await POST('novato4', '/api/senha', { senha_atual: 'errada', senha_nova: 'outra senha longa' });
+  T('trocar a senha sem a atual é recusado (401)', trocaSemAtual.status === 401, `(${trocaSemAtual.status})`);
+  const troca = await POST('novato4', '/api/senha', { senha_atual: 'senha nova daqui', senha_nova: 'terceira senha' });
+  T('com a atual, a troca acontece', troca.status === 200);
+  T('e a troca derruba as sessões abertas — inclusive a de quem trocou',
+    (await GET('novato4', '/api/hoje')).status === 401);
+}
+
+// ============================================================================
 secao('9a · Rastro de acesso a dado individual (decisão 38)');
 {
   const c = (await GET('maria', '/api/criancas')).corpo.criancas[0];
@@ -759,7 +835,7 @@ secao('13 · Pauta de segunda — o laço de devolução (F11)');
   // Antes esta linha era `every(c => c.crianca_id > 0)` — vácua, nunca falhava.
   // Agora o que ela anuncia é verificado de verdade: a turma da Cleide é fechada
   // para a Maria, e a coordenação passa.
-  const cleide = await POST('cleide', '/api/sessao', { educador_id: 3 });
+  const cleide = await ENTRAR('cleide', 3);
   T('a outra educadora entra (Cleide)', cleide.status === 200);
   const turmaAlheia = (await GET('cleide', '/api/hoje')).corpo.turma;
   const invasao = await GET('maria', `/api/pauta?turma_id=${turmaAlheia.id}`);
@@ -874,7 +950,7 @@ secao('15 · Ingestão retroativa das planilhas antigas (F7)');
 // ============================================================================
 secao('16 · Relatório do ciclo, carta e supressão (F13/F14)');
 {
-  const sol = await POST('solange', '/api/sessao', { educador_id: 4 });
+  const sol = await ENTRAR('solange', 4);
   T('diretoria entra (Solange Ribeiro)', sol.status === 200 && sol.corpo.usuario.papel === 'diretoria');
 
   const individual = await GET('solange', '/api/crianca?id=1');
@@ -1073,7 +1149,7 @@ secao('18 · Fecho de ciclo executa a retenção declarada');
 secao('19 · Escopo de turma nas rotas de leitura individual (decisão 22)');
 {
   // Cleide (educador 3) tem turma própria; Maria não pode abrir criança dela.
-  await POST('cleide', '/api/sessao', { educador_id: 3 });
+  await ENTRAR('cleide', 3);
   const deCleide = (await GET('cleide', '/api/criancas')).corpo.criancas;
   T('a lista da Cleide também vem escopada e não-vazia', deCleide.length > 0);
 
@@ -1154,7 +1230,7 @@ secao('21 · Cadastro de pessoas — equipe e crianças');
   const repetida = await POST('rita', '/api/equipe', { nome: 'vera lúcia antunes', papel: 'educador' });
   T('homônimo no mesmo papel é recusado (409)', repetida.status === 409, `(${repetida.status})`);
 
-  const entra = await POST('vera', '/api/sessao', { educador_id: nova.corpo.pessoa.id });
+  const entra = await ENTRAR('vera', nova.corpo.pessoa.id);
   T('a pessoa nova entra no Percurso pela porta de sempre',
     entra.status === 200 && entra.corpo.usuario.nome === 'Vera Lúcia Antunes');
   T('a pessoa nova aparece na lista da tela de entrada',
@@ -1223,14 +1299,14 @@ secao('22 · Arquivo — ninguém é apagado (decisão 30)');
   T('a sessão aberta dela morre no ato (401)', (await GET('vera', '/api/hoje')).status === 401);
   T('ela some da lista da tela de entrada',
     !(await GET('anon3', '/api/sessao')).corpo.usuarios.some(u => u.id === vera.id));
-  const relogin = await POST('vera2', '/api/sessao', { educador_id: vera.id });
+  const relogin = await ENTRAR('vera2', vera.id);
   T('e não consegue entrar de novo (403)', relogin.status === 403, `(${relogin.status})`);
   T('mas continua existindo, no arquivo',
     (await GET('rita', '/api/arquivo')).corpo.pessoas.some(p => p.id === vera.id));
 
   const volta = await POST('rita', '/api/equipe/reativar', { id: vera.id });
   T('a coordenação traz de volta do arquivo', volta.status === 200);
-  T('e ela entra outra vez', (await POST('vera3', '/api/sessao', { educador_id: vera.id })).status === 200);
+  T('e ela entra outra vez', (await ENTRAR('vera3', vera.id)).status === 200);
 
   const eu = (await GET('rita', '/api/sessao')).corpo.usuario;
   const auto = await POST('rita', '/api/equipe/arquivar', { id: eu.id });
@@ -1266,7 +1342,7 @@ secao('22 · Arquivo — ninguém é apagado (decisão 30)');
 // ------------------------- 24. a psicóloga e a Vivência terapêutica (decisão 31)
 secao('24 · Psicóloga e Vivência terapêutica — indicador de programa, nunca clínico (decisão 31)');
 {
-  const login = await POST('carolina', '/api/sessao', { educador_id: 5 });
+  const login = await ENTRAR('carolina', 5);
   T('psicóloga entra com o papel profissional', login.status === 200 && login.corpo.usuario.papel === 'profissional');
 
   const inv = (await GET('carolina', '/api/inventario')).corpo;

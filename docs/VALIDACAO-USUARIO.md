@@ -15,7 +15,7 @@
 > a **psicóloga** — e que a turma dela, a Vivência terapêutica, está **fora da rubrica** por
 > decisão de projeto ([decisão 31](DECISOES-TECNICAS.md)). Consequência dura: as antigas tarefas 4
 > e 5 (agenda do ciclo, observação com âncoras) **não são executáveis por ela** — `#/hoje?detalhe=ciclo` responde
-> 422 para a turma dela, por construção (`src/api.js:358`). Não dava para trocar a persona e manter
+> 422 para a turma dela, por construção (`src/api.js:421`). Não dava para trocar a persona e manter
 > a lista. As seis tarefas foram refeitas do zero, a partir do task flow do
 > [Exercício 03](task-flow/README.md) e dos três destinos do registro que a jornada v2 nomeia:
 > o relatório do conselho, o recado aos pais e a prova para quem financia.
@@ -33,7 +33,7 @@ avaliação acadêmica". A exigência vem da semana 5, está admitida como pende
 [`TESTES.md`](TESTES.md) ("a validação com usuário real é a etapa seguinte") e aparece como item
 1.3 do Horizonte 1 em [`ARQUITETURA.md`](ARQUITETURA.md).
 
-O motivo é simples. O MVP tem 413 asserções de fluxo e 177 testes unitários — mas teste
+O motivo é simples. O MVP tem 431 asserções de fluxo e 177 testes unitários — mas teste
 automatizado prova que o sistema faz o que o código diz, não que a profissional consegue usá-lo.
 Desde a visita, o produto está ancorado em duas frases dela, literais:
 
@@ -88,7 +88,7 @@ node scripts/reset.mjs && node scripts/preparar-sessao.mjs --lapso && node serve
   > elemento do cartão preso à chamada **de hoje**, então sumia em dia não letivo e o recado só era
   > alcançável pela URL. O protocolo mandava registrar isso como "não — entrada ausente na tela
   > Hoje". Corrigido em `48ec1dd`: o botão passou a seguir o **encontro da folha**
-  > (`public/app.js:594`), como o resto do cartão. **A ressalva não vale mais** — se a tarefa 6
+  > (`public/app.js:598`), como o resto do cartão. **A ressalva não vale mais** — se a tarefa 6
   > falhar agora, é achado de verdade, não defeito conhecido.
 
 **Regras do facilitador.**
@@ -150,8 +150,8 @@ qualquer coisa acima disso na sessão é sinal, não ruído do cenário.
 > está escrito acima como limiar (os 20 s da tarefa 4) e como aviso (a tarefa 6 em dia não letivo).
 
 > **Por que a tarefa 5 termina num bloqueio.** Ela não é usabilidade: é o teste de **H3**. A
-> psicóloga não pode registrar o consentimento — só a coordenação (`src/api.js:522`), e a tela diz
-> isso a ela (`public/app.js:1284`). O sucesso da tarefa é ela entender **por que não sai**, não
+> psicóloga não pode registrar o consentimento — só a coordenação (`src/api.js:585`), e a tela diz
+> isso a ela (`public/app.js:1288`). O sucesso da tarefa é ela entender **por que não sai**, não
 > conseguir emitir. E o destino é literal do campo: *"que daí seria entre profissionais, que é mais
 > rico ainda"*.
 
@@ -192,7 +192,7 @@ Primeira infância), o fluxo do ciclo existe e as tarefas são estas. Rodar `pre
 
 | # | Tarefa | Enunciado | Rota esperada | Sucesso quando |
 |---|---|---|---|---|
-| 1 | Entrar | "Entre no sistema como você entraria num dia normal de trabalho." | `#/entrar` → `#/hoje` | Chega à tela Hoje e diz o que faria primeiro |
+| 1 | Entrar | "Entre no sistema como você entraria num dia normal de trabalho." | `#/entrar` → `#/hoje` | Chega à tela Hoje e diz o que faria primeiro. **Desde 04/09/2026 há senha** (decisão 39): na primeira vez ela cria a dela — o facilitador não digita por ela, e quanto tempo isso leva é observação, não interrupção |
 | 2 | Chamada | "Registre a presença da turma de hoje. Duas crianças faltaram — estas aqui." | `#/chamada` | Chamada salva com as duas faltas corretas |
 | 3 | Folha do dia por voz | "Conte como foi o dia de hoje **falando**, sem digitar." *(cartão: "Hoje a atividade foi leitura em roda. A turma participou bem, mas o barulho da rua atrapalhou. Duas crianças faltaram. Amanhã vamos continuar a história.")* | `#/registrar?passo=mao` → `#/registrar` → `#/registrar?passo=confirmar` | Folha confirmada; taxa de correção pela §5 |
 | 4 | Agenda do ciclo | "Descubra quais crianças ainda faltam observar neste ciclo — e por que alguma delas aparece bloqueada." | `#/hoje?detalhe=ciclo` | Aponta uma pendente e explica um bloqueio com as próprias palavras |
