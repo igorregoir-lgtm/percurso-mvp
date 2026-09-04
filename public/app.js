@@ -236,18 +236,18 @@ const barra = (pct, ok = false) =>
 // ------------------------------------------------------------------ navegacao
 const NAV_EDUCADOR = [
   ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'],
-  ['#/turma', '▥', 'Turma'], ['#/criancas', '☺', 'Crianças'],
+  ['#/turma', '▥', 'Turma'], ['#/crianca', '☺', 'Crianças'],
 ];
 // Psicóloga (decisão 31): a turma dela não entra na rubrica, então não há Ciclo;
 // e ela não pediu pauta de atividades — o que ela pediu foi registrar.
 const NAV_PROFISSIONAL = [
   ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'], ['#/folha', '✎', 'Vivência'],
-  ['#/relato', '▤', 'Relato'], ['#/turma', '▥', 'Turma'], ['#/criancas', '☺', 'Crianças'],
+  ['#/sai-daqui', '▤', 'Saídas'], ['#/turma', '▥', 'Turma'], ['#/crianca', '☺', 'Crianças'],
 ];
 // F2: scores, safras e síntese viraram abas do Painel; impacto e consulta,
 // abas do Relatório. O menu deixa de repetir o que a tela já oferece.
 const NAV_COORDENACAO = [
-  ['#/painel', '▦', 'Painel'], ['#/criancas', '☺', 'Crianças'],
+  ['#/painel', '▦', 'Painel'], ['#/crianca', '☺', 'Crianças'],
   ['#/pessoas', '⚇', 'Pessoas'], ['#/consentimentos', '⚿', 'Consent.'],
 ];
 const NAV_DIRETORIA = [
@@ -310,11 +310,27 @@ const FUNDIDAS = {
   '#/alertas': '#/hoje?detalhe=alertas',
   '#/pauta': '#/hoje?detalhe=semana',
   '#/ciclo': '#/hoje?detalhe=ciclo',
+  '#/relato': '#/sai-daqui?aba=relato',
+  '#/recado': '#/sai-daqui?aba=recado',
+  '#/criancas': '#/crianca',
 };
+
+// As que carregavam ID não cabem num mapa de strings.
+const FUNDIDAS_COM_ID = [
+  [/^#\/observacao\/(\d+)/, (m) => `#/crianca/${m[1]}?ver=observacao`],
+  // O parecer tem id PRÓPRIO (uma criança pode ter vários). A ficha resolve de
+  // quem ele é pelo próprio parecer, então o hash não precisa saber.
+  [/^#\/parecer\/(\d+)/, (m) => `#/crianca?ver=parecer&pid=${m[1]}`],
+];
 
 /** Resolve o apelido antes de casar a rota. Preserva a query que vier junto. */
 function resolverFundida(hash) {
   const [caminho, busca] = hash.split('?');
+  const comId = FUNDIDAS_COM_ID.find(([re]) => re.test(caminho));
+  if (comId) {
+    const d = comId[1](caminho.match(comId[0]));
+    return busca ? `${d}&${busca}` : d;
+  }
   const destino = FUNDIDAS[caminho];
   if (!destino) return hash;
   if (!busca) return destino;
@@ -571,8 +587,8 @@ rota(/^#\/hoje/, async () => {
       <div class="linha" style="margin-top:12px">
         <button class="btn largo" data-acao="ir" data-href="#/voz">${folhaFeita ? 'Contar de novo' : 'Contar como foi'}</button>
         <button class="btn largo secundario" data-acao="ir" data-href="#/folha">Preencher à mão</button>
-        ${folhaFeita && d.na_rubrica === false ? `<button class="btn largo ${d.folha.relato_liberado ? 'fantasma' : 'secundario'}" data-acao="ir" data-href="#/relato">${d.folha.relato_liberado ? 'Relato liberado' : 'Revisar e liberar o relato'}</button>` : ''}
-        ${(d.recados ?? []).map(r => `<button class="btn largo fantasma" data-acao="ir" data-href="#/recado?turma_id=${r.turma_id}&data=${r.data}">Recado para os responsáveis${d.recados.length > 1 ? ` · ${esc(r.turma)}` : ''}</button>`).join('')}
+        ${folhaFeita && d.na_rubrica === false ? `<button class="btn largo ${d.folha.relato_liberado ? 'fantasma' : 'secundario'}" data-acao="ir" data-href="#/sai-daqui?aba=relato">${d.folha.relato_liberado ? 'Relato liberado' : 'Revisar e liberar o relato'}</button>` : ''}
+        ${(d.recados ?? []).map(r => `<button class="btn largo fantasma" data-acao="ir" data-href="#/sai-daqui?aba=recado&turma_id=${r.turma_id}&data=${r.data}">Recado para os responsáveis${d.recados.length > 1 ? ` · ${esc(r.turma)}` : ''}</button>`).join('')}
       </div>
     </div>`;
 
@@ -791,7 +807,7 @@ async function telaOlharesDoCiclo() {
       ${itens.map(i => {
         const [cls, rot] = SELO[i.estado];
         const clicavel = i.estado !== 'bloqueada';
-        return `<button class="item" ${clicavel ? `data-acao="ir" data-href="#/observacao/${i.crianca_id}"` : 'disabled style="opacity:.72"'}>
+        return `<button class="item" ${clicavel ? `data-acao="ir" data-href="#/crianca/${i.crianca_id}?ver=observacao"` : 'disabled style="opacity:.72"'}>
           <div class="cresce">
             <div class="nome">${esc(i.nome)}</div>
             <div class="meta">${i.estado === 'bloqueada' ? esc(i.texto) : esc(i.codigo)}</div>
@@ -807,7 +823,7 @@ async function telaOlharesDoCiclo() {
 // ======================================================================
 // OBSERVACAO — a rubrica (F3)
 // ======================================================================
-rota(/^#\/observacao\/(\d+)/, async (id) => {
+async function telaOlharDaCrianca(id) {
   const d = await api(`/api/observacao?crianca_id=${id}`);
   ctx.obs = {
     criancaId: Number(id),
@@ -896,7 +912,7 @@ rota(/^#\/observacao\/(\d+)/, async (id) => {
     </div>
     <p class="rodape" id="faltam"></p>`;
   atualizarObs();
-});
+}
 
 function atualizarObs() {
   const o = ctx.obs; if (!o) return;
@@ -1082,7 +1098,22 @@ function barrasDimensoes(agg) {
 // ======================================================================
 // CRIANCAS + FICHA VIVA (F1)
 // ======================================================================
-rota(/^#\/criancas/, async () => {
+// ======================================================================
+// A CRIANÇA (F2) — a busca, a ficha, o olhar do ciclo e o parecer eram QUATRO
+// telas. São o mesmo assunto, e a pessoa já está na ficha quando precisa das
+// outras três: o olhar e o parecer acontecem ONDE ela está, não noutro lugar.
+// ======================================================================
+rota(/^#\/crianca/, async () => {
+  const [caminho, busca] = location.hash.split('?');
+  const q = new URLSearchParams(busca || '');
+  const id = (caminho.match(/^#\/crianca\/(\d+)/) || [])[1];
+  const ver = q.get('ver');
+  if (ver === 'parecer') return telaParecer(q.get('pid'));
+  if (id && ver === 'observacao') return telaOlharDaCrianca(id);
+  return id ? telaFichaDaCrianca(id) : telaBuscarCrianca();
+});
+
+async function telaBuscarCrianca() {
   const r = await api('/api/criancas');
   app.innerHTML = `
     <p class="kicker">Ficha viva · criança é entidade, matrícula é relação</p>
@@ -1094,7 +1125,7 @@ rota(/^#\/criancas/, async () => {
     ${sessao.papel === 'coordenacao' ? `<div class="linha" style="margin-top:12px">
       <button class="btn pequeno secundario" data-acao="ir" data-href="#/pessoas">Cadastrar criança</button>
     </div>` : ''}`;
-});
+}
 
 // A-13: o corte da lista deixa de ser silencioso — quando ha' mais criancas do
 // que a tela mostra, a propria lista declara o corte e aponta a busca.
@@ -1112,7 +1143,7 @@ const listaCriancas = (r) => {
   </button>`).join('');
 };
 
-rota(/^#\/crianca\/(\d+)/, async (id) => {
+async function telaFichaDaCrianca(id) {
   const [f, par] = await Promise.all([api(`/api/crianca?id=${id}`), api(`/api/parecer?crianca_id=${id}`).catch(() => null)]);
   ctx.parecer = { criancaId: Number(id) };
   // Decisão 32: o parecer para profissional parceiro — o único dado individual
@@ -1133,7 +1164,7 @@ rota(/^#\/crianca\/(\d+)/, async (id) => {
         <input type="text" id="par-dest" placeholder="Ex.: assistente social — projeto parceiro" autocomplete="off">
         <button class="btn pequeno" data-acao="gerar-parecer" style="margin-top:10px">Gerar o parecer (rascunho)</button>`}
       ${par.pareceres.length ? `<div class="pilha" style="margin-top:12px">
-        ${par.pareceres.map(p => `<button class="link" data-acao="ir" data-href="#/parecer/${p.id}">
+        ${par.pareceres.map(p => `<button class="link" data-acao="ir" data-href="#/crianca?ver=parecer&pid=${p.id}">
           <span><span>${esc(p.destinatario)}</span><span class="d">${dataBR(p.gerado_em)} · ${p.status === 'liberado' ? `liberado por ${esc(p.liberado_por_nome ?? '—')}` : 'rascunho'}</span></span>
           <span class="selo ${p.status === 'liberado' ? 'ok' : 'pend'}">${p.status}</span></button>`).join('')}
       </div>` : ''}
@@ -1201,12 +1232,12 @@ rota(/^#\/crianca\/(\d+)/, async (id) => {
       <button class="btn secundario" data-acao="arquivar-crianca" data-id="${f.crianca.id}"
         style="margin-top:14px">Mandar para o arquivo</button>
     </div>` : ''}`;
-});
+}
 
 // ======================================================================
 // PARECER (decisão 32) — o texto, a liberação e o registro de que saiu.
 // ======================================================================
-rota(/^#\/parecer\/(\d+)/, async (id) => {
+async function telaParecer(id) {
   const p = await api(`/api/parecer/ver?id=${id}`);
   ctx.parecer = { id: Number(id), criancaId: p.crianca_id };
   app.innerHTML = `
@@ -1226,7 +1257,7 @@ rota(/^#\/parecer\/(\d+)/, async (id) => {
       <button class="btn largo fantasma" data-acao="ir" data-href="#/crianca/${p.crianca_id}">Voltar à ficha</button>
     </div>
     <p class="rodape">O envio é feito por você, no canal que já usa com o serviço parceiro. O registro de que este parecer saiu — para quem, quando, liberado por quem — fica aqui, permanente.</p>`;
-});
+}
 
 // ======================================================================
 // ALERTAS (F6)
@@ -1404,7 +1435,7 @@ async function telaVisaoGeral() {
       ${barra(d.cobertura.valor, !d.cobertura.alerta)}
       <div class="linha" style="margin-top:14px">
         <button class="btn pequeno secundario" data-acao="ir" data-href="#/relatorio?aba=consulta">Perguntar à base</button>
-        <button class="btn pequeno fantasma" data-acao="ir" data-href="#/criancas">Buscar criança</button>
+        <button class="btn pequeno fantasma" data-acao="ir" data-href="#/crianca">Buscar criança</button>
         <button class="btn pequeno fantasma" data-acao="ir" data-href="#/pessoas">Pessoas</button>
       </div>
     </div>
@@ -1876,7 +1907,7 @@ rota(/^#\/folha/, async () => {
     <div class="pilha">
       ${blocosDaFolha()}
       <div class="aviso neutro">O que cada criança fez não entra aqui. ${d.vivencia ? 'Este é o registro do procedimento — não individualizado, sem nome, como o conselho pede.' : 'Esta folha é da turma.'}</div>
-      ${d.folha ? `<button class="btn largo secundario" data-acao="ir" data-href="#/relato?data=${d.data}">${d.vivencia ? 'Ver o relato do procedimento' : 'Ver o registro do encontro'}</button>` : ''}
+      ${d.folha ? `<button class="btn largo secundario" data-acao="ir" data-href="#/sai-daqui?aba=relato&data=${d.data}">${d.vivencia ? 'Ver o relato do procedimento' : 'Ver o registro do encontro'}</button>` : ''}
       ${fechada ? `
         <div class="aviso"><h3>Folha fechada</h3>
           <p>Esta folha foi fechada em ${dataBR(d.folha.confirmado_em)} e não aceita mais alteração.
@@ -2460,12 +2491,39 @@ rota(/^#\/confirmar/, async () => {
 // RELATO DO PROCEDIMENTO (decisão 31) — o texto no padrão do conselho, gerado
 // dos campos fechados, revisado e LIBERADO pela profissional.
 // ======================================================================
-rota(/^#\/relato(?=$|[?&])/, async () => {
+// ======================================================================
+// O QUE SAI DESTE ENCONTRO (F2) — o relato do conselho e o recado aos
+// responsáveis eram duas telas. São as DUAS SAÍDAS do mesmo encontro, geradas
+// do mesmo registro, nenhuma das duas persistindo texto. Quem acabou de
+// confirmar a folha quer as duas, e tinha de achar duas portas.
+// ======================================================================
+const ABAS_SAIDA = [
+  ['relato', 'Relato do encontro'],
+  ['recado', 'Recado aos responsáveis'],
+];
+
+const cabecalhoSaida = (ativa, qs = '') => `
+    <div class="linha" style="flex-wrap:wrap;gap:8px">
+      ${ABAS_SAIDA.map(([k, rot]) => `<button class="btn pequeno ${k === ativa ? '' : 'fantasma'}"
+        data-acao="ir" data-href="#/sai-daqui?aba=${k}${qs}" ${k === ativa ? 'aria-current="page"' : ''}>${rot}</button>`).join('')}
+    </div>`;
+
+/** A query que identifica o encontro, preservada ao trocar de aba. */
+const qsDoEncontro = (params) => {
+  const t = params.get('turma_id'), d = params.get('data');
+  return `${t ? `&turma_id=${encodeURIComponent(t)}` : ''}${d ? `&data=${encodeURIComponent(d)}` : ''}`;
+};
+
+rota(/^#\/sai-daqui/, async () => {
   const params = new URLSearchParams(location.hash.split('?')[1] || '');
+  return params.get('aba') === 'recado' ? telaRecado(params) : telaRelato(params);
+});
+
+async function telaRelato(params) {
   let turmaId = params.get('turma_id');
   if (!turmaId) {
     const h = await api('/api/hoje');
-    if (!h.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2><p class="sub">A coordenação abre o relato pela folha de cada turma.</p></div>`; return; }
+    if (!h.turma) { app.innerHTML = `${VOLTA_AO_HOJE}<div class="cartao"><h2>Sem turma atribuída</h2><p class="sub">A coordenação abre o relato pela folha de cada turma.</p></div>`; return; }
     turmaId = h.turma.id;
   }
   let r;
@@ -2477,8 +2535,8 @@ rota(/^#\/relato(?=$|[?&])/, async () => {
     return;
   }
   ctx.relato = { turmaId, data: r.data };
-  app.innerHTML = `
-    <p class="kicker">${esc(r.turma.programa)} · ${esc(r.turma.nome)}</p>
+  app.innerHTML = cabecalhoSaida('relato', qsDoEncontro(params)) + `
+    <p class="kicker" style="margin-top:12px">${esc(r.turma.programa)} · ${esc(r.turma.nome)}</p>
     <h1>${r.vivencia ? 'Relato do procedimento' : 'Registro do encontro'}</h1>
     <p class="sub">${esc(porExtenso(r.data))} · ${r.liberado ? 'liberado' : 'rascunho — aguardando seu OK'}</p>
     <div class="cartao" style="margin-top:14px">
@@ -2497,23 +2555,22 @@ rota(/^#\/relato(?=$|[?&])/, async () => {
     ${r.historico.length ? `<div class="cartao compacto" style="margin-top:14px">
       <h2>Relatos liberados desta turma</h2>
       <div class="pilha" style="margin-top:8px">${r.historico.map(h => `
-        <button class="link" data-acao="ir" data-href="#/relato?turma_id=${turmaId}&data=${h.data}">
+        <button class="link" data-acao="ir" data-href="#/sai-daqui?aba=relato&turma_id=${turmaId}&data=${h.data}">
           <span><span>${dataBR(h.data)}</span><span class="d">${esc(h.procedimento_rotulo)} · por ${esc(h.liberado_por ?? '—')}</span></span>
           <span class="chev" aria-hidden="true">›</span></button>`).join('')}</div>
     </div>` : ''}
     <p class="rodape">${esc(r.versao_template)}. Editar a folha depois de liberar derruba a liberação — o texto aprovado tem que ser o do banco.</p>`;
-});
+}
 
 // ======================================================================
 // RECADO DA TURMA (decisão 33) — o que já sai para o grupo dos responsáveis,
 // gerado; quem envia é a pessoa. Sem criança nomeada.
 // ======================================================================
-rota(/^#\/recado/, async () => {
-  const params = new URLSearchParams(location.hash.split('?')[1] || '');
+async function telaRecado(params) {
   let turmaId = params.get('turma_id');
   if (!turmaId) {
     const h = await api('/api/hoje');
-    if (!h.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2></div>`; return; }
+    if (!h.turma) { app.innerHTML = `${VOLTA_AO_HOJE}<div class="cartao"><h2>Sem turma atribuída</h2></div>`; return; }
     turmaId = h.turma.id;
   }
   let r;
@@ -2523,8 +2580,8 @@ rota(/^#\/recado/, async () => {
       <div class="linha" style="margin-top:16px"><button class="btn" data-acao="ir" data-href="#/chamada">Fazer a chamada</button></div>`;
     return;
   }
-  app.innerHTML = `
-    <p class="kicker">${esc(r.turma.nome)}</p>
+  app.innerHTML = cabecalhoSaida('recado', qsDoEncontro(params)) + `
+    <p class="kicker" style="margin-top:12px">${esc(r.turma.nome)}</p>
     <h1>Recado para os responsáveis</h1>
     <p class="sub">${esc(porExtenso(r.data))} · o que já sai hoje para o grupo, pronto para colar</p>
     <div class="cartao" style="margin-top:14px">
@@ -2540,7 +2597,7 @@ rota(/^#\/recado/, async () => {
       <button class="btn largo fantasma" data-acao="ir" data-href="#/hoje">Voltar</button>
     </div>
     <p class="rodape">Base legal: legítimo interesse — comunicação com os responsáveis sobre a turma. O recado não é guardado: é gerado agora, do registro.</p>`;
-});
+}
 
 // ======================================================================
 // PAUTA DE SEGUNDA (F11) — o laço de devolução.
@@ -4276,13 +4333,13 @@ document.addEventListener('click', comErro(async (ev) => {
 }));
 
 const AURORA_ROTAS_POR_PAPEL = {
-  educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/turma', '#/criancas', '#/pensar'],
-  profissional: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/turma', '#/criancas', '#/pensar'],
+  educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/sai-daqui', '#/turma', '#/crianca', '#/pensar'],
+  profissional: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/sai-daqui', '#/turma', '#/crianca', '#/pensar'],
   // '#/consulta' entrou em 03/09/2026: `exigeGestao` autoriza coordenação E
   // diretoria (src/api.js), e o painel dela já oferece o botão 'Perguntar à
   // base'. Sem a rota aqui, uma sugestão da Aurora para essa tela era engolida
   // com um `return` mudo — sem navegação e sem aviso.
-  coordenacao: ['#/painel', '#/consentimentos', '#/pessoas', '#/criancas', '#/relato', '#/relatorio', '#/pensar'],
+  coordenacao: ['#/painel', '#/consentimentos', '#/pessoas', '#/crianca', '#/sai-daqui', '#/relatorio', '#/pensar'],
   diretoria: ['#/relatorio'],
 };
 
@@ -4517,7 +4574,7 @@ document.addEventListener('click', comErro(async (ev) => {
     alvo.disabled = true;
     try {
       const r = await post('/api/parecer/gerar', { crianca_id: ctx.parecer.criancaId, destinatario });
-      location.hash = `#/parecer/${r.parecer.id}`; navegar();
+      location.hash = `#/crianca?ver=parecer&pid=${r.parecer.id}`; navegar();
     } finally { alvo.disabled = false; }
     return;
   }

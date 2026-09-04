@@ -57,12 +57,12 @@ export const CATALOGO_ACOES = [
   { id: 'chamada', rotulo: 'Chamada', hash: '#/chamada', papeis: ['educador', 'profissional'] },
   { id: 'voz', rotulo: 'Contar como foi (voz)', hash: '#/voz', papeis: ['educador', 'profissional'] },
   { id: 'folha', rotulo: 'Folha do dia', hash: '#/folha', papeis: ['educador', 'profissional'] },
-  { id: 'relato', rotulo: 'Relato do procedimento', hash: '#/relato', papeis: ['educador', 'profissional', 'coordenacao'] },
-  { id: 'recado', rotulo: 'Recado da turma (responsáveis)', hash: '#/recado', papeis: ['educador', 'profissional'] },
+  { id: 'relato', rotulo: 'Relato do procedimento', hash: '#/sai-daqui?aba=relato', papeis: ['educador', 'profissional', 'coordenacao'] },
+  { id: 'recado', rotulo: 'Recado da turma (responsáveis)', hash: '#/sai-daqui?aba=recado', papeis: ['educador', 'profissional'] },
   { id: 'pauta', rotulo: 'Pauta de segunda', hash: '#/hoje?detalhe=semana', papeis: ['educador'] },
   { id: 'ciclo', rotulo: 'Agenda do ciclo', hash: '#/hoje?detalhe=ciclo', papeis: ['educador', 'profissional'] },
   { id: 'turma', rotulo: 'Painel da turma', hash: '#/turma', papeis: ['educador', 'profissional'] },
-  { id: 'criancas', rotulo: 'Crianças', hash: '#/criancas', papeis: ['educador', 'profissional', 'coordenacao'] },
+  { id: 'criancas', rotulo: 'Crianças', hash: '#/crianca', papeis: ['educador', 'profissional', 'coordenacao'] },
   // A entrada de GUIA 'alertas' existia sem par aqui: validarAcao('alertas')
   // devolvia null e a oferta "Ir para Alertas" sumia em silêncio.
   { id: 'alertas', rotulo: 'Alertas de ausência', hash: '#/hoje?detalhe=alertas', papeis: ['educador', 'profissional', 'coordenacao'] },
@@ -166,15 +166,6 @@ export const GUIA = [
     tarefas: [],
   },
   {
-    id: 'criancas', papeis: ['educador', 'profissional', 'coordenacao'],
-    oQueE: 'A lista de Crianças abre a ficha viva de cada uma: matrículas, presença, trajetória categórica e consentimentos. Educadora vê as crianças das próprias turmas.',
-    chips: ['Como encontro uma criança?', 'O que tem na ficha?'],
-    naoEnxergo: 'Eu não abro a ficha de ninguém — eu só te levo até a lista.',
-    tarefas: [
-      { intencoes: ['buscar', 'busca', 'encontrar', 'encontro uma', 'encontro a crianca', 'procur', 'achar', 'acho', 'lista de crianca'], resposta: 'Na tela Crianças, use a busca por nome ou código — a lista mostra as crianças das suas turmas. Toque no nome para abrir a ficha viva.', acao: 'criancas' },
-    ],
-  },
-  {
     id: 'copilot', papeis: ['educador', 'profissional', 'coordenacao'],
     oQueE: 'Pensar junto é a mesma Aurora, com tempo. Aqui na gaveta eu respondo do guia, na hora. Ali eu consulto as fontes do corpus e devolvo perguntas, hipóteses rotuladas, alternativas e contraponto — leva mais tempo, e a decisão continua sendo sua.',
     chips: ['O que é pensar junto?', 'O que a Aurora nunca faz?'],
@@ -269,8 +260,9 @@ export const GUIA = [
     chips: ['O que posso perguntar aqui?'],
     tarefas: [],
   },
-  // As entradas abaixo ficam DEPOIS de 'criancas' de propósito: guiaDe casa
-  // por startsWith e '#/criancas' precisa vencer antes de '#/crianca'.
+  // ATENÇÃO À ORDEM, e agora também à barra: com a fusão da F2 a lista e a ficha
+  // vivem no MESMO hash (`#/crianca` e `#/crianca/7`), então `startsWith` casa
+  // nas duas. `guiaDe` passou a exigir a fronteira depois do id.
   {
     id: 'folha', papeis: ['educador', 'profissional'],
     oQueE: 'A Folha do dia é o registro à mão do encontro da TURMA — atividade, área temática, como o grupo esteve e quantos pediram ajuda: os mesmos campos que a voz preenche.',
@@ -310,11 +302,15 @@ export const GUIA = [
     ],
   },
   {
+    // A busca e a ficha eram dois guias porque eram duas telas. A F2 fundiu as
+    // telas; manter dois guias com o mesmo hash faria `guiaDe` responder sempre
+    // pelo primeiro e o outro viraria texto morto.
     id: 'crianca', papeis: ['educador', 'profissional', 'coordenacao'],
-    oQueE: 'A ficha viva mostra o percurso de uma criança — presença, observações e evolução — sempre dentro do escopo das suas turmas e do consentimento registrado.',
+    oQueE: 'A tela Crianças busca por nome ou código e abre a ficha viva: matrículas, presença, trajetória, o olhar do ciclo e o parecer. Educadora vê as crianças das próprias turmas.',
     naoEnxergo: 'Eu não abro o conteúdo de nenhuma ficha — só sei explicar o que a tela mostra e por que algo pode estar fechado.',
-    chips: ['O que é esta tela?', 'Por que uma ficha não abre?', 'O que significa bloqueada?'],
+    chips: ['Como encontro uma criança?', 'Por que uma ficha não abre?', 'O que tem na ficha?'],
     tarefas: [
+      { intencoes: ['buscar', 'busca', 'encontrar', 'encontro uma', 'encontro a crianca', 'procur', 'achar', 'acho', 'lista de crianca'], resposta: 'Use a busca por nome ou código no topo da tela Crianças — a lista mostra as crianças das suas turmas. Toque no nome para abrir a ficha viva.', acao: 'criancas' },
       { intencoes: ['nao abre', 'não abre', 'bloquead', 'sem acesso', 'fechada'], resposta: 'A ficha só abre para quem convive com a criança (escopo de turma) e respeita o consentimento registrado. Se estiver bloqueada, o caminho é a coordenação — eu não abro a ficha de nenhum caso.', acao: null },
     ],
   },
@@ -325,7 +321,13 @@ export const GUIA = [
 // ---------------------------------------------------------------------------
 const semAcento = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-const guiaDe = (tela) => GUIA.find(g => tela && tela.startsWith(`#/${g.id}`)) ?? null;
+const guiaDe = (tela) => GUIA.find(g => {
+  if (!tela) return false;
+  const alvo = `#/${g.id}`;
+  // Fronteira obrigatória: sem ela `#/crianca` casaria em `#/criancas` (e o
+  // inverso), e o guia de uma tela responderia pela outra.
+  return tela === alvo || tela.startsWith(`${alvo}/`) || tela.startsWith(`${alvo}?`);
+}) ?? null;
 export const guiaDoPapel = (papel) => GUIA.filter(g => g.papeis.includes(papel));
 
 // Vocabulário do produto — o domínio da Aurora. Fora dele, o modelo não responde.

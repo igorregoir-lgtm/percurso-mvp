@@ -611,22 +611,24 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
   const { readFileSync } = await import('node:fs');
   const raiz = new URL('../', import.meta.url);
   const ANCORAS = {
-    'public/app.js:485': /rota\(\/\^#\\\/hoje\//,
-    'public/app.js:574': /Revisar e liberar o relato|relato_liberado/,
+    'public/app.js:501': /rota\(\/\^#\\\/hoje\//,
+    'public/app.js:590': /Revisar e liberar o relato|relato_liberado/,
     // Regex ESTREITA de proposito: /recados|#\/recado/ casava em quatro linhas,
     // e a reancorar.mjs nao tinha como decidir qual. Ancora que casa em varios
     // lugares nao ancora nada.
-    'public/app.js:575': /data-href="#\/recado\?turma_id=/,
-    'public/app.js:1127': /coordenacao.*Consentimentos|Registre abaixo/,
+    // O botão do recado. O destino virou `#/sai-daqui?aba=recado` na F2, mas o
+    // que a âncora guarda é o mesmo: ele leva a TURMA e a DATA do encontro.
+    'public/app.js:591': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
+    'public/app.js:1158': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:2605': /async function telaScores\(\)/,
-    'public/app.js:2831': /id="pergunta"/,
+    'public/app.js:2662': /async function telaScores\(\)/,
+    'public/app.js:2888': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:4496': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
+    'public/app.js:4553': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
     'src/api.js:334': /erro\(422.*rubrica por ciclo/,
     'src/api.js:460': /'POST \/api\/consentimento'/,
     'src/api.js:919': /periodosSugeridos\(\)/,
@@ -991,7 +993,7 @@ test('nenhuma rota do front é engolida por outra (despacho é o PRIMEIRO que ca
   const rotas = linhas.map((l, i) => [i + 1, l])
     .filter(([, l]) => /^rota\(\//.test(l))
     .map(([n, l]) => ({ n, fonte: l.match(/rota\((\/.+?\/), /)[1] }));
-  assert.ok(rotas.length >= 15, `só ${rotas.length} rotas lidas — o extrator quebrou`);
+  assert.ok(rotas.length >= 10, `só ${rotas.length} rotas lidas — o extrator quebrou`);
 
   // O caminho literal de cada rota: o que vem depois de `^`, até o primeiro
   // metacaractere. `/^#\/crianca\/(\d+)/` vira `#/crianca/1`.
