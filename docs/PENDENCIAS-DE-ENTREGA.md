@@ -46,12 +46,44 @@ Executar na semana da entrega. Nenhum item deste bloco é automatizável por est
       decisão 34 substituiu.
 - [ ] **Registro feito pelas famílias em casa** (Grav. 84): validado como direção, fora do MVP —
       exige canal, consentimento e desenho próprios. Fica como hipótese.
+- [ ] **A conversa sobre a lista nominal no grupo dos pais.** A pesquisa concluiu que repassar a
+      presença nominal da turma aos outros pais **não deveria sair nem à mão**
+      ([`PESQUISA-WHATSAPP.md`](PESQUISA-WHATSAPP.md) §4: LGPD art. 14 §3º e art. 6º III; numa
+      comunidade com medidas protetivas, a falta pode revelar situação familiar). É a **prática
+      atual do Instituto**, e ninguém disse isso a eles. Não existia item de pendência para essa
+      conversa — este é. O produto já oferece o caminho protetor (agregado por turma, decisão 33);
+      o que falta é a conversa, e ela é da coordenação, não do código.
+- [ ] **Consentimento de imagem por finalidade, antes do Degrau 0 completo.** O pacote com um toque
+      (`navigator.share` com arquivos, pacotes distintos para pais e apoiadores) precisa que o
+      produto **consulte a governança** antes de montar o vídeo — e hoje não há linha de
+      consentimento de imagem por finalidade em `governanca_campo`. Sem ela, o Degrau 0 fica no que
+      já existe: texto agregado e `wa.me`.
 
 **Insumos para o business case que a visita trouxe** (sem inventar número): seis anos de
 operação da psicóloga, remunerada por parceria só desde este ano e só até dezembro; duas pessoas
 fixas mais voluntários de sábado; a régua de 75% e a devolutiva semanal por WhatsApp já são
 política e prática da casa; notebooks doados sem uso; os passeios (teatro, ópera, Olímpia)
 custeados por doação. Os quatro dados do §3 continuam pendentes.
+
+## 1c. O acordo sobre a gravação — o que sustenta a porta B
+
+Este registro existe porque ele **não existia**, e é ele que justifica a porta mais poderosa do
+produto. A revisão do plano de 03/09/2026 tratou a frase *"Ela não pode gravar"* (Grav. 82, 08:14)
+como veto do conselho, e concluiu que gravar o encontro estava proibido. **Estava errado**, e a
+correção veio de quem estava na sala:
+
+> A frase foi dita sobre **o relógio**, que não conseguia gravar. Mais tarde, conversando com a
+> psicóloga, **ela concordou com a gravação** e disse que seria o instrumento mais fácil e prático
+> para facilitar os registros dela.
+> — correção do dono do produto, 03/09/2026
+
+O que isso muda: o que faltava no repositório nunca foi a proibição — era **o consentimento dela**.
+Ele está aqui agora, e é o que sustenta a decisão técnica de gravar (porta B, decisão 35). A porta
+continua **desligada por padrão** e ligando só por escolha explícita, por aparelho: o acordo dela
+autoriza construir, não dispensa a escolha de quem responde pela turma no dia.
+
+- [ ] **Confirmar o acordo por escrito com a psicóloga**, agora que a porta existe — o registro
+      acima é a palavra de quem estava na sala, e vale; a assinatura dela é o passo seguinte.
 
 ## 2. Insumos de arquitetura para o business case (GAP-13)
 

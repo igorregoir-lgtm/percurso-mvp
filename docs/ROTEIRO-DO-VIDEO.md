@@ -111,14 +111,21 @@ entra é presença, procedimento e check-in de grupo.
 ### 7 · Contar como foi — voz + filtro de perímetro — [1:00 · `#/registrar` → `#/registrar?passo=confirmar`]
 
 **Ação:** tocar em **"Contar como foi"**. Ler em voz alta o aviso da tela — *o que este botão grava
-e o que não grava*. Mostrar o microfone, a onda e o relógio contando **para cima** — a janela de 40 s é sugestão, não teto. Falar (ou digitar
-no campo de baixo — a saída manual está sempre ali):
+e o que não grava*, **por caminho**: na captura curta quem transcreve é o navegador; nas três portas
+longas o áudio vai ao computador do Instituto e é apagado ao virar texto (decisão 35). Mostrar o
+microfone, a onda e o relógio contando **para cima** — a janela de 40 s é sugestão, não teto.
+Mostrar também **as três portas longas** logo abaixo (narrar sem pressa · trazer um áudio · deixar
+gravando o encontro, esta desligada) — é a resposta ao *"não dá, não dá"* da visita. Falar (ou
+digitar no campo de baixo — a saída manual está sempre ali):
 
 > *"Hoje a gente fez a roda das emoções, para eles nomearem o que sentem. Duas crianças ajudaram
 > sem ninguém pedir, seis participaram do começo ao fim. Teve um conflito e resolveram conversando.
 > A mãe da Ana contou que ela começou terapia esta semana."*
 
-Tocar em **Terminei**. Nomear as três coisas que acontecem:
+Tocar em **Terminei**. A conferência agora **diz o que conferir** — *"Preenchi: Atividade · Área ·
+Como a turma esteve. Ficou em branco: Contagens do grupo"* — e, se a fala citou faltas, oferece
+marcá-las na chamada (só as citadas; ninguém é presumido presente). Nomear as três coisas que
+acontecem:
 
 1. **O filtro de perímetro.** O cartão *"Tem algo aqui que não entra no sistema"* isola a frase
    sobre a terapia e devolve **encaminhamento humano**. **Fala:** um produto de voz sobre criança
@@ -143,6 +150,9 @@ chamado de *"perigoso"*. Por isso a tela diz, antes do toque, que nenhuma crian�
 > inteiro antes disso. A pseudonimização por código vale para nomes **do cadastro**.
 
 ### 8 · O relato no padrão do conselho — [0:25 · `#/sai-daqui?aba=relato`]
+
+> **Mudou em 04/09/2026:** confirmar a folha na Vivência **abre o relato sozinho** — antes
+> devolvia para o Hoje e o relatório, que é a dor nomeada em campo, ficava a dois toques.
 
 **Ação:** da tela Hoje, **"Revisar e liberar o relato"**. Mostrar o texto gerado: procedimento,
 objetivo, desenvolvimento com as contagens, encaminhamentos e a nota de sigilo. **Liberar.**

@@ -1,4 +1,56 @@
-# Handoff — 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
+# Handoff — 04/09/2026, 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
+
+> ## Sessão de 04/09/2026 — F2 a F8: menos telas, menos toques, e o calendário da casa
+>
+> Continuação direta da noite anterior (F1, a captura por áudio). **28 rotas viraram 12**, os
+> steppers sumiram, o calendário deixou de ser deduzido do dia da semana, a psicóloga passou a ver
+> a rubrica na língua dela, e toda leitura de dado individual passou a deixar rastro.
+>
+> **Decisões novas: 36** (fusão de telas), **37** (calendário da casa) e **38** (rastro de acesso).
+>
+> **O que mais vale guardar são os defeitos que a mudança revelou — nenhum deles apareceu lendo
+> código:**
+>
+> 1. **`#/relatorio` estava inalcançável por hash desde a v2.** `/^#\/relato/` casa em
+>    `#/relatorio`, e o despacho pega o primeiro que casa: quem tocava em "Relatório" — a tela
+>    principal da DIRETORIA — caía em *"Sem turma atribuída"*. Nenhum gate pegava, e por um motivo
+>    estrutural: smoke é HTTP, o unitário não tem DOM, e o defeito morava só no despacho do cliente.
+>    Agora há gate, e ele lê as rotas do próprio arquivo.
+> 2. **Um teste que mentia conforme o calendário.** `aurora/preferências` chamava o painel real da
+>    Rita e exigia tipos que os gatilhos não produzem todo dia. Falhou em 04/09 e passava nos dias
+>    anteriores. Gate que passa conforme a data não avisa: sorteia. E a asserção tinha derivado do
+>    próprio nome — `compor` promete vaga reservada, não primeiro lugar.
+> 3. **O lapso acusava toda quinta-feira quem só atende sábado**, e o teste de fluxo tinha
+>    **derivado a asserção da régua errada** para parar de quebrar. O gate se acomodando ao defeito
+>    em vez de acusá-lo é pior que o defeito.
+> 4. **`faltas_mencionadas` era código morto** ligando algo que o campo tinha pedido em voz alta —
+>    e com um bug de fronteira: "Ana" casava dentro de "sem**ana**".
+> 5. **A tabela nova ficou fora da lista de limpeza da semeadura.** O esquema passou em tudo e o
+>    `reset` só quebrou quando existia UMA linha nela. Virou gate; na primeira execução ele achou
+>    uma segunda tabela já faltando há tempos (`parecer`).
+> 6. **Guia duplicado vira texto morto.** Ao fundir telas, dois guias da Aurora ficaram com o mesmo
+>    hash — `guiaDe` responde sempre pelo primeiro, sem erro nenhum. E dentro de um deles estava a
+>    promessa que a F0 tinha desfeito quatro commits antes: *"o áudio nunca sai do seu aparelho"*.
+> 7. **Eu criei três telas sem saída** ao absorver rotas, e só apareceram porque fui clicar. Tela em
+>    que se entra e não se sai é pior que tela a mais.
+> 8. **A pré-marcação de faltas existia só na memória**: a lista renderizava do dado do servidor.
+>    Oferecer e não mostrar é pior que não oferecer.
+>
+> **O que ficou de fora, e por quê:**
+> - **F7, o campo livre de relato, continua fechada.** Dos três pré-requisitos, HTTPS e log de
+>   auditoria estão pagos; falta **autenticação**. Hoje entrar é escolher um perfil numa lista, sem
+>   senha — identificação, não autenticação. Um campo de texto livre sobre uma criança, num produto
+>   em que qualquer pessoa que abra a página escolhe ser a psicóloga, é risco, não frente. Ligar
+>   autenticação muda o protocolo de validação e a demonstração: é decisão de quem responde pelo
+>   Instituto.
+> - **A extração dos seis indicadores por voz.** A colisão que a travava está resolvida e testada
+>   (as âncoras já são comportamentais e passam no perímetro); a extração em si é frente própria.
+> - **A velocidade do whisper na máquina do Instituto** continua não medida — dívida declarada, não
+>   número inventado.
+>
+> **Gates: 413 smoke · 177 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.**
+>
+
 
 > ## Sessão de 03/09/2026 (noite) — a captura por áudio, de ponta a ponta
 >

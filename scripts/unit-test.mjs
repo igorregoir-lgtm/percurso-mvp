@@ -628,7 +628,7 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:4850': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
+    'public/app.js:4862': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
     'src/api.js:358': /erro\(422.*rubrica por ciclo/,
     'src/api.js:522': /'POST \/api\/consentimento'/,
     'src/api.js:1029': /periodosSugeridos\(\)/,

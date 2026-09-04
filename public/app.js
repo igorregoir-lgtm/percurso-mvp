@@ -4846,8 +4846,21 @@ document.addEventListener('click', comErro(async (ev) => {
       // A transcricao morre aqui, junto com a sugestao do agente.
       if (ctx.voz) ctx.voz.transcricao = '';
       f.sugestao = null;
-      if (enviado) toast(alvo.dataset.fechar === '1' ? 'Folha fechada.' : 'Folha guardada — a devolução do encontro está no Hoje.', 'bom');
-      location.hash = '#/hoje'; navegar();   // passo 05 do task flow: volta ao Hoje em vez de abrir o relato
+      // PASSO 05 DO TASK FLOW, corrigido (F8). Confirmar a folha devolvia para
+      // o Hoje, e o relato — que é a DOR NOMEADA EM CAMPO, o relatório que ela
+      // não consegue escrever à noite — ficava a mais dois toques de distância.
+      // A tarefa do protocolo termina no relato liberado, não na folha.
+      //
+      // Só na Vivência: o relato no padrão do conselho é dela (decisão 31). Nas
+      // turmas da rubrica não existe relato, e mandar para lá seria erro.
+      // Vale para guardar E para fechar: nos dois casos o relato passa a existir,
+      // e e' ele a dor nomeada em campo.
+      const vaiParaORelato = enviado && f.vivencia;
+      if (enviado) toast(vaiParaORelato ? 'Folha guardada. O relato já está aqui, esperando o seu ok.'
+        : alvo.dataset.fechar === '1' ? 'Folha fechada.'
+        : 'Folha guardada — a devolução do encontro está no Hoje.', 'bom');
+      location.hash = vaiParaORelato ? `#/sai-daqui?aba=relato&data=${f.data}` : '#/hoje';
+      navegar();
     } finally { alvo.disabled = false; }
     return;
   }
