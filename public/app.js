@@ -235,7 +235,7 @@ const barra = (pct, ok = false) =>
 
 // ------------------------------------------------------------------ navegacao
 const NAV_EDUCADOR = [
-  ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'], ['#/pauta', '◈', 'Pauta'],
+  ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'],
   ['#/turma', '▥', 'Turma'], ['#/criancas', '☺', 'Crianças'],
 ];
 // Psicóloga (decisão 31): a turma dela não entra na rubrica, então não há Ciclo;
@@ -307,6 +307,9 @@ const FUNDIDAS = {
   '#/sintese': '#/painel?aba=sintese',
   '#/impacto': '#/relatorio?aba=impacto',
   '#/consulta': '#/relatorio?aba=consulta',
+  '#/alertas': '#/hoje?detalhe=alertas',
+  '#/pauta': '#/hoje?detalhe=semana',
+  '#/ciclo': '#/hoje?detalhe=ciclo',
 };
 
 /** Resolve o apelido antes de casar a rota. Preserva a query que vier junto. */
@@ -461,8 +464,30 @@ const PAPEL = { coordenacao: 'Coordenação', diretoria: 'Diretoria', educador: 
 // ======================================================================
 // HOJE — a tela que a persona abre primeiro
 // ======================================================================
+// ======================================================================
+// HOJE absorve ALERTAS, PARA ESTA SEMANA e OLHARES DO CICLO (F2).
+//
+// Os três já apareciam como CARTÃO aqui, e ainda tinham tela própria: o cartão
+// e a tela coexistiam, e a pendência de ciclo era cobrada em dois lugares. Com
+// `?ver=`, o cartão é o resumo e a tela é o detalhe do MESMO lugar — deixa de
+// haver dois caminhos para o mesmo assunto.
+// ======================================================================
+// Toda tela absorvida precisa de VOLTA. Tela em que se entra e não se sai é
+// pior que tela a mais — e a fusão cria exatamente esse risco.
+const VOLTA_AO_HOJE = '<div class="linha"><button class="btn pequeno fantasma" data-acao="ir" data-href="#/hoje">‹ Voltar ao Hoje</button></div>';
+
+const VER_TELA_INTEIRA = {
+  alertas: () => telaAlertas(),
+  semana: () => telaParaEstaSemana(),
+  ciclo: () => telaOlharesDoCiclo(),
+};
+
 rota(/^#\/hoje/, async () => {
-  const d = await api('/api/hoje');
+  const q = new URLSearchParams(location.hash.split('?')[1] || '');
+  const detalhe = VER_TELA_INTEIRA[q.get('detalhe') ?? ''];
+  if (detalhe) return detalhe();
+  const turmaId = q.get('turma_id');
+  const d = await api(`/api/hoje${turmaId ? `?turma_id=${encodeURIComponent(turmaId)}` : ''}`);
   ctx.hoje = d;
   const hora = new Date().getHours();
   const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
@@ -484,7 +509,7 @@ rota(/^#\/hoje/, async () => {
       ${d.alertas.slice(0, 3).map(a => `<p style="margin-top:6px"><b style="color:var(--ink)">${esc(a.nome)}</b> — ${esc(a.detalhe)}</p>`).join('')}
       <div class="linha">
         <button class="btn pequeno" data-acao="ir" data-href="#/crianca/${d.alertas[0].crianca_id}">Ver trajetória</button>
-        <button class="btn pequeno secundario" data-acao="ir" data-href="#/alertas">Todos os alertas</button>
+        <button class="btn pequeno secundario" data-acao="ir" data-href="#/hoje?detalhe=alertas">Todos os alertas</button>
       </div>
     </div>` : '';
 
@@ -525,9 +550,9 @@ rota(/^#\/hoje/, async () => {
       ${barra(ag.cobertura, ag.pendentes === 0)}
       <div class="linha" style="margin-top:12px">
         ${ag.pendentes > 0
-          ? `<button class="btn largo" data-acao="ir" data-href="#/ciclo">Continuar observações · faltam ${ag.pendentes}</button>`
+          ? `<button class="btn largo" data-acao="ir" data-href="#/hoje?detalhe=ciclo">Continuar observações · faltam ${ag.pendentes}</button>`
           : `<button class="btn largo secundario" data-acao="ir" data-href="#/turma">Ver o que a turma mostrou</button>
-             <button class="btn largo fantasma" data-acao="ir" data-href="#/ciclo">Rever os olhares do ciclo</button>`}
+             <button class="btn largo fantasma" data-acao="ir" data-href="#/hoje?detalhe=ciclo">Rever os olhares do ciclo</button>`}
       </div>
     </div>`;
 
@@ -557,13 +582,13 @@ rota(/^#\/hoje/, async () => {
   const linhasSemana = [];
   if (pt?.risco?.n) linhasSemana.push([
     `${pt.risco.n} ${pt.risco.n === 1 ? 'criança em risco de sair' : 'crianças em risco de sair'}`,
-    'Duas ou mais faltas seguidas', '#/pauta', true]);
+    'Duas ou mais faltas seguidas', '#/hoje?detalhe=semana', true]);
   if (pt?.exposicao?.area) linhasSemana.push([
     `${esc(pt.exposicao.area)} sem atividade`,
-    `${pt.exposicao.criancas} interessada(s), nada no período`, '#/pauta', true]);
+    `${pt.exposicao.criancas} interessada(s), nada no período`, '#/hoje?detalhe=semana', true]);
   if (d.agenda?.pendentes) linhasSemana.push([
     `${d.agenda.pendentes} olhar(es) em aberto no ciclo`,
-    'Opcional — a folha já registrou a turma', '#/ciclo', false]);
+    'Opcional — a folha já registrou a turma', '#/hoje?detalhe=ciclo', false]);
   const paraEstaSemana = `
     <div class="cartao compacto">
       <div class="lbl">Para esta semana</div>
@@ -601,13 +626,56 @@ rota(/^#\/hoje/, async () => {
       </div>
     </div>` : '';
 
+  // ------------------------------------------------------------------------
+  // TETO DE TRÊS (F2). A tela empilhava OITO cartões e até dez botões largos,
+  // com data em aberto cobrada em três lugares — e o comentário do cartão de
+  // voz já dizia que ele "fica acima de tudo o que é tarefa" enquanto ele era
+  // o terceiro. Aqui a ordem é explícita e o excesso não some: vira uma linha
+  // de "também para você", que abre o mesmo conteúdo em `#/hoje?ver=`.
+  //
+  // A CAPTURA VEM PRIMEIRO, sempre que houver encontro para registrar. É a
+  // única coisa que o campo pediu para ser mais fácil.
+  const TETO_CARTOES = 3;
+  const candidatos = [
+    ['registrar', cartaoFolha, 'Contar como foi'],
+    ['retomada', retomada, 'Retomar de onde parou'],
+    ['chamada', cartaoChamada, 'Chamada'],
+    ['alertas', alertas, `Quem precisa de atenção${d.alertas.length ? ` (${d.alertas.length})` : ''}`],
+    ['semana', paraEstaSemana, 'Para esta semana'],
+    ['devolucao', cartaoDevolucao, 'O que o grupo mostrou'],
+    ['ciclo', cartaoCiclo, 'Olhares do ciclo'],
+    ['abertas', abertas, 'Datas ainda sem chamada'],
+  ].filter(([, html]) => html);
+
+  const ver = q.get('ver');
+  const focado = ver && candidatos.find(([k]) => k === ver);
+  const mostrados = focado ? [focado] : candidatos.slice(0, TETO_CARTOES);
+  const resto = candidatos.filter(c => !mostrados.includes(c));
+
+  // O seletor de turma. Sem ele a psicóloga não alcança a turma da TARDE —
+  // achado de campo do dono do produto: a turma existe, com porta de entrada,
+  // nome e chamada; quem não a acompanhava era o produto.
+  const seletor = (d.turmas ?? []).length < 2 ? '' : `
+    <div class="linha" style="margin-top:10px;flex-wrap:wrap;gap:8px">
+      ${d.turmas.map(t => `<button class="btn pequeno ${t.id === d.turma?.id ? '' : 'fantasma'}"
+        data-acao="ir" data-href="#/hoje?turma_id=${t.id}"
+        ${t.id === d.turma?.id ? 'aria-current="page"' : ''}>${esc(t.nome)}</button>`).join('')}
+    </div>`;
+
   app.innerHTML = `
     <p class="kicker">${esc(d.turma?.programa || 'Instituto Ebenézer')}</p>
     <h1>${saudacao}, ${esc(sessao.apelido.split(' ')[0])}</h1>
     <p class="sub">${esc(d.turma ? d.turma.nome : 'Sem turma atribuída')} · ${esc(porExtenso(d.hoje))}</p>
-    <div class="pilha">
-      ${retomada}${cartaoChamada}${cartaoFolha}${cartaoDevolucao}${paraEstaSemana}${alertas}${cartaoCiclo}${abertas}
-    </div>
+    ${seletor}
+    ${focado ? `<div class="linha" style="margin-top:12px"><button class="btn pequeno fantasma"
+      data-acao="ir" data-href="#/hoje${d.turma ? `?turma_id=${d.turma.id}` : ''}">‹ Voltar ao Hoje</button></div>` : ''}
+    <div class="pilha">${mostrados.map(([, html]) => html).join('')}</div>
+    ${resto.length ? `<div class="cartao compacto" style="margin-top:10px">
+      <div class="lbl">Também para você</div>
+      ${resto.map(([k, , rot]) => `<button class="link" data-acao="ir"
+        data-href="#/hoje?${VER_TELA_INTEIRA[k] ? 'detalhe' : 'ver'}=${k}${d.turma ? `&turma_id=${d.turma.id}` : ''}">
+        <span><span>${esc(rot)}</span></span><span class="chev" aria-hidden="true">›</span></button>`).join('')}
+    </div>` : ''}
     <p class="rodape">Chamada em um toque, o encontro contado em voz — e o resto o Percurso organiza para você.</p>`;
 });
 
@@ -694,15 +762,19 @@ const SELO = {
   pendente: ['pend', 'a fazer'], bloqueada: ['bloq', 'bloqueada'],
 };
 
-rota(/^#\/ciclo$/, async () => {
+async function telaOlharesDoCiclo() {
   const d = await api('/api/hoje');
-  if (!d.turma || !d.agenda) { app.innerHTML = `<div class="cartao"><h2>Sem ciclo aberto</h2><p class="sub">Não há ciclo de observação em andamento.</p></div>`; return; }
+  if (!d.turma || !d.agenda) {
+    app.innerHTML = `${VOLTA_AO_HOJE}<div class="cartao"><h2>Sem ciclo aberto</h2>
+      <p class="sub">Não há ciclo de observação em andamento para esta turma.</p></div>`;
+    return;
+  }
   const ag = d.agenda;
   const ordem = { rascunho: 0, pendente: 1, bloqueada: 2, concluida: 3 };
   const itens = [...ag.itens].sort((a, b) => ordem[a.estado] - ordem[b.estado] || a.nome.localeCompare(b.nome));
 
-  app.innerHTML = `
-    <p class="kicker">${esc(ag.ciclo.nome)} · observação por criança</p>
+  app.innerHTML = `${VOLTA_AO_HOJE}
+    <p class="kicker" style="margin-top:10px">${esc(ag.ciclo.nome)} · observação por criança</p>
     <h1>Ciclo de observação</h1>
     <p class="sub">Janela de ${dataBR(ag.ciclo.inicio)} a ${dataBR(ag.ciclo.fim)} · ~3 min por criança · uma vez por ciclo</p>
     <div class="cartao" style="margin-top:16px">
@@ -730,7 +802,7 @@ rota(/^#\/ciclo$/, async () => {
       }).join('')}
     </div>
     <p class="rodape">Campo sem consentimento nasce bloqueado — não é erro do sistema, é a regra dele.</p>`;
-});
+}
 
 // ======================================================================
 // OBSERVACAO — a rubrica (F3)
@@ -754,7 +826,7 @@ rota(/^#\/observacao\/(\d+)/, async (id) => {
         <p style="margin-top:8px">${d.elegibilidade.motivo === 'consentimento'
           ? 'Sem o consentimento específico do responsável, o campo nem existe. A coordenação registra o consentimento na tela de Consentimentos.'
           : 'O protocolo pede convívio antes de opinar sobre a criança — isso protege a qualidade do que você vai registrar.'}</p>
-        <div class="linha"><button class="btn pequeno secundario" data-acao="ir" data-href="#/ciclo">Voltar ao ciclo</button></div>
+        <div class="linha"><button class="btn pequeno secundario" data-acao="ir" data-href="#/hoje?detalhe=ciclo">Voltar ao ciclo</button></div>
       </div>`;
     return;
   }
@@ -1159,11 +1231,11 @@ rota(/^#\/parecer\/(\d+)/, async (id) => {
 // ======================================================================
 // ALERTAS (F6)
 // ======================================================================
-rota(/^#\/alertas/, async () => {
+async function telaAlertas() {
   const { alertas, faltas_para_lista } = await api('/api/alertas');
   app.innerHTML = `
-    <p class="kicker">Agir antes da evasão</p>
-    <h1>Alertas de ausência</h1>
+    ${VOLTA_AO_HOJE}
+    <h1 style="margin-top:10px">Quem precisa de atenção</h1>
     <p class="sub">Disparam com ${faltas_para_lista} faltas consecutivas — antes de virar evasão.</p>
     <div class="pilha">
       ${alertas.length ? alertas.map(a => `
@@ -1180,7 +1252,7 @@ rota(/^#\/alertas/, async () => {
           </div>
         </div>`).join('') : '<p class="vazio">Nenhum alerta aberto.</p>'}
     </div>`;
-});
+}
 
 // ======================================================================
 // PAINEL DA COORDENACAO (F1 + F5 + F6)
@@ -1339,7 +1411,7 @@ async function telaVisaoGeral() {
 
     ${d.alertas.length ? `<div class="cartao compacto" style="margin-top:14px">
       <div class="linha"><h2 class="cresce">Alertas abertos</h2>
-        <button class="btn pequeno secundario" data-acao="ir" data-href="#/alertas">Tratar</button></div>
+        <button class="btn pequeno secundario" data-acao="ir" data-href="#/hoje?detalhe=alertas">Tratar</button></div>
       <div class="pilha" style="margin-top:10px">
         ${d.alertas.slice(0, 5).map(a => `<div class="item" style="cursor:default">
           <div class="cresce"><div class="nome">${esc(a.nome)}</div><div class="meta">${esc(a.detalhe)}</div></div>
@@ -2473,14 +2545,18 @@ rota(/^#\/recado/, async () => {
 // ======================================================================
 // PAUTA DE SEGUNDA (F11) — o laço de devolução.
 // ======================================================================
-rota(/^#\/pauta/, async () => {
+async function telaParaEstaSemana() {
   const h = await api('/api/hoje');
-  if (!h.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2></div>`; return; }
+  if (!h.turma) {
+    app.innerHTML = `${VOLTA_AO_HOJE}<div class="cartao"><h2>Sem turma atribuída</h2>
+      <p class="sub">A pauta é da turma — este perfil não tem turma no momento.</p></div>`;
+    return;
+  }
   const p = await api(`/api/pauta?turma_id=${h.turma.id}`);
   ctx.pautaTurma = h.turma.id;
 
-  app.innerHTML = `
-    <p class="kicker">Segunda-feira · gerado sozinho</p>
+  app.innerHTML = `${VOLTA_AO_HOJE}
+    <p class="kicker" style="margin-top:10px">Segunda-feira · gerado sozinho</p>
     <h1>Três coisas para a semana</h1>
     <p class="sub">${esc(p.turma.nome)} · semana de ${dataBR(p.semana)}</p>
 
@@ -2521,7 +2597,7 @@ rota(/^#\/pauta/, async () => {
       </div>` : ''}
     </div>
     <p class="rodape">${esc(p.rodape)}<br>${esc(p.doutrina)}</p>`;
-});
+}
 
 // ======================================================================
 // SCORES (F8/F9/F10) — coordenação e diretoria. Nunca em tela de professora.
@@ -4200,13 +4276,13 @@ document.addEventListener('click', comErro(async (ev) => {
 }));
 
 const AURORA_ROTAS_POR_PAPEL = {
-  educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/pauta', '#/ciclo', '#/turma', '#/criancas', '#/alertas', '#/pensar'],
-  profissional: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/turma', '#/criancas', '#/alertas', '#/pensar'],
+  educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/turma', '#/criancas', '#/pensar'],
+  profissional: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/turma', '#/criancas', '#/pensar'],
   // '#/consulta' entrou em 03/09/2026: `exigeGestao` autoriza coordenação E
   // diretoria (src/api.js), e o painel dela já oferece o botão 'Perguntar à
   // base'. Sem a rota aqui, uma sugestão da Aurora para essa tela era engolida
   // com um `return` mudo — sem navegação e sem aviso.
-  coordenacao: ['#/painel', '#/consentimentos', '#/pessoas', '#/criancas', '#/alertas', '#/relato', '#/relatorio', '#/pensar'],
+  coordenacao: ['#/painel', '#/consentimentos', '#/pessoas', '#/criancas', '#/relato', '#/relatorio', '#/pensar'],
   diretoria: ['#/relatorio'],
 };
 
@@ -4808,7 +4884,7 @@ async function depoisDaObservacao(r, concluir) {
     await celebrar(r.agenda);
     return;
   }
-  location.hash = '#/ciclo';
+  location.hash = '#/hoje?detalhe=ciclo';
   navegar();
 }
 

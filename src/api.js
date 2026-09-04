@@ -203,12 +203,23 @@ export const rotas = {
   'POST /api/sair': () => ({ ok: true, _cookie: `${COOKIE}=; Path=/; Max-Age=0; SameSite=Lax` }),
 
   // ---- Educadora ---------------------------------------------------------
-  'GET /api/hoje': (req) => {
+  'GET /api/hoje': (req, _b, q) => {
     const u = exigeUsuario(req);
     const turmas = all(
       `SELECT t.*, p.nome AS programa FROM turma t JOIN programa p ON p.id = t.programa_id
         WHERE t.educador_id = ? ORDER BY t.id`, u.id);
-    const turma = turmas[0] ?? null;
+    // A TURMA ESCOLHIDA, nao `turmas[0]`. Este foi um achado de campo do dono do
+    // produto (03/09/2026): a turma de sabado A' TARDE tem porta de entrada,
+    // nome e chamada na operacao real — quem nao acompanhava era o produto. A
+    // psicologa responde por duas turmas e o cartao, a chamada, a folha, a
+    // pauta, os alertas e a agenda saiam todos da PRIMEIRA. So' `recados[]`
+    // tinha virado por turma (achado A-1 da OPAR).
+    //
+    // A escolha vem por query e e' VALIDADA contra as turmas dela: turma_id de
+    // outra pessoa nao seleciona nada, cai na primeira — o escopo continua
+    // sendo o do vinculo, nunca o do parametro.
+    const pedida = Number(q?.get('turma_id')) || null;
+    const turma = (pedida && turmas.find(t => t.id === pedida)) || turmas[0] || null;
     const ciclo = D.cicloAberto();
     return {
       usuario: u, hoje: D.hoje(), turmas, turma,

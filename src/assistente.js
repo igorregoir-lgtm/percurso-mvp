@@ -59,13 +59,13 @@ export const CATALOGO_ACOES = [
   { id: 'folha', rotulo: 'Folha do dia', hash: '#/folha', papeis: ['educador', 'profissional'] },
   { id: 'relato', rotulo: 'Relato do procedimento', hash: '#/relato', papeis: ['educador', 'profissional', 'coordenacao'] },
   { id: 'recado', rotulo: 'Recado da turma (responsáveis)', hash: '#/recado', papeis: ['educador', 'profissional'] },
-  { id: 'pauta', rotulo: 'Pauta de segunda', hash: '#/pauta', papeis: ['educador'] },
-  { id: 'ciclo', rotulo: 'Agenda do ciclo', hash: '#/ciclo', papeis: ['educador', 'profissional'] },
+  { id: 'pauta', rotulo: 'Pauta de segunda', hash: '#/hoje?detalhe=semana', papeis: ['educador'] },
+  { id: 'ciclo', rotulo: 'Agenda do ciclo', hash: '#/hoje?detalhe=ciclo', papeis: ['educador', 'profissional'] },
   { id: 'turma', rotulo: 'Painel da turma', hash: '#/turma', papeis: ['educador', 'profissional'] },
   { id: 'criancas', rotulo: 'Crianças', hash: '#/criancas', papeis: ['educador', 'profissional', 'coordenacao'] },
   // A entrada de GUIA 'alertas' existia sem par aqui: validarAcao('alertas')
   // devolvia null e a oferta "Ir para Alertas" sumia em silêncio.
-  { id: 'alertas', rotulo: 'Alertas de ausência', hash: '#/alertas', papeis: ['educador', 'profissional', 'coordenacao'] },
+  { id: 'alertas', rotulo: 'Alertas de ausência', hash: '#/hoje?detalhe=alertas', papeis: ['educador', 'profissional', 'coordenacao'] },
   { id: 'pensar', rotulo: 'Pensar junto', hash: '#/pensar', papeis: ['educador', 'profissional', 'coordenacao'] },
   { id: 'painel', rotulo: 'Painel da coordenação', hash: '#/painel', papeis: ['coordenacao'] },
   { id: 'scores', rotulo: 'Scores', hash: '#/painel?aba=scores', papeis: ['coordenacao'] },
@@ -93,7 +93,7 @@ export function validarAcao(id, papel) {
 // de instrução em mensagem de sistema.
 const ROTAS_CONHECIDAS = new Set([
   ...CATALOGO_ACOES.map(a => a.hash.split('?')[0]),
-  '#/entrar', '#/alertas', '#/confirmar', '#/observacao', '#/crianca', '#/parecer',
+  '#/entrar', '#/confirmar', '#/observacao', '#/crianca', '#/parecer',
 ]);
 /** Mesmo conjunto, exportado: é o vocabulário fechado de `tela` no perfil. */
 export const ROTAS_CONHECIDAS_AURORA = ROTAS_CONHECIDAS;

@@ -611,25 +611,25 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
   const { readFileSync } = await import('node:fs');
   const raiz = new URL('../', import.meta.url);
   const ANCORAS = {
-    'public/app.js:464': /rota\(\/\^#\\\/hoje\//,
-    'public/app.js:549': /Revisar e liberar o relato|relato_liberado/,
+    'public/app.js:485': /rota\(\/\^#\\\/hoje\//,
+    'public/app.js:574': /Revisar e liberar o relato|relato_liberado/,
     // Regex ESTREITA de proposito: /recados|#\/recado/ casava em quatro linhas,
     // e a reancorar.mjs nao tinha como decidir qual. Ancora que casa em varios
     // lugares nao ancora nada.
-    'public/app.js:550': /data-href="#\/recado\?turma_id=/,
-    'public/app.js:1055': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:575': /data-href="#\/recado\?turma_id=/,
+    'public/app.js:1127': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:2529': /async function telaScores\(\)/,
-    'public/app.js:2755': /id="pergunta"/,
+    'public/app.js:2605': /async function telaScores\(\)/,
+    'public/app.js:2831': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:4420': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
-    'src/api.js:323': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:449': /'POST \/api\/consentimento'/,
-    'src/api.js:908': /periodosSugeridos\(\)/,
+    'public/app.js:4496': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
+    'src/api.js:334': /erro\(422.*rubrica por ciclo/,
+    'src/api.js:460': /'POST \/api\/consentimento'/,
+    'src/api.js:919': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:112': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
