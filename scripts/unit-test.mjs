@@ -611,13 +611,19 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
   const { readFileSync } = await import('node:fs');
   const raiz = new URL('../', import.meta.url);
   const ANCORAS = {
-    'public/app.js:425': /rota\(\/\^#\\\/hoje\//,
-    'public/app.js:510': /Revisar e liberar o relato|relato_liberado/,
-    'public/app.js:511': /recados|#\/recado/,
-    'public/app.js:1016': /coordenacao.*Consentimentos|Registre abaixo/,
-    'public/app.js:2234': /rota\(\/\^#\\\/scores\//,
-    'public/app.js:2438': /id="pergunta"/,
-    'public/app.js:4076': /location\.hash = '#\/hoje'/,
+    'public/app.js:426': /rota\(\/\^#\\\/hoje\//,
+    'public/app.js:511': /Revisar e liberar o relato|relato_liberado/,
+    // Regex ESTREITA de proposito: /recados|#\/recado/ casava em quatro linhas,
+    // e a reancorar.mjs nao tinha como decidir qual. Ancora que casa em varios
+    // lugares nao ancora nada.
+    'public/app.js:512': /data-href="#\/recado\?turma_id=/,
+    'public/app.js:1017': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:2468': /rota\(\/\^#\\\/scores\//,
+    'public/app.js:2672': /id="pergunta"/,
+    // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
+    // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
+    // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
+    'public/app.js:4310': /location\.hash = '#\/hoje'; navegar\(\);/,
     'src/api.js:323': /erro\(422.*rubrica por ciclo/,
     'src/api.js:449': /'POST \/api\/consentimento'/,
     'src/api.js:904': /periodosSugeridos\(\)/,
@@ -630,6 +636,17 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     'src/relatorio.js:584': /const INTENCOES/,
     'src/seed.js:74': /rubrica_socioemocional/,
   };
+  // A tabela e' um OBJETO, e objeto engole chave repetida sem dizer nada: duas
+  // ancoras no mesmo numero viram uma, e a cobertura cai de 18 para 17 em
+  // silencio. Aconteceu de verdade quando a reancorar.mjs moveu 510 para 511,
+  // que ja' era ancora. Contar as chaves escritas contra as chaves vivas e' a
+  // unica forma de o teste perceber que perdeu uma linha de si mesmo.
+  const fonteDoTeste = readFileSync(new URL('unit-test.mjs', new URL('scripts/', raiz)), 'utf8');
+  const tabela = fonteDoTeste.match(/const ANCORAS = \{([\s\S]*?)\n {2}\};/)?.[1] ?? '';
+  const escritas = (tabela.match(/^\s{4}'[^']+':/gm) ?? []).length;
+  assert.equal(Object.keys(ANCORAS).length, escritas,
+    `a tabela ANCORAS tem ${escritas} linha(s) mas só ${Object.keys(ANCORAS).length} chave(s) vivas — há número repetido`);
+
   const erradas = [];
   for (const [ref, esperado] of Object.entries(ANCORAS)) {
     const [arq, num] = ref.split(':');
@@ -640,9 +657,15 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
 
   // e toda citação que aparece nos docs tem de estar nesta tabela: citação nova
   // sem âncora volta a poder derivar em silêncio.
+  // O HANDOFF fica DE FORA, aqui e na scripts/reancorar.mjs, pelo mesmo motivo:
+  // ele registra numeros do PASSADO ("citava 510; a linha era a 509"). Cobrar
+  // ancora viva de uma citacao historica obrigaria a reescrever o registro de
+  // uma correcao que aconteceu — e ate' hoje isso passava por COINCIDENCIA, com
+  // o numero antigo ainda por acaso sendo ancora.
+  const HISTORICOS = new Set(['docs/HANDOFF.md']);
   const docs = [
     ...(await import('node:fs')).readdirSync(new URL('docs/', raiz)).filter(f => f.endsWith('.md')).map(f => 'docs/' + f),
-  ];
+  ].filter(d => !HISTORICOS.has(d));
   const vistas = new Set();
   for (const d of docs)
     for (const m of readFileSync(new URL(d, raiz), 'utf8').matchAll(/(?:src|public|scripts)\/[a-z/-]+\.(?:js|mjs):\d+/g))

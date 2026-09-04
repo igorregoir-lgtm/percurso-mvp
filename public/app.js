@@ -1,6 +1,7 @@
 // Percurso — aplicacao. Sem framework: DOM + hash routing.
 // A ordem das telas segue a jornada da persona: hoje -> chamada -> ciclo -> turma.
 import { criarFila } from './fila.js';
+import { paraWav16k, iniciarGravacao, podeGravar, juntarBlocos, TETO_ARQUIVO_BYTES, BLOCO_SEGUNDOS } from './audio.js';
 
 const app     = document.getElementById('app');
 const navEl   = document.getElementById('nav');
@@ -1798,7 +1799,10 @@ rota(/^#\/voz/, async () => {
 
   const nativo = !!temReconhecimento();
   const onde = await ondeTranscreve();
-  ctx.voz = { transcricao: '', gravando: false, restante: d.catalogos.voz_segundos, rec: null, timer: null, onde };
+  // As portas longas dependem de o transcritor existir NESTA maquina. A rota
+  // devolve isso; se ela falhar, a tela segue com o que sempre teve.
+  const estadoAudio = await api('/api/audio/status').catch(() => null);
+  ctx.voz = { transcricao: '', gravando: false, restante: d.catalogos.voz_segundos, rec: null, timer: null, onde, longa: null, estadoAudio };
 
   app.innerHTML = `
     <p class="kicker">Folha do dia · turma</p>
@@ -1836,16 +1840,246 @@ rota(/^#\/voz/, async () => {
       <textarea id="ditado" placeholder="Ex.: hoje a gente fez uma roda de conversa sobre saúde, a turma participou bastante e três pediram ajuda."></textarea>
     </div>
 
+    ${blocoPortas(estadoAudio)}
+
     <div class="pilha">
       <button class="btn largo" data-acao="voz-terminei" id="btn-terminei">Terminei</button>
       <button class="btn largo secundario" data-acao="ir" data-href="#/folha">Prefiro escrever</button>
     </div>
-    <p class="rodape">O áudio é apagado assim que o texto é extraído.<br>
-      A transcrição acontece no seu aparelho e não é gravada em lugar nenhum.</p>`;
+    <p class="rodape">O áudio é apagado assim que vira texto, aqui e no computador do Instituto.<br>
+      ${onde === 'aparelho'
+        ? 'A transcrição do microfone acima acontece neste aparelho.'
+        : 'A transcrição do microfone acima é feita pelo serviço do seu navegador.'}
+      O Percurso nunca guarda áudio.</p>`;
 });
+
+// ======================================================================
+// AS TRES PORTAS LONGAS — A' (narrar sem pressa), B (deixar gravando a sala)
+// e C (trazer um audio que ela ja' tem).
+//
+// CAPTURAR NAO E' REGISTRAR. A captura ao vivo acima e' curta e transcrita pelo
+// navegador. Estas tres sao longas e a transcricao acontece no COMPUTADOR DO
+// INSTITUTO (whisper), o que significa que o audio SAI DO APARELHO — e a tela
+// diz isso, no instante do toque, em vez de repetir a promessa que a F0 desfez.
+//
+// AS TRES PORTAS TERMINAM NO MESMO LUGAR: o texto cai no campo de escrever, e
+// "Terminei" segue sendo o unico botao de saida. Porta nova nao pode virar
+// fluxo novo — seria mais tela, exatamente o contrario do que o campo pediu.
+//
+// A ROTA DE TRANSCRICAO NAO USA A FILA OFFLINE, de proposito: a fila reenvia
+// sozinha quando a rede volta, e reenviar dezenas de MB de audio sem a pessoa
+// mandar seria pior que perguntar. Quando a rede cai no meio, o pedaco fica
+// GUARDADO NESTE APARELHO e a tela diz isso, com um botao de tentar de novo.
+// ======================================================================
+const CHAVE_SALA = 'percurso_sala_ligada';
+const salaLigada = () => { try { return localStorage.getItem(CHAVE_SALA) === '1'; } catch { return false; } };
+
+const PORTAS = {
+  A: {
+    titulo: 'Narrar sem pressa',
+    sub: 'Você conta o encontro inteiro, do jeito que sair. Sem contagem regressiva.',
+    quem: 'Só a sua voz. Nenhuma criança é gravada.',
+    acao: 'Começar a narrar',
+  },
+  B: {
+    titulo: 'Deixar gravando o encontro',
+    sub: 'Aperta no começo, larga o celular na mesa e não faz mais nada.',
+    quem: 'A sala inteira, <b>inclusive as crianças</b>. É a única porta em que isso acontece — por isso ela vem desligada.',
+    acao: 'Começar a gravar a sala',
+  },
+  C: {
+    titulo: 'Trazer um áudio que eu já tenho',
+    sub: 'O que você gravou no celular ou mandou no WhatsApp. De hoje ou de três semanas atrás.',
+    quem: 'O que estiver no arquivo. O original continua no seu celular — o Percurso não guarda cópia.',
+    acao: 'Escolher o arquivo',
+  },
+};
+
+/** As portas longas so' aparecem quando ha' de fato como transcrever. Oferecer
+ *  uma porta que devolve 503 seria pior que nao ter porta. */
+const portasDisponiveis = (st) => !!(st?.habilitada && st?.modelo_presente);
+
+function blocoPortas(st) {
+  if (!portasDisponiveis(st)) return '';
+  const podeMic = podeGravar();
+  const botao = (k) => {
+    if ((k === 'A' || k === 'B') && !podeMic) return '';
+    const desligada = k === 'B' && !salaLigada();
+    return `<button class="btn largo secundario" data-acao="porta" data-porta="${k}">${esc(PORTAS[k].titulo)}${desligada ? ' <span class="selo pend">desligada</span>' : ''}</button>`;
+  };
+  return `
+    <div class="cartao" style="margin-top:10px" id="portas">
+      <div class="lbl">Se falar aqui não der</div>
+      <p class="sub" style="margin-bottom:10px">Estas três também terminam no mesmo registro — o texto cai no campo acima e você confere antes de guardar.</p>
+      <div class="pilha" id="portas-botoes">${botao('A')}${botao('C')}${botao('B')}</div>
+      <div id="porta-painel"></div>
+      <input type="file" id="arq-audio" data-acao="arquivo-audio" accept="audio/*" hidden>
+    </div>`;
+}
+
+/** O painel que abre NO TOQUE. As tres garantias moram aqui, e nao no rodape:
+ *  garantia que a pessoa le' depois de decidir nao e' garantia. */
+function painelDaPorta(k) {
+  const P = PORTAS[k];
+  const precisaLigar = k === 'B' && !salaLigada();
+  return `
+    <div class="aviso" style="margin-top:12px">
+      <h3>${esc(P.titulo)}</h3>
+      <p class="sub">${esc(P.sub)}</p>
+      <p style="margin-top:8px"><b>Quem é gravado:</b> ${P.quem}</p>
+      <p class="linha">1. O áudio vai <b>só para o computador do Instituto</b>, pela rede daqui. Não sobe para a internet.</p>
+      <p>2. É <b>apagado assim que vira texto</b> — sempre, inclusive quando a transcrição falha no meio.</p>
+      <p>3. Nome falado <b>vira código</b> antes de qualquer gravação, e nada é guardado sem o seu ok.</p>
+      <div class="pilha" style="margin-top:12px">
+        ${precisaLigar
+          ? `<button class="btn largo" data-acao="porta-ligar-sala">Entendi — ligar a gravação da sala neste aparelho</button>`
+          : `<button class="btn largo" data-acao="${k === 'C' ? 'porta-arquivo' : 'porta-gravar'}" data-porta="${k}">${esc(P.acao)}</button>`}
+        <button class="btn largo secundario" data-acao="porta-fechar">Agora não</button>
+      </div>
+    </div>`;
+}
+
+/** Repinta so' a lista de botoes — o selo "desligada" da porta B sai daqui
+ *  assim que ela e' ligada, sem re-renderizar a tela (o que apagaria o texto
+ *  que as portas ja' puseram no campo de escrever). */
+function pintarBotoesDasPortas() {
+  const el = document.getElementById('portas-botoes');
+  if (!el || !ctx.voz) return;
+  el.querySelectorAll('[data-porta="B"] .selo').forEach(x => x.remove());
+}
+
+function pintarPortas() {
+  const el = document.getElementById('porta-painel');
+  if (!el) return;
+  const L = ctx.voz?.longa;
+  if (!L?.porta) { el.innerHTML = ''; return; }
+  if (!L.gravando && !L.ocupado && !L.feitos && !L.pendentes.length) { el.innerHTML = painelDaPorta(L.porta); return; }
+
+  const mm = String(Math.floor(L.segundos / 60)); const ss = String(L.segundos % 60).padStart(2, '0');
+  const linhas = [];
+  if (L.gravando) linhas.push(`<p><b>Gravando ${mm}:${ss}.</b> Pode guardar o celular. O texto vai aparecendo no campo acima.</p>`);
+  if (L.ocupado) linhas.push(`<p>Transformando em texto no computador do Instituto…</p>`);
+  if (L.feitos) linhas.push(`<p class="sub">${L.feitos} pedaço(s) já viraram texto.</p>`);
+  if (L.pendentes.length) linhas.push(
+    `<p><b>A rede caiu no meio.</b> ${L.pendentes.length} pedaço(s) estão guardados neste aparelho e ainda não viraram texto.
+     Não saia desta tela sem tentar de novo — se sair, eles se perdem.</p>`);
+  if (L.erro) linhas.push(`<p>${esc(L.erro)}</p>`);
+
+  el.innerHTML = `
+    <div class="aviso ${L.pendentes.length || L.erro ? '' : 'calmo'}" style="margin-top:12px">
+      <h3>${esc(PORTAS[L.porta].titulo)}</h3>
+      ${linhas.join('')}
+      <div class="pilha" style="margin-top:12px">
+        ${L.gravando ? `<button class="btn largo" data-acao="porta-parar">Pronto, pode transformar em texto</button>` : ''}
+        ${L.pendentes.length && !L.ocupado ? `<button class="btn largo" data-acao="porta-retentar">Tentar de novo</button>` : ''}
+        ${!L.gravando && !L.ocupado
+          ? `<button class="btn largo secundario" data-acao="porta-fechar">${L.pendentes.length ? 'Fechar e descartar o que não virou texto' : 'Fechar'}</button>`
+          : ''}
+      </div>
+    </div>`;
+}
+
+function abrirPorta(k) {
+  ctx.voz.longa = { porta: k, gravando: false, ocupado: false, gravador: null, segundos: 0, fila: [], pendentes: [], feitos: 0, erro: '' };
+  pintarPortas();
+}
+
+/** Junta o texto de um pedaco ao campo de escrever — a saida e' UMA so'. */
+function anexarTexto(t) {
+  const campo = document.getElementById('ditado');
+  if (!campo || !t) return;
+  campo.value = juntarBlocos([campo.value, t]);
+}
+
+async function bombearBlocos() {
+  const L = ctx.voz?.longa;
+  if (!L || L.ocupado) return;
+  L.ocupado = true;
+  try {
+    while (L.fila.length) {
+      const blob = L.fila[0];
+      L.erro = '';
+      pintarPortas();
+      try {
+        const wav = await paraWav16k(blob);
+        // 15 min de teto por pedaco de 5: whisper na maquina do Instituto ainda
+        // nao foi medido, e um teto curto demais mataria a porta em silencio.
+        const r = await api('/api/transcrever', {
+          method: 'POST', body: wav, headers: { 'Content-Type': 'audio/wav' }, timeoutMs: 15 * 60 * 1000,
+        });
+        L.fila.shift();
+        L.feitos++;
+        anexarTexto(r.texto);
+      } catch (e) {
+        L.fila.shift();
+        if (e.rede || e.timeout) {
+          // Guardado NESTE APARELHO. Nao vai para a fila offline de proposito.
+          L.pendentes.push(blob);
+          L.erro = '';
+        } else {
+          L.erro = e.causa === 'sem_decodificar'
+            ? 'Este navegador não conseguiu ler esse áudio. Dá para tentar outro arquivo — ou escrever.'
+            : (e.message || 'A transcrição falhou. O registro por escrito continua completo.');
+        }
+      }
+    }
+  } finally {
+    L.ocupado = false;
+    pintarPortas();
+  }
+}
+
+function receberBloco(blob) {
+  const L = ctx.voz?.longa;
+  if (!L) return;
+  L.fila.push(blob);
+  bombearBlocos();
+}
+
+async function iniciarPortaLonga(k) {
+  const L = ctx.voz.longa;
+  try {
+    L.gravador = await iniciarGravacao({
+      aoBloco: (blob) => receberBloco(blob),
+      aoSegundo: (n) => { L.segundos = n; if (n % 5 === 0 || n < 3) pintarPortas(); },
+      aoErro: () => { L.gravando = false; L.erro = 'A gravação parou sozinha. O que já virou texto está no campo acima.'; pintarPortas(); },
+      blocoSegundos: BLOCO_SEGUNDOS,
+    });
+    L.gravando = true;
+    pintarPortas();
+  } catch {
+    L.erro = 'O navegador bloqueou o microfone. Dá para escrever — o resto é igual.';
+    pintarPortas();
+  }
+}
+
+function pararPortaLonga() {
+  const L = ctx.voz?.longa;
+  if (!L?.gravador) return;
+  L.gravando = false;
+  try { L.gravador.parar(); } catch {}
+  L.gravador = null;
+  pintarPortas();
+}
+
+async function receberArquivo(arquivo) {
+  const L = ctx.voz?.longa;
+  if (!L || !arquivo) return;
+  if (arquivo.size > TETO_ARQUIVO_BYTES) {
+    L.erro = `Esse arquivo tem ${Math.round(arquivo.size / 1024 / 1024)} MB e o limite é ${Math.round(TETO_ARQUIVO_BYTES / 1024 / 1024)} MB. Dá para mandar em pedaços.`;
+    pintarPortas();
+    return;
+  }
+  receberBloco(arquivo);
+}
 
 function pararVoz() {
   const v = ctx.voz; if (!v) return;
+  // Sair da tela encerra TAMBEM a gravacao longa: microfone aceso depois de a
+  // pessoa navegar seria a pior falha possivel numa tela que promete o
+  // contrario. O que ja' virou texto ficou no campo; o que nao virou, nao vira.
+  try { v.longa?.gravador?.cancelar(); } catch {}
+  if (v.longa) { v.longa.gravando = false; v.longa.gravador = null; }
   clearInterval(v.timer); v.timer = null;
   try { v.rec?.stop(); } catch {}
   v.gravando = false;
@@ -4142,6 +4376,29 @@ document.addEventListener('click', comErro(async (ev) => {
     return;
   }
 
+  // ---- as tres portas longas (F1) ----
+  if (a === 'porta')        { if (!ctx.voz) return; pararVoz(); abrirPorta(alvo.dataset.porta); return; }
+  if (a === 'porta-fechar') { pararPortaLonga(); if (ctx.voz) ctx.voz.longa = null; pintarPortas(); return; }
+  if (a === 'porta-ligar-sala') {
+    // A porta B liga por ESCOLHA EXPLICITA, e a escolha vale para este
+    // aparelho. O campo chamou gravar crianca de "perigoso" — ligar por padrao
+    // seria decidir isso no lugar de quem responde pela sala.
+    try { localStorage.setItem(CHAVE_SALA, '1'); } catch {}
+    pintarBotoesDasPortas();
+    pintarPortas();
+    return;
+  }
+  if (a === 'porta-gravar')  { await iniciarPortaLonga(alvo.dataset.porta); return; }
+  if (a === 'porta-parar')   { pararPortaLonga(); return; }
+  if (a === 'porta-arquivo') { document.getElementById('arq-audio')?.click(); return; }
+  if (a === 'porta-retentar') {
+    const L = ctx.voz?.longa;
+    if (!L) return;
+    L.fila.push(...L.pendentes.splice(0));
+    bombearBlocos();
+    return;
+  }
+
   // ---- captura por voz (F3) ----
   if (a === 'voz-toggle') {
     const v = ctx.voz;
@@ -4440,6 +4697,11 @@ document.addEventListener('change', comErro(async (ev) => {
   const a = ev.target.dataset.acao;
   if (a === 'trocar-data')     { location.hash = `#/chamada?data=${ev.target.value}`; navegar(); }
   if (a === 'trocar-programa') { location.hash = `#/sintese${ev.target.value ? `?programa_id=${ev.target.value}` : ''}`; navegar(); }
+  if (a === 'arquivo-audio') {
+    const arq = ev.target.files?.[0];
+    ev.target.value = '';   // escolher o MESMO arquivo de novo tem que disparar
+    await receberArquivo(arq);
+  }
 }));
 
 let buscaTimer;

@@ -10,8 +10,11 @@
 // localhost/127.0.0.1 e no deploy HTTPS (Render). Pelo IP da rede local
 // (http://IP:3000) o navegador NÃO registra o SW: a página funciona normal,
 // sem offline/instalação. Ver README, seção "PWA e acesso pelo celular".
-const VERSAO = 'percurso-v2';
-const SHELL = ['/', '/index.html', '/styles.css', '/app.js', '/fila.js', '/manifest.json',
+// A VERSAO MUDA quando o SHELL muda. `audio.js` entrou aqui por necessidade, nao
+// por completude: `app.js` o IMPORTA no topo, e um modulo que falta derruba o
+// arquivo inteiro — o app nao abriria offline, em vez de abrir sem as portas.
+const VERSAO = 'percurso-v3';
+const SHELL = ['/', '/index.html', '/styles.css', '/app.js', '/fila.js', '/audio.js', '/manifest.json',
                '/icone.svg', '/icone-192.png', '/icone-512.png'];
 
 self.addEventListener('install', (e) => {

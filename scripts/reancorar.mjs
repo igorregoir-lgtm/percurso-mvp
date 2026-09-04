@@ -54,21 +54,59 @@ const docs = [];
   }
 })(join(RAIZ, 'docs'));
 docs.push(join(RAIZ, 'README.md'));
+// O HANDOFF fica DE FORA: ele registra numeros de linha do PASSADO ("citava 511;
+// a linha era a 509"). Renumerar la' nao corrigiria uma citacao — apagaria o
+// registro de uma correcao que aconteceu.
+const HISTORICOS = [join(RAIZ, 'docs', 'HANDOFF.md')];
 
-console.log(`\n  ${ok.length} âncora(s) no lugar · ${mover.length} para mover · ${ambiguas.length} ambígua(s)\n`);
+// COLISAO. Mover 510 -> 511 quando ja' existe uma ancora em 511 produz CHAVE
+// DUPLICADA no objeto literal do teste — e JS mantem so' a ultima, em silencio.
+// A tabela encolheria de 18 para 17 sem nenhum sinal, que e' exatamente a
+// especie de falha que estas ancoras existem para impedir. Aconteceu de fato
+// no estagio 2 da F1: a ferramenta escreveu a colisao antes desta guarda.
+const ocupadas = new Set(entradas.map(e => `${e.arquivo}:${e.linha}`));
+const colisoes = [];
+for (let i = mover.length - 1; i >= 0; i--) {
+  const alvo = `${mover[i].arquivo}:${mover[i].novo}`;
+  const origem = `${mover[i].arquivo}:${mover[i].linha}`;
+  // Nao e' colisao quando a ancora que ocupa o numero e' justamente uma que sai.
+  const saiTambem = mover.some(o => o !== mover[i] && `${o.arquivo}:${o.linha}` === alvo);
+  if (ocupadas.has(alvo) && alvo !== origem && !saiTambem) colisoes.push({ ...mover[i], alvo });
+}
+for (const c of colisoes) mover.splice(mover.findIndex(m => m === c), 1);
+
+console.log(`\n  ${ok.length} âncora(s) no lugar · ${mover.length} para mover · ${ambiguas.length} ambígua(s)${colisoes.length ? ` · ${colisoes.length} em colisão` : ''}\n`);
+for (const c of colisoes) console.log(`  COLISÃO   ${c.arquivo}:${c.linha} -> :${c.novo}, mas :${c.novo} já é âncora — decida à mão`);
 for (const m of mover) console.log(`  mover     ${m.arquivo}:${m.linha} -> :${m.novo}`);
 for (const a of ambiguas) console.log(`  AMBÍGUA   ${a.arquivo}:${a.linha} casa em ${a.casam.join(', ')} — decida à mão`);
 
-if (!ESCREVER) { console.log(mover.length ? '\n  Nada foi escrito. Rode com --escrever.\n' : '\n'); process.exit(ambiguas.length ? 1 : 0); }
+if (!ESCREVER) { console.log(mover.length ? '\n  Nada foi escrito. Rode com --escrever.\n' : '\n'); process.exit(ambiguas.length || colisoes.length ? 1 : 0); }
 
-let t = teste, tocados = 0;
-for (const m of mover) t = t.replace(`'${m.arquivo}:${m.linha}':`, `'${m.arquivo}:${m.novo}':`);
+const marca = (i) => `\u0000ANCORA${i}\u0000`;
+const trocar = (texto, sufixo) => {
+  let x = texto;
+  // INTERVALO PRIMEIRO. `app.js:2234-2238` descreve um bloco; mover so' o inicio
+  // deixa `2468-2238`, que anda para tras. O fim leva o MESMO deslocamento — e'
+  // um bloco contiguo, entao a distancia entre as pontas nao muda.
+  if (!sufixo) {
+    mover.forEach((m, i) => {
+      x = x.replace(new RegExp(`${m.arquivo.replace(/[.\\/]/g, '\\$&')}:${m.linha}-(\\d+)`, 'g'),
+        (_, fim) => `${marca(i)}-${Number(fim) + (m.novo - m.linha)}`);
+    });
+  }
+  mover.forEach((m, i) => { x = x.split(`${m.arquivo}:${m.linha}${sufixo}`).join(marca(i) + sufixo); });
+  mover.forEach((m, i) => { x = x.split(marca(i)).join(`${m.arquivo}:${m.novo}`); });
+  return x;
+};
+
+let tocados = 0;
+const t = trocar(teste, "':");
 if (t !== teste) { writeFileSync(TESTE, t); tocados++; }
 for (const d of docs) {
+  if (HISTORICOS.includes(d)) continue;
   const antes = readFileSync(d, 'utf8');
-  let depois = antes;
-  for (const m of mover) depois = depois.split(`${m.arquivo}:${m.linha}`).join(`${m.arquivo}:${m.novo}`);
+  const depois = trocar(antes, '');
   if (depois !== antes) { writeFileSync(d, depois); tocados++; }
 }
 console.log(`\n  ${tocados} arquivo(s) atualizado(s).${ambiguas.length ? ' As ambíguas continuam pendentes.' : ''}\n`);
-process.exit(ambiguas.length ? 1 : 0);
+process.exit(ambiguas.length || colisoes.length ? 1 : 0);
