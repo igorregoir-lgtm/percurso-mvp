@@ -77,7 +77,17 @@ Elas são **contrato**: quando a F2 e a F3 forem implementadas, é isto que o `p
 | Último botão do cartão | **não passa sob o girassol** | largura reduzida a 289 px, deixando 7 px de folga lateral |
 
 **Conferido por script sobre as 16 telas: 0 colisões entre elementos clicáveis e 0 alvos abaixo de
-44 px.** A checagem ignora, de propósito, duas coisas: as abas entre si, que são vizinhas dentro da
+44 px.**
+
+> **A conferência inversa — a que faltava — foi feita em 04/09/2026, e o código estava fora do
+> contrato.** O girassol tinha 54 px onde o desenho pede 65; a barra, 63 onde pede 88; e não havia
+> regra nenhuma impedindo um botão de descansar sob o girassol. As três foram corrigidas, e **o
+> contrato virou gate** (`unit-test.mjs`): uma verificação que depende de alguém lembrar de fazer
+> não é verificação. O que o código faz diferente do Figma, de propósito: no desenho o dono
+> estreitou o último botão do cartão para 289 px; numa página que **rola**, estreitar um botão não
+> resolve — qualquer botão passa sob o FAB durante a rolagem. O equivalente honesto é reservar a
+> faixa no rodapé (`main{padding-bottom:181px}`), e aí nada fica coberto em repouso. Medido nas oito
+> telas, com a página rolada até o fim: 0 botões cobertos. A checagem ignora, de propósito, duas coisas: as abas entre si, que são vizinhas dentro da
 barra, e o que está sob a folha do painel da Aurora, onde sobreposição É o desenho (é modal).
 
 Duas armadilhas que a conferência revelou e que valem para o código:

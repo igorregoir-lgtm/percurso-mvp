@@ -1170,6 +1170,54 @@ test('campo livre do GRUPO: nome de criança é barrado, com fronteira de palavr
   assert.deepEqual(RL.nomesCitados('o Diego e a Carla se estranharam', nomes).sort(), ['Carla', 'Diego']);
 });
 
+test('as medidas de toque do protótipo v3 estão no CSS (contrato do F-1)', async () => {
+  // POR QUE ISTO EXISTE. O protótipo v3 fixou cinco medidas como CONTRATO
+  // (`ARTEFATOS-VISUAIS.md`, 03/09/2026): "quando a F2 e a F3 forem
+  // implementadas, é isto que o public/app.js e o public/styles.css precisam
+  // entregar". A F2 e a F3 foram implementadas em 04/09 — e o contrato NÃO foi
+  // honrado: o girassol continuou com 54 px onde o desenho pede 65, e a barra
+  // com 63 onde pede 88.
+  //
+  // Isso derivou porque nada conferia. O plano previa a verificação ("o
+  // protótipo é conferido contra o produto no fim"), e uma verificação que
+  // depende de alguém lembrar de fazer não é verificação. Aqui ela roda sempre.
+  //
+  // As duas medidas são ACOPLADAS: o `bottom` do girassol é a altura da barra
+  // mais a folga. Mexer numa sem a outra reintroduz sobreposição.
+  const { readFileSync } = await import('node:fs');
+  const css = readFileSync(new URL('../public/styles.css', import.meta.url), 'utf8');
+
+  const bloco = (seletor) => {
+    const i = css.indexOf(seletor + '{');
+    assert.ok(i >= 0, `seletor ${seletor} sumiu do CSS`);
+    return css.slice(i, css.indexOf('}', i));
+  };
+
+  const fab = bloco('.aurora-fab');
+  assert.match(fab, /width:65px/, 'o girassol tem 65 px no protótipo v3');
+  assert.match(fab, /height:65px/, 'o girassol tem 65 px no protótipo v3');
+
+  const nav = bloco('nav.barra-nav');
+  const padCima = Number(nav.match(/padding:(\d+)px/)?.[1]);
+  const padBaixo = Number(nav.match(/calc\((\d+)px \+ env\(safe-area-inset-bottom\)\)/)?.[1]);
+  const item = Number(bloco('nav.barra-nav a').match(/min-height:(\d+)px/)?.[1]);
+  assert.equal(item, 50, 'o item da barra tem 50 px — o alvo real de dedo');
+  const alturaBarra = padCima + item + padBaixo + 1;   // +1 da borda de cima
+  assert.equal(alturaBarra, 88, `a barra tem de somar 88 px, somou ${alturaBarra}`);
+
+  // A folga: `bottom` do girassol menos a altura da barra.
+  const bottomFab = Number(fab.match(/bottom:calc\((\d+)px \+ env\(safe-area-inset-bottom\)\)/)?.[1]);
+  assert.equal(bottomFab - alturaBarra, 12, 'o girassol fica 12 px acima da barra');
+
+  // E o respiro do rodapé, que é o que garante que NENHUM botão descansa sob o
+  // girassol quando a página chega ao fim. No Figma isso foi resolvido
+  // estreitando o último botão; numa página que ROLA, estreitar um botão não
+  // resolve — reservar a faixa resolve.
+  const respiro = Number(bloco('main').match(/padding:\d+px \d+px (\d+)px/)?.[1]);
+  assert.ok(respiro >= alturaBarra + 65 + 12,
+    `o respiro do rodapé (${respiro}px) tem de caber barra + girassol + folga (${alturaBarra + 65 + 12}px)`);
+});
+
 test('nenhuma rota do front é engolida por outra (despacho é o PRIMEIRO que casa)', async () => {
   // DEFEITO REAL, achado em 04/09/2026 e presente desde a v2: `/^#\/relato/`
   // casa em `#/relatorio`, e `navegar()` despacha no PRIMEIRO que casa. A tela
