@@ -1649,5 +1649,93 @@ secao('28 · Parecer a profissional parceiro — por código, sob consentimento,
     (await GET('rita', '/api/consentimentos')).corpo.governanca.some(g => g.campo === 'parecer_profissional' && g.exige_consentimento === 1));
 }
 
+
+// ---------------------------------------- 29. as seis perguntas de 04/09/2026
+secao('29 · Turma, matrícula, prova em vídeo e boletim do responsável');
+{
+  // --- quem cadastra as turmas: a coordenação, e mais ninguém --------------
+  const nova = await POST('rita', '/api/turmas',
+    { nome: 'Reforço · Manhã (smoke)', programa_id: 1, turno: 'semana', educador_id: 1 });
+  T('a coordenação cria turma', nova.status === 200 && !!nova.corpo.turma.id);
+  T('a professora NÃO cria turma (403)',
+    (await POST('maria', '/api/turmas', { nome: 'X', programa_id: 1, turno: 'semana' })).status === 403);
+  T('a diretoria NÃO cria turma (403)',
+    (await POST('solange', '/api/turmas', { nome: 'Y', programa_id: 1, turno: 'semana' })).status === 403);
+  T('turno inventado é recusado (422)',
+    (await POST('rita', '/api/turmas', { nome: 'Z', programa_id: 1, turno: 'domingo' })).status === 422);
+
+  const cad = (await GET('rita', '/api/cadastro')).corpo;
+  T('o catálogo de turma inclui a Vivência, que está fora da MEDIÇÃO mas dentro do Instituto',
+    cad.programas_de_turma.some(p => !p.no_escopo)
+    && !cad.programas.some(p => cad.programas_de_turma.find(q => q.id === p.id && !q.no_escopo)));
+  T('a lista de turmas diz quantas crianças cada uma tem', cad.turmas.every(t => typeof t.criancas === 'number'));
+
+  const edit = await POST('rita', '/api/turmas/editar',
+    { id: nova.corpo.turma.id, nome: 'Reforço · Manhã (smoke)', programa_id: 1, turno: 'sabado', educador_id: null });
+  T('editar turma troca turno e deixa sem professora', edit.status === 200 && edit.corpo.turma.turno === 'sabado');
+
+  // --- matrícula da criança em cada turma ---------------------------------
+  const alvoM = (await GET('rita', '/api/criancas')).corpo.criancas[0];
+  const fichaM = (await GET('rita', `/api/crianca?id=${alvoM.id}`)).corpo;
+  T('a ficha entrega à coordenação as turmas e os programas para matricular', !!fichaM.turmas && !!fichaM.programas);
+  const mAtiva = fichaM.matriculas.find(m => m.status === 'ativa');
+  const outra = fichaM.turmas.find(t => t.programa_id === mAtiva.programa_id && t.id !== mAtiva.turma_id);
+  const troca = await POST('rita', '/api/matricula/turma', { matricula_id: mAtiva.id, turma_id: outra.id });
+  T('a coordenação troca a turma de uma matrícula ativa', troca.status === 200 && troca.corpo.turma.id === outra.id);
+  T('o aviso diz a consequência: quem passa a ler a ficha', /passa a ser|sem professora/.test(troca.corpo.aviso));
+  T('a professora NÃO troca a turma de ninguém (403)',
+    (await POST('maria', '/api/matricula/turma', { matricula_id: mAtiva.id, turma_id: outra.id })).status === 403);
+  await POST('rita', '/api/matricula/turma', { matricula_id: mAtiva.id, turma_id: mAtiva.turma_id });
+
+  // --- a prova do consentimento em vídeo ----------------------------------
+  const video = Buffer.alloc(4096, 3);
+  const q = new URLSearchParams({ crianca_id: String(alvoM.id), campo: 'rubrica_socioemocional',
+    mime: 'video/mp4', duracao: '30', responsavel: 'Responsável do smoke' });
+  const subir = await fetch(`${BASE}/api/consentimento/evidencia?${q}`, {
+    method: 'POST', headers: { Cookie: cookies.rita, 'Content-Type': 'video/mp4' }, body: video });
+  const subiu = await subir.json();
+  T('a coordenação guarda o vídeo do responsável', subir.status === 200 && subiu.bytes === 4096);
+  T('a linha do vídeo NÃO carrega o nome do arquivo no disco', subiu.arquivo === undefined);
+  const semAcesso = await fetch(`${BASE}/api/consentimento/evidencia?${q}`, {
+    method: 'POST', headers: { Cookie: cookies.maria, 'Content-Type': 'video/mp4' }, body: video });
+  T('a professora NÃO grava prova de consentimento (403)', semAcesso.status === 403);
+  const baixar = await fetch(`${BASE}/api/consentimento/video?id=${subiu.id}`, { headers: { Cookie: cookies.rita } });
+  T('o vídeo volta pelos bytes, com no-store e sem virar estático',
+    baixar.status === 200 && baixar.headers.get('content-type') === 'video/mp4'
+    && /no-store/.test(baixar.headers.get('cache-control') || ''));
+  T('a professora NÃO assiste ao vídeo (403)',
+    (await fetch(`${BASE}/api/consentimento/video?id=${subiu.id}`, { headers: { Cookie: cookies.maria } })).status === 403);
+  T('ler a prova deixa rastro, como toda leitura individual',
+    (await GET('rita', `/api/acessos?crianca_id=${alvoM.id}`)).corpo.acessos.some(a => a.recurso === 'consentimento_video'));
+  T('apagar a prova exige motivo (422)',
+    (await DELETE('rita', '/api/consentimento/evidencia', { id: subiu.id })).status === 422);
+  T('com motivo, a prova é apagada',
+    (await DELETE('rita', '/api/consentimento/evidencia', { id: subiu.id, motivo: 'pedido do responsável' })).status === 200);
+  T('o painel de consentimentos separa quem tem prova de quem só tem palavra',
+    typeof (await GET('rita', '/api/consentimentos')).corpo.com_prova === 'number');
+
+  // --- o boletim do responsável -------------------------------------------
+  await POST('rita', '/api/crianca/responsavel',
+    { crianca_id: alvoM.id, responsavel: 'Mãe do smoke', contato: '(11) 98888-7777' });
+  T('telefone sem DDD é recusado (422)',
+    (await POST('rita', '/api/crianca/responsavel', { crianca_id: alvoM.id, responsavel: 'X', contato: '999' })).status === 422);
+  const bol = (await GET('rita', `/api/boletim?crianca_id=${alvoM.id}`)).corpo;
+  T('o boletim traz o link de WhatsApp do responsável, não do grupo',
+    bol.whatsapp_url.startsWith('https://wa.me/5511988887777?text='));
+  T('o boletim NÃO leva conteúdo clínico nem detalhe de alerta',
+    !/Faltou nos|laudo|terapia|abuso/i.test(bol.texto));
+  T('o boletim NÃO leva o nível 1–4 da rubrica', !/\b[1-4]\/4\b/.test(bol.texto));
+  T('o boletim diz o que ficou de fora', Array.isArray(bol.fora) && bol.fora.length > 0);
+  T('a diretoria NÃO abre o boletim de ninguém (403)',
+    (await GET('solange', `/api/boletim?crianca_id=${alvoM.id}`)).status === 403);
+  T('ler o boletim deixa rastro',
+    (await GET('rita', `/api/acessos?crianca_id=${alvoM.id}`)).corpo.acessos.some(a => a.recurso === 'boletim'));
+
+  // --- o compartilhamento do sistema, sem service worker ------------------
+  const comp = await fetch(`${BASE}/compartilhar`, { method: 'POST', redirect: 'manual' });
+  T('compartilhar sem service worker leva à porta de importar, não a um 404',
+    comp.status === 303 && /#\/registrar\?porta=C/.test(comp.headers.get('location') || ''));
+}
+
 console.log(`\n\x1b[1m${ok} passaram · ${falhas} falharam\x1b[0m\n`);
 process.exit(falhas ? 1 : 0);

@@ -26,6 +26,8 @@ import * as REL from './relato.js';
 import * as REC from './recado.js';
 import * as TRANSC from './transcricao.js';
 import * as PAR from './parecer.js';
+import * as EVI from './evidencia.js';
+import * as BOL from './boletim.js';
 import { conversar, AI_ENABLED } from './ai-client.js';
 const { nomesParaAnonimizar } = C;
 
@@ -433,8 +435,14 @@ export const rotas = {
     const c = get(`SELECT id, codigo, nome FROM crianca WHERE id = ?`, criancaId);
     if (!c) throw D.erro(404, 'Criança não encontrada.');
     exigeAcessoCrianca(req, criancaId, 'observacao');
+    // A turma diz se ha' rubrica individual. Na Vivencia nao ha' (decisao 31) —
+    // e a ficha precisa saber disso para nao oferecer um registro que o POST
+    // teria de recusar depois. Botao que leva a lugar nenhum e' pior que
+    // ausencia de botao: parece defeito do produto, e e'.
+    const turmaId = turmaDaCrianca(criancaId);
     return {
       ciclo, crianca: c,
+      na_rubrica: turmaId ? D.turmaNaRubrica(turmaId) : false,
       elegibilidade: D.elegibilidade(criancaId, ciclo.id),
       observacao: D.observacaoDe(ciclo.id, criancaId),
       campo_livre: D.consentimentoDe(criancaId, 'campo_livre'),
@@ -521,6 +529,13 @@ export const rotas = {
       };
     });
     ficha.legenda_planilha = PL.LEGENDA_PLANILHA;
+    // A coordenacao mexe em matricula DAQUI — e para isso precisa da lista de
+    // turmas e programas. Vai so' para ela: quem nao pode mexer nao carrega o
+    // catalogo do Instituto junto com a ficha.
+    if (usuarioDa(req)?.papel === 'coordenacao') {
+      ficha.turmas = D.turmasDetalhadas();
+      ficha.programas = all(`SELECT id, nome, no_escopo FROM programa ORDER BY id`);
+    }
     return ficha;
   },
 
@@ -618,6 +633,53 @@ export const rotas = {
   },
   'GET /api/safras': (req) => { exigeCoordenacao(req); return D.safras(); },
   'GET /api/consentimentos': (req) => { exigeCoordenacao(req); return D.painelConsentimentos(); },
+
+  // ---- Boletim da crianca para o responsavel (decisao 42) ----------------
+  // Contraparte do recado da turma, e o oposto dele no destinatario: aqui vai
+  // UMA crianca para UMA pessoa — quem responde por ela. Nao persiste; e'
+  // gerado do que ja' esta registrado, como o recado.
+  'GET /api/boletim': (req, _b, q) => {
+    const id = num(q.get('crianca_id'), 'crianca_id');
+    exigeAcessoCrianca(req, id, 'boletim');
+    return BOL.boletimDaCrianca(id);
+  },
+
+  // ---- Prova do consentimento em video (decisao 41) ----------------------
+  // O corpo e' BINARIO (ver server.js): base64 em JSON inflaria 33% um arquivo
+  // de dezenas de MB, e o teto de 1 MB do lerCorpo existe para recusar isso.
+  'POST /api/consentimento/evidencia': (req, corpo, q) => {
+    const u = exigeCoordenacao(req);
+    const criancaId = num(q.get('crianca_id'), 'crianca_id');
+    return EVI.guardar(corpo, {
+      criancaId, campo: q.get('campo') || '',
+      mime: q.get('mime') || req.headers['content-type'] || '',
+      duracaoS: q.get('duracao') ? Number(q.get('duracao')) : null,
+      responsavel: q.get('responsavel') || '',
+      registradoPor: u.id,
+    });
+  },
+
+  'GET /api/consentimento/evidencias': (req, _b, q) => {
+    exigeCoordenacao(req);
+    const id = num(q.get('crianca_id'), 'crianca_id');
+    exigeAcessoCrianca(req, id, 'consentimento_video');
+    return { evidencias: EVI.daCrianca(id) };
+  },
+
+  // Devolve os BYTES do video. Passa pelo mesmo portao de acesso individual —
+  // e por isso fica registrado quem assistiu, e quando.
+  'GET /api/consentimento/video': (req, _b, q) => {
+    exigeCoordenacao(req);
+    const linha = EVI.porId(num(q.get('id'), 'id'));
+    exigeAcessoCrianca(req, linha.crianca_id, 'consentimento_video');
+    const { buffer, mime } = EVI.bytesDe(linha.id);
+    return { _arquivo: buffer, _mime: mime };
+  },
+
+  'DELETE /api/consentimento/evidencia': (req, body) => {
+    exigeCoordenacao(req);
+    return EVI.apagar(num(body.id, 'id'), { motivo: body.motivo });
+  },
 
   'POST /api/consentimento': (req, body) => {
     exigeCoordenacao(req);
@@ -1210,10 +1272,14 @@ export const rotas = {
       equipe: D.listarEquipe(),
       papeis: D.PAPEIS,
       programas: all(`SELECT id, nome, faixa, cadencia FROM programa WHERE no_escopo = 1 ORDER BY id`),
-      turmas: all(
-        `SELECT t.id, t.nome, t.turno, t.programa_id, p.nome AS programa, e.nome AS educador
-           FROM turma t JOIN programa p ON p.id = t.programa_id
-           LEFT JOIN educador e ON e.id = t.educador_id ORDER BY t.id`),
+      // A lista de TURMA e' outra, e de proposito: a Vivencia terapeutica esta'
+      // fora do escopo de MEDICAO (nao entra na cobertura, nao tem rubrica
+      // individual) — mas ela existe, tem turma, chamada e recado, e e' onde a
+      // psicologa trabalha. Impedir de criar turma dela seria confundir "fora da
+      // medicao" com "fora do Instituto".
+      programas_de_turma: all(`SELECT id, nome, faixa, cadencia, no_escopo FROM programa ORDER BY id`),
+      turmas: D.turmasDetalhadas(),
+      turnos: D.TURNOS,
       proximo_codigo: D.proximoCodigoCrianca(),
     };
   },
@@ -1231,10 +1297,63 @@ export const rotas = {
     exigeCoordenacao(req);
     return D.criarCrianca({
       nome: body.nome, nascimento: body.nascimento, responsavel: body.responsavel,
+      contato: body.contato ?? null,
       programaId: num(body.programa_id, 'programa_id'),
       turmaId: body.turma_id ? num(body.turma_id, 'turma_id') : null,
       entrada: body.entrada || null,
     });
+  },
+
+  // ---- Turma — o cadastro que faltava (decisao 39) -----------------------
+  // A pergunta do campo foi "quem cadastra as turmas?" e a resposta, ate' aqui,
+  // era "ninguem: vem da seed". Coordenacao, pelo mesmo motivo do resto do
+  // bloco — turma e' o que decide quem le a ficha de quem.
+  'POST /api/turmas': (req, body) => {
+    exigeCoordenacao(req);
+    return D.criarTurma({
+      nome: body.nome, turno: String(body.turno ?? ''),
+      programaId: num(body.programa_id, 'programa_id'),
+      educadorId: body.educador_id ? num(body.educador_id, 'educador_id') : null,
+    });
+  },
+
+  'POST /api/turmas/editar': (req, body) => {
+    exigeCoordenacao(req);
+    return D.editarTurma(num(body.id, 'id'), {
+      nome: body.nome, turno: String(body.turno ?? ''),
+      programaId: num(body.programa_id, 'programa_id'),
+      educadorId: body.educador_id ? num(body.educador_id, 'educador_id') : null,
+    });
+  },
+
+  // Trocar a turma de uma matricula ativa, e matricular quem ja' esta' na ativa
+  // num programa a mais. Sem estas duas, "matricular numa turma" so' existia no
+  // instante do cadastro — depois disso a coordenacao nao tinha caminho nenhum.
+  'POST /api/matricula/turma': (req, body) => {
+    exigeCoordenacao(req);
+    return D.transferirDeTurma(num(body.matricula_id, 'matricula_id'), {
+      turmaId: body.turma_id ? num(body.turma_id, 'turma_id') : null,
+    });
+  },
+
+  'POST /api/matricula': (req, body) => {
+    exigeCoordenacao(req);
+    const id = num(body.crianca_id, 'crianca_id');
+    exigeAcessoCrianca(req, id, 'ficha');
+    return D.matricularEmPrograma(id, {
+      programaId: num(body.programa_id, 'programa_id'),
+      turmaId: body.turma_id ? num(body.turma_id, 'turma_id') : null,
+      entrada: body.entrada || null,
+    });
+  },
+
+  // Quem responde pela crianca e por onde se fala com essa pessoa. E' o dado
+  // que o boletim (decisao 42) precisa, e ele nao existia no cadastro.
+  'POST /api/crianca/responsavel': (req, body) => {
+    exigeCoordenacao(req);
+    const id = num(body.crianca_id, 'crianca_id');
+    exigeAcessoCrianca(req, id, 'ficha');
+    return D.atualizarResponsavel(id, { responsavel: body.responsavel, contato: body.contato ?? null });
   },
 
   // ---- Arquivo — ninguem e' apagado (decisao 30) -------------------------

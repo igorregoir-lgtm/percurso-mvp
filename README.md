@@ -76,7 +76,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **443 asserções de fluxo** e **179 testes unitários** — mais a avaliação do RAG
+São **471 asserções de fluxo** e **192 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização), a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo) e a da transcrição de áudio com stub (`npm run test:audio`: o ciclo de vida do arquivo, que
@@ -145,6 +145,16 @@ worker network-first, com fallback offline do shell). **Pelo IP da rede local**
 celular, mas **sem instalação nem offline** — service worker exige contexto seguro, e prometer o
 contrário seria falso. Caminho futuro (mkcert/túnel) registrado na decisão técnica nº 24.
 
+**Receber áudio compartilhado de outro aplicativo** (decisão 44). Instalado, o Percurso aparece na
+folha de compartilhamento do sistema: segurar um áudio no WhatsApp, no gravador ou no Arquivos e
+escolher *Percurso* leva o arquivo direto para a tela de registrar. Quem recebe o `POST
+/compartilhar` é o **service worker** — não há página aberta quando o sistema posta o arquivo —, que
+guarda os bytes num cache próprio, redireciona para `#/registrar?compartilhado=1` e a tela **apaga o
+cache depois de ler**. Limites declarados: exige service worker (logo, contexto seguro) e **o iOS
+ainda não implementa share target**; nesses casos o `POST` cai no servidor, que responde `303` para
+a porta de importar, e a pessoa escolhe o arquivo à mão — sem filtro de tipo, de propósito, porque
+um `accept="audio/*"` fazia `.opus` do WhatsApp sumir da lista de Arquivos do iPhone.
+
 ---
 
 ## Deploy canônico no Render
@@ -192,14 +202,14 @@ pessoa. Na tela inicial escolhe-se o perfil e digita-se a senha:
 | Perfil | Papel | Vê |
 |---|---|---|
 | **Maria Silvia** | Professora (a persona) | Hoje, Chamada, Pauta, Turma, Crianças, Refletir* |
-| **Rita Amaral** | Coordenação | Painel, Scores, Safras, Síntese, Consentimentos, Refletir* |
+| **Rita Amaral** | Coordenação | Painel, Scores, Safras, Síntese, Consentimentos, Pessoas (equipe, **turmas**, arquivo), Refletir* |
 | **Cleide Nunes** | Professora | As demais turmas |
 | **Solange Ribeiro** | Diretoria | Relatório do ciclo, Impacto (SROI exploratório) e consulta agregada — **e nada individual** |
 | **Carolina Duarte** | Psicóloga (papel `profissional`) | Hoje, Chamada, Vivência (registro de procedimento + check-in), Relato, Turma (com a régua de 75%), Crianças — **sem agenda de ciclo**: a Vivência fica fora da rubrica (decisão 31) |
 
 \* Refletir é a sala de reflexão do copilot local — só responde com `AI_ENABLED=1` (camada opcional).
 
-A diretoria recebe **443** nas rotas de ficha, lista de crianças e no chat do copilot, por decisão de desenho: quem
+A diretoria recebe **403** nas rotas de ficha, lista de crianças e no chat do copilot, por decisão de desenho: quem
 presta contas trabalha sobre a camada agregada, então não precisa de acesso individual e não tem
 (decisão técnica nº 16).
 
@@ -287,6 +297,10 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 |---|---|---|
 | C1 | Cadastro da equipe — professora, coordenação e diretoria, com apelido derivado do nome e turma opcional (troca de turma exige confirmação) | `#/pessoas`, `POST /api/equipe` |
 | C2 | Cadastro de criança — matrícula ativa no mesmo ato, dedup por nome+nascimento, rubrica socioemocional nascendo **pendente** | `#/pessoas`, `POST /api/criancas` |
+| C4 | **Cadastro de turma** — criar, renomear, mudar o turno e passar a turma para outra professora. Turno não é rótulo: é ele que diz em que dias há encontro. Programa de turma **com matrícula** não muda, e coordenação/diretoria não assumem turma | `#/pessoas?aba=turmas`, `POST /api/turmas`, `.../editar` |
+| C5 | **Matrícula depois do cadastro** — trocar a turma de uma matrícula ativa (só dentro do mesmo programa) e matricular quem já está na ativa num programa a mais, pela própria ficha | `#/crianca/:id`, `POST /api/matricula/turma`, `POST /api/matricula` |
+| C6 | **Prova do consentimento em vídeo** — a coordenação grava (ou escolhe) o vídeo do responsável consentindo; arquivo em `data/consentimento/` (0600, fora de `public/`), leitura só de coordenação e **com rastro**, apagar exige motivo | `#/consentimentos`, `POST /api/consentimento/evidencia`, `GET /api/consentimento/video` |
+| C7 | **Boletim da criança para o responsável** — matrícula, presença e evolução em piorou/manteve/evoluiu, com link direto de WhatsApp. Não persiste. **Sem** relato livre, **sem** detalhe de alerta, **sem** nível 1–4 — e a tela diz o que ficou de fora | `#/crianca/:id`, `GET /api/boletim` |
 | C3 | **Arquivo — ninguém é apagado.** Quem sai do pipeline sai das listas vivas e continua no sistema; sessão aberta de pessoa arquivada morre no ato. A volta da criança é matrícula **nova**, com consentimento voltando a pendente | `#/pessoas?aba=arquivo`, `POST /api/equipe/arquivar`, `POST /api/criancas/arquivar`, `.../reativar`, `.../rematricular` |
 
 ### A camada de IA da v3 (opcional, `AI_ENABLED=1`)
@@ -307,7 +321,7 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 
 ```
 server.js                 servidor HTTP (Node puro, sem framework)
-src/db.js                 esquema do banco (28 tabelas) e helpers de SQL
+src/db.js                 esquema do banco (29 tabelas) e helpers de SQL
 src/domain.js             regras de presença, ciclo, consentimento, safras e síntese
 src/voz.js                catálogos fechados, agente extrator e folha do dia (v2)
 src/scores.js             os três scores, a supressão e a pauta de segunda (v2)
@@ -331,8 +345,8 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    443 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     179 testes unitários das regras críticas (banco temporário)
+scripts/smoke-test.mjs    471 asserções do fluxo principal (contra o servidor no ar)
+scripts/unit-test.mjs     192 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
 scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)

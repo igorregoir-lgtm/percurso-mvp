@@ -109,6 +109,12 @@ const ESQUEMA_SQL = `
     nome         TEXT NOT NULL,
     nascimento   TEXT NOT NULL,
     responsavel  TEXT NOT NULL,
+    -- O telefone do responsavel existe por UM motivo declarado: o boletim da
+    -- crianca (decisao 42) sai para quem responde por ela, e so' para essa
+    -- pessoa. Nao entra em lista, nao entra em agregado, nao vai para modelo.
+    -- Guardado sem mascara porque e' ele que monta o link do WhatsApp; quem le
+    -- a ficha ja' passou pelo controle de acesso e pelo log.
+    responsavel_contato TEXT,
     ativo        INTEGER NOT NULL DEFAULT 1,
     criado_em    TEXT NOT NULL
   );
@@ -270,6 +276,29 @@ const ESQUEMA_SQL = `
     data_registro TEXT,
     UNIQUE (crianca_id, campo)
   );
+
+  -- PROVA DO CONSENTIMENTO (decisao 41). A LGPD poe o onus da prova no
+  -- controlador (Art. 8o, paragrafo 1o): dizer "o responsavel consentiu" e'
+  -- afirmacao, nao prova. O video do responsavel na matricula E' a prova — e e'
+  -- tambem o caminho que funciona numa casa onde papel se perde e nem todo
+  -- responsavel le com facilidade.
+  --
+  -- O arquivo NAO fica no banco nem em public/: fica em data/consentimento/,
+  -- modo 0600, e so' sai por rota autenticada de coordenacao, com log. A linha
+  -- aqui guarda o ponteiro e o que a auditoria precisa saber sem abrir o video.
+  CREATE TABLE IF NOT EXISTS consentimento_evidencia (
+    id            INTEGER PRIMARY KEY,
+    crianca_id    INTEGER NOT NULL REFERENCES crianca(id) ON DELETE CASCADE,
+    campo         TEXT NOT NULL REFERENCES governanca_campo(campo),
+    arquivo       TEXT NOT NULL,
+    mime          TEXT NOT NULL,
+    bytes         INTEGER NOT NULL,
+    duracao_s     INTEGER,
+    responsavel   TEXT NOT NULL,
+    registrado_por INTEGER NOT NULL REFERENCES educador(id),
+    criado_em     TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS ix_evidencia_crianca ON consentimento_evidencia (crianca_id, campo);
 
   CREATE TABLE IF NOT EXISTS alerta (
     id            INTEGER PRIMARY KEY,

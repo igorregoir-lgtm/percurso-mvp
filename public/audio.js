@@ -80,6 +80,50 @@ export function melhorTipo() {
   return tipos.find(t => !t || window.MediaRecorder?.isTypeSupported?.(t)) ?? '';
 }
 
+/** O primeiro tipo de VIDEO que o aparelho aceita gravar (decisao 41). Safari
+ *  devolve mp4, Chrome webm — os dois tocam de volta no proprio navegador. */
+export function melhorTipoVideo() {
+  const tipos = ['video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm', ''];
+  return tipos.find(t => !t || window.MediaRecorder?.isTypeSupported?.(t)) ?? '';
+}
+
+/**
+ * Grava o VIDEO do responsavel consentindo — a prova do consentimento.
+ *
+ * Ao contrario de `iniciarGravacao`, aqui NAO ha' blocos: o arquivo e' um so',
+ * curto, e vai inteiro para o servidor. O teto de tempo existe para o vídeo
+ * caber no limite do servidor sem a pessoa precisar saber o que e' um megabyte.
+ */
+export async function gravarVideoConsentimento({ aoSegundo, aoParar, tetoSegundos = 90 } = {}) {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+    audio: true,
+  });
+  const tipo = melhorTipoVideo();
+  const rec = new MediaRecorder(stream, tipo ? { mimeType: tipo, videoBitsPerSecond: 900_000 } : undefined);
+  const pedacos = [];
+  let segundos = 0;
+  const relogio = setInterval(() => {
+    segundos++;
+    aoSegundo?.(segundos);
+    if (segundos >= tetoSegundos) parar();
+  }, 1000);
+
+  const encerrar = () => {
+    clearInterval(relogio);
+    for (const t of stream.getTracks()) { try { t.stop(); } catch { /* ja' parou */ } }
+  };
+  function parar() { try { rec.state !== 'inactive' && rec.stop(); } catch { encerrar(); } }
+
+  rec.ondataavailable = (e) => { if (e.data?.size) pedacos.push(e.data); };
+  rec.onstop = () => {
+    encerrar();
+    aoParar?.(new Blob(pedacos, { type: rec.mimeType || tipo || 'video/webm' }));
+  };
+  rec.start();
+  return { parar, cancelar: () => { rec.onstop = encerrar; parar(); }, stream };
+}
+
 /**
  * Converte qualquer audio que o navegador saiba ler em WAV 16 kHz mono.
  *

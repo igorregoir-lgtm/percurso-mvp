@@ -1138,11 +1138,18 @@ export function painelConsentimentos() {
        JOIN consentimento co ON co.crianca_id = c.id
       WHERE c.ativo = 1 AND co.campo = 'rubrica_socioemocional'
       GROUP BY c.id ORDER BY (co.status='ativo'), c.nome`);
+  // Quem tem PROVA e quem so' tem a palavra de quem digitou (decisao 41). A
+  // distincao aparece na tela: sem ela, "consentimento ativo" continuaria
+  // parecendo a mesma coisa nos dois casos — e nao e'.
+  const provas = new Set(all(
+    `SELECT DISTINCT crianca_id FROM consentimento_evidencia`).map(l => l.crianca_id));
+  const comProva = linhas.map(l => ({ ...l, tem_prova: provas.has(l.id) }));
   return {
-    ativos: linhas.filter(l => l.status === 'ativo').length,
-    pendentes: linhas.filter(l => l.status !== 'ativo').length,
+    ativos: comProva.filter(l => l.status === 'ativo').length,
+    pendentes: comProva.filter(l => l.status !== 'ativo').length,
+    com_prova: comProva.filter(l => l.status === 'ativo' && l.tem_prova).length,
     governanca: all(`SELECT * FROM governanca_campo ORDER BY rowid`),
-    linhas,
+    linhas: comProva,
   };
 }
 
@@ -1465,9 +1472,10 @@ export function criarPessoa({ nome, apelido = '', papel, turmaId = null, confirm
  * `tx` só: criança sem matrícula não aparece em lista nenhuma (todo `listar`
  * deste domínio faz JOIN com matrícula ativa) — seria um registro fantasma.
  */
-export function criarCrianca({ nome, nascimento, responsavel, programaId, turmaId = null, entrada = null }) {
+export function criarCrianca({ nome, nascimento, responsavel, contato = null, programaId, turmaId = null, entrada = null }) {
   const n = textoObrigatorio(nome, 'O nome da criança');
   const resp = textoObrigatorio(responsavel, 'O responsável');
+  const tel = normalizarContato(contato);
   const nasc = dataObrigatoria(nascimento, 'A data de nascimento');
   const hj = hoje();
   if (nasc > hj) throw erro(422, 'A data de nascimento está no futuro.');
@@ -1492,8 +1500,8 @@ export function criarCrianca({ nome, nascimento, responsavel, programaId, turmaI
   return tx(() => {
     const codigo = proximoCodigoCrianca();
     const id = Number(run(
-      `INSERT INTO crianca (codigo, nome, nascimento, responsavel, ativo, criado_em)
-       VALUES (?,?,?,?,1,?)`, codigo, n, nasc, resp, hj).lastInsertRowid);
+      `INSERT INTO crianca (codigo, nome, nascimento, responsavel, responsavel_contato, ativo, criado_em)
+       VALUES (?,?,?,?,?,1,?)`, codigo, n, nasc, resp, tel, hj).lastInsertRowid);
     run(`INSERT INTO matricula (crianca_id, programa_id, turma_id, entrada, saida, status)
          VALUES (?,?,?,?,NULL,'ativa')`, id, programa.id, turma?.id ?? null, ent);
     for (const campo of CONSENTIMENTOS_DA_MATRICULA)
@@ -1555,6 +1563,116 @@ function programaETurma(programaId, turmaId) {
       throw erro(422, `A turma ${turma.nome} não é do programa ${programa.nome}.`);
   }
   return { programa, turma };
+}
+
+// --------------------------------------------------------------------------
+// TURMA — o cadastro que faltava (decisao 39).
+//
+// Ate' aqui turma so' nascia da seed: a coordenacao matriculava crianca numa
+// lista fixa e nao tinha como abrir a turma do ano que vem, nem corrigir o
+// nome de uma, nem passar a turma para outra professora sem mexer no banco.
+// A pergunta do campo foi literal: "quem cadastra as turmas?". A resposta era
+// "ninguem" — e uma resposta dessas e' defeito, nao desenho.
+//
+// Quem cadastra e' a COORDENACAO, pelo mesmo motivo de todo o resto do bloco:
+// turma e' o que decide quem le a ficha de quem. Professora nao abre a propria
+// turma.
+// --------------------------------------------------------------------------
+export const TURNOS = [
+  { id: 'semana', rotulo: 'Dias de semana (segunda a sexta)' },
+  { id: 'sabado', rotulo: 'Sábado' },
+];
+
+/** Telefone do responsavel: guarda so' digito, e recusa o que nao e' telefone. */
+export function normalizarContato(bruto) {
+  const t = String(bruto ?? '').trim();
+  if (!t) return null;
+  const so = t.replace(/\D+/g, '').replace(/^0+/, '');
+  // 10 = fixo com DDD, 11 = celular com DDD, 12/13 = com o 55 na frente.
+  if (so.length < 10 || so.length > 13)
+    throw erro(422, 'O telefone do responsável precisa ter DDD — ex.: (11) 98888-7777.');
+  return so.length <= 11 ? `55${so}` : so;
+}
+
+/** Como o telefone aparece na tela. Nunca em lista, nunca em agregado. */
+export function contatoLegivel(e164) {
+  const d = String(e164 ?? '').replace(/\D+/g, '');
+  if (d.length < 12) return e164 || '';
+  const ddd = d.slice(2, 4), resto = d.slice(4);
+  return resto.length === 9
+    ? `(${ddd}) ${resto.slice(0, 5)}-${resto.slice(5)}`
+    : `(${ddd}) ${resto.slice(0, 4)}-${resto.slice(4)}`;
+}
+
+function turmaValida({ nome, turno, programaId, educadorId }, { idAtual = null } = {}) {
+  const n = textoObrigatorio(nome, 'O nome da turma');
+  if (!TURNOS.some(t => t.id === turno))
+    throw erro(422, 'O turno da turma tem de ser "semana" ou "sabado" — é ele que diz em que dias há encontro.');
+  const programa = get(`SELECT * FROM programa WHERE id = ?`, programaId);
+  if (!programa) throw erro(404, 'Programa não encontrado.');
+  let educador = null;
+  if (educadorId != null) {
+    educador = get(`SELECT * FROM educador WHERE id = ? AND arquivado_em IS NULL`, educadorId);
+    if (!educador) throw erro(404, 'Essa pessoa não está na equipe ativa.');
+    if (!['educador', 'profissional'].includes(educador.papel))
+      throw erro(422, `${educador.nome} não é professora nem profissional — só quem atende assume turma.`);
+  }
+  const igual = get(
+    `SELECT id, nome FROM turma WHERE lower(nome) = lower(?) ${idAtual ? 'AND id <> ?' : ''}`,
+    ...(idAtual ? [n, idAtual] : [n]));
+  if (igual) throw erro(409, `Já existe uma turma chamada ${igual.nome}.`, { turma_id: igual.id });
+  return { nome: n, programa, educador };
+}
+
+export function criarTurma({ nome, turno, programaId, educadorId = null }) {
+  const v = turmaValida({ nome, turno, programaId, educadorId });
+  const id = Number(run(
+    `INSERT INTO turma (programa_id, nome, turno, educador_id) VALUES (?,?,?,?)`,
+    v.programa.id, v.nome, turno, v.educador?.id ?? null).lastInsertRowid);
+  return { turma: get(`SELECT * FROM turma WHERE id = ?`, id), programa: v.programa.nome,
+    aviso: v.educador
+      ? `${v.educador.nome} passa a ler as fichas de quem for matriculado nesta turma.`
+      : 'A turma nasce sem professora: ninguém lê ficha por ela até você atribuir alguém.' };
+}
+
+/**
+ * Editar turma existe por um motivo estreito: nome errado, turno errado e
+ * troca de professora. NAO se muda o programa de uma turma que ja' tem
+ * matricula — isso mudaria, em silencio, o programa de todas as criancas.
+ */
+export function editarTurma(id, { nome, turno, programaId, educadorId = null }) {
+  const atual = get(`SELECT * FROM turma WHERE id = ?`, id);
+  if (!atual) throw erro(404, 'Turma não encontrada.');
+  const v = turmaValida({ nome, turno, programaId, educadorId }, { idAtual: id });
+  if (v.programa.id !== atual.programa_id) {
+    const n = get(`SELECT COUNT(*) AS n FROM matricula WHERE turma_id = ?`, id).n;
+    if (n) throw erro(422, `Esta turma já tem ${n} matrícula(s): mudar o programa dela mudaria o programa de todas de uma vez. Crie a turma nova e rematricule quem for.`);
+  }
+  run(`UPDATE turma SET programa_id = ?, nome = ?, turno = ?, educador_id = ? WHERE id = ?`,
+    v.programa.id, v.nome, turno, v.educador?.id ?? null, id);
+  return { turma: get(`SELECT * FROM turma WHERE id = ?`, id) };
+}
+
+/** A lista com o que a coordenacao precisa ver ANTES de mexer: quantas criancas. */
+export function turmasDetalhadas() {
+  return all(
+    `SELECT t.id, t.nome, t.turno, t.programa_id, t.educador_id,
+            p.nome AS programa, e.nome AS educador,
+            (SELECT COUNT(*) FROM matricula m
+              WHERE m.turma_id = t.id AND m.status = 'ativa') AS criancas
+       FROM turma t JOIN programa p ON p.id = t.programa_id
+       LEFT JOIN educador e ON e.id = t.educador_id
+      ORDER BY p.nome, t.nome`);
+}
+
+/** Corrigir quem responde pela crianca e por onde se fala com essa pessoa. */
+export function atualizarResponsavel(criancaId, { responsavel, contato }) {
+  const c = get(`SELECT * FROM crianca WHERE id = ?`, criancaId);
+  if (!c) throw erro(404, 'Criança não encontrada.');
+  const resp = textoObrigatorio(responsavel, 'O responsável');
+  const tel = normalizarContato(contato);
+  run(`UPDATE crianca SET responsavel = ?, responsavel_contato = ? WHERE id = ?`, resp, tel, criancaId);
+  return get(`SELECT id, nome, responsavel, responsavel_contato FROM crianca WHERE id = ?`, criancaId);
 }
 
 /**
@@ -1671,6 +1789,66 @@ export function arquivarCrianca(id, { saida = null } = {}) {
  * perde no ato. O outro lado seria pior — retomar processamento de dado
  * sensível, em silêncio, depois de a base legal ter caducado com a saída.
  */
+/**
+ * TROCAR A TURMA de uma matricula ATIVA (decisao 39).
+ *
+ * Isto nao existia, e a falta aparecia como pergunta de campo: "quem faz a
+ * matricula da crianca em cada turma?". `rematricularCrianca` so' serve para
+ * quem VOLTOU do arquivo; para quem esta' na ativa e mudou de horario nao havia
+ * caminho nenhum — a coordenacao teria de arquivar a crianca e trazer de volta,
+ * o que sujaria o historico de presenca com uma saida que nunca houve.
+ *
+ * O que NAO se faz por aqui: mudar de programa. Turma nova tem de ser do MESMO
+ * programa — trocar o programa e' outra matricula, com outra entrada e outra
+ * leitura de permanencia.
+ */
+export function transferirDeTurma(matriculaId, { turmaId }) {
+  const m = get(
+    `SELECT m.*, p.nome AS programa, t.nome AS turma FROM matricula m
+       JOIN programa p ON p.id = m.programa_id
+       LEFT JOIN turma t ON t.id = m.turma_id
+      WHERE m.id = ?`, matriculaId);
+  if (!m) throw erro(404, 'Matrícula não encontrada.');
+  if (m.status !== 'ativa') throw erro(422, 'Essa matrícula já foi encerrada. Quem voltou entra pela rematrícula.');
+  if (turmaId == null) {
+    run(`UPDATE matricula SET turma_id = NULL WHERE id = ?`, matriculaId);
+    return { matricula_id: matriculaId, turma: null, aviso: 'A criança ficou sem turma neste programa: ninguém lê a ficha dela por aqui até você escolher uma.' };
+  }
+  const t = get(`SELECT * FROM turma WHERE id = ?`, turmaId);
+  if (!t) throw erro(404, 'Turma não encontrada.');
+  if (t.programa_id !== m.programa_id)
+    throw erro(422, `A turma ${t.nome} é de outro programa. Para mudar de programa, use "matricular em outro programa" — a entrada e a permanência mudam junto.`);
+  if (t.id === m.turma_id) return { matricula_id: matriculaId, turma: { id: t.id, nome: t.nome }, aviso: 'Já era essa a turma.' };
+  run(`UPDATE matricula SET turma_id = ? WHERE id = ?`, t.id, matriculaId);
+  const quem = get(`SELECT nome FROM educador WHERE id = ?`, t.educador_id);
+  return {
+    matricula_id: matriculaId, turma: { id: t.id, nome: t.nome },
+    aviso: quem
+      ? `Quem lê a ficha desta criança em ${m.programa} passa a ser ${quem.nome}.`
+      : `A turma ${t.nome} está sem professora: ninguém lê a ficha por ela até você atribuir alguém.`,
+  };
+}
+
+/** Matricular quem JA' esta' na ativa num programa a mais. A criança é única;
+ *  cada matrícula é uma relação com um programa — e ela pode ter várias. */
+export function matricularEmPrograma(criancaId, { programaId, turmaId = null, entrada = null }) {
+  const c = get(`SELECT * FROM crianca WHERE id = ?`, criancaId);
+  if (!c) throw erro(404, 'Criança não encontrada.');
+  if (!c.ativo) throw erro(409, `${c.nome} está no arquivo. Quem voltou entra pela rematrícula.`);
+  const { programa, turma } = programaETurma(programaId, turmaId);
+  if (get(`SELECT id FROM matricula WHERE crianca_id = ? AND programa_id = ? AND status='ativa'`, criancaId, programa.id))
+    throw erro(409, `${c.nome} já tem matrícula ativa em ${programa.nome}. Para mudar de horário, troque a turma dessa matrícula.`);
+  const hj = hoje();
+  const ent = entrada ? dataObrigatoria(entrada, 'A data de entrada') : hj;
+  if (ent > hj) throw erro(422, 'A data de entrada está no futuro.');
+  run(`INSERT INTO matricula (crianca_id, programa_id, turma_id, entrada, saida, status)
+       VALUES (?,?,?,?,NULL,'ativa')`, criancaId, programa.id, turma?.id ?? null, ent);
+  return {
+    programa: { id: programa.id, nome: programa.nome },
+    turma: turma ? { id: turma.id, nome: turma.nome } : null, entrada: ent,
+  };
+}
+
 export function rematricularCrianca(id, { programaId, turmaId = null, entrada = null }) {
   const c = get(`SELECT * FROM crianca WHERE id = ?`, id);
   if (!c) throw erro(404, 'Criança não encontrada.');

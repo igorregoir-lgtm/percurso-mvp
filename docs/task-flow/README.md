@@ -36,7 +36,7 @@ início → #/entrar → #/hoje → #/registrar (falar → conferir) → #/hoje 
 ```
 
 Os seis passos, com o tempo esperado, estão no PNG. **O passo 05 é o achado:** ao confirmar a folha,
-`public/app.js:5084` abre o relato logo depois de confirmar a folha, na Vivência (corrigido em 04/09/2026). Antes ele **não abria sozinho** e ela precisava
+`public/app.js:5530` abre o relato logo depois de confirmar a folha, na Vivência (corrigido em 04/09/2026). Antes ele **não abria sozinho** e ela precisava
 achar o botão "Revisar e liberar o relato" no cartão do Hoje. O desenho supunha continuidade; o
 código devolve para a tela inicial. Está marcado em âmbar no fluxo, com limiar próprio de
 observação (20 s).
@@ -68,6 +68,12 @@ jornada v2 **não existiam no MVP quando este protocolo foi escrito**. Passaram 
 03/09/2026 (F1). O protocolo continua valendo como está — a tarefa mede a porta A′, que é a mais
 curta — mas as duas deixaram de ser simulação proibida e podem virar tarefa própria numa
 remedição.
+
+Desde 04/09/2026 a porta C tem **duas** entradas, e a segunda muda o roteiro de quem for medi-la: o
+seletor de arquivo deixou de filtrar por `audio/*` (que fazia `.opus` do WhatsApp sumir da lista no
+iPhone) e o aplicativo passou a aparecer na **folha de compartilhamento do sistema** — o caminho real
+dela é segurar o áudio no WhatsApp e mandar para o Percurso, não abrir o Percurso e procurar o
+arquivo. Medir só a segunda entrada mediria o caminho errado (decisão 44).
 
 ## 4. O que este teste não prova
 

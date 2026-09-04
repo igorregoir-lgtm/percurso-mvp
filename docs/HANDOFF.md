@@ -1,5 +1,74 @@
 # Handoff — 04/09/2026, 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
 
+> ## Sessão de 04/09/2026 (tarde) — as seis perguntas do campo, respondidas com código
+>
+> O dono do produto abriu o artefato no celular e mandou seis perguntas sobre **telas que ele estava
+> vendo**. Nenhuma era pedido de recurso novo em abstrato; cada uma apontava para um lugar em que o
+> produto **parecia** completo e não era. Foram seis, e viraram as **decisões 41 a 46**.
+>
+> **1. *"Quem faz a matrícula da criança em cada turma? Quem cadastra as turmas?"*** A resposta
+> honesta era **metade**. A matrícula existia (`Pessoas → Quem entra → Nova criança`). O cadastro de
+> turma **não existia em lugar nenhum**: as sete turmas vinham da `seed`. E faltava a metade
+> seguinte, que só se vê depois: **para quem já está na ativa não havia como trocar de turma** —
+> `rematricularCrianca` só serve a quem voltou do arquivo. Entrou a aba **Turmas**, mais
+> `transferirDeTurma` e `matricularEmPrograma`, com porta na própria ficha (**dec. 41**).
+>
+> **2. *"Onde esses pontos são registrados? Não é a professora que tem que registrar?"*** Era ela,
+> sempre foi — mas a **tabela que mostra os pontos, na ficha, não levava a lugar nenhum**. A única
+> porta ficava em `Hoje → Ciclo`. Quem olhava para os números não tinha como mexer neles, e a
+> pergunta que isso gera é exatamente a que foi feita. O cartão passou a dizer o estado e abrir o
+> registro (**dec. 46**) — e isso obrigou `GET /api/observacao` a devolver `na_rubrica`, senão a
+> ficha ofereceria, na Vivência, um registro que o `POST` teria de recusar depois.
+>
+> **3. *"Como ele deixa registrado o consentimento? Tem como ser por vídeo do responsável?"*** Tem —
+> e é melhor do que havia. O que havia era o nome do responsável **digitado por quem estava do outro
+> lado da mesa**: a afirmação de que houve consentimento, não a prova dele. A LGPD põe o ônus da
+> prova no controlador (Art. 8º, §1º). Entrou `consentimento_evidencia` + `src/evidencia.js`
+> (**dec. 42**) — o **oposto** de `src/transcricao.js`: lá o arquivo é apagado no `finally`, aqui
+> apagar é apagar a prova.
+>
+> **4. *"Pode excluir tudo isso… essa parte da governança não tem utilidade para o usuário."***
+> A tabela de base legal estava **duas vezes** no produto. Em `#/consentimentos` é ferramenta de
+> trabalho; na ficha de cada criança era cinco colunas de texto jurídico entre a rubrica e o
+> parecer. Saiu **só da ficha** (**dec. 45**), com gate para não voltar.
+>
+> **5. *"Áudio pode ser importado de qualquer lugar do celular."*** Era um defeito silencioso:
+> `accept="audio/*"` parece inofensivo e, no iPhone, faz um áudio de WhatsApp (`.opus`) ou do Drive
+> **sumir da lista** — a pessoa não vê erro, vê um arquivo que não existe. E entrou o **share
+> target** (**dec. 44**): o manifest declara `POST /compartilhar` e quem recebe é o **service
+> worker**, porque não há página aberta quando o sistema posta o arquivo.
+>
+> **6. *"O recado com link do WhatsApp, também na parte de cada criança."*** Isto parecia
+> contradizer *"da turma, nunca de uma criança"* e **não contradiz — inverte o motivo dela**. A
+> regra do recado existe por causa do destinatário: o **grupo** de pais. Aqui o destinatário é um só,
+> o responsável legal, que exerce o direito de acesso do titular (Art. 18, II). Negar o dado a ele
+> não protegeria ninguém (**dec. 43**).
+>
+> **Duas coisas que só apareceram porque exercitei em vez de confiar:**
+>
+> - **`turmaValida` filtrava `educador WHERE ativo = 1`, e a tabela `educador` não tem coluna
+>   `ativo`** — ela usa `arquivado_em`. SQLite devolveu `no such column` só na primeira chamada
+>   real; nenhum `node --check` pegaria.
+> - **A documentação vinha corrompendo o `403` há três rodadas.** `docs/TESTES.md` dizia
+>   *"educadora barrada no painel (443)"* — e no commit anterior dizia `(431)`, e antes disso `403`.
+>   Alguém (eu, provavelmente) vinha fazendo *find/replace* da contagem do smoke sobre o arquivo
+>   inteiro, e a contagem come o status HTTP toda vez. **Corrigido: 19 ocorrências voltaram a 403.**
+>   Quem for atualizar a contagem de novo: troque a frase inteira, nunca o número solto.
+>
+> **Uma escolha técnica que muda o que a família lê.** O boletim compara o **nível da rubrica
+> (1–4)**, não a nota 0–2 da planilha. `NIVEL_PARA_PLANILHA` colapsa 2 e 3 na mesma nota: quem foi
+> de 2 para 3 sairia como *"manteve"*, e a família leria estagnação onde houve avanço. O mapeamento
+> serve para falar com a planilha da outra organização; para falar com a mãe, só perde informação.
+> Dentro da casa as duas leituras continuam lado a lado, com o `*` marcando onde divergem.
+>
+> **O que NÃO entrou no boletim, e é decisão:** relato livre (anotação clínica interna — a dec. 40
+> fez dele o dado mais restrito do produto), detalhe do alerta (é conversa, não mensagem) e o nível
+> 1–4. A tela **diz** o que ficou de fora; silêncio viraria *"o sistema não tinha o dado"*.
+>
+> **Gates: 471 smoke · 192 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.** 29 tabelas, 106 rotas.
+>
+
+
 > ## Sessão de 04/09/2026 — F2 a F8: menos telas, menos toques, e o calendário da casa
 >
 > Continuação direta da noite anterior (F1, a captura por áudio). **28 rotas viraram 12**, os

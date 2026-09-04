@@ -14,7 +14,12 @@ import { agora, hoje } from './domain.js';
 
 /** Recursos que carregam dado individual. Lista FECHADA: recurso novo entra
  *  aqui de proposito, nao por acidente de string. */
-export const RECURSOS = Object.freeze(['ficha', 'observacao', 'parecer', 'trajetoria']);
+// 'boletim' (decisao 42) e 'consentimento_video' (decisao 41) entram aqui pelo
+// mesmo motivo dos outros quatro: sao leitura de dado individual. O boletim sai
+// da casa para o responsavel; o video E' dado do responsavel. Leitura sem
+// rastro nesses dois seria pior que nos demais, nao melhor.
+export const RECURSOS = Object.freeze(
+  ['ficha', 'observacao', 'parecer', 'trajetoria', 'boletim', 'consentimento_video']);
 
 export function registrarAcesso(usuario, recurso, criancaId) {
   if (!usuario?.id || !RECURSOS.includes(recurso) || !criancaId) return null;

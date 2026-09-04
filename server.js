@@ -97,9 +97,13 @@ const tratar = async (req, res) => {
     try {
       const handler = rotas[rota];
       if (!handler) return json(res, 404, { erro: `Rota não encontrada: ${rota}` });
-      const binaria = url.pathname === '/api/transcrever';
+      // Duas rotas recebem BYTES, nao JSON: o audio da transcricao (efemero) e
+      // o video do consentimento (decisao 41 — este fica). Tetos diferentes de
+      // proposito: prova de consentimento nao precisa de 120 MB.
+      const binaria = req.method === 'POST'
+        && ['/api/transcrever', '/api/consentimento/evidencia'].includes(url.pathname);
       const corpo = binaria
-        ? await lerBytes(req, 120 * 1024 * 1024)
+        ? await lerBytes(req, url.pathname === '/api/transcrever' ? 120 * 1024 * 1024 : 32 * 1024 * 1024)
         : (['POST', 'DELETE'].includes(req.method) ? await lerCorpo(req) : {});
       const saida = await handler(req, corpo, url.searchParams);
       // Todo POST/DELETE bem-sucedido pode ter mudado o estado que alimenta o
@@ -113,6 +117,16 @@ const tratar = async (req, res) => {
       if (saida && typeof saida === 'object') delete saida._cookie;
       // Saída em arquivo (a planilha socioemocional, decisão 34): a rota
       // devolve `_csv` e o nome; tudo o mais continua JSON.
+      // Saida BINARIA (o video da prova de consentimento): nunca e' estatico de
+      // public/ — sai por aqui, depois do controle de acesso e do log.
+      if (saida && typeof saida === 'object' && Buffer.isBuffer(saida._arquivo)) {
+        res.writeHead(200, {
+          'Content-Type': saida._mime || 'application/octet-stream',
+          'Content-Length': saida._arquivo.length,
+          'Cache-Control': 'no-store, private',
+        });
+        return res.end(saida._arquivo);
+      }
       if (saida && typeof saida === 'object' && typeof saida._csv === 'string') {
         res.writeHead(200, {
           'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store',
@@ -126,6 +140,15 @@ const tratar = async (req, res) => {
       if (status >= 500) console.error('[percurso]', e);
       return json(res, status, { erro: e.message || 'Erro inesperado no servidor.', ...(e.extra || {}) });
     }
+  }
+
+  // COMPARTILHAMENTO DO SISTEMA sem service worker ativo. O share target so'
+  // funciona de verdade pelo SW (que exige contexto seguro); quando ele nao
+  // esta' registrado, o POST cai aqui — e a resposta honesta e' levar a pessoa
+  // a' porta de importar, nao um 404 que parece o aplicativo quebrado.
+  if (url.pathname === '/compartilhar') {
+    res.writeHead(303, { Location: '/#/registrar?porta=C' });
+    return res.end();
   }
 
   try {

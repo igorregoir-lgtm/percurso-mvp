@@ -1,7 +1,7 @@
 // Percurso — aplicacao. Sem framework: DOM + hash routing.
 // A ordem das telas segue a jornada da persona: hoje -> chamada -> ciclo -> turma.
 import { criarFila } from './fila.js';
-import { paraWav16k, iniciarGravacao, podeGravar, juntarBlocos, TETO_ARQUIVO_BYTES, BLOCO_SEGUNDOS } from './audio.js';
+import { paraWav16k, iniciarGravacao, gravarVideoConsentimento, podeGravar, juntarBlocos, TETO_ARQUIVO_BYTES, BLOCO_SEGUNDOS } from './audio.js';
 
 const app     = document.getElementById('app');
 const navEl   = document.getElementById('nav');
@@ -1268,12 +1268,93 @@ const listaCriancas = (r) => {
   </button>`).join('');
 };
 
+// ======================================================================
+// A PORTA DO OLHAR, NA FICHA (pedido do campo, 04/09/2026).
+//
+// A pergunta foi: "onde esses pontos são registrados? não é a professora /
+// psicóloga que tem que registrar? como se faz isso?". Registrar sempre foi
+// dela — mas a única porta ficava em Hoje → Ciclo de observação, e a tabela
+// que mostra os pontos, na ficha, não levava a lugar nenhum. Quem olhava para
+// os números não tinha como mexer neles: parecia dado que vem de fora.
+//
+// O cartão passa a dizer o estado e a abrir o registro. Quando NÃO dá para
+// registrar, diz o motivo — bloqueio de consentimento não é erro do sistema, é
+// a regra dele, e esconder o botão faria o motivo sumir junto.
+// ======================================================================
+function blocoRegistrarOlhar(olhar, crianca) {
+  if (!olhar || olhar._erro) {
+    return `<p class="sub" style="margin-top:8px">Sem registro possível agora: ${esc(olhar?._erro ?? 'não há ciclo de observação aberto')}.</p>`;
+  }
+  if (olhar.na_rubrica === false) {
+    return `<p class="sub" style="margin-top:8px">Na Vivência terapêutica o registro é de turma — presença,
+      procedimento e check-in de grupo —, nunca observação individual (decisão 31). O que aparece abaixo
+      vem dos outros programas em que esta criança está.</p>`;
+  }
+  const feito = olhar.observacao?.status === 'concluida';
+  const comecado = olhar.observacao?.status === 'rascunho';
+  if (!olhar.elegibilidade?.pode && !feito) {
+    return `<div class="aviso" style="margin-top:10px">
+      <h3>Ainda não dá para registrar</h3>
+      <p>${esc(olhar.elegibilidade?.texto ?? 'Esta criança não está elegível neste ciclo.')}</p></div>`;
+  }
+  return `<div class="linha" style="margin-top:10px;gap:8px;flex-wrap:wrap">
+      <span class="selo ${feito ? 'ok' : comecado ? 'pend' : 'pend'}">${
+        feito ? 'feito neste ciclo' : comecado ? 'começado' : 'a fazer neste ciclo'}</span>
+      <span class="sub cresce">${esc(olhar.ciclo.nome)}</span>
+      <button class="btn pequeno ${feito ? 'fantasma' : ''}" data-acao="ir"
+        data-href="#/crianca/${crianca.id}?ver=observacao">${
+        feito ? 'Rever o que você registrou' : comecado ? 'Terminar o registro' : 'Registrar o olhar'}</button>
+    </div>
+    <p class="sub" style="margin-top:6px">Quem registra é quem atende — professora ou psicóloga. Uma vez por ciclo, ~3 min.</p>`;
+}
+
+// ======================================================================
+// O BOLETIM DA CRIANÇA (decisão 42) — o recado, mas para UMA família.
+//
+// O recado da turma leva só agregado porque vai para o grupo de responsáveis.
+// Este vai para UM responsável: o da criança. Aí a regra se inverte — o que
+// protegia lá viraria, aqui, negar ao titular o acesso ao próprio dado
+// (LGPD Art. 18, II). O que continua fora está escrito no cartão, não
+// escondido: relato livre e alerta são conversa, não mensagem.
+// ======================================================================
+function cartaoBoletim(bol, crianca) {
+  if (!bol) return '';
+  const prim = esc(crianca.nome.split(' ')[0]);
+  return `<div class="cartao compacto" style="margin-top:14px">
+    <h2>Para o responsável de ${prim}</h2>
+    <p class="sub">Matrícula, presença e evolução socioemocional num texto só, pronto para enviar a
+      ${esc(bol.responsavel)}. Não fica guardado: é montado agora, do que já está registrado.</p>
+    <div class="cartao" style="margin-top:10px;background:var(--fundo)">
+      <pre id="boletim-texto" style="white-space:pre-wrap;font:inherit;line-height:1.55;margin:0">${esc(bol.texto)}</pre>
+    </div>
+    <details style="margin-top:10px">
+      <summary style="cursor:pointer;font-size:13px;color:var(--tinta-fraca)">O que este texto não leva</summary>
+      <ul class="sub" style="margin:8px 0 0;padding-left:18px">
+        ${bol.fora.map(x => `<li>${esc(x)}</li>`).join('')}
+      </ul>
+      <p class="sub" style="margin-top:6px">Não é esquecimento: é decisão. Isso se fala pessoalmente.</p>
+    </details>
+    <div class="pilha" style="margin-top:12px">
+      <button class="btn largo secundario" data-acao="copiar-boletim">Copiar o boletim</button>
+      ${bol.whatsapp_url
+        ? `<a class="btn largo" href="${bol.whatsapp_url}" target="_blank" rel="noopener">Enviar no WhatsApp para ${esc(bol.responsavel.split(' ')[0])}</a>`
+        : `<p class="sub" style="margin:0">Sem telefone cadastrado, o WhatsApp não abre. ${
+            sessao.papel === 'coordenacao' ? 'Preencha ali em cima, em "Quem responde por ' + prim + '".' : 'A coordenação cadastra o telefone na ficha.'}</p>`}
+    </div>
+  </div>`;
+}
+
 async function telaFichaDaCrianca(id) {
-  const [f, par, ac, rel] = await Promise.all([
+  const [f, par, ac, rel, olhar, bol] = await Promise.all([
     api(`/api/crianca?id=${id}`),
     api(`/api/parecer?crianca_id=${id}`).catch(() => null),
     api(`/api/acessos?crianca_id=${id}`).catch(() => null),
     api(`/api/relato-crianca?crianca_id=${id}`).catch(() => null),
+    // O estado do olhar DESTA criança neste ciclo. Sem ciclo aberto, sem turma
+    // na rubrica ou sem consentimento a rota falha — e o cartão diz o motivo em
+    // vez de esconder o botão, que era o defeito de antes.
+    api(`/api/observacao?crianca_id=${id}`).catch((e) => ({ _erro: e.message })),
+    api(`/api/boletim?crianca_id=${id}`).catch(() => null),
   ]);
   ctx.parecer = { criancaId: Number(id) };
   // Decisão 32: o parecer para profissional parceiro — o único dado individual
@@ -1365,15 +1446,66 @@ async function telaFichaDaCrianca(id) {
       </div></div>` : ''}
 
     <div class="cartao compacto" style="margin-top:14px">
+      <h2>Quem responde por ${esc(f.crianca.nome.split(' ')[0])}</h2>
+      <p class="sub">É para esta pessoa — e só para ela — que o boletim desta criança vai.</p>
+      <div class="dado" style="margin-top:8px"><span class="k">Responsável</span>
+        <b style="font-weight:500">${esc(f.crianca.responsavel)}</b></div>
+      <div class="dado"><span class="k">Telefone</span>
+        <b style="font-weight:500">${f.crianca.responsavel_contato
+          ? esc(bol?.contato_legivel ?? f.crianca.responsavel_contato)
+          : '<span class="sub">sem telefone — o boletim não tem para onde ir</span>'}</b></div>
+      ${sessao.papel === 'coordenacao' ? `
+        <details style="margin-top:10px">
+          <summary style="cursor:pointer;font-size:13px;color:var(--tinta-fraca)">Corrigir responsável ou telefone</summary>
+          <label class="rot-campo" for="resp-nome">Responsável</label>
+          <input type="text" id="resp-nome" value="${esc(f.crianca.responsavel)}" autocomplete="off">
+          <label class="rot-campo" for="resp-tel">Telefone com DDD</label>
+          <input type="tel" id="resp-tel" inputmode="tel" placeholder="(11) 98888-7777"
+            value="${esc(bol?.contato_legivel ?? '')}" autocomplete="off">
+          <button class="btn pequeno secundario" data-acao="salvar-responsavel" data-id="${f.crianca.id}"
+            style="margin-top:10px">Guardar</button>
+        </details>` : ''}
+    </div>
+
+    <div class="cartao compacto" style="margin-top:14px">
       <h2>Matrículas</h2>
       <p class="sub">A criança é única; cada matrícula é uma relação com um programa.</p>
       <div class="pilha" style="margin-top:10px">
-        ${f.matriculas.map(m => `<div class="item" style="cursor:default">
-          <div class="cresce"><div class="nome">${esc(m.programa)}</div>
-            <div class="meta">${esc(m.turma || 'sem turma')} · desde ${dataBR(m.entrada)}${m.saida ? ` · saiu em ${dataBR(m.saida)}` : ''}</div></div>
-          <span class="selo ${m.status === 'ativa' ? 'ok' : 'bloq'}">${m.status}</span>
+        ${f.matriculas.map(m => `<div class="item" style="cursor:default;flex-direction:column;align-items:stretch;gap:8px">
+          <div class="linha">
+            <div class="cresce"><div class="nome">${esc(m.programa)}</div>
+              <div class="meta">${esc(m.turma || 'sem turma')} · desde ${dataBR(m.entrada)}${m.saida ? ` · saiu em ${dataBR(m.saida)}` : ''}</div></div>
+            <span class="selo ${m.status === 'ativa' ? 'ok' : 'bloq'}">${m.status}</span>
+          </div>
+          ${sessao.papel === 'coordenacao' && m.status === 'ativa' && f.turmas ? `
+            <div class="linha" style="gap:8px">
+              <select id="mt-${m.id}" style="flex:1;min-width:170px">
+                <option value="">Sem turma neste programa</option>
+                ${f.turmas.filter(t => t.programa_id === m.programa_id).map(t =>
+                  `<option value="${t.id}" ${t.id === m.turma_id ? 'selected' : ''}>${esc(t.nome)}${
+                    t.educador ? ` — ${esc(t.educador)}` : ' — sem professora'}</option>`).join('')}
+              </select>
+              <button class="btn pequeno fantasma" data-acao="mudar-turma" data-id="${m.id}">Mudar de turma</button>
+            </div>` : ''}
         </div>`).join('')}
       </div>
+      ${sessao.papel === 'coordenacao' && f.programas ? `
+        <details style="margin-top:12px">
+          <summary style="cursor:pointer;font-size:13px;color:var(--tinta-fraca)">Matricular em outro programa</summary>
+          <p class="sub" style="margin-top:8px">A criança é única; cada matrícula é uma relação com um programa.
+            Mudar de <b>horário</b> é trocar a turma, aqui em cima; isto aqui é entrar num programa a mais.</p>
+          <label class="rot-campo" for="nm-prog">Programa</label>
+          <select id="nm-prog">${f.programas
+            .filter(p => !f.matriculas.some(m => m.status === 'ativa' && m.programa_id === p.id))
+            .map(p => `<option value="${p.id}">${esc(p.nome)}${p.no_escopo === 0 ? ' (fora da medição)' : ''}</option>`).join('')
+            || '<option value="">Já está em todos os programas</option>'}</select>
+          <label class="rot-campo" for="nm-turma">Turma</label>
+          <select id="nm-turma"></select>
+          <label class="rot-campo" for="nm-entrada">Entrada</label>
+          <input type="date" id="nm-entrada" value="${hojeIso()}" max="${hojeIso()}">
+          <button class="btn pequeno secundario" data-acao="matricular" data-id="${f.crianca.id}"
+            style="margin-top:10px">Matricular</button>
+        </details>` : ''}
     </div>
 
     <div class="cartao compacto" style="margin-top:14px">
@@ -1385,23 +1517,15 @@ async function telaFichaDaCrianca(id) {
     <div class="cartao compacto" style="margin-top:14px">
       <h2>O olhar deste ciclo</h2>
       <p class="sub">Uso interno da equipe. Para fora, só agregado.</p>
+      ${blocoRegistrarOlhar(olhar, f.crianca)}
       <div style="margin-top:10px">${tabelaTrajetoria(f.trajetoria)}</div>
     </div>
 
     ${cartaoRelato}
     ${cartaoParecer}
+    ${cartaoBoletim(bol, f.crianca)}
     ${cartaoAcessos}
 
-    <div class="cartao compacto" style="margin-top:14px">
-      <h2>Governança dos campos</h2>
-      <p class="sub">Regra 3 do bloco 6: cada campo declara base legal, titular, acesso e retenção.</p>
-      <div class="rolagem" style="margin-top:10px"><table>
-        <thead><tr><th>Campo</th><th>Base legal</th><th>Acesso</th><th>Retenção</th><th>Situação</th></tr></thead>
-        <tbody>${f.consentimentos.map(c => `<tr>
-          <td>${esc(c.rotulo)}</td><td>${esc(c.base_legal)}</td><td>${esc(c.acesso)}</td><td>${esc(c.retencao)}</td>
-          <td><span class="selo ${c.status === 'ativo' ? 'ok' : 'bloq'}">${c.dispensado ? 'dispensa consent.' : esc(c.status)}</span></td>
-        </tr>`).join('')}</tbody></table></div>
-    </div>
 
     ${sessao.papel === 'coordenacao' && f.crianca.ativo ? `<div class="cartao compacto" style="margin-top:14px">
       <h2>Saiu do programa</h2>
@@ -1413,6 +1537,20 @@ async function telaFichaDaCrianca(id) {
       <button class="btn secundario" data-acao="arquivar-crianca" data-id="${f.crianca.id}"
         style="margin-top:14px">Mandar para o arquivo</button>
     </div>` : ''}`;
+
+  // Mesma regra do cadastro: turma segue programa. O domínio recusa turma de
+  // outro programa, e um select que oferece o inválido é uma armadilha.
+  const prog = document.getElementById('nm-prog');
+  const turmaSel = document.getElementById('nm-turma');
+  if (prog && turmaSel && f.turmas) {
+    const sincronizar = () => {
+      turmaSel.innerHTML = '<option value="">Sem turma por enquanto</option>' +
+        f.turmas.filter(t => String(t.programa_id) === prog.value)
+          .map(t => `<option value="${t.id}">${esc(t.nome)}${t.educador ? ` — ${esc(t.educador)}` : ''}</option>`).join('');
+    };
+    prog.addEventListener('change', sincronizar);
+    sincronizar();
+  }
 }
 
 // ======================================================================
@@ -1786,9 +1924,20 @@ rota(/^#\/consentimentos/, async () => {
     <p class="sub">Campo sem consentimento nasce bloqueado — a proteção é regra do sistema, não lembrete de processo.</p>
     ${cartaoAcessos}
 
-    <div class="kpis" style="margin-top:16px;grid-template-columns:1fr 1fr">
+    <div class="kpis" style="margin-top:16px;grid-template-columns:1fr 1fr 1fr">
       <div class="kpi"><b>${d.ativos}</b><span>Ativos</span></div>
       <div class="kpi"><b>${d.pendentes}</b><span>Pendentes</span><small>campos bloqueados por padrão</small></div>
+      <div class="kpi"><b>${d.com_prova ?? 0}</b><span>Com vídeo</span><small>prova do consentimento</small></div>
+    </div>
+
+    <div class="cartao compacto" style="margin-top:14px">
+      <h2>Onde a ficha da criança é aberta</h2>
+      <p class="sub">A ficha nasce no cadastro: <b>Pessoas → Quem entra → Nova criança</b>, e quem faz isso
+        é a coordenação. Nesse instante a criança já entra pela presença (legítimo interesse) e a rubrica
+        socioemocional nasce <b>bloqueada</b> — ela aparece aqui, nesta lista, esperando o responsável.
+        É aqui que o bloqueio cai, e é aqui que fica a prova de que ele caiu com autorização.</p>
+      <button class="btn pequeno fantasma" data-acao="ir" data-href="#/pessoas?aba=equipe"
+        style="margin-top:10px">Abrir a ficha de uma criança nova</button>
     </div>
 
     <div class="cartao" style="margin-top:14px">
@@ -1802,6 +1951,20 @@ rota(/^#\/consentimentos/, async () => {
           </div>`).join('') || '<p class="vazio">Nenhum consentimento pendente.</p>'}
       </div>
       <p class="sub" style="margin-top:14px">${d.ativos} criança(s) com consentimento ativo não aparecem nesta lista.</p>
+      ${d.ativos ? `<details style="margin-top:10px">
+        <summary style="cursor:pointer;font-size:13px;color:var(--tinta-fraca)">Quem tem a prova em vídeo · ${d.com_prova ?? 0} de ${d.ativos}</summary>
+        <p class="sub" style="margin-top:8px">Consentimento sem vídeo continua valendo — só não tem como
+          ser mostrado a ninguém depois. Para gravar de quem ainda não tem, registre de novo o consentimento.</p>
+        <div class="pilha" style="margin-top:8px">
+          ${d.linhas.filter(l => l.status === 'ativo').map(l => `<div class="item" style="cursor:default">
+            <div class="cresce"><div class="nome">${esc(l.nome)}</div>
+              <div class="meta">${esc(l.responsavel || 'responsável não anotado')}${l.data_registro ? ` · ${dataBR(l.data_registro)}` : ''}</div></div>
+            ${l.tem_prova
+              ? '<span class="selo ok">vídeo</span>'
+              : `<button class="btn pequeno fantasma" data-acao="consentir" data-id="${l.id}" data-nome="${esc(l.nome)}">Gravar</button>`}
+          </div>`).join('')}
+        </div>
+      </details>` : ''}
     </div>
 
     <div class="cartao" style="margin-top:14px">
@@ -2340,6 +2503,15 @@ async function telaContarComoFoi() {
         : 'A transcrição do microfone acima é feita pelo serviço do seu navegador.'}
       O Percurso nunca guarda áudio.</p>`;
 
+  // Áudio que chegou COMPARTILHADO de outro aplicativo (share target). O
+  // service worker guardou o arquivo e mandou a página para cá; aqui ele entra
+  // pela mesma porta C, sem passo novo — o Percurso vira mais um destino do
+  // botão "compartilhar" do WhatsApp, do gravador ou do Arquivos.
+  if (/[?&]compartilhado=1/.test(location.hash)) {
+    if (portasDisponiveis(estadoAudio)) { abrirPorta('C'); await receberCompartilhado(); }
+    else toast('Chegou um áudio compartilhado, mas o transcritor não está instalado nesta máquina.', 'ruim');
+    return;
+  }
   if (portaPedida && portasDisponiveis(estadoAudio)) abrirPorta(portaPedida);
   else if (portaPedida) {
     // A porta foi pedida e não existe nesta máquina. Dizer isso é melhor que
@@ -2408,7 +2580,15 @@ function blocoPortas(st) {
       <p class="sub" style="margin-bottom:10px">Estas três também terminam no mesmo registro — o texto cai no campo acima e você confere antes de guardar.</p>
       <div class="pilha" id="portas-botoes">${botao('A')}${botao('C')}${botao('B')}</div>
       <div id="porta-painel"></div>
-      <input type="file" id="arq-audio" data-acao="arquivo-audio" accept="audio/*" hidden>
+      <!-- SEM filtro estreito, e e' proposital (pedido do campo, 04/09/2026:
+           "audio pode ser importado de qualquer lugar do celular"). Um accept so'
+           de audio parece inofensivo e nao e': no iPhone ele fecha o navegador de
+           Arquivos em cima do que o sistema classifica como audio, e um audio de
+           WhatsApp (.opus), um do Drive ou um exportado como video some da lista.
+           Quem decide se o arquivo serve e' o decodificador, no passo seguinte,
+           com mensagem de erro — nao um filtro que faz o arquivo nao existir. -->
+      <input type="file" id="arq-audio" data-acao="arquivo-audio"
+        accept="audio/*,video/*,.m4a,.mp3,.wav,.ogg,.opus,.aac,.amr,.3gp,.caf,.flac,.mp4,.mov,.webm" hidden>
     </div>`;
 }
 
@@ -2555,6 +2735,29 @@ function pararPortaLonga() {
   try { L.gravador.parar(); } catch {}
   L.gravador = null;
   pintarPortas();
+}
+
+/**
+ * Pega o arquivo que o service worker guardou quando o sistema compartilhou um
+ * áudio com o Percurso. O cache e' o unico lugar por onde um POST vindo de fora
+ * do app consegue entregar bytes a uma pagina que ainda nem abriu.
+ *
+ * Some depois de lido, sempre: audio compartilhado que fica no cache do
+ * navegador seria exatamente a copia que a tela promete nao guardar.
+ */
+async function receberCompartilhado() {
+  try {
+    const cache = await caches.open('percurso-compartilhado');
+    const resp = await cache.match('/__ultimo-compartilhado');
+    if (!resp) { toast('O áudio compartilhado não chegou até aqui. Dá para escolher pelo botão "Trazer um áudio que eu já tenho".'); return; }
+    const blob = await resp.blob();
+    const nome = resp.headers.get('X-Percurso-Nome') || 'audio-compartilhado';
+    await cache.delete('/__ultimo-compartilhado');
+    toast(`Recebi "${nome}". Transcrevendo…`, 'bom');
+    await receberArquivo(new File([blob], nome, { type: blob.type }));
+  } catch {
+    toast('Não consegui abrir o áudio compartilhado. Tente pelo botão de escolher arquivo.');
+  }
 }
 
 async function receberArquivo(arquivo) {
@@ -3292,6 +3495,7 @@ const hojeIso = () => {
 // ======================================================================
 const ABAS_PESSOAS = [
   ['equipe', 'Quem entra'],
+  ['turmas', 'Turmas'],
   ['arquivo', 'Quem saiu'],
   ['importar', 'O que veio de antes'],
 ];
@@ -3308,8 +3512,89 @@ rota(/^#\/pessoas/, async () => {
   const aba = (location.hash.match(/[?&]aba=([a-z]+)/) || [])[1] || 'equipe';
   if (aba === 'arquivo') return telaQuemSaiu();
   if (aba === 'importar') return telaOQueVeioDeAntes();
+  if (aba === 'turmas') return telaTurmas();
   return telaQuemEntra();
 });
+
+// ======================================================================
+// TURMAS (decisão 39) — o cadastro que não existia.
+//
+// A pergunta do campo foi de uma frase: "quem cadastra as turmas? tem que ter
+// um campo para isso na direção / coordenação, já tem?". Não tinha. Turma só
+// nascia da seed — a coordenação matriculava criança numa lista fixa e não
+// podia abrir a turma do ano seguinte, corrigir um nome nem passar a turma
+// para outra professora sem mexer no banco.
+//
+// Fica na mesma tela do resto do elenco, e é da coordenação, pelo mesmo motivo
+// que o cadastro de pessoa é: turma é o que decide quem lê a ficha de quem.
+// ======================================================================
+async function telaTurmas() {
+  const d = await api('/api/cadastro');
+  const equipe = d.equipe.filter(p => ['educador', 'profissional'].includes(p.papel));
+  const opcoesProg = (sel) => (d.programas_de_turma ?? d.programas).map(p =>
+    `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${esc(p.nome)}${
+      p.no_escopo === 0 ? ' (fora da medição)' : ''}</option>`).join('');
+  const opcoesTurno = (sel) => d.turnos.map(t =>
+    `<option value="${t.id}" ${t.id === sel ? 'selected' : ''}>${esc(t.rotulo)}</option>`).join('');
+  const opcoesEdu = (sel) => `<option value="">Sem professora por enquanto</option>` + equipe.map(p =>
+    `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${esc(p.nome)}</option>`).join('');
+
+  app.innerHTML = cabecalhoPessoas('turmas') + `
+    <p class="sub" style="margin-top:12px">A turma é a unidade de tudo: o encontro, a chamada, a folha e a
+      leitura da ficha saem dela. O turno não é rótulo — é ele que diz em que dias existe encontro, e é por
+      ele que o Percurso sabe quando você está mesmo em falta.</p>
+
+    <div class="cartao" style="margin-top:16px">
+      <h2>Nova turma</h2>
+      <label class="rot-campo" for="t-nome">Nome</label>
+      <input type="text" id="t-nome" placeholder="Ex.: Vivência · Sábado manhã" autocomplete="off">
+      <label class="rot-campo" for="t-prog">Programa</label>
+      <select id="t-prog">${opcoesProg(null)}</select>
+      <label class="rot-campo" for="t-turno">Quando encontra</label>
+      <select id="t-turno">${opcoesTurno(null)}</select>
+      <label class="rot-campo" for="t-edu">Quem atende</label>
+      <select id="t-edu">${opcoesEdu(null)}</select>
+      <p class="sub" style="margin-top:6px">Quem atende passa a ler a ficha de quem for matriculado aqui.</p>
+      <button class="btn" data-acao="criar-turma" style="margin-top:14px">Criar turma</button>
+    </div>
+
+    <div class="cartao compacto" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Turmas hoje</h2><span class="sub">${d.turmas.length}</span></div>
+      <div class="pilha" style="margin-top:10px">
+        ${d.turmas.map(t => `<details class="item" style="cursor:default;flex-direction:column;align-items:stretch;gap:8px">
+          <summary style="cursor:pointer;list-style:none">
+            <div class="linha">
+              <div class="cresce"><div class="nome">${esc(t.nome)}</div>
+                <div class="meta">${esc(t.programa)} · ${t.turno === 'sabado' ? 'sábado' : 'dias de semana'} ·
+                  ${t.educador ? esc(t.educador) : 'sem professora'}</div></div>
+              <span class="selo ${t.criancas ? 'ok' : 'pend'}">${t.criancas} criança${t.criancas === 1 ? '' : 's'}</span>
+            </div>
+          </summary>
+          <label class="rot-campo" for="te-nome-${t.id}">Nome</label>
+          <input type="text" id="te-nome-${t.id}" value="${esc(t.nome)}" autocomplete="off">
+          <label class="rot-campo" for="te-prog-${t.id}">Programa</label>
+          <select id="te-prog-${t.id}">${opcoesProg(t.programa_id)}</select>
+          <label class="rot-campo" for="te-turno-${t.id}">Quando encontra</label>
+          <select id="te-turno-${t.id}">${opcoesTurno(t.turno)}</select>
+          <label class="rot-campo" for="te-edu-${t.id}">Quem atende</label>
+          <select id="te-edu-${t.id}">${opcoesEdu(t.educador_id)}</select>
+          <button class="btn pequeno secundario" data-acao="editar-turma" data-id="${t.id}"
+            style="margin-top:10px">Guardar</button>
+        </details>`).join('')}
+      </div>
+      <p class="sub" style="margin-top:12px">Turma não se apaga: ela guarda encontros, chamadas e folhas.
+        Para encerrar uma, tire a professora e rematricule as crianças — o histórico continua de pé.</p>
+    </div>
+
+    <div class="cartao compacto" style="margin-top:14px">
+      <h2>E a matrícula?</h2>
+      <p class="sub">A matrícula da criança em cada turma é feita em <b>Quem entra</b>, aqui do lado, no bloco
+        "Nova criança" — programa e turma são escolhidos ali. Quem já está no cadastro e mudou de turma
+        volta pelo <b>arquivo</b> ou pela rematrícula, na ficha dela.</p>
+      <button class="btn pequeno fantasma" data-acao="ir" data-href="#/pessoas?aba=equipe"
+        style="margin-top:10px">Ir para o cadastro de criança</button>
+    </div>`;
+}
 
 async function telaQuemEntra() {
   const d = await api('/api/cadastro');
@@ -3362,6 +3647,10 @@ async function telaQuemEntra() {
       <input type="date" id="c-nasc" max="${hojeIso()}">
       <label class="rot-campo" for="c-resp">Responsável</label>
       <input type="text" id="c-resp" placeholder="Quem responde pela criança" autocomplete="off">
+      <label class="rot-campo" for="c-tel">Telefone do responsável <span class="sub">(com DDD)</span></label>
+      <input type="tel" id="c-tel" inputmode="tel" placeholder="(11) 98888-7777" autocomplete="off">
+      <p class="sub" style="margin-top:6px">É por aqui que sai o boletim da criança — e só para esta pessoa.
+        Sem telefone, a ficha existe igual; só não tem para onde enviar.</p>
       <label class="rot-campo" for="c-prog">Programa</label>
       <select id="c-prog">${d.programas.map(p =>
         `<option value="${p.id}">${esc(p.nome)} · ${esc(p.faixa)}</option>`).join('')}</select>
@@ -3468,6 +3757,7 @@ document.addEventListener('click', comErro(async (ev) => {
       nome: document.getElementById('c-nome').value,
       nascimento: document.getElementById('c-nasc').value,
       responsavel: document.getElementById('c-resp').value,
+      contato: document.getElementById('c-tel').value || null,
       programa_id: document.getElementById('c-prog').value,
       turma_id: document.getElementById('c-turma').value || null,
       entrada: document.getElementById('c-entrada').value || null,
@@ -4033,6 +4323,162 @@ function prenderFoco(veu) {
 
 // Modal com um campo — usado no registro de consentimento.
 // Substitui o prompt() nativo: mesma linguagem visual, foco gerenciado e Esc funciona.
+// ======================================================================
+// CONSENTIMENTO COM PROVA EM VÍDEO (decisão 41).
+//
+// O pedido do campo, em 04/09/2026: "como ele deixa registrado o consentimento?
+// tem como ser por meio de um vídeo do responsável na hora de fazer a
+// matrícula?". Tem — e é melhor do que o que havia.
+//
+// O que havia era o nome do responsável DIGITADO por quem estava do outro lado
+// da mesa. Isso é a afirmação de que houve consentimento, não a prova dele; e a
+// LGPD põe o ônus da prova no controlador (Art. 8º, §1º). Trinta segundos de
+// vídeo sustentam o que uma linha de texto não sustenta.
+//
+// E resolve um problema de campo antes de um jurídico: papel se perde, e nem
+// todo responsável lê um termo com facilidade. Falar é mais fácil que assinar.
+//
+// O vídeo é OPCIONAL de propósito — nem todo responsável quer ser filmado, e
+// exigir a câmera seria transformar uma proteção em barreira. Sem vídeo o
+// consentimento vale igual; a tela é que diz, depois, quais têm prova e quais
+// só têm a palavra de quem digitou.
+// ======================================================================
+const CAMPOS_DA_MATRICULA = ['rubrica_socioemocional', 'campo_livre'];
+
+function modalConsentimento({ id, nome }) {
+  const veu = document.createElement('div');
+  veu.className = 'veu';
+  veu.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mcv">
+      <h2 id="mcv">Registrar consentimento</h2>
+      <p>Consentimento específico do responsável (LGPD Art. 14) para o registro socioemocional de
+        ${esc(nome)}. Pode ser revogado a qualquer momento.</p>
+      <label for="cv-resp" style="font-size:13px;font-weight:600;display:block;margin:12px 0 6px">Quem é o responsável que consentiu?</label>
+      <input type="text" id="cv-resp" autocomplete="off" placeholder="Nome do responsável">
+
+      <div class="cartao compacto" style="margin-top:14px;background:var(--fundo)">
+        <div class="linha"><h3 class="cresce" style="margin:0;font-size:14px">A prova, em vídeo</h3>
+          <span class="selo pend" id="cv-selo">opcional</span></div>
+        <p class="sub" style="margin-top:6px">Trinta segundos bastam: peça para o responsável dizer o nome
+          dele, o nome da criança e que autoriza o Instituto a registrar como ela está indo. O vídeo fica
+          nesta casa, só a coordenação abre, e toda abertura fica registrada.</p>
+        <video id="cv-video" playsinline muted style="width:100%;border-radius:10px;margin-top:8px;display:none;background:#000"></video>
+        <p class="sub" id="cv-estado" style="min-height:18px;margin-top:6px"></p>
+        <div class="pilha" style="margin-top:8px">
+          <button class="btn pequeno secundario" data-acao="cv-gravar" type="button">Gravar agora</button>
+          <button class="btn pequeno fantasma" data-acao="cv-escolher" type="button">Escolher um vídeo do celular</button>
+        </div>
+        <input type="file" id="cv-arquivo" accept="video/*,audio/*" hidden>
+      </div>
+
+      <p class="sub" id="cv-erro" style="color:var(--red);font-size:13px;margin-top:8px;display:none"></p>
+      <div class="linha" style="margin-top:16px">
+        <button class="btn cresce" data-acao="cv-ok" type="button">Registrar e desbloquear</button>
+        <button class="btn secundario cresce" data-acao="cv-cancelar" type="button">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(veu);
+  prenderFoco(veu);
+
+  const campo = veu.querySelector('#cv-resp');
+  const erro = veu.querySelector('#cv-erro');
+  const estado = veu.querySelector('#cv-estado');
+  const selo = veu.querySelector('#cv-selo');
+  const video = veu.querySelector('#cv-video');
+  const btnGravar = veu.querySelector('[data-acao="cv-gravar"]');
+  let blob = null, gravador = null, duracao = 0;
+  campo.focus();
+
+  const marcarProva = (b, segundos) => {
+    blob = b; duracao = segundos || 0;
+    selo.textContent = 'com prova'; selo.className = 'selo ok';
+    const dizer = () => { estado.textContent = duracao
+      ? `Vídeo de ${duracao} s guardado aqui, ainda não enviado.`
+      : 'Vídeo guardado aqui, ainda não enviado.'; };
+    dizer();
+    video.srcObject = null; video.src = URL.createObjectURL(b); video.muted = false; video.controls = true;
+    video.style.display = 'block';
+    // Arquivo escolhido do celular não traz duração — quem sabe é o próprio
+    // elemento, depois de ler os metadados. Estimar pelo tamanho daria número
+    // errado com cara de certo, e a duração vai para o registro da prova.
+    video.addEventListener('loadedmetadata', () => {
+      if (Number.isFinite(video.duration) && video.duration > 0) { duracao = Math.round(video.duration); dizer(); }
+    }, { once: true });
+  };
+
+  const encerrarGravacao = () => { try { gravador?.cancelar(); } catch { /* já parou */ } gravador = null; };
+
+  veu.addEventListener('click', comErro(async (e) => {
+    const a2 = e.target.dataset?.acao;
+    if (a2 === 'cv-cancelar' || e.target === veu) { encerrarGravacao(); veu.remove(); return; }
+
+    if (a2 === 'cv-escolher') { veu.querySelector('#cv-arquivo').click(); return; }
+
+    if (a2 === 'cv-gravar') {
+      if (gravador) { gravador.parar(); return; }
+      if (!podeGravar()) { estado.textContent = 'Este aparelho não deixa gravar pelo navegador. Dá para escolher um vídeo já gravado.'; return; }
+      let segundos = 0;
+      btnGravar.textContent = 'Parar e usar este vídeo';
+      gravador = await gravarVideoConsentimento({
+        aoSegundo: (n) => { segundos = n; estado.textContent = `Gravando… ${n} s (para sozinho em 90 s)`; },
+        aoParar: (b) => { gravador = null; btnGravar.textContent = 'Gravar de novo'; marcarProva(b, segundos); },
+      });
+      video.style.display = 'block'; video.muted = true; video.controls = false;
+      video.srcObject = gravador.stream; video.play?.().catch(() => {});
+      return;
+    }
+
+    if (a2 !== 'cv-ok') return;
+    const responsavel = campo.value.trim();
+    if (!responsavel) { erro.textContent = 'É preciso informar quem consentiu.'; erro.style.display = 'block'; campo.focus(); return; }
+    encerrarGravacao();
+    e.target.disabled = true;
+    try {
+      for (const c of CAMPOS_DA_MATRICULA)
+        await post('/api/consentimento', { crianca_id: id, campo: c, status: 'ativo', responsavel });
+      if (blob) {
+        estado.textContent = 'Enviando o vídeo…';
+        await enviarEvidencia(blob, { id, responsavel, duracao });
+      }
+      veu.remove();
+      toast(blob
+        ? `Consentimento registrado com vídeo. O campo de ${nome} foi desbloqueado.`
+        : `Consentimento registrado. O campo de ${nome} foi desbloqueado.`, 'bom');
+      navegar();
+    } catch (err) {
+      e.target.disabled = false;
+      erro.textContent = err.message; erro.style.display = 'block';
+    }
+  }));
+
+  veu.querySelector('#cv-arquivo').addEventListener('change', (e) => {
+    const arq = e.target.files?.[0];
+    e.target.value = '';
+    if (arq) marcarProva(arq, 0);
+  });
+  campo.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') veu.querySelector('[data-acao="cv-ok"]').click();
+  });
+}
+
+/** O upload é de BYTES CRUS, como o do áudio: base64 dentro de JSON inflaria
+ *  33% um arquivo de megabytes e esbarraria no teto de corpo do servidor. */
+async function enviarEvidencia(blob, { id, responsavel, duracao }) {
+  const q = new URLSearchParams({
+    crianca_id: String(id), campo: 'rubrica_socioemocional',
+    mime: blob.type || 'video/webm', responsavel,
+    ...(duracao ? { duracao: String(duracao) } : {}),
+  });
+  const r = await fetch(`/api/consentimento/evidencia?${q}`, {
+    method: 'POST', credentials: 'same-origin',
+    headers: { 'Content-Type': blob.type || 'application/octet-stream' },
+    body: blob,
+  });
+  const corpo = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(corpo.erro || 'Não consegui guardar o vídeo.');
+  return corpo;
+}
+
 function modalCampo({ titulo, texto, rotulo, dica, confirmar }, aoConfirmar) {
   const veu = document.createElement('div');
   veu.className = 'veu';
@@ -5122,6 +5568,77 @@ document.addEventListener('click', comErro(async (ev) => {
     catch { toast('Não deu para copiar automaticamente — selecione o texto e copie.'); }
     return;
   }
+  if (a === 'criar-turma') {
+    const corpo = {
+      nome: document.getElementById('t-nome').value,
+      programa_id: document.getElementById('t-prog').value,
+      turno: document.getElementById('t-turno').value,
+      educador_id: document.getElementById('t-edu').value || null,
+    };
+    alvo.disabled = true;
+    let r;
+    try { r = await post('/api/turmas', corpo); }
+    finally { alvo.disabled = false; }
+    toast(`Turma ${r.turma.nome} criada. ${r.aviso}`, 'bom');
+    navegar(); return;
+  }
+  if (a === 'editar-turma') {
+    const id = alvo.dataset.id;
+    const corpo = {
+      id,
+      nome: document.getElementById(`te-nome-${id}`).value,
+      programa_id: document.getElementById(`te-prog-${id}`).value,
+      turno: document.getElementById(`te-turno-${id}`).value,
+      educador_id: document.getElementById(`te-edu-${id}`).value || null,
+    };
+    alvo.disabled = true;
+    try { await post('/api/turmas/editar', corpo); toast('Turma atualizada.', 'bom'); navegar(); }
+    finally { alvo.disabled = false; }
+    return;
+  }
+  if (a === 'mudar-turma') {
+    const id = alvo.dataset.id;
+    alvo.disabled = true;
+    try {
+      const r = await post('/api/matricula/turma', {
+        matricula_id: id, turma_id: document.getElementById(`mt-${id}`).value || null,
+      });
+      toast(r.aviso, 'bom'); navegar();
+    } finally { alvo.disabled = false; }
+    return;
+  }
+  if (a === 'matricular') {
+    const corpo = {
+      crianca_id: alvo.dataset.id,
+      programa_id: document.getElementById('nm-prog').value,
+      turma_id: document.getElementById('nm-turma').value || null,
+      entrada: document.getElementById('nm-entrada').value || null,
+    };
+    if (!corpo.programa_id) { toast('Esta criança já está em todos os programas.'); return; }
+    alvo.disabled = true;
+    let r;
+    try { r = await post('/api/matricula', corpo); }
+    finally { alvo.disabled = false; }
+    toast(`Matriculada em ${r.programa.nome}${r.turma ? ` · ${r.turma.nome}` : ''}.`, 'bom');
+    navegar(); return;
+  }
+  if (a === 'salvar-responsavel') {
+    const corpo = {
+      crianca_id: alvo.dataset.id,
+      responsavel: document.getElementById('resp-nome').value,
+      contato: document.getElementById('resp-tel').value || null,
+    };
+    alvo.disabled = true;
+    try { await post('/api/crianca/responsavel', corpo); toast('Responsável atualizado.', 'bom'); navegar(); }
+    finally { alvo.disabled = false; }
+    return;
+  }
+  if (a === 'copiar-boletim') {
+    const t = document.getElementById('boletim-texto')?.textContent ?? '';
+    try { await navigator.clipboard.writeText(t); toast('Boletim copiado — cole na conversa com o responsável.', 'bom'); }
+    catch { toast('Não deu para copiar automaticamente — selecione o texto e copie.'); }
+    return;
+  }
   if (a === 'copiar-recado') {
     const t = document.getElementById('recado-texto')?.textContent ?? '';
     try { await navigator.clipboard.writeText(t); toast('Recado copiado — cole no grupo da turma.', 'bom'); }
@@ -5499,22 +6016,7 @@ document.addEventListener('click', comErro(async (ev) => {
   }
 
   if (a === 'consentir') {
-    const nome = alvo.dataset.nome;
-    const id = Number(alvo.dataset.id);
-    modalCampo({
-      titulo: 'Registrar consentimento',
-      texto: `Consentimento específico do responsável (LGPD Art. 14) para o registro socioemocional de ${nome}. `
-           + 'O registro fica gravado com o nome de quem consentiu e pode ser revogado a qualquer momento.',
-      rotulo: 'Quem é o responsável que consentiu?',
-      dica: 'Nome do responsável',
-      confirmar: 'Registrar e desbloquear',
-    }, comErro(async (responsavel) => {
-      for (const campo of ['rubrica_socioemocional', 'campo_livre']) {
-        await post('/api/consentimento', { crianca_id: id, campo, status: 'ativo', responsavel });
-      }
-      toast(`Consentimento registrado. O campo de ${nome} foi desbloqueado.`, 'bom');
-      navegar();
-    }));
+    modalConsentimento({ id: Number(alvo.dataset.id), nome: alvo.dataset.nome });
     return;
   }
 }));

@@ -93,6 +93,14 @@ const GOVERNANCA = [
   // identificável por código — atrás de consentimento específico, liberação
   // registrada e revisor. Nasce pendente para toda criança, como a rubrica.
   { campo: 'parecer_profissional', rotulo: 'Parecer a profissional parceiro (por código)', base_legal: 'Consentimento específico do responsável (LGPD Art. 14)', titular: 'Organização', acesso: 'Profissional parceiro nomeado pela coordenação, após liberação', retencao: 'Registro da liberação permanente; o texto é o do parecer liberado', exige_consentimento: 1 },
+  // Decisao 42 — o boletim da crianca para quem responde por ela. Nao e' um
+  // dado novo: e' a leitura, num lugar so', do que ja' esta registrado. A base
+  // legal e' o DIREITO DE ACESSO do titular (Art. 18, II), exercido pelo
+  // responsavel legal — por isso nao exige consentimento: negar seria negar um
+  // direito. O que ele NAO leva esta na propria doutrina do boletim.
+  { campo: 'boletim_do_responsavel', rotulo: 'Boletim da criança para o responsável', base_legal: 'Direito de acesso do titular (LGPD Art. 18, II), exercido pelo responsável legal', titular: 'Criança', acesso: 'Apenas o responsável cadastrado; quem envia é a pessoa da equipe, com registro', retencao: 'Não persiste — gerado sob demanda do que já está registrado', exige_consentimento: 0 },
+  // Decisao 41 — a prova do consentimento. Dado do RESPONSAVEL, nao da crianca.
+  { campo: 'consentimento_em_video', rotulo: 'Vídeo do responsável consentindo (prova)', base_legal: 'Ônus da prova do consentimento (LGPD Art. 8º, §1º)', titular: 'Responsável', acesso: 'Coordenação e diretoria, com log de acesso', retencao: 'Enquanto o consentimento valer + 5 anos; apagado com a revogação a pedido', exige_consentimento: 0 },
   { campo: 'recado_da_turma', rotulo: 'Recado da turma aos responsáveis', base_legal: 'Legítimo interesse — comunicação com responsáveis sobre a turma (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Responsáveis da turma, pelo grupo que já existe; quem envia é a pessoa', retencao: 'Não persiste — gerado sob demanda, só agregado da turma', exige_consentimento: 0 },
 ];
 
@@ -101,7 +109,7 @@ export function semear() {
   const T = hoje();
 
   return tx(() => {
-    for (const t of ['importacao','relatorio','pauta','atividade_area','folha_marcador','folha','aspiracao','atividade','sintese','alerta','consentimento','observacao_item','observacao','presenca','encontro','calendario_excecao','parecer','acesso_individual','relato_crianca','matricula','crianca','turma','programa','ancora','dimensao','ciclo','educador','governanca_campo'])
+    for (const t of ['importacao','relatorio','pauta','atividade_area','folha_marcador','folha','aspiracao','atividade','sintese','alerta','consentimento_evidencia','consentimento','observacao_item','observacao','presenca','encontro','calendario_excecao','parecer','acesso_individual','relato_crianca','matricula','crianca','turma','programa','ancora','dimensao','ciclo','educador','governanca_campo'])
       db.exec(`DELETE FROM ${t};`);
 
     for (const g of GOVERNANCA)
@@ -162,9 +170,14 @@ export function semear() {
       seq++;
       const codigo = 'EBZ-' + String(seq).padStart(4, '0');
       const anos = intBetween(idadeMin, idadeMax);
-      run(`INSERT INTO crianca (codigo,nome,nascimento,responsavel,ativo,criado_em) VALUES (?,?,?,?,1,?)`,
+      // Telefone SINTÉTICO, e reconhecível como tal: DDD 11, prefixo 9 e oito
+      // zeros-e-sequência. Ninguém atende esse número. Existe para o boletim
+      // (decisão 42) ter um destino nesta base de demonstração — botão que só
+      // aparece com dado real não é testado por ninguém.
+      const telefone = `5511900${String(seq).padStart(6, '0')}`;
+      run(`INSERT INTO crianca (codigo,nome,nascimento,responsavel,responsavel_contato,ativo,criado_em) VALUES (?,?,?,?,?,1,?)`,
           codigo, `${pick(NOMES)} ${pick(SOBRENOMES)}`,
-          addDias(T, -(anos * 365 + intBetween(0, 364))), pick(RESPONSAVEIS), entrada);
+          addDias(T, -(anos * 365 + intBetween(0, 364))), pick(RESPONSAVEIS), telefone, entrada);
       return get(`SELECT id FROM crianca WHERE codigo = ?`, codigo).id;
     };
     const entradaAleatoria = () => {

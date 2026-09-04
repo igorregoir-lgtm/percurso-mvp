@@ -184,6 +184,42 @@ de um levar o outro junto — e foi essa mistura que a decisão 15 desfez.
 varre `relatorio`, `sintese`, `planilha`, `scores`, `sroi`, `recado`, `copilot`, `ai-client`,
 `assistente`, `redacao-modelo` e as pastas `rag/` e `aurora/`.
 
+## A prova do consentimento (decisão 42)
+
+```sql
+CREATE TABLE consentimento_evidencia (
+  id             INTEGER PRIMARY KEY,
+  crianca_id     INTEGER NOT NULL REFERENCES crianca(id) ON DELETE CASCADE,
+  campo          TEXT NOT NULL REFERENCES governanca_campo(campo),
+  arquivo        TEXT NOT NULL,   -- nome no disco; NUNCA sai para a tela
+  mime           TEXT NOT NULL,
+  bytes          INTEGER NOT NULL,
+  duracao_s      INTEGER,
+  responsavel    TEXT NOT NULL,
+  registrado_por INTEGER NOT NULL REFERENCES educador(id),
+  criado_em      TEXT NOT NULL
+);
+```
+
+**O arquivo não está no banco nem em `public/`**: fica em `data/consentimento/`, modo `0600`, e sai
+só por rota autenticada de coordenação — que registra o acesso como `consentimento_video`. A linha
+guarda o que a auditoria precisa saber **sem abrir o vídeo**.
+
+**O oposto do áudio de transcrição, de propósito.** Em `src/transcricao.js` o arquivo é apagado no
+`finally`, sempre; aqui apagar é apagar a prova. Por isso os dois vivem em módulos separados, e por
+isso `apagar` exige motivo — ele existe para revogação (Art. 18, VI), não para arrumar tela.
+
+## O contato do responsável (decisão 43)
+
+```sql
+ALTER TABLE crianca ADD COLUMN responsavel_contato TEXT;   -- E.164 sem '+': 5511988887777
+```
+
+Existe por **um** motivo declarado: o boletim da criança precisa ter para onde ir. Guardado sem
+máscara porque é ele que monta o link do WhatsApp; quem lê a ficha já passou pelo controle de acesso
+e pelo log. **Não entra em lista, agregado nem modelo**, e o normalizador recusa o que não tem DDD —
+número incompleto mandaria a ficha de uma criança para um desconhecido.
+
 ## Restrições que carregam regra de negócio
 
 | Restrição | O que impede |
@@ -198,6 +234,9 @@ varre `relatorio`, `sintese`, `planilha`, `scores`, `sroi`, `recado`, `copilot`,
 | `UNIQUE (tipo, periodo)` em `relatorio` | Duas versões publicáveis do mesmo período |
 | `CHECK pediram_ajuda BETWEEN 0 AND 30` | Contagem implausível vinda da voz |
 | `CHECK origem IN ('voz','manual')` | Origem da folha fora do que o sistema sabe auditar |
+| `UNIQUE` de nome em `turma` (na aplicação) | Duas turmas com o mesmo nome — a coordenação escolheria a errada no seletor |
+| Turma da transferência tem de ser do **mesmo programa** | Mudar o programa de uma criança sem mudar entrada nem permanência |
+| Programa de uma turma **com matrícula** não muda | Mudar, em silêncio, o programa de todas as crianças dela |
 | **`folha` não tem `crianca_id`** | Registro individual disfarçado de folha de turma |
 | `CHECK nivel BETWEEN 1 AND 4` | Nota fora da escala da rubrica |
 | `CHECK conflitos_resolvidos_conversando <= conflitos` (e cada contagem 0–30 ou NULL) | Check-in de grupo impossível |

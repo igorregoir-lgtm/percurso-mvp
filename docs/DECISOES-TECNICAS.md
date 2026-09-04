@@ -1077,6 +1077,170 @@ e é reversível: apagar a coluna e a tabela devolve o produto ao estado anterio
 
 ---
 
+### 41. Turma passa a ter cadastro, e matrícula passa a ter depois (04/09/2026)
+
+**Origem:** pergunta literal do dono do produto, sobre a tela de ficha: *"quem faz a matrícula da
+criança em cada turma? Quem cadastra as turmas? Tem que ter um campo para isso na direção /
+coordenação, já tem?"*
+
+**A resposta honesta era: metade.** A matrícula existia — `Pessoas → Quem entra → Nova criança`
+escolhe programa e turma, e é da coordenação. **O cadastro de turma não existia em lugar nenhum:**
+as sete turmas vinham da `seed`, e a coordenação não podia abrir a turma do ano seguinte, corrigir um
+nome nem passar uma turma para outra professora sem alguém mexer no banco. Uma resposta dessas é
+defeito, não desenho.
+
+E faltava a metade seguinte, que só aparece depois do cadastro: **para quem já está na ativa não
+havia como trocar de turma.** `rematricularCrianca` só serve a quem voltou do arquivo; mudar de
+horário exigiria arquivar a criança e trazê-la de volta, sujando o histórico com uma saída que nunca
+houve.
+
+**O que entrou:** `criarTurma` / `editarTurma` / `turmasDetalhadas`, a aba **Turmas** em `#/pessoas`,
+`transferirDeTurma` (turma de uma matrícula ativa) e `matricularEmPrograma` (um programa a mais para
+quem já está na ativa) — os dois últimos com porta na própria ficha.
+
+**Três recusas que valem mais que as funções:**
+
+- **turma nova em programa que já tem matrícula é recusada na edição** — mudar o programa de uma
+  turma mudaria, em silêncio, o programa de todas as crianças dela;
+- **turma de outro programa é recusada na transferência** — mudar de programa é outra matrícula, com
+  outra entrada e outra leitura de permanência;
+- **coordenação e diretoria não assumem turma** — quem lê ficha por vínculo é quem atende.
+
+**Quem cria a turma é a coordenação**, pelo mesmo motivo de todo o bloco de cadastro: turma é o que
+decide quem lê a ficha de quem. E o **catálogo de programas da turma é maior que o da matrícula** de
+propósito: a Vivência terapêutica está fora do escopo de **medição** (não entra na cobertura, não tem
+rubrica individual — decisão 31), mas ela existe, tem turma, chamada e recado, e é onde a psicóloga
+trabalha. Impedir de criar turma dela seria confundir "fora da medição" com "fora do Instituto".
+
+---
+
+### 42. O consentimento ganha prova, e a prova é o vídeo do responsável (04/09/2026)
+
+**Origem:** *"Como ele deixa registrado o consentimento? Tem como ser por meio de um vídeo do
+responsável na hora de fazer a matrícula?"*
+
+**Tem — e é melhor do que o que havia.** O que havia era o nome do responsável **digitado** por quem
+estava do outro lado da mesa. Isso é a *afirmação* de que houve consentimento, não a prova dele; e a
+LGPD põe o **ônus da prova no controlador** (Art. 8º, §1º). Numa fiscalização, "a coordenação digitou
+o nome" não sustenta nada. Trinta segundos de vídeo sustentam.
+
+E resolve um problema de campo antes de um jurídico: papel se perde, e nem todo responsável lê um
+termo com facilidade. **Falar é mais fácil que assinar** — para os dois lados.
+
+| | Onde | Regra |
+|---|---|---|
+| Arquivo | `data/consentimento/`, modo `0600`, **fora de `public/`** | nunca é servido como estático |
+| Linha | `consentimento_evidencia` | guarda ponteiro, duração, quem registrou; **o nome do arquivo não sai para a tela** |
+| Leitura | rota autenticada de coordenação | passa pelo portão de acesso individual — **assistir deixa rastro** |
+| Apagar | só com **motivo** | existe para revogação (Art. 18, VI), não para arrumar tela |
+
+**O vídeo é opcional, e isso é decisão.** Nem todo responsável quer ser filmado; exigir a câmera
+transformaria uma proteção em barreira. Sem vídeo o consentimento vale igual — a tela é que passa a
+dizer, depois, quais têm prova e quais só têm a palavra de quem digitou.
+
+**Ao contrário do áudio de transcrição, este arquivo existe para ficar** (decisão 35 apaga o áudio no
+`finally`; aqui apagar é apagar a prova). São mecanismos opostos, de propósito, e por isso vivem em
+módulos separados: `src/transcricao.js` e `src/evidencia.js`.
+
+---
+
+### 43. O recado vira boletim quando o destinatário é um só (04/09/2026)
+
+**Origem:** *"essa parte de recado com um link para já mandar para o WhatsApp coloque também na parte
+de cada criança […] para o responsável da criança todos os dados e ficha da criança, presença nas
+classes, evolução socioemocional, enfim toda a informação da criança que tem registro no Instituto
+Ebenézer."*
+
+**Isto não contradiz "da turma, nunca de uma criança" — inverte o motivo dela.** A regra do recado
+existe por causa do **destinatário**: o grupo de pais. Mandar o nome e a falta de uma criança para
+trinta responsáveis é vazamento, e `PESQUISA-WHATSAPP.md:69` já dizia que nem à mão deveria sair.
+Aqui o destinatário é **um**: o responsável legal daquela criança, que é quem exerce o **direito de
+acesso do titular** (Art. 18, II). Negar o dado a ele não protegeria ninguém — negaria um direito.
+
+**O que fica de fora, e é decisão declarada na própria tela:**
+
+| Fora | Por quê |
+|---|---|
+| Relato livre sobre a criança | anotação clínica interna, escrita para pensar o caso. A decisão 40 fez dele o dado mais restrito do produto; despejá-lo num WhatsApp desfaria isso de uma vez |
+| Detalhe do alerta e da tratativa | alerta é assunto de conversa, não de mensagem |
+| Nível 1–4 da rubrica | vocabulário técnico interno; para fora vai a leitura da casa — piorou/manteve/evoluiu |
+
+**Uma escolha técnica que muda o que a família lê:** a comparação do boletim é feita sobre o **nível
+da rubrica (1–4)**, não sobre a nota 0–2 da planilha. `NIVEL_PARA_PLANILHA` colapsa 2 e 3 na mesma
+nota — uma criança que foi de 2 para 3 sairia daqui como *"manteve"*, e a família leria estagnação
+onde houve avanço. O mapeamento existe para falar com a planilha da outra organização; para falar com
+a mãe, ele só perde informação. **Dentro da casa as duas leituras continuam convivendo**, e a ficha
+mostra as duas lado a lado, marcando com `*` onde divergem (decisão 34).
+
+**Dado novo, um só:** `crianca.responsavel_contato`. Ele existe por um motivo declarado — o boletim
+tem de ter para onde ir — e não entra em lista, agregado nem modelo.
+
+---
+
+### 44. O aplicativo entra na lista de quem recebe áudio compartilhado (04/09/2026)
+
+**Origem:** *"áudio pode ser importado de qualquer lugar do celular… Ainda coloque este web app na
+lista dos artefatos que permite receber compartilhamento de áudio."*
+
+**Duas coisas, e a primeira era um defeito silencioso.** O seletor de arquivo declarava
+`accept="audio/*"`. Parece inofensivo e não é: no iPhone ele fecha o navegador de Arquivos em cima do
+que o **sistema** classifica como áudio, e um áudio de WhatsApp (`.opus`), um do Drive ou um exportado
+como vídeo simplesmente **somem da lista** — a pessoa não vê um erro, vê um arquivo que não existe.
+Quem decide se o arquivo serve passa a ser o decodificador, no passo seguinte, **com mensagem**.
+
+A segunda é o **share target**: o manifest declara `POST /compartilhar`, e quem recebe é o **service
+worker** — não há página aberta quando o sistema operacional posta o arquivo. Ele guarda os bytes num
+cache próprio, redireciona para `#/registrar?compartilhado=1`, e a tela lê o cache e **apaga em
+seguida**: cache que fica seria exatamente a cópia que a tela promete não guardar.
+
+**Limitação declarada:** share target exige service worker, que exige contexto seguro. Sem HTTPS o
+`POST /compartilhar` cai no servidor, que responde `303` para a porta de importar — a pessoa escolhe
+o arquivo à mão em vez de ver um 404. iOS ainda não implementa share target; ali o caminho é o
+seletor de arquivo, que é justamente o que a primeira metade desta decisão consertou.
+
+---
+
+### 45. A governança dos campos sai da ficha (04/09/2026)
+
+**Origem:** *"pode excluir tudo isso… essa parte da governança não tem qualquer tipo de utilidade
+para o usuário."*
+
+A tabela de base legal / titular / acesso / retenção estava **duas vezes** no produto: em
+`#/consentimentos`, onde é ferramenta de trabalho da coordenação, e na **ficha de cada criança**, onde
+a professora e a psicóloga a viam toda vez que abriam uma criança. No segundo lugar ela não decide
+nada: quem abre a ficha vai olhar presença e trajetória, e cinco colunas de texto jurídico entre a
+rubrica e o parecer só empurram o resto da tela para baixo.
+
+**Foi removida da ficha, e só dela.** A governança continua inteira em `#/consentimentos`, continua
+sendo a regra 3 do bloco 6, e continua bloqueando campo sem base legal declarada. O que saiu foi a
+**repetição no lugar errado** — e um gate no `unit-test` impede que ela volte para lá.
+
+**O que entrou no espaço que ela deixou:** a porta para registrar o olhar do ciclo (decisão 46) e o
+boletim do responsável (decisão 43).
+
+---
+
+### 46. A tabela do ciclo passa a ter porta para o registro (04/09/2026)
+
+**Origem:** *"onde esses pontos são registrados? Não é a professora / psicóloga que tem que
+registrar? Como se faz isso?"*
+
+**Registrar sempre foi dela** — mas a única porta ficava em `Hoje → Ciclo de observação`, e a tabela
+que **mostra** os pontos, na ficha, não levava a lugar nenhum. Quem olhava para os números não tinha
+como mexer neles: parecia dado que vem de fora, e a pergunta que isso gera é exatamente a que foi
+feita.
+
+O cartão passa a dizer o **estado** (a fazer / começado / feito neste ciclo) e a abrir o registro.
+Quando **não** dá para registrar, ele diz o motivo em vez de esconder o botão — bloqueio de
+consentimento não é erro do sistema, é a regra dele, e esconder o botão faria o motivo sumir junto.
+
+**Uma recusa nova, que a porta obrigou a existir:** `GET /api/observacao` passa a devolver
+`na_rubrica`. Na Vivência terapêutica não há rubrica individual (decisão 31), e sem esse campo a
+ficha ofereceria um registro que o `POST` teria de recusar depois. Botão que leva a lugar nenhum é
+pior que ausência de botão: parece defeito do produto, e é.
+
+---
+
 ---
 
 ## Dívidas técnicas conhecidas
@@ -1092,6 +1256,9 @@ e é reversível: apagar a coluna e a tabela devolve o produto ao estado anterio
 | PoC do copilot com pedagogos não realizada | Bloqueia `AI_ENABLED=1` em operação real | Antes de ligar a IA para educadoras (protocolo pronto em `POC-COPILOT.md`) |
 | 20 consultas do rag-test de autoria interna | Gate C não congelado | Validação por pedagogo (registrada em `POC-COPILOT.md`) |
 | Anonimização não cobre apelido/paráfrase | Risco residual declarado na UI | Reavaliar com a PoC; orientação de uso é a mitigação |
+| Vídeo de consentimento sem política de retenção automática | O arquivo fica até alguém apagar com motivo; o fecho de ciclo não o alcança | Ligar ao `fecharCiclo` quando a retenção declarada (consentimento + 5 anos) vencer pela primeira vez |
+| Share target não funciona no iOS nem sem HTTPS | Metade dos aparelhos do Instituto cai no seletor de arquivo | Nada a fazer no produto: depende do Safari e do certificado. O caminho manual está declarado na tela |
+| Telefone do responsável sem verificação | Um dígito errado manda o boletim para um desconhecido | Confirmação por mensagem antes do primeiro envio, quando houver operação real |
 | Educadora substituta sem representação no modelo | Escopo de turma barra acesso legítimo temporário | Decisão da coordenação (decisão 22) |
 | Políticas A-06/A-11 propostas, não validadas | Pendência de governança | Validação da coordenação (decisão 23) |
 | Mapeamento 1–4 → 0–2 da planilha é provisório | A exportação pode divergir do que a psicóloga faria à mão | Aval da psicóloga sobre as 6 rubricas e o mapeamento (decisão 34) |

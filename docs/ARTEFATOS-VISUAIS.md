@@ -52,7 +52,7 @@ aberto**, que é onde a fusão de superfícies da F6 se vê.
 
 - **A dor dela** — `#/entrar` → Carolina → `#/hoje` → *Falar agora* → `#/registrar` capturando →
   *Terminei* → `#/registrar` conferindo → *Confirmar e guardar* → **`#/sai-daqui`**. Este último
-  passo era o conserto do **passo 05** do task flow, feito em 04/09/2026: `public/app.js:5084` passou a abrir o relato e
+  passo era o conserto do **passo 05** do task flow, feito em 04/09/2026: `public/app.js:5530` passou a abrir o relato e
   o relato não abre sozinho. No v3, confirmar a folha abre o relato.
 - **A segunda turma** — `#/hoje` → chip *Sábado tarde* → `#/hoje` da tarde. Hoje esse caminho não
   existe: `GET /api/hoje` monta tudo a partir de `turmas[0]`.
@@ -117,6 +117,22 @@ cópia para envelhecer. Em código, desde 04/09/2026. Além disso: a captura por
 abre a tela em vez de ser o terceiro cartão; a janela de 40 s deixa de ser teto; as três garantias
 aparecem no instante do toque; o check-in vira entrada direta preservando `—`/`0`/`N`; a conferência
 mostra a origem de cada campo; e existe seletor de turma.
+
+> **Divergência declarada, 04/09/2026 (tarde).** Os ajustes pedidos em campo naquele dia
+> (decisões 41 a 46) entraram **no código antes de entrarem no protótipo** — a ordem que esta seção
+> acabou de inverter voltou a se inverter, e registrar isso vale mais que esconder. **Nenhuma rota
+> nova nasceu**, então as 12 telas do v3 continuam sendo as 12: o que mudou é o conteúdo de três
+> delas. O protótipo está atrás nestes seis pontos:
+>
+> | Tela do v3 | O que o código tem e o desenho ainda não |
+> |---|---|
+> | `#/pessoas` | a aba **Turmas** (criar, editar, trocar a professora) — decisão 41 |
+> | `#/crianca/:id` | o cartão do ciclo com **botão de registrar** (dec. 46); o **boletim do responsável** com link de WhatsApp (dec. 43); o bloco "quem responde por"; troca de turma e matrícula em outro programa (dec. 41) |
+> | `#/crianca/:id` | **saiu** a tabela "Governança dos campos" (dec. 45) |
+> | `#/consentimentos` | o **vídeo do responsável** no registro do consentimento, e o corte entre quem tem prova e quem só tem a palavra (dec. 42) |
+> | `#/registrar` | o seletor de arquivo sem filtro e a entrada por **compartilhamento do sistema** (dec. 44) |
+>
+> Enquanto isso não for desenhado, **a fonte destes seis pontos é o código**, não o Figma.
 
 > **Ressalva de leitura, registrada em 03/09/2026.** O conector do Figma expõe apenas **uma página
 > por arquivo**, e no `h6AnLVYLfpeVl2N4ie0Qzv` a página exposta é o `Leia-me` — cujo texto manda

@@ -53,7 +53,8 @@ nada de volta pelo que observa.
    está sempre visível.
 4. **`#/hoje?detalhe=ciclo`** — vê quem falta observar e quem está bloqueada, com o motivo explícito (janela de
    convívio, consentimento) — bloqueio é protocolo, nunca erro dela.
-5. **`#/crianca/:id?ver=observacao`** — rubrica de 6 dimensões × 4 âncoras comportamentais (os seis indicadores da planilha socioemocional do Instituto — decisão 34), ~3 minutos por
+5. **`#/crianca/:id?ver=observacao`** — pela agenda do ciclo **ou pela própria ficha da criança**,
+   que desde 04/09/2026 abre o registro em vez de só mostrar a tabela (decisão 46) — rubrica de 6 dimensões × 4 âncoras comportamentais (os seis indicadores da planilha socioemocional do Instituto — decisão 34), ~3 minutos por
    criança; rascunho persiste se ela sair no meio. **A rubrica continua sem texto** (decisão 15) —
    mas desde 04/09/2026 o relato sobre a criança tem **lugar próprio** na ficha dela, com
    consentimento específico do responsável e descarte no fim do ciclo (decisão 40). São coisas
@@ -76,7 +77,7 @@ pedagógica continua dela; situação de risco escala para o caminho humano.
 | O que ela via passa a existir como dado, com data e comparação | Registrar é trabalho novo: ~3 min por observação e ~40 s por folha do dia — se isso não couber na rotina, o produto falha, e só a sessão de validação mede isso |
 | Devolução concreta: pauta de segunda, trajetória da turma | O extrator lexical entende menos variação de fala que um LLM; ela vai corrigir campos. A taxa de correção está instrumentada e o limite declarado é 40% (decisão 13) |
 | Alerta de ausência tira o "agir sob demanda" | O aviso de conteúdo sensível interrompe a fala dela e devolve encaminhamento humano — certo por proteção, mas é fricção real |
-| Proteção por construção: sem texto livre sobre criança; a fala nunca chega ao servidor do Percurso | O MVP não tem senha — o perfil se escolhe na tela. Aceitável na demo sintética; bloqueante antes de dado real (dívida declarada) |
+| Proteção por controle de acesso: senha por pessoa, escopo de turma, consentimento e rastro (decisões 38–40) | O texto livre sobre criança agora existe no banco: o que impede o vazamento deixou de ser a ausência do campo. Troca consciente, declarada na decisão 40 |
 
 ---
 
@@ -106,11 +107,18 @@ entra por incentivo fiscal cobra prestação de contas, e prestação de contas 
 2. **`#/painel?aba=scores`** — três scores que medem vínculo, sistema e oferta — **nunca a criança**: risco
    de evasão, cobertura do registro, exposição (aspiração declarada × atividade realizada).
 3. **`#/painel?aba=safras`** — permanência e evasão por safra e por programa.
-4. **`#/consentimentos`** — pendências de consentimento; campo sem base legal declarada nasce
-   bloqueado no servidor, não no botão da tela.
-5. **`#/painel?aba=sintese`** — gera a síntese do ciclo em template fechado (números vêm de SQL, nunca de
+4. **`#/pessoas?aba=turmas`** — abre a turma do ano que vem, corrige o nome de uma, passa a turma
+   para outra professora (decisão 41). Antes de 04/09/2026 isto não existia: as turmas vinham da
+   `seed`, e trocar a turma de quem já estava matriculada exigia arquivar a criança e trazê-la de
+   volta — uma saída que nunca houve, no meio do histórico de presença.
+5. **`#/consentimentos`** — pendências de consentimento; campo sem base legal declarada nasce
+   bloqueado no servidor, não no botão da tela. **Ao registrar, ela pode gravar o vídeo do
+   responsável consentindo** (decisão 42): "a coordenação digitou o nome" é afirmação, o vídeo é
+   prova — e o ônus dela é do controlador (LGPD Art. 8º, §1º). O vídeo é opcional; sem ele o
+   consentimento vale igual, e a tela passa a dizer quais têm prova e quais só têm a palavra.
+6. **`#/painel?aba=sintese`** — gera a síntese do ciclo em template fechado (números vêm de SQL, nunca de
    modelo), passa pelo revisor de sobre-alegação e **aprova ou devolve** — a aprovação é dela.
-6. **Fecho do ciclo** — fecha o ciclo, a retenção declarada é executada e o próximo abre.
+7. **Fecho do ciclo** — fecha o ciclo, a retenção declarada é executada e o próximo abre.
 
 **Aurora opcional (v3, se `AI_ENABLED=1`):** a mesma sala **Refletir** para preparar conversas
 de calibração — e, no painel, a leitura de divergência entre educadoras por dimensão (pauta de
@@ -221,6 +229,11 @@ cérebro"*); o que ela vê não vira evidência.
 6. **Parecer para profissional parceiro** — quando a assistente social perguntar, ela (ou a
    coordenação) gera um parecer por **código**, com presença, participação e evolução por
    indicador — só com consentimento específico do responsável e com a liberação registrada.
+7. **`#/crianca/:id`** — na ficha, dois caminhos que antes não existiam (04/09/2026): o cartão do
+   ciclo **abre o registro do olhar** em vez de só mostrar a tabela (decisão 46), e o **boletim do
+   responsável** monta, num texto só, matrícula, presença e evolução em piorou/manteve/evoluiu,
+   com o link direto do WhatsApp de quem responde pela criança (decisão 43). O relato livre e o
+   detalhe do alerta **não vão** — a tela diz que não vão, e por quê.
 
 ### O que a jornada de campo v2 exige e o MVP ainda não tem (02/09/2026)
 

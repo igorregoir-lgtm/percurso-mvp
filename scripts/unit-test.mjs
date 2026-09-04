@@ -625,19 +625,19 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     // O botão do recado. O destino virou `#/sai-daqui?aba=recado` na F2, mas o
     // que a âncora guarda é o mesmo: ele leva a TURMA e a DATA do encontro.
     'public/app.js:613': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
-    'public/app.js:1337': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:1418': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:3019': /async function telaScores\(\)/,
-    'public/app.js:3250': /id="pergunta"/,
+    'public/app.js:3222': /async function telaScores\(\)/,
+    'public/app.js:3453': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:5084': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
-    'src/api.js:422': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:622': /'POST \/api\/consentimento'/,
-    'src/api.js:1129': /periodosSugeridos\(\)/,
+    'public/app.js:5530': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'src/api.js:424': /erro\(422.*rubrica por ciclo/,
+    'src/api.js:684': /'POST \/api\/consentimento'/,
+    'src/api.js:1191': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:112': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
@@ -2684,4 +2684,171 @@ test('régua: criança sem presença nesta turma aparece como sem_base, não som
   assert.equal(linha.encontros, 0);
   assert.equal(linha.faixa, 'sem_base');
   assert.equal(r.criancas.length, D.criancasDaTurma(t).length);
+});
+
+// ===========================================================================
+// AJUSTES DE 04/09/2026 — as seis perguntas do campo, cada uma com sua trava.
+// ===========================================================================
+const BOL = await import('../src/boletim.js');
+const EVI = await import('../src/evidencia.js');
+const RLIV = await import('../src/relato-livre.js');
+
+// --- 1. quem cadastra as turmas, e quem matricula em cada uma --------------
+test('turma: o cadastro existe, recusa turno inventado, nome repetido e quem não atende', () => {
+  const t = D.criarTurma({ nome: 'Vivência · Domingo', turno: 'sabado', programaId: 4, educadorId: 5 });
+  assert.equal(t.turma.nome, 'Vivência · Domingo');
+  assert.match(t.aviso, /passa a ler as fichas/);
+
+  assert.throws(() => D.criarTurma({ nome: 'Turma X', turno: 'terça', programaId: 1 }), /semana.*sabado|sabado/);
+  assert.throws(() => D.criarTurma({ nome: 'vivência · domingo', turno: 'sabado', programaId: 4 }), /Já existe uma turma/);
+  // Coordenação e diretoria não assumem turma: quem lê ficha por vínculo é quem atende.
+  assert.throws(() => D.criarTurma({ nome: 'Turma Y', turno: 'semana', programaId: 1, educadorId: 2 }),
+    /não é professora nem profissional/);
+  // Turma sem professora é estado legítimo — e a tela avisa o que isso significa.
+  const semDona = D.criarTurma({ nome: 'Turma Z', turno: 'semana', programaId: 1 });
+  assert.match(semDona.aviso, /sem professora/);
+});
+
+test('turma: mudar o PROGRAMA de uma turma com matrícula é recusado', () => {
+  const comCriancas = get(`SELECT t.id, t.nome, t.turno, t.programa_id FROM turma t
+                            WHERE (SELECT COUNT(*) FROM matricula m WHERE m.turma_id = t.id) > 0 LIMIT 1`);
+  assert.throws(
+    () => D.editarTurma(comCriancas.id, { nome: comCriancas.nome, turno: comCriancas.turno, programaId: 3 }),
+    /mudaria o programa de todas/);
+  // Trocar só a professora, no entanto, é o caso comum e passa.
+  const r = D.editarTurma(comCriancas.id, {
+    nome: comCriancas.nome, turno: comCriancas.turno, programaId: comCriancas.programa_id, educadorId: 1 });
+  assert.equal(r.turma.educador_id, 1);
+});
+
+test('matrícula: trocar de turma dentro do programa passa; para outro programa, não', () => {
+  const m = get(`SELECT m.id, m.programa_id, m.turma_id FROM matricula m
+                  WHERE m.status='ativa' AND m.turma_id IS NOT NULL AND m.programa_id = 1 LIMIT 1`);
+  const outraDoMesmo = get(`SELECT id FROM turma WHERE programa_id = 1 AND id <> ? LIMIT 1`, m.turma_id);
+  const deOutro = get(`SELECT id FROM turma WHERE programa_id <> 1 LIMIT 1`);
+  const r = D.transferirDeTurma(m.id, { turmaId: outraDoMesmo.id });
+  assert.equal(r.turma.id, outraDoMesmo.id);
+  assert.throws(() => D.transferirDeTurma(m.id, { turmaId: deOutro.id }), /é de outro programa/);
+  // Sem turma é permitido, e o aviso diz a consequência: ninguém lê a ficha.
+  assert.match(D.transferirDeTurma(m.id, { turmaId: null }).aviso, /sem turma|ninguém lê/);
+  D.transferirDeTurma(m.id, { turmaId: outraDoMesmo.id });
+});
+
+test('matrícula: no mesmo programa duas vezes, não', () => {
+  const m = get(`SELECT crianca_id, programa_id FROM matricula WHERE status='ativa' LIMIT 1`);
+  assert.throws(() => D.matricularEmPrograma(m.crianca_id, { programaId: m.programa_id }),
+    /já tem matrícula ativa/);
+});
+
+// --- 2. o telefone do responsável, que é o destino do boletim --------------
+test('contato do responsável: exige DDD, guarda com 55 e volta legível', () => {
+  assert.equal(D.normalizarContato('(11) 98888-7777'), '5511988887777');
+  assert.equal(D.normalizarContato('5511988887777'), '5511988887777');
+  assert.equal(D.normalizarContato('11 3333-4444'), '551133334444');
+  assert.equal(D.normalizarContato(''), null);
+  assert.equal(D.normalizarContato(null), null);
+  assert.throws(() => D.normalizarContato('98888777'), /DDD/);
+  assert.throws(() => D.normalizarContato('55115511988887777'), /DDD/);
+  assert.equal(D.contatoLegivel('5511988887777'), '(11) 98888-7777');
+  assert.equal(D.contatoLegivel('551133334444'), '(11) 3333-4444');
+});
+
+// --- 6. o boletim do responsável: o que leva, e sobretudo o que NÃO leva ---
+test('boletim: leva matrícula, presença e evolução — nunca relato livre, alerta ou nível 1–4', () => {
+  const c = get(`SELECT c.id, c.nome FROM crianca c
+                   JOIN observacao o ON o.crianca_id = c.id AND o.status='concluida'
+                  WHERE c.ativo = 1 GROUP BY c.id HAVING COUNT(DISTINCT o.ciclo_id) >= 2 LIMIT 1`);
+  D.atualizarResponsavel(c.id, { responsavel: 'Fulana de Tal', contato: '(11) 98888-7777' });
+  // Um relato livre e um alerta EXISTEM para esta criança — o teste só vale se
+  // o boletim tiver o que esconder.
+  D.registrarConsentimento(c.id, 'campo_livre', 'ativo', 'Fulana de Tal');
+  RLIV.salvarRelatoCrianca({ criancaId: c.id, educadorId: 2, texto: 'pediu para sentar perto da porta' });
+  run(`INSERT INTO alerta (crianca_id, tipo, detalhe, criado_em, status)
+       VALUES (?, 'ausencia', 'Faltou nos 3 últimos encontros', ?, 'aberto')
+       ON CONFLICT(crianca_id, tipo) DO UPDATE SET status='aberto'`, c.id, D.hoje());
+
+  const b = BOL.boletimDaCrianca(c.id);
+  assert.equal(b.responsavel, 'Fulana de Tal');
+  assert.equal(b.contato, '5511988887777');
+  assert.match(b.whatsapp_url, /^https:\/\/wa\.me\/5511988887777\?text=/);
+  assert.match(b.texto, /Presença: \d+%/);
+  assert.ok(/piorou|manteve|evoluiu/.test(b.texto), 'sem a leitura na língua dela');
+
+  assert.ok(!b.texto.includes('perto da porta'), 'o relato livre vazou para o WhatsApp');
+  assert.ok(!b.texto.includes('Faltou nos 3'), 'o detalhe do alerta vazou');
+  assert.doesNotMatch(b.texto, /\b[1-4]\/4\b/, 'o nível da rubrica vazou');
+  // E o que ficou de fora é DITO — silêncio viraria "o sistema não tinha o dado".
+  assert.ok(b.fora.some(x => /relato livre/.test(x)));
+  assert.ok(b.fora.some(x => /alerta/.test(x)));
+});
+
+test('boletim: sem telefone não há link — e o texto continua existindo', () => {
+  const c = get(`SELECT id FROM crianca WHERE ativo = 1 AND responsavel_contato IS NULL LIMIT 1`)
+    ?? (() => { const x = get(`SELECT id FROM crianca WHERE ativo = 1 LIMIT 1`);
+                run(`UPDATE crianca SET responsavel_contato = NULL WHERE id = ?`, x.id); return x; })();
+  const b = BOL.boletimDaCrianca(c.id);
+  assert.equal(b.whatsapp_url, null);
+  assert.ok(b.texto.length > 60);
+});
+
+// --- 3. a prova do consentimento em vídeo ---------------------------------
+test('evidência: guarda o vídeo fora de public/, recusa formato estranho e não devolve o nome do arquivo', () => {
+  const c = get(`SELECT id FROM crianca WHERE ativo = 1 LIMIT 1`);
+  const bytes = Buffer.alloc(2048, 7);
+  assert.throws(() => EVI.guardar(bytes, { criancaId: c.id, campo: 'rubrica_socioemocional',
+    mime: 'application/pdf', responsavel: 'Fulana', registradoPor: 2 }), /não reconhecido/);
+  assert.throws(() => EVI.guardar(bytes, { criancaId: c.id, campo: 'rubrica_socioemocional',
+    mime: 'video/mp4', responsavel: '  ', registradoPor: 2 }), /quem é o responsável|responsável/i);
+
+  const e = EVI.guardar(bytes, { criancaId: c.id, campo: 'rubrica_socioemocional',
+    mime: 'video/mp4', duracaoS: 31, responsavel: 'Fulana de Tal', registradoPor: 2 });
+  assert.equal(e.bytes, 2048);
+  assert.equal(e.duracao_s, 31);
+  assert.equal(e.arquivo, undefined, 'o nome do arquivo no disco não pode sair para a tela');
+  assert.ok(!EVI.DIR.includes('public'), 'o vídeo estaria sendo servido como estático');
+  assert.equal(EVI.bytesDe(e.id).buffer.length, 2048);
+  assert.equal(EVI.daCrianca(c.id).length, 1);
+  // O painel de consentimentos passa a separar quem tem prova de quem só tem palavra.
+  assert.ok(D.painelConsentimentos().linhas.some(l => l.id === c.id ? l.tem_prova : true));
+
+  // Apagar é para revogação, não para arrumar tela: sem motivo, não apaga.
+  assert.throws(() => EVI.apagar(e.id, { motivo: '' }), /motivo/);
+  const morto = EVI.apagar(e.id, { motivo: 'pedido do responsável' });
+  assert.equal(morto.apagado, e.id);
+  assert.throws(() => EVI.bytesDe(e.id), /não está no sistema/);
+});
+
+// --- travas de TELA, que nenhuma função de domínio pega -------------------
+test('a governança dos campos saiu da ficha (pedido do campo: "não tem utilidade para o usuário")', async () => {
+  const { readFileSync } = await import('node:fs');
+  const front = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  const ficha = front.slice(front.indexOf('async function telaFichaDaCrianca'),
+                            front.indexOf('async function telaParecer'));
+  assert.ok(!ficha.includes('Governança dos campos'),
+    'a tabela de base legal voltou para a ficha — ela vive só em #/consentimentos');
+  // O que ENTROU no lugar: a porta do olhar e o boletim do responsável.
+  assert.match(ficha, /blocoRegistrarOlhar/);
+  assert.match(ficha, /cartaoBoletim/);
+});
+
+test('importar áudio não filtra o que o celular mostra, e o app recebe compartilhamento', async () => {
+  const { readFileSync } = await import('node:fs');
+  const raiz = new URL('../public/', import.meta.url);
+  const front = readFileSync(new URL('app.js', raiz), 'utf8');
+  const sw = readFileSync(new URL('sw.js', raiz), 'utf8');
+  const manifest = JSON.parse(readFileSync(new URL('manifest.json', raiz), 'utf8'));
+
+  const campo = front.match(/<input type="file" id="arq-audio"[^>]*>/s)[0];
+  assert.ok(!/accept="audio\/\*"\s/.test(campo),
+    'o accept estreito voltou: no iPhone ele some com .opus, com o Drive e com o iCloud');
+  assert.match(campo, /\.opus/);
+
+  assert.equal(manifest.share_target?.action, '/compartilhar');
+  assert.equal(manifest.share_target?.method, 'POST');
+  assert.ok(manifest.share_target?.params?.files?.[0]?.accept?.includes('audio/*'));
+  assert.match(sw, /\/compartilhar/);
+  assert.match(sw, /percurso-compartilhado/);
+  // O arquivo compartilhado é CONSUMIDO: cache que fica seria a cópia que a
+  // tela promete não guardar.
+  assert.match(front, /cache\.delete\('\/__ultimo-compartilhado'\)/);
 });
