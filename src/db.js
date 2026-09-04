@@ -130,6 +130,26 @@ const ESQUEMA_SQL = `
     UNIQUE (turma_id, data)
   );
 
+  -- O CALENDARIO DA CASA (decisao 37). O turno da turma da' a regra base — a
+  -- Vivencia e' de sabado, o Reforco e' de dia util —, mas a casa tem feriado,
+  -- recesso e encontro extra, e ate' aqui o produto nao tinha como saber disso:
+  -- ele deduzia o calendario do dia da semana e pronto.
+  --
+  -- Guarda so' a EXCECAO, nao cada encontro: uma tabela com uma linha por sabado
+  -- do ano seria um calendario para alguem manter a mao, e a casa cabe em duas
+  -- pessoas. Quem marca e' quem responde pela turma, a coordenacao ou a direcao.
+  CREATE TABLE IF NOT EXISTS calendario_excecao (
+    id         INTEGER PRIMARY KEY,
+    turma_id   INTEGER NOT NULL REFERENCES turma(id),
+    data       TEXT NOT NULL,
+    -- 'sem_encontro' (feriado, recesso) ou 'extra' (encontro fora do padrao)
+    tipo       TEXT NOT NULL CHECK (tipo IN ('sem_encontro','extra')),
+    motivo     TEXT,
+    criado_por INTEGER REFERENCES educador(id),
+    criado_em  TEXT,
+    UNIQUE (turma_id, data)
+  );
+
   CREATE TABLE IF NOT EXISTS presenca (
     id          INTEGER PRIMARY KEY,
     encontro_id INTEGER NOT NULL REFERENCES encontro(id) ON DELETE CASCADE,

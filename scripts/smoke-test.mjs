@@ -27,6 +27,7 @@ async function req(quem, caminho, opts = {}) {
 }
 const GET = (quem, c) => req(quem, c);
 const POST = (quem, c, b) => req(quem, c, { method: 'POST', body: JSON.stringify(b || {}) });
+const DELETE = (quem, c, b) => req(quem, c, { method: 'DELETE', body: JSON.stringify(b || {}) });
 
 console.log('\n\x1b[1mPercurso — testes do fluxo principal\x1b[0m');
 console.log(`Alvo: ${BASE}\n`);
@@ -71,7 +72,14 @@ secao('2 · Chamada em um toque (F2)');
   T('educadora tem turma atribuída', !!turmaId);
   T('há datas de chamada em aberto (nada expira)', hoje.chamadas_abertas.length > 0,
     `(${hoje.chamadas_abertas.length})`);
-  T('estado de retomada detecta o lapso sem culpar', hoje.retomada.em_lapso === true);
+  // O lapso passou a ser contado em ENCONTROS DA TURMA, não em dias de
+  // calendário (F4). A asserção deriva da mesma regra do domínio em vez de
+  // repetir um número — repetir o número foi o que deixou o defeito de pé.
+  T('estado de retomada conta ENCONTROS da turma, não dias de calendário',
+    typeof hoje.retomada.encontros_sem_registro === 'number');
+  T('estado de retomada detecta o lapso sem culpar',
+    hoje.retomada.em_lapso === (hoje.retomada.encontros_sem_registro >= 2),
+    `(${hoje.retomada.encontros_sem_registro} encontros, em_lapso=${hoje.retomada.em_lapso})`);
 
   const data = hoje.chamadas_abertas[0];
   const ch = (await GET('maria', `/api/chamada?turma_id=${turmaId}&data=${data}`)).corpo;
@@ -392,6 +400,40 @@ secao('10 · Robustez');
 // ============================================================================
 // 11 · v2 — folha do dia, voz, extrator e perímetro (F2, F3, F4, F5, F6)
 // ============================================================================
+// ============================================================================
+secao('10b · O calendário da casa (decisão 37)');
+{
+  const cal = (await GET('maria', `/api/calendario?turma_id=${turmaId}`)).corpo;
+  T('o calendário deduz os próximos encontros do turno da turma', cal.proximos.length > 0, `(${cal.proximos.join(', ')})`);
+  const alvo = cal.proximos[0];
+
+  const marcou = await POST('maria', '/api/calendario', { turma_id: turmaId, data: alvo, tipo: 'sem_encontro', motivo: 'Feriado' });
+  T('a casa marca um dia sem encontro', marcou.status === 200);
+  const depois = (await GET('maria', `/api/calendario?turma_id=${turmaId}`)).corpo;
+  T('o dia marcado SAI dos próximos encontros', !depois.proximos.includes(alvo), `(${alvo})`);
+  T('e fica visível como decisão da casa, com o motivo',
+    depois.excecoes.some(e => e.data === alvo && e.tipo === 'sem_encontro' && /Feriado/.test(e.motivo ?? '')));
+
+  // A guarda que importa: apagar da vista um encontro JÁ REGISTRADO deixaria o
+  // registro dele no banco, invisível. Recusar é o único desfecho honesto.
+  const jaRegistrado = (await GET('maria', '/api/hoje')).corpo.data_folha;
+  const conflito = await POST('maria', '/api/calendario', { turma_id: turmaId, data: jaRegistrado, tipo: 'sem_encontro' });
+  T('marcar "sem encontro" num dia com chamada registrada é recusado (422)',
+    conflito.status === 422, `(${conflito.status})`);
+
+  const tipoInvalido = await POST('maria', '/api/calendario', { turma_id: turmaId, data: alvo, tipo: 'talvez' });
+  T('tipo fora do vocabulário é recusado (422)', tipoInvalido.status === 422, `(${tipoInvalido.status})`);
+
+  const limpou = await DELETE('maria', '/api/calendario', { turma_id: turmaId, data: alvo });
+  T('desfazer devolve o dia ao padrão da turma', limpou.status === 200);
+  const volta = (await GET('maria', `/api/calendario?turma_id=${turmaId}`)).corpo;
+  T('e ele volta aos próximos encontros', volta.proximos.includes(alvo));
+
+  const alheia = (await GET('maria', '/api/turmas')).corpo.turmas.find(t => t.id !== turmaId);
+  const invasao = await POST('maria', '/api/calendario', { turma_id: alheia.id, data: alvo, tipo: 'sem_encontro' });
+  T('educadora não mexe no calendário de turma alheia (403)', invasao.status === 403, `(${invasao.status})`);
+}
+
 secao('11 · Folha do dia, captura por voz e agente extrator (F2–F6)');
 let dataFolha = null;
 {
@@ -1157,16 +1199,19 @@ secao('24 · Psicóloga e Vivência terapêutica — indicador de programa, nunc
   const hoje = (await GET('carolina', '/api/hoje')).corpo;
   T('o Hoje dela abre na turma da Vivência', !!hoje.turma && /Viv[eê]ncia/i.test(hoje.turma.programa));
   T('a turma da Vivência está fora da rubrica: sem agenda de ciclo', hoje.na_rubrica === false && hoje.agenda === null);
-  // A Vivencia e' sabatica: a ultima atividade dela e' sempre o sabado anterior, e a
-  // regua de lapso e' de 5 dias (PARAMS.DIAS_LAPSO). Numa quinta-feira o lapso dispara
-  // sozinho — isso e' a regua funcionando, nao o teste quebrando. Fixar `false` aqui so'
-  // valia de sabado a quarta; a assercao passa a derivar da mesma regra.
+  // ESTA ASSERÇÃO MUDOU DE SENTIDO NA F4, e a razão fica escrita. A régua era de
+  // 5 DIAS DE CALENDÁRIO, e para uma turma de sábado ela disparava TODA
+  // QUINTA-FEIRA sem que um único encontro tivesse sido perdido. O teste antigo
+  // derivava a asserção da régua errada para parar de quebrar — o gate se
+  // acomodando ao defeito em vez de acusá-lo. Agora a régua é em ENCONTROS DA
+  // TURMA, e a Vivência, sendo sabática, tem no máximo um perdido depois de uma
+  // semana: nenhum lapso numa quinta.
   const diasSemRegistro = hoje.retomada.dias_sem_registro;
   T('a retomada dela conta a partir do último sábado (a Vivência é sabática)',
     diasSemRegistro != null && diasSemRegistro <= 7, `(${diasSemRegistro} dias)`);
-  T('o lapso dela segue a régua de 5 dias, sem exceção para a Vivência',
-    hoje.retomada.em_lapso === (diasSemRegistro >= 5),
-    `(${diasSemRegistro} dias, em_lapso=${hoje.retomada.em_lapso})`);
+  T('uma semana sem sábado NÃO é lapso para a Vivência (era, em dias de calendário)',
+    hoje.retomada.encontros_sem_registro <= 1 && hoje.retomada.em_lapso === false,
+    `(${diasSemRegistro} dias, ${hoje.retomada.encontros_sem_registro} encontros, em_lapso=${hoje.retomada.em_lapso})`);
 
   const agenda = await GET('carolina', `/api/ciclo/agenda?turma_id=${hoje.turma.id}`);
   T('pedir a agenda do ciclo para a Vivência é recusado com o motivo (422)',

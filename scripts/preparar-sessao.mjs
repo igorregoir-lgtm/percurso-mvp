@@ -17,7 +17,9 @@
 //   node scripts/reset.mjs
 //
 // --lapso [N]: alem disso, empurra a ultima atividade do educador da turma para
-// N dias atras (padrao 9, acima do gatilho de 5 de PARAMS.DIAS_LAPSO) para que
+// N dias atras (padrao 9). O gatilho passou a ser ENCONTROS DA TURMA sem
+// registro (PARAMS.ENCONTROS_LAPSO), nao dias de calendario — numa turma de
+// sabado, nove dias sao um encontro so'. O script pergunta ao dominio. Para que
 // `#/hoje` abra com a retomada sem culpa. E' o que a Provocacao Longa do
 // Protocolo do Lapso pede (METODOLOGIA-VALIDACAO-PERCURSO.md, 5.5) e o que ate
 // agora estava escrito la como "ajustar a semente", sem como.
@@ -29,15 +31,16 @@
 //   2. Rodar duas vezes comia o encontro SEGUINTE: a 2a execucao levou junto uma
 //      folha com relato ja liberado. Nao havia idempotencia nem aviso.
 //   3. `--lapso 3` imprimia "a tela Hoje abre com a retomada" e nao abria: o
-//      gatilho e' PARAMS.DIAS_LAPSO = 5. O facilitador preparava a Provocacao
-//      Longa confiando na linha.
+//      gatilho era PARAMS.DIAS_LAPSO = 5. O facilitador preparava a Provocacao
+//      Longa confiando na linha. Hoje a linha PERGUNTA ao dominio em vez de
+//      recalcular a regra — foi assim que ela voltou a mentir na F4.
 // Por isso: todo argumento e' validado ANTES de abrir o banco, o preparo e'
 // idempotente por deteccao de estado, e `--dry-run` mostra sem apagar.
 //
 // Uso: node scripts/preparar-sessao.mjs [--turma N] [--lapso [dias]] [--dry-run] [--forcar]
 import { getDb, closeDb, get, all, run, tx } from '../src/db.js';
 import { hoje, addDias, diaLetivo, recalcularAlertas, criancasDaTurma,
-         chamadasEmAberto, PARAMS } from '../src/domain.js';
+         chamadasEmAberto, estadoDeRetomada, PARAMS } from '../src/domain.js';
 
 const argv = process.argv.slice(2);
 const DRY = argv.includes('--dry-run');
@@ -185,13 +188,15 @@ console.log(`  Folha apagada ....... ${folha ? `sim${folha.relato_liberado_em ? 
 console.log(`  Encontro anterior ... ${anterior?.data ?? '—'} (segue registrado — é a base de comparação da devolução)`);
 console.log(`  Alertas recalculados  ${alertas.alertasAbertos} em aberto`);
 if (lapsoData) {
-  const abre = LAPSO >= PARAMS.DIAS_LAPSO;
+  const estado = estadoDeRetomada(turma.educador_id);
   console.log(`  Lapso forçado ....... última atividade em ${lapsoData} (${LAPSO} dias)`
             + `${lapsoApagadas ? `, ${lapsoApagadas} atividade(s) posterior(es) apagada(s)` : ''}`);
-  console.log(abre
-    ? `                        a tela Hoje ABRE com a retomada (gatilho: ${PARAMS.DIAS_LAPSO} dias)`
-    : `                        ATENÇÃO: ${LAPSO} < ${PARAMS.DIAS_LAPSO} — a tela Hoje NÃO abre com a retomada.`
-      + `\n                        A Provocação Longa precisa de --lapso ${PARAMS.DIAS_LAPSO} ou mais.`);
+  console.log(estado.em_lapso
+    ? `                        a tela Hoje ABRE com a retomada (${estado.encontros_sem_registro} encontros`
+      + ` desta turma sem registro; gatilho: ${PARAMS.ENCONTROS_LAPSO})`
+    : `                        ATENÇÃO: só ${estado.encontros_sem_registro} encontro(s) desta turma sem registro`
+      + ` — a tela Hoje NÃO abre com a retomada (gatilho: ${PARAMS.ENCONTROS_LAPSO}).`
+      + `\n                        Numa turma de sábado, cada encontro é uma semana: use --lapso 15 ou mais.`);
 }
 
 if (!diaLetivo(turma.turno, hoje())) {

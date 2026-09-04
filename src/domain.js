@@ -19,9 +19,18 @@ export const PARAMS = {
   // Escala da rubrica.
   NIVEL_MIN: 1,
   NIVEL_MAX: 4,
-  // Anti-abandono: a partir de quantos dias sem registro o sistema oferece
-  // retomada explicita, sem cobranca.
-  DIAS_LAPSO: 5,
+  // Anti-abandono: a partir de quantos ENCONTROS DA PROPRIA TURMA sem registro o
+  // sistema oferece retomada explicita, sem cobranca.
+  //
+  // ERA EM DIAS DE CALENDARIO (5), e isso acusava lapso TODA QUINTA-FEIRA para
+  // quem so' atende sabado — cinco dias depois do sabado, sem que um unico
+  // encontro tivesse sido perdido. Estava registrado em `c1edcbe` e nunca foi
+  // corrigido; o teste de fluxo chegou a derivar a assercao da regua errada
+  // para parar de quebrar, o que e' o teste se acomodando ao defeito.
+  //
+  // Contar ENCONTROS e' o que a frase "voce ficou um tempo sem registrar"
+  // sempre quis dizer. Dois: um encontro perdido acontece; dois viraram habito.
+  ENCONTROS_LAPSO: 2,
   // Meta do experimento de validacao do modulo: registro em menos de 2 minutos.
   META_REGISTRO_SEGUNDOS: 120,
   // Supressao de celula pequena: agregado com menos de N criancas nao sai
@@ -216,6 +225,9 @@ export function chamadasEmAberto(turmaId, limite = 10) {
   const turma = get(`SELECT * FROM turma WHERE id = ?`, turmaId);
   if (!turma) return [];
   const registradas = new Set(all(`SELECT data FROM encontro WHERE turma_id = ?`, turmaId).map(r => r.data));
+  // O calendario da casa manda: feriado marcado nao vira "chamada em aberto"
+  // cobrada para sempre, e encontro extra entra mesmo caindo fora do turno.
+  const excecoes = new Map(excecoesDaTurma(turmaId).map(e => [e.data, e.tipo]));
   const inicio = get(`SELECT MIN(entrada) AS d FROM matricula WHERE turma_id = ?`, turmaId)?.d;
   if (!inicio) return [];
   const abertas = [];
@@ -223,7 +235,9 @@ export function chamadasEmAberto(turmaId, limite = 10) {
   let cur = addDias(fim, -limite * 2);
   if (cur < inicio) cur = inicio;
   while (cur <= fim) {
-    if (diaLetivo(turma.turno, cur) && !registradas.has(cur)) abertas.push(cur);
+    const ex = excecoes.get(cur);
+    const houve = ex ? ex === 'extra' : diaLetivo(turma.turno, cur);
+    if (houve && !registradas.has(cur)) abertas.push(cur);
     cur = addDias(cur, 1);
   }
   return abertas.slice(-limite);
@@ -232,6 +246,64 @@ export function chamadasEmAberto(turmaId, limite = 10) {
 export function diaLetivo(turno, iso) {
   const dow = new Date(iso + 'T12:00:00Z').getUTCDay(); // 0=dom
   return turno === 'sabado' ? dow === 6 : dow >= 1 && dow <= 5;
+}
+
+// --------------------------------------------------------------------------
+// O CALENDARIO DA CASA (decisao 37) — a regra do turno MAIS as excecoes que a
+// casa marcou. Ate' aqui o produto deduzia o calendario do dia da semana e
+// pronto: feriado virava "chamada em aberto" cobrada para sempre, e encontro
+// extra simplesmente nao existia.
+// --------------------------------------------------------------------------
+export function excecoesDaTurma(turmaId, deISO = null, ateISO = null) {
+  const cond = [], args = [turmaId];
+  if (deISO) { cond.push('data >= ?'); args.push(deISO); }
+  if (ateISO) { cond.push('data <= ?'); args.push(ateISO); }
+  return all(
+    `SELECT * FROM calendario_excecao WHERE turma_id = ?${cond.length ? ' AND ' + cond.join(' AND ') : ''}
+      ORDER BY data`, ...args);
+}
+
+/** A pergunta que o produto inteiro faz: esta turma se reúne NESTE dia? */
+export function temEncontro(turmaId, iso) {
+  const turma = get(`SELECT turno FROM turma WHERE id = ?`, turmaId);
+  if (!turma) return false;
+  const ex = get(`SELECT tipo FROM calendario_excecao WHERE turma_id = ? AND data = ?`, turmaId, iso);
+  if (ex) return ex.tipo === 'extra';
+  return diaLetivo(turma.turno, iso);
+}
+
+/** Os próximos N encontros da turma, a partir de amanhã. Alimenta o aviso que
+ *  chega ANTES do encontro — que é o que o campo pediu: o lembrete tem de
+ *  chegar enquanto ainda dá para apertar "gravar", não depois. */
+export function proximosEncontros(turmaId, n = 3) {
+  const saida = [];
+  let d = hoje();
+  for (let i = 0; i < 120 && saida.length < n; i++) {
+    d = addDias(d, 1);
+    if (temEncontro(turmaId, d)) saida.push(d);
+  }
+  return saida;
+}
+
+export function marcarNoCalendario({ turmaId, data, tipo, motivo, educadorId }) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data ?? ''))) throw erro(422, 'Data inválida.');
+  if (!['sem_encontro', 'extra'].includes(tipo)) throw erro(422, 'Marque "não vai ter encontro" ou "encontro extra".');
+  // Marcar "sem encontro" num dia JA' REGISTRADO apagaria da vista um encontro
+  // que aconteceu — e o registro dele continuaria no banco, invisivel. Recusar
+  // e' o unico desfecho honesto.
+  if (tipo === 'sem_encontro' && encontroDe(turmaId, data))
+    throw erro(422, 'Esse dia já tem chamada registrada. Se o encontro não aconteceu, o caminho é a coordenação.');
+  run(`INSERT INTO calendario_excecao (turma_id, data, tipo, motivo, criado_por, criado_em)
+       VALUES (?,?,?,?,?,?)
+       ON CONFLICT(turma_id, data) DO UPDATE SET tipo = excluded.tipo, motivo = excluded.motivo,
+         criado_por = excluded.criado_por, criado_em = excluded.criado_em`,
+      turmaId, data, tipo, (motivo || '').slice(0, 120) || null, educadorId, agora());
+  return { ok: true, data, tipo };
+}
+
+export function desmarcarNoCalendario(turmaId, data) {
+  run(`DELETE FROM calendario_excecao WHERE turma_id = ? AND data = ?`, turmaId, data);
+  return { ok: true };
 }
 
 // --------------------------------------------------------------------------
@@ -938,17 +1010,46 @@ export function marcarAtividade(educadorId, tipo) {
   run(`INSERT INTO atividade (educador_id, data, tipo) VALUES (?,?,?)`, educadorId, hoje(), tipo);
 }
 
+/**
+ * Quantos dias LETIVOS DA TURMA existem entre duas datas (exclusivo no inicio,
+ * inclusivo no fim). E' o calendario que importa para a retomada: uma turma de
+ * sabado perde um encontro por semana, nao um por dia.
+ */
+export function encontrosEntre(turno, deISO, ateISO, turmaId = null) {
+  if (!deISO || !ateISO || deISO >= ateISO) return 0;
+  // Com turma, o calendario da casa manda (feriado nao conta como encontro
+  // perdido); sem turma, vale a regra do turno.
+  const excecoes = turmaId ? new Map(excecoesDaTurma(turmaId, deISO, ateISO).map(e => [e.data, e.tipo])) : new Map();
+  let n = 0;
+  const d = new Date(deISO + 'T12:00:00Z');
+  const fim = new Date(ateISO + 'T12:00:00Z');
+  // Teto de um ano: sem ele uma data corrompida no banco viraria laco infinito.
+  for (let i = 0; i < 400 && d < fim; i++) {
+    d.setUTCDate(d.getUTCDate() + 1);
+    const iso = d.toISOString().slice(0, 10);
+    const ex = excecoes.get(iso);
+    if (ex ? ex === 'extra' : diaLetivo(turno, iso)) n++;
+  }
+  return n;
+}
+
 export function estadoDeRetomada(educadorId) {
   const ultima = get(
     `SELECT MAX(data) AS d FROM atividade WHERE educador_id = ? AND data < ?`, educadorId, hoje())?.d;
   const hojeJa = get(
     `SELECT COUNT(*) AS n FROM atividade WHERE educador_id = ? AND data = ?`, educadorId, hoje()).n > 0;
   const dias = ultima ? diasEntre(ultima, hoje()) : null;
-  const emLapso = dias != null && dias >= PARAMS.DIAS_LAPSO;
+  // O CALENDARIO E' DA TURMA. Quem responde por mais de uma usa a de encontro
+  // mais frequente — e' a que primeiro deixaria um registro para tras.
+  const turmas = all(`SELECT id, turno FROM turma WHERE educador_id = ?`, educadorId);
+  const perdidos = !ultima || !turmas.length ? 0
+    : Math.max(...turmas.map(t => encontrosEntre(t.turno, ultima, hoje(), t.id)));
+  const emLapso = !!ultima && perdidos >= PARAMS.ENCONTROS_LAPSO;
   return {
-    ultima_atividade: ultima, dias_sem_registro: dias, registrou_hoje: hojeJa, em_lapso: emLapso,
+    ultima_atividade: ultima, dias_sem_registro: dias, encontros_sem_registro: perdidos,
+    registrou_hoje: hojeJa, em_lapso: emLapso,
     mensagem: emLapso
-      ? `Você ficou ${dias} dias sem registrar. Nada se perdeu — os registros anteriores continuam aqui e as datas em aberto seguem disponíveis.`
+      ? `Você ficou ${dias} dias sem registrar — ${perdidos} encontros desta turma. Nada se perdeu: os registros anteriores continuam aqui e as datas em aberto seguem disponíveis.`
       : null,
   };
 }

@@ -101,7 +101,7 @@ export function semear() {
   const T = hoje();
 
   return tx(() => {
-    for (const t of ['importacao','relatorio','pauta','atividade_area','folha_marcador','folha','aspiracao','atividade','sintese','alerta','consentimento','observacao_item','observacao','presenca','encontro','matricula','crianca','turma','programa','ancora','dimensao','ciclo','educador','governanca_campo'])
+    for (const t of ['importacao','relatorio','pauta','atividade_area','folha_marcador','folha','aspiracao','atividade','sintese','alerta','consentimento','observacao_item','observacao','presenca','encontro','calendario_excecao','parecer','matricula','crianca','turma','programa','ancora','dimensao','ciclo','educador','governanca_campo'])
       db.exec(`DELETE FROM ${t};`);
 
     for (const g of GOVERNANCA)

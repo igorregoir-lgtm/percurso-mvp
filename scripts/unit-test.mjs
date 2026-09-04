@@ -619,24 +619,24 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     // O botão do recado. O destino virou `#/sai-daqui?aba=recado` na F2, mas o
     // que a âncora guarda é o mesmo: ele leva a TURMA e a DATA do encontro.
     'public/app.js:594': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
-    'public/app.js:1186': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:1243': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:2805': /async function telaScores\(\)/,
-    'public/app.js:3031': /id="pergunta"/,
+    'public/app.js:2862': /async function telaScores\(\)/,
+    'public/app.js:3088': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:4708': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
-    'src/api.js:334': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:460': /'POST \/api\/consentimento'/,
-    'src/api.js:924': /periodosSugeridos\(\)/,
+    'public/app.js:4765': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
+    'src/api.js:347': /erro\(422.*rubrica por ciclo/,
+    'src/api.js:473': /'POST \/api\/consentimento'/,
+    'src/api.js:966': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:112': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
-    'src/domain.js:145': /a folha e' do ENCONTRO|A folha e' do ENCONTRO/i,
-    'src/domain.js:941': /export function estadoDeRetomada/,
+    'src/domain.js:154': /a folha e' do ENCONTRO|A folha e' do ENCONTRO/i,
+    'src/domain.js:1036': /export function estadoDeRetomada/,
     'src/relatorio.js:440': /export function periodosSugeridos/,
     'src/relatorio.js:584': /const INTENCOES/,
     'src/seed.js:74': /rubrica_socioemocional/,
@@ -999,6 +999,65 @@ test('folhaAnteriorDaTurma copia o DESENHO da atividade, nunca as contagens', as
   assert.ok('atividade' in ant.campos && 'marcadores_turma' in ant.campos,
     'o desenho da atividade é justamente o que se repete');
   assert.match(ant.data, /^\d{4}-\d{2}-\d{2}$/, 'a tela mostra a data, então ela tem de vir');
+});
+
+test('lapso: o calendário é da TURMA, não do calendário civil (F4)', () => {
+  // O DEFEITO: `DIAS_LAPSO = 5` acusava lapso TODA QUINTA-FEIRA para quem só
+  // atende sábado — cinco dias depois do sábado, sem que um único encontro
+  // tivesse sido perdido. Estava registrado em `c1edcbe` e nunca foi corrigido;
+  // o teste de fluxo tinha derivado a asserção da régua errada para parar de
+  // quebrar, que é o gate se acomodando ao defeito.
+  //
+  // Sábado 29/08/2026; quinta seguinte é 03/09.
+  assert.equal(D.encontrosEntre('sabado', '2026-08-29', '2026-09-03'), 0,
+    'entre um sábado e a quinta seguinte não passou encontro nenhum de turma sabática');
+  assert.equal(D.encontrosEntre('sabado', '2026-08-29', '2026-09-05'), 1, 'um sábado depois: um encontro');
+  assert.equal(D.encontrosEntre('sabado', '2026-08-29', '2026-09-12'), 2, 'dois sábados depois: dois');
+
+  // A turma de semana perde um encontro por dia útil — e é isso que faz a mesma
+  // régua valer para as duas sem exceção escrita à mão.
+  assert.equal(D.encontrosEntre('tarde', '2026-09-03', '2026-09-04'), 1, 'quinta para sexta: um dia útil');
+  assert.equal(D.encontrosEntre('tarde', '2026-09-04', '2026-09-07'), 1, 'sexta para segunda: o fim de semana não conta');
+
+  assert.equal(D.encontrosEntre('sabado', '2026-09-05', '2026-09-05'), 0, 'mesma data: nada entre');
+  assert.equal(D.encontrosEntre('sabado', '2026-09-12', '2026-09-05'), 0, 'data invertida não conta para trás');
+  assert.equal(D.PARAMS.ENCONTROS_LAPSO, 2, 'um encontro perdido acontece; dois viraram hábito');
+});
+
+test('a semeadura limpa TODAS as tabelas do esquema, na ordem das chaves', async () => {
+  // DEFEITO REAL, cometido ao criar `calendario_excecao` na F4: a tabela nova
+  // referencia `turma` e ficou de fora da lista de limpeza da seed. O esquema
+  // passou em tudo, e o `reset` só quebrou quando existia UMA linha na tabela
+  // nova — "FOREIGN KEY constraint failed", com o banco pela metade.
+  //
+  // Isto se repete a cada tabela nova, e o custo é sempre o mesmo: quem for
+  // rodar o reset descobre no pior momento. O gate lê as duas listas do código.
+  const { readFileSync } = await import('node:fs');
+  const ddl = readFileSync(new URL('../src/db.js', import.meta.url), 'utf8');
+  const seed = readFileSync(new URL('../src/seed.js', import.meta.url), 'utf8');
+
+  const tabelas = [...ddl.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map(m => m[1]);
+  assert.ok(tabelas.length >= 20, `só ${tabelas.length} tabelas lidas — o extrator quebrou`);
+  const lista = seed.match(/for \(const t of \[([^\]]+)\]\)/)?.[1] ?? '';
+  const limpas = [...lista.matchAll(/'([^']+)'/g)].map(m => m[1]);
+  assert.ok(limpas.length >= 20, `só ${limpas.length} tabelas na lista de limpeza`);
+
+  const faltando = tabelas.filter(t => !limpas.includes(t));
+  assert.deepEqual(faltando, [], 'tabela do esquema que a semeadura não limpa — o reset vai quebrar por chave estrangeira');
+
+  // E a ordem importa: quem REFERENCIA tem de ser apagada antes de quem é
+  // referenciada. Confere só o par que já quebrou e os que dependem de `turma`.
+  const posicao = (t) => limpas.indexOf(t);
+  for (const m of ddl.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)([\s\S]*?)\n  \);/g)) {
+    const [, tabela, corpo] = m;
+    for (const ref of corpo.matchAll(/REFERENCES (\w+)\(/g)) {
+      const alvo = ref[1];
+      if (alvo === tabela) continue;                 // auto-referência
+      if (posicao(tabela) === -1 || posicao(alvo) === -1) continue;
+      assert.ok(posicao(tabela) < posicao(alvo),
+        `"${tabela}" referencia "${alvo}" e é apagada DEPOIS dela — o DELETE vai falhar`);
+    }
+  }
 });
 
 test('nenhuma rota do front é engolida por outra (despacho é o PRIMEIRO que casa)', async () => {

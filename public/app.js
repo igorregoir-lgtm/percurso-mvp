@@ -585,7 +585,7 @@ rota(/^#\/hoje/, async () => {
       <div class="linha"><h2 class="cresce">${d.na_rubrica === false ? 'Registro da vivência' : 'Folha'} ${d.data_folha === d.hoje ? 'do dia' : `de ${dataBR(d.data_folha)}`}</h2>
         <span class="selo ${folhaFeita ? 'ok' : 'pend'}">${folhaFeita ? (d.folha.origem === 'voz' ? 'por voz' : 'manual') : 'pendente'}</span></div>
       <p class="sub">${folhaFeita
-        ? 'Registrada. Dá para ajustar enquanto o dia não fecha.'
+        ? `Registrada${d.folha_registrada_depois ? ` em ${dataBR(d.folha_registrada_depois)}, depois do encontro — vale igual` : ''}. Dá para ajustar enquanto o dia não fecha.`
         : 'Fale enquanto arruma a sala, pelo tempo que precisar — o resto o Percurso monta.'}</p>
       <div class="linha" style="margin-top:12px">
         <button class="btn largo" data-acao="ir" data-href="#/registrar">${folhaFeita ? 'Contar de novo' : 'Contar como foi'}</button>
@@ -674,6 +674,16 @@ rota(/^#\/hoje/, async () => {
   // O seletor de turma. Sem ele a psicóloga não alcança a turma da TARDE —
   // achado de campo do dono do produto: a turma existe, com porta de entrada,
   // nome e chamada; quem não a acompanhava era o produto.
+  // O AVISO ANTES DO ENCONTRO (F4). O campo pediu que o lembrete chegasse
+  // enquanto ainda dá para apertar "gravar", não depois. É IN-APP: notificação
+  // agendada não existe no padrão web (Notification Triggers nunca vingou;
+  // Safari só faz push com servidor), e prometer o que o navegador não faz
+  // seria pior que não avisar. O limite está declarado na decisão 37.
+  const prox = (d.proximos_encontros ?? [])[0];
+  const avisoProximo = !prox ? '' : `
+    <p class="sub" style="margin-top:6px">Próximo encontro: <b>${esc(diaSemana(prox))}, ${dataBR(prox)}</b>${
+      d.turma ? ` · ${esc(d.turma.nome)}` : ''} — vai pedir registro.</p>`;
+
   const seletor = (d.turmas ?? []).length < 2 ? '' : `
     <div class="linha" style="margin-top:10px;flex-wrap:wrap;gap:8px">
       ${d.turmas.map(t => `<button class="btn pequeno ${t.id === d.turma?.id ? '' : 'fantasma'}"
@@ -685,6 +695,7 @@ rota(/^#\/hoje/, async () => {
     <p class="kicker">${esc(d.turma?.programa || 'Instituto Ebenézer')}</p>
     <h1>${saudacao}, ${esc(sessao.apelido.split(' ')[0])}</h1>
     <p class="sub">${esc(d.turma ? d.turma.nome : 'Sem turma atribuída')} · ${esc(porExtenso(d.hoje))}</p>
+    ${avisoProximo}
     ${seletor}
     ${focado ? `<div class="linha" style="margin-top:12px"><button class="btn pequeno fantasma"
       data-acao="ir" data-href="#/hoje${d.turma ? `?turma_id=${d.turma.id}` : ''}">‹ Voltar ao Hoje</button></div>` : ''}
@@ -968,20 +979,66 @@ function tabelaTrajetoria(t) {
 // ======================================================================
 // PAINEL DA TURMA (F5 agregado)
 // ======================================================================
+/**
+ * O CALENDÁRIO DA CASA (F4, decisão 37).
+ *
+ * O turno da turma dá a regra base — a Vivência é de sábado, o Reforço é de dia
+ * útil. Mas a casa tem feriado, recesso e encontro extra, e até aqui o produto
+ * deduzia o calendário do dia da semana e pronto: feriado virava "chamada em
+ * aberto" cobrada para sempre, e encontro extra simplesmente não existia.
+ *
+ * Guarda só a EXCEÇÃO. Uma tela com uma linha por sábado do ano seria um
+ * calendário para alguém manter à mão, e a casa cabe em duas pessoas.
+ */
+function cartaoCalendario(cal) {
+  if (!cal) return '';
+  return `
+    <div class="cartao compacto" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Próximos encontros</h2>
+        <span class="sub">${esc(cal.turma.turno === 'sabado' ? 'sábados' : 'dias de semana')}</span></div>
+      <p class="sub">O Percurso deduz do turno da turma. Marque aqui o que fugir do padrão — feriado, recesso, encontro extra.</p>
+      <div class="pilha" style="margin-top:10px">
+        ${cal.proximos.map(dt => `
+          <div class="item" style="cursor:default">
+            <div class="cresce"><div class="nome">${dataBR(dt)}</div><div class="meta">${esc(diaSemana(dt))}</div></div>
+            <button class="btn pequeno fantasma" data-acao="cal-marcar" data-data="${dt}" data-tipo="sem_encontro">Não vai ter</button>
+          </div>`).join('')}
+      </div>
+      ${cal.excecoes.length ? `
+        <div class="lbl" style="margin-top:14px">Marcado pela casa</div>
+        <div class="pilha">
+          ${cal.excecoes.map(e => `
+            <div class="item" style="cursor:default">
+              <div class="cresce"><div class="nome">${dataBR(e.data)}</div>
+                <div class="meta">${e.tipo === 'extra' ? 'encontro extra' : 'sem encontro'}${e.motivo ? ` · ${esc(e.motivo)}` : ''}</div></div>
+              <button class="btn pequeno fantasma" data-acao="cal-desmarcar" data-data="${e.data}">Desfazer</button>
+            </div>`).join('')}
+        </div>` : ''}
+      <div class="linha" style="margin-top:12px">
+        <input type="date" id="cal-data" aria-label="Data do encontro extra" style="flex:1">
+        <button class="btn pequeno secundario" data-acao="cal-marcar" data-tipo="extra">Encontro extra</button>
+      </div>
+    </div>`;
+}
+
 rota(/^#\/turma/, async () => {
-  const d = await api('/api/hoje');
+  const q = new URLSearchParams(location.hash.split('?')[1] || '');
+  const d = await api(`/api/hoje${q.get('turma_id') ? `?turma_id=${q.get('turma_id')}` : ''}`);
   if (!d.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2></div>`; return; }
-  const [p, est, risco, regua] = await Promise.all([
+  const [p, est, risco, regua, cal] = await Promise.all([
     api(`/api/turma/painel?turma_id=${d.turma.id}`),
     api(`/api/turma/estado?turma_id=${d.turma.id}`),
     api(`/api/turma/risco?turma_id=${d.turma.id}`),
     api(`/api/turma/presenca?turma_id=${d.turma.id}`).catch(() => null),
+    api(`/api/calendario?turma_id=${d.turma.id}`).catch(() => null),
   ]);
+  ctx.calendario = { turmaId: d.turma.id };
   const emRisco = new Set(risco.linhas.map(l => l.crianca_id));
   app.innerHTML = `
     <p class="kicker">Agregado · sem dado individual</p>
     <h1>Painel da turma</h1>
     <p class="sub">${esc(p.turma.nome)} · médias por dimensão, escala de 1 a 4</p>
+    ${cartaoCalendario(cal)}
     <div class="cartao" style="margin-top:16px">
       <div class="lbl">${est.criancas.length} crianças matriculadas</div>
       <div class="pilha" style="margin-top:0">
@@ -4852,6 +4909,26 @@ document.addEventListener('click', comErro(async (ev) => {
         if (el) el.textContent = 'Já dá para tocar em Terminei — ou siga falando';
       }
     }, 1000);
+    return;
+  }
+
+  if (a === 'cal-marcar' || a === 'cal-desmarcar') {
+    const turmaId = ctx.calendario?.turmaId;
+    if (!turmaId) return;
+    const data = alvo.dataset.data || document.getElementById('cal-data')?.value;
+    if (!data) { toast('Escolha a data primeiro.'); return; }
+    if (a === 'cal-desmarcar') {
+      await api('/api/calendario', { method: 'DELETE', body: JSON.stringify({ turma_id: turmaId, data }) });
+      toast('Desfeito. O calendário volta ao padrão da turma.');
+    } else {
+      const tipo = alvo.dataset.tipo;
+      const motivo = tipo === 'sem_encontro'
+        ? prompt(`Por que não vai ter encontro em ${dataBR(data)}? (opcional)`) ?? ''
+        : '';
+      await post('/api/calendario', { turma_id: turmaId, data, tipo, motivo });
+      toast(tipo === 'extra' ? `Encontro extra em ${dataBR(data)}.` : `${dataBR(data)} sai do calendário desta turma.`, 'bom');
+    }
+    navegar();
     return;
   }
 

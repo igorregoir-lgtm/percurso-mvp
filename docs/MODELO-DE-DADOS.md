@@ -101,6 +101,30 @@ permanência e evasão medem exatamente a saída.
 desenvolvimento. O áudio nunca sai do navegador; a transcrição vive em memória durante uma
 requisição; o score de evasão é recalculado a cada consulta e nunca historiado.
 
+## O calendário da casa (decisão 37)
+
+```sql
+CREATE TABLE calendario_excecao (
+  id         INTEGER PRIMARY KEY,
+  turma_id   INTEGER NOT NULL REFERENCES turma(id),
+  data       TEXT NOT NULL,
+  tipo       TEXT NOT NULL CHECK (tipo IN ('sem_encontro','extra')),
+  motivo     TEXT,
+  criado_por INTEGER REFERENCES educador(id),
+  criado_em  TEXT,
+  UNIQUE (turma_id, data)
+);
+```
+
+**Guarda só a exceção, não o calendário.** O turno da turma já dá a regra base — Vivência aos
+sábados, Reforço em dia útil. Uma tabela com uma linha por sábado do ano seria um calendário para
+alguém manter à mão, e a casa cabe em duas pessoas. `temEncontro(turma, data)` é a pergunta única;
+`chamadasEmAberto`, o lapso e os próximos encontros derivam dela.
+
+**Registro retroativo não precisou de coluna nova:** `encontro.data` é quando o encontro aconteceu
+e `encontro.registrado_em` é quando foi registrado. Quando os dois não batem, a tela diz — e o
+registro vale igual.
+
 ## Restrições que carregam regra de negócio
 
 | Restrição | O que impede |

@@ -249,6 +249,19 @@ export const rotas = {
       // da Vivencia ainda tem o recado do sabado. Sem encontro nenhum na turma,
       // `dataDaFolha` devolve hoje e este campo e' falso — nao ha o que mandar.
       encontro_registrado: turma ? !!D.encontroDe(turma.id, D.dataDaFolha(turma.id)) : false,
+      // F4 — o aviso chega ANTES do encontro, que e' o que o campo pediu: o
+      // lembrete tem de chegar enquanto ainda da' para apertar "gravar". E' o
+      // aviso IN-APP; notificacao agendada nao existe no padrao web (ver
+      // decisao 37), e prometer o que o navegador nao faz seria pior que nada.
+      proximos_encontros: turma ? D.proximosEncontros(turma.id, 2) : [],
+      // "Registrado depois": o encontro guarda a DATA em que aconteceu e o
+      // instante em que foi registrado. Quando os dois nao batem, a tela diz —
+      // registro atrasado vale igual, e esconder isso e' que seria estranho.
+      folha_registrada_depois: (() => {
+        if (!turma) return null;
+        const e = D.encontroDe(turma.id, D.dataDaFolha(turma.id));
+        return e?.registrado_em && e.registrado_em.slice(0, 10) > e.data ? e.registrado_em.slice(0, 10) : null;
+      })(),
       // O recado e' de TURMA, e quem responde por varias tinha porta so' para a
       // primeira (`turmas[0]`): a psicologa cobre a Vivencia de manha E de tarde,
       // e a Cleide, quatro turmas — os responsaveis das demais nao recebiam nada
@@ -690,6 +703,35 @@ export const rotas = {
       `SELECT t.id, t.nome, t.turno, p.nome AS programa, e.nome AS educador
          FROM turma t JOIN programa p ON p.id = t.programa_id
          LEFT JOIN educador e ON e.id = t.educador_id ORDER BY t.id`) };
+  },
+
+  // ---- O calendario da casa (decisao 37) ---------------------------------
+  // O turno da' a regra base; a casa marca a excecao. Quem responde pela turma
+  // marca a dela; coordenacao e diretoria marcam qualquer uma — e' calendario
+  // da casa, nao agenda pessoal.
+  'GET /api/calendario': (req, _b, q) => {
+    const turmaId = num(q.get('turma_id'), 'turma_id');
+    exigeAcessoTurma(req, turmaId);
+    return {
+      turma: get(`SELECT id, nome, turno FROM turma WHERE id = ?`, turmaId),
+      proximos: D.proximosEncontros(turmaId, 4),
+      excecoes: D.excecoesDaTurma(turmaId, D.hoje()),
+      abertas: D.chamadasEmAberto(turmaId),
+    };
+  },
+
+  'POST /api/calendario': (req, corpo) => {
+    const turmaId = num(corpo.turma_id, 'turma_id');
+    const u = exigeAcessoTurma(req, turmaId);
+    return D.marcarNoCalendario({
+      turmaId, data: corpo.data, tipo: corpo.tipo, motivo: corpo.motivo, educadorId: u.id,
+    });
+  },
+
+  'DELETE /api/calendario': (req, corpo) => {
+    const turmaId = num(corpo.turma_id, 'turma_id');
+    exigeAcessoTurma(req, turmaId);
+    return D.desmarcarNoCalendario(turmaId, String(corpo.data ?? ''));
   },
 
   'GET /api/folha': (req, _b, q) => {

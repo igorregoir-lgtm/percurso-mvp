@@ -14,10 +14,10 @@ Em outro:
 node scripts/smoke-test.mjs
 ```
 
-Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **385 passaram,
+Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **397 passaram,
 0 falharam**.
 
-Há também uma bateria de **172 testes unitários** das regras críticas de domínio (filtro de
+Há também uma bateria de **175 testes unitários** das regras críticas de domínio (filtro de
 perímetro, validação do schema do extrator, determinismo do agente, os três scores, supressão com
 agrupamento, deduplicação da ingestão, revisor de sobre-alegação, consentimento, imutabilidade da
 síntese, fecho de ciclo, cadastro e arquivo de pessoas, base fixa da curva de permanência), que roda sem servidor, contra um banco temporário descartável:

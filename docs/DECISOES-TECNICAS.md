@@ -117,7 +117,7 @@ observação registrada.
 impõe exigências sobre quem aplica. Uma criança recém-matriculada aparece **bloqueada com o motivo
 explícito**, não escondida — a educadora entende que é protocolo, não falha dela.
 
-Está isolado em `PARAMS`, junto com `AUSENCIAS_ALERTA` (2 — ver decisão 18) e `DIAS_LAPSO` (5), para que a
+Está isolado em `PARAMS`, junto com `AUSENCIAS_ALERTA` (2 — ver decisão 18) e `ENCONTROS_LAPSO` (2 — ver decisão 37), para que a
 coordenação possa ajustá-los sem procurar no meio do código.
 
 ---
@@ -139,8 +139,8 @@ autenticação por senha ou SSO; (b) HTTPS; (c) registro de auditoria de acesso 
 
 ### 9. Dados sintéticos determinísticos
 
-PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 385
-asserções de fluxo e os 172 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
+PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 397
+asserções de fluxo e os 175 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
 a *hoje*, então a demonstração nunca "envelhece".
 
 ---
@@ -891,6 +891,49 @@ partir de `turmas[0]`).
 defeito, e fundir é mais arriscado que esconder. A fusão foi desenhada no Figma antes (F-1), feita em
 quatro etapas verificadas no navegador, e **toda tela absorvida ganhou volta** — três delas ficaram
 sem saída na primeira tentativa, e só apareceram porque foram clicadas.
+
+---
+
+### 37. O calendário é da casa — o produto deduz, a casa corrige
+
+**Origem:** o produto deduzia o calendário do **dia da semana** e pronto. O turno da turma dizia
+"sábado" ou "dia útil", e daí saía tudo: quais datas ficaram em aberto, quando há encontro, quando
+a pessoa está em lapso. Feriado virava "chamada em aberto" cobrada para sempre; encontro extra
+simplesmente não existia; e a jornada v2 pediu o oposto — *"o calendário é da casa. Ela, a
+coordenação ou a direção marcam quando são os encontros"*.
+
+**Decisão.** A regra do turno continua sendo o padrão, e a casa marca só a **exceção**
+(`calendario_excecao`: `sem_encontro` ou `extra`, com motivo). Uma tabela com uma linha por sábado
+do ano seria um calendário para alguém manter à mão — e a casa cabe em duas pessoas.
+
+`temEncontro(turmaId, data)` passa a ser a pergunta única, e `chamadasEmAberto`, o lapso e os
+próximos encontros derivam dela.
+
+**O lapso passa a ser contado em ENCONTROS DA TURMA, não em dias de calendário.** `DIAS_LAPSO = 5`
+acusava lapso **toda quinta-feira** para quem só atende sábado — cinco dias depois do sábado, sem
+que um único encontro tivesse sido perdido. Estava registrado em `c1edcbe` e nunca foi corrigido; o
+teste de fluxo tinha **derivado a asserção da régua errada** para parar de quebrar, que é o gate se
+acomodando ao defeito em vez de acusá-lo. Agora é `ENCONTROS_LAPSO = 2`: um encontro perdido
+acontece, dois viraram hábito.
+
+**Registro retroativo já funcionava** — o encontro guarda a data em que aconteceu e o instante em
+que foi registrado — mas o produto não dizia. Agora diz: *"Registrada em 04/09, depois do encontro
+— vale igual"*. Esconder isso é que seria estranho num produto cujo princípio é *"nunca é tarde
+para registrar"*.
+
+**O aviso antes do encontro é IN-APP, e o limite fica declarado.** Notificação agendada local **não
+existe no padrão web**: Notification Triggers nunca vingou, e o Safari só faz push com servidor.
+Push real depende de serviço externo e está fora desta rodada. Prometer o que o navegador não faz
+seria pior que não avisar.
+
+**Guarda que importa:** marcar "sem encontro" num dia que já tem chamada registrada é **recusado**.
+Apagaria da vista um encontro que aconteceu, e o registro dele continuaria no banco, invisível.
+
+**Um defeito meu, e o gate que ele gerou.** A tabela nova referencia `turma` e eu a deixei fora da
+lista de limpeza da semeadura: o esquema passou em todos os testes, e o `reset` só quebrou quando
+existia **uma** linha na tabela nova. Isso se repete a cada tabela nova, então virou gate — ele lê
+o DDL e a lista da seed e compara, inclusive a ORDEM (quem referencia sai antes de quem é
+referenciada). Na primeira execução ele achou uma segunda tabela já faltando: `parecer`.
 
 ---
 
