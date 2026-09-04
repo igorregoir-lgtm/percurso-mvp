@@ -8,7 +8,7 @@
 
 | # | Artefato | Onde | Estado | Para que serve |
 |---|---|---|---|---|
-| **1** | **Protótipo v3 — 12 rotas em 16 telas, 4 papéis, 402 × 874 pt** | [`JMejpNsHkckqeSP8KE1PTh`](https://www.figma.com/design/JMejpNsHkckqeSP8KE1PTh) · página *Protótipo v3 · 4 papéis* | **canônico** | O produto **como ele vai ficar**: 28 rotas fundidas em 12, captura por áudio em primeiro, botões de um toque, a Aurora como porta. Navegável: **84 elementos com ação**, nenhuma tela sem entrada e nenhuma sem saída. Desenhado 03/09/2026, **antes** do código que o implementa |
+| **1** | **Protótipo v3 — 12 rotas em 19 telas, 4 papéis, 402 × 874 pt** | [`JMejpNsHkckqeSP8KE1PTh`](https://www.figma.com/design/JMejpNsHkckqeSP8KE1PTh) · página *Protótipo v3 · 4 papéis* | **canônico** | O produto **como ele vai ficar**: 28 rotas fundidas em 12, captura por áudio em primeiro, botões de um toque, a Aurora como porta. Navegável: **102 elementos com ação**, nenhuma tela sem entrada e nenhuma sem saída. Desenhado 03/09/2026, **antes** do código que o implementa; as três telas de 04/09 (turmas, boletim e prova em vídeo) vieram **depois**, e isso está declarado abaixo |
 | 2 | Protótipo navegável de 02/09 — 27 telas, 4 papéis | [`h6AnLVYLfpeVl2N4ie0Qzv`](https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv) | **registro histórico** | O produto **como ele era** antes da rodada de simplificação. Serve de antes-e-depois; não é mais o alvo |
 | 3 | Protótipo entregue na semana 5 — 9 telas, 375 × 812 pt | [`HBBd4GyVRjd7C3WgJ4jnpL`](https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL) | **congelado — registro histórico** | O que foi entregue em 04/09/2026. **Não atualizar**: o valor dele é ser o que foi entregue |
 | 4 | Protótipo HTML pré-visita | [`prototipo-figma/`](../prototipo-figma/) | congelado | A etapa em que o protótipo era HTML, antes de CFL-03 |
@@ -118,21 +118,28 @@ abre a tela em vez de ser o terceiro cartão; a janela de 40 s deixa de ser teto
 aparecem no instante do toque; o check-in vira entrada direta preservando `—`/`0`/`N`; a conferência
 mostra a origem de cada campo; e existe seletor de turma.
 
-> **Divergência declarada, 04/09/2026 (tarde).** Os ajustes pedidos em campo naquele dia
-> (decisões 41 a 46) entraram **no código antes de entrarem no protótipo** — a ordem que esta seção
-> acabou de inverter voltou a se inverter, e registrar isso vale mais que esconder. **Nenhuma rota
-> nova nasceu**, então as 12 telas do v3 continuam sendo as 12: o que mudou é o conteúdo de três
-> delas. O protótipo está atrás nestes seis pontos:
+> **Ordem invertida, e depois consertada — 04/09/2026 (tarde).** Os ajustes pedidos em campo
+> naquele dia (decisões 41 a 46) entraram **no código antes de entrarem no protótipo**: a ordem que
+> esta seção acabou de estabelecer foi quebrada, e registrar isso vale mais que esconder. O desenho
+> alcançou o código no mesmo dia, com **três telas novas** — nenhuma rota nova nasceu, então as 12
+> continuam 12; o que existe são variantes de rolagem e de estado, como o arquivo já fazia com
+> `#/hoje` e `#/relatorio`:
 >
-> | Tela do v3 | O que o código tem e o desenho ainda não |
-> |---|---|
-> | `#/pessoas` | a aba **Turmas** (criar, editar, trocar a professora) — decisão 41 |
-> | `#/crianca/:id` | o cartão do ciclo com **botão de registrar** (dec. 46); o **boletim do responsável** com link de WhatsApp (dec. 43); o bloco "quem responde por"; troca de turma e matrícula em outro programa (dec. 41) |
-> | `#/crianca/:id` | **saiu** a tabela "Governança dos campos" (dec. 45) |
-> | `#/consentimentos` | o **vídeo do responsável** no registro do consentimento, e o corte entre quem tem prova e quem só tem a palavra (dec. 42) |
-> | `#/registrar` | o seletor de arquivo sem filtro e a entrada por **compartilhamento do sistema** (dec. 44) |
+> | Tela nova | O que mostra | Decisão |
+> |---|---|---|
+> | `#/pessoas?aba=turmas` | criar turma, o turno como regra de encontro, a lista com quantas crianças cada uma tem | 41 |
+> | `#/crianca/:id — o boletim do responsável` | quem responde pela criança, o texto pronto, o que ele **não** leva, e o botão do WhatsApp | 43 |
+> | `#/consentimentos — a prova em vídeo` | o vídeo do responsável no ato do consentimento, com o "opcional" dito na tela | 42 |
 >
-> Enquanto isso não for desenhado, **a fonte destes seis pontos é o código**, não o Figma.
+> E duas telas existentes mudaram: `#/pessoas` ganhou a fita de quatro abas, e `#/crianca/:id`
+> ganhou a **porta do registro** dentro do cartão do ciclo (decisão 46) — que era a pergunta do
+> campo: *"onde esses pontos são registrados?"*.
+>
+> **Duas coisas do código não têm par no desenho, e não por esquecimento:** a decisão 45 (a
+> governança dos campos sai da ficha) **não muda nada aqui**, porque o protótipo v3 nunca desenhou
+> aquela tabela na ficha — ela sempre esteve só em `#/consentimentos`, que é onde o código a deixou;
+> e a decisão 44 (áudio compartilhado pelo sistema) acontece **fora do aplicativo**, na folha de
+> compartilhamento do celular, que não é superfície que este arquivo desenhe.
 
 > **Ressalva de leitura, registrada em 03/09/2026.** O conector do Figma expõe apenas **uma página
 > por arquivo**, e no `h6AnLVYLfpeVl2N4ie0Qzv` a página exposta é o `Leia-me` — cujo texto manda

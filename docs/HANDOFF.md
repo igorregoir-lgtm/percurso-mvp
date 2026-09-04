@@ -65,6 +65,14 @@
 > fez dele o dado mais restrito do produto), detalhe do alerta (é conversa, não mensagem) e o nível
 > 1–4. A tela **diz** o que ficou de fora; silêncio viraria *"o sistema não tinha o dado"*.
 >
+> **O protótipo alcançou o código no mesmo dia.** A ordem foi quebrada (código antes do desenho) e
+> depois consertada: o v3 vai de 16 para **19 telas** e de 84 para **102 elementos com ação** —
+> `#/pessoas?aba=turmas`, o boletim do responsável e a prova em vídeo, mais a fita de abas em
+> `#/pessoas` e a porta do registro dentro do cartão do ciclo. Nenhuma rota nova: as 12 continuam 12.
+> Duas decisões não têm par no desenho, e está dito por quê — a 45 porque o protótipo nunca desenhou
+> a governança na ficha, e a 44 porque acontece fora do aplicativo, na folha de compartilhamento do
+> celular.
+>
 > **Gates: 471 smoke · 192 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.** 29 tabelas, 106 rotas.
 >
 
