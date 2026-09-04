@@ -21,6 +21,7 @@ import * as SROI from './sroi/calculator.js';
 import * as PL from './planilha.js';
 import * as AUD from './auditoria.js';
 import * as AUTH from './auth.js';
+import * as RL from './relato-livre.js';
 import * as REL from './relato.js';
 import * as REC from './recado.js';
 import * as TRANSC from './transcricao.js';
@@ -539,6 +540,42 @@ export const rotas = {
   'GET /api/acessos/resumo': (req, _b, q) => {
     exigeGestao(req);
     return AUD.resumoDeAcesso({ desde: q.get('desde') || null });
+  },
+
+  // ---- Campo livre de relato (decisao 40) ---------------------------------
+  // Dois campos, duas naturezas. O do GRUPO mora na folha; o da CRIANCA tem
+  // tabela propria, consentimento especifico e descarte no fim do ciclo.
+  'POST /api/relato-grupo': (req, corpo) => {
+    const turmaId = num(corpo.turma_id, 'turma_id');
+    exigeAcessoTurma(req, turmaId);
+    const data = corpo.data || D.dataDaFolha(turmaId);
+    const enc = D.encontroDe(turmaId, data);
+    const folha = enc ? V.folhaDe(enc.id) : null;
+    if (!folha) throw D.erro(422, 'A folha deste encontro ainda não existe. Registre-a antes.');
+    return RL.salvarRelatoGrupo({ folhaId: folha.id, turmaId, texto: corpo.texto });
+  },
+
+  'GET /api/relato-crianca': (req, _b, q) => {
+    const criancaId = num(q.get('crianca_id'), 'crianca_id');
+    exigeAcessoCrianca(req, criancaId, 'ficha');
+    return {
+      relatos: RL.relatosDaCrianca(criancaId),
+      consentimento: D.consentimentoDe(criancaId, 'campo_livre').status,
+    };
+  },
+
+  'POST /api/relato-crianca': (req, corpo) => {
+    const criancaId = num(corpo.crianca_id, 'crianca_id');
+    const u = exigeAcessoCrianca(req, criancaId, 'ficha');
+    return RL.salvarRelatoCrianca({
+      criancaId, educadorId: u.id, cicloId: D.cicloAberto()?.id ?? null, texto: corpo.texto,
+    });
+  },
+
+  'DELETE /api/relato-crianca': (req, corpo) => {
+    const id = num(corpo.id, 'id');
+    const u = exigeUsuario(req);
+    return RL.apagarRelatoCrianca(id, u.id);
   },
 
   'GET /api/alertas': (req) => {

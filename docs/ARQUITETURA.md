@@ -83,7 +83,7 @@ src/api.js       83 rotas — sessão por perfil; RBAC educadora / coordenação
     ├── src/relatorio.js  sete blocos do doador, carta, consulta agregada
     └── src/ingestao.js   ingestão retroativa com deduplicação de criança
     ▼
-src/db.js        esquema (27 tabelas) + helpers — SQLite via node:sqlite
+src/db.js        esquema (28 tabelas) + helpers — SQLite via node:sqlite
     │            migração pela assinatura do próprio DDL (decisão 14)
     ▼
 data/percurso.db local ou /var/data/percurso.db no Render
@@ -103,7 +103,7 @@ data/audio-temp/    unico lugar onde audio toca disco, e sempre de passagem
 public/audio.js     conversao para WAV 16 kHz no NAVEGADOR (evita o ffmpeg) e
                     gravacao em blocos fechados de 5 min (evita 1 GB de Float32)
 
-scripts/         reset.mjs · smoke-test.mjs (431 asserções) · unit-test.mjs (177) · preparar-sessao.mjs
+scripts/         reset.mjs · smoke-test.mjs (443 asserções) · unit-test.mjs (179) · preparar-sessao.mjs
                  rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
                  audio-stub-test.mjs (ciclo de vida do áudio, sem modelo) · reancorar.mjs
                  whisper-stub.mjs · ai-stub.mjs (imitam a interface, não o comportamento)
@@ -185,7 +185,7 @@ handover, vídeo). O que resta é fechar as duas pendências P1 da revisão arqu
 | # | Item | Por quê | Critério de aceite |
 |---|---|---|---|
 | ~~1.1~~ | ~~**Fecho de ciclo com descarte do campo livre**~~ | **FEITO (22/08)** — o campo livre saiu do produto (decisão 15) e `fecharCiclo` apaga qualquer valor legado | Teste unitário "fecharCiclo: executa a retenção declarada e apaga texto legado" e smoke §18 |
-| ~~1.2~~ | ~~**Escopo de turma no RBAC**~~ **FEITO 25/08** (decisão 22) | O acesso declarado na governança é "educador da criança + coordenação"; a v2 fechou a diretoria (decisão 16) e a v3 fechou o escopo entre educadoras | Rotas de leitura individual filtram por turma do educador logado; smoke bloco 12 cobre o acesso negado (431) |
+| ~~1.2~~ | ~~**Escopo de turma no RBAC**~~ **FEITO 25/08** (decisão 22) | O acesso declarado na governança é "educador da criança + coordenação"; a v2 fechou a diretoria (decisão 16) e a v3 fechou o escopo entre educadoras | Rotas de leitura individual filtram por turma do educador logado; smoke bloco 12 cobre o acesso negado (443) |
 | 1.6 | **Regravar o vídeo demonstrativo** | O vídeo em `video/` grava a v1: não mostra voz, confirmação, pauta nem relatório do doador. O handover da semana 10 exige vídeo demonstrativo do que está entregue | Vídeo cobrindo os três perfis e o fluxo de voz de ponta a ponta |
 | 1.3 | **Validação com usuário real** | Exigência da semana 5 que permanece pendente e será cobrada na 10 | Registro de quem validou, roteiro usado e aprendizados, anexado em `docs/` |
 | 1.4 | **Insumos de arquitetura para o business case** | O pitch da semana 10 exige custo total (incl. assinaturas) e plano de sustentação | Uma página: custo de licença R$ 0, requisito de máquina, quem opera, tempo estimado/semana — extraída deste documento |

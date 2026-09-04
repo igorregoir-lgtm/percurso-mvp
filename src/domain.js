@@ -595,12 +595,16 @@ export function salvarObservacao({ cicloId, criancaId, educadorId, itens, notaLi
                { recuperavel: true });
   }
 
-  // O olhar nao aceita texto sobre a crianca. Quem tentar gravar recebe 422 com
-  // o encaminhamento humano — a mesma porta que a voz usa.
+  // O OLHAR continua sem texto — e isto NAO mudou com a decisao 40. O campo
+  // livre voltou como registro PROPRIO (`relato_crianca`), com consentimento
+  // especifico, descarte no fim do ciclo e leitor restrito. Enfia-lo de volta
+  // dentro da rubrica faria o texto herdar a base legal, a retencao e os
+  // leitores DA RUBRICA, que sao outros — e foi exatamente essa mistura que a
+  // decisao 15 desfez. A porta existe; ela e' outra.
   if ((notaLivre || '').trim()) {
     throw erro(422,
-      'O olhar não guarda texto sobre a criança. Se for algo que precisa de encaminhamento, fale com a coordenação — esse caminho é fora daqui.',
-      { motivo: 'campo_livre_removido' });
+      'O olhar não guarda texto. O relato sobre a criança tem lugar próprio, na ficha dela — com consentimento do responsável e descarte no fim do ciclo.',
+      { motivo: 'campo_livre_tem_lugar_proprio' });
   }
 
   return tx(() => {

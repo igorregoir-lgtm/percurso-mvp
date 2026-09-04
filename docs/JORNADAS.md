@@ -54,8 +54,11 @@ nada de volta pelo que observa.
 4. **`#/hoje?detalhe=ciclo`** — vê quem falta observar e quem está bloqueada, com o motivo explícito (janela de
    convívio, consentimento) — bloqueio é protocolo, nunca erro dela.
 5. **`#/crianca/:id?ver=observacao`** — rubrica de 6 dimensões × 4 âncoras comportamentais (os seis indicadores da planilha socioemocional do Instituto — decisão 34), ~3 minutos por
-   criança; rascunho persiste se ela sair no meio. Sem campo de texto livre sobre a criança — por
-   decisão de desenho (decisão 15 de [`DECISOES-TECNICAS.md`](DECISOES-TECNICAS.md)).
+   criança; rascunho persiste se ela sair no meio. **A rubrica continua sem texto** (decisão 15) —
+   mas desde 04/09/2026 o relato sobre a criança tem **lugar próprio** na ficha dela, com
+   consentimento específico do responsável e descarte no fim do ciclo (decisão 40). São coisas
+   diferentes: base legal, retenção e leitores não são os mesmos, e misturá-los faria o descarte de
+   um levar o outro junto.
 6. **`#/hoje?detalhe=semana`** — toda segunda recebe três linhas acionáveis e uma sugestão de atividade, que
    aceita ou descarta. É a primeira vez que o registro devolve algo a ela.
 7. **`#/turma`** — vê as médias por dimensão mudarem ciclo a ciclo. Ao fechar a última observação

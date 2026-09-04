@@ -1253,10 +1253,11 @@ const listaCriancas = (r) => {
 };
 
 async function telaFichaDaCrianca(id) {
-  const [f, par, ac] = await Promise.all([
+  const [f, par, ac, rel] = await Promise.all([
     api(`/api/crianca?id=${id}`),
     api(`/api/parecer?crianca_id=${id}`).catch(() => null),
     api(`/api/acessos?crianca_id=${id}`).catch(() => null),
+    api(`/api/relato-crianca?crianca_id=${id}`).catch(() => null),
   ]);
   ctx.parecer = { criancaId: Number(id) };
   // Decisão 32: o parecer para profissional parceiro — o único dado individual
@@ -1277,6 +1278,37 @@ async function telaFichaDaCrianca(id) {
           <b style="font-weight:500">${esc(a2.recurso)} · ${dataBR(a2.em)}</b></div>`).join('')}
       </div>
     </details>`;
+
+  // CAMPO LIVRE SOBRE A CRIANÇA (decisão 40). Tem lugar próprio, e não dentro
+  // da rubrica: base legal, retenção e leitores são outros. Exige o
+  // consentimento específico do responsável — o mesmo campo de governança que a
+  // v1 já declarava e que ficou de pé mesmo depois de a decisão 15 tirar o
+  // campo da tela.
+  const cartaoRelato = !rel ? '' : (rel.consentimento !== 'ativo' ? `
+    <div class="cartao compacto" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Relato sobre ${esc(f.crianca.nome.split(' ')[0])}</h2>
+        <span class="selo bloq">${esc(rel.consentimento)}</span></div>
+      <p class="sub">Depende do consentimento específico do responsável, que está ${esc(rel.consentimento)}.
+        A coordenação registra em Consentimentos.</p>
+    </div>` : `
+    <div class="cartao compacto" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Relato sobre ${esc(f.crianca.nome.split(' ')[0])}</h2>
+        <span class="selo ok">${rel.relatos.length}</span></div>
+      <p class="sub">O que os campos fechados não pegam. Fica só aqui: não vai para relatório, síntese,
+        planilha, recado nem para nenhum modelo — e é descartado no fim do ciclo.
+        Conteúdo de atendimento continua sendo conversa com a coordenação.</p>
+      <textarea id="relato-crianca" rows="3" style="margin-top:8px"
+        placeholder="Ex.: pediu para sentar perto da porta e explicou por quê."></textarea>
+      <p class="sub" id="relato-crianca-erro" role="alert" style="min-height:18px"></p>
+      <button class="btn pequeno secundario" data-acao="salvar-relato-crianca" data-id="${f.crianca.id}">Guardar</button>
+      ${rel.relatos.length ? `<div class="pilha" style="margin-top:12px">
+        ${rel.relatos.map(r => `<div class="item" style="cursor:default;flex-direction:column;align-items:stretch;gap:6px">
+          <p style="margin:0">${esc(r.texto)}</p>
+          <div class="linha"><span class="meta cresce">${esc(r.quem)} · ${dataBR(r.criado_em)}</span>
+            <button class="btn pequeno fantasma" data-acao="apagar-relato-crianca" data-id="${r.id}">Apagar</button></div>
+        </div>`).join('')}
+      </div>` : ''}
+    </div>`);
 
   const cartaoParecer = !par ? '' : `
     <div class="cartao compacto" style="margin-top:14px">
@@ -1339,6 +1371,7 @@ async function telaFichaDaCrianca(id) {
       <div style="margin-top:10px">${tabelaTrajetoria(f.trajetoria)}</div>
     </div>
 
+    ${cartaoRelato}
     ${cartaoParecer}
     ${cartaoAcessos}
 
@@ -2055,6 +2088,7 @@ async function carregarFolha(turmaId, data) {
     origem: 'manual',
     sugestao: null, excluido: !!d.folha?.conteudo_excluido, trechos: [], baixaConfianca: false,
     vivencia: !!d.vivencia, devolucao: d.devolucao ?? null, anterior: d.anterior ?? null,
+    relatoGrupo: d.folha?.relato_grupo ?? '',
     campos: {
       atividade: d.folha?.atividade ?? 'nao_identificada',
       area_tematica: d.folha?.area_tematica ?? 'nenhuma',
@@ -2109,6 +2143,31 @@ rota(/^#\/registrar/, async () => {
   return telaContarComoFoi();
 });
 
+/**
+ * CAMPO LIVRE SOBRE O GRUPO (decisão 40). O pedido literal da visita
+ * (Grav. 84, 12:00): *"existem coisas muito específicas que acontecem dentro do
+ * grupo que aqui eu não conseguiria relatar e lá eu conseguiria."*
+ *
+ * Duas travas, ditas ANTES de escrever, não depois de recusar: nome de criança
+ * não entra (é registro de turma, e fica cinco anos), e conteúdo de atendimento
+ * continua indo para a coordenação.
+ */
+function blocoRelatoGrupo() {
+  const f = ctx.folha;
+  if (!f?.existente) return '';   // sem folha ainda não há onde guardar
+  return `
+    <div class="cartao">
+      <div class="lbl">O que mais aconteceu no grupo</div>
+      <p class="sub">Opcional, e livre. Aqui cabe o que os campos fechados não pegam.
+        <b>Sem nome de criança</b> — use as iniciais, ou a ficha dela. Conteúdo de
+        atendimento continua sendo conversa com a coordenação.</p>
+      <textarea id="relato-grupo" rows="4" style="margin-top:8px"
+        placeholder="Ex.: a roda travou no começo e destravou quando mudei a ordem da fala.">${esc(f.relatoGrupo ?? '')}</textarea>
+      <p class="sub" id="relato-grupo-erro" role="alert" style="min-height:18px"></p>
+      <button class="btn pequeno secundario" data-acao="salvar-relato-grupo">Guardar este relato</button>
+    </div>`;
+}
+
 async function telaFolhaAMao() {
   const h = await api('/api/hoje');
   if (!h.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2></div>`; return; }
@@ -2129,6 +2188,7 @@ async function telaFolhaAMao() {
     <div class="pilha">
       ${botaoIgualAoAnterior()}
       <div id="blocos-folha">${blocosDaFolha()}</div>
+      ${blocoRelatoGrupo()}
       <div class="aviso neutro">O que cada criança fez não entra aqui. ${d.vivencia ? 'Este é o registro do procedimento — não individualizado, sem nome, como o conselho pede.' : 'Esta folha é da turma.'}</div>
       ${d.folha ? `<button class="btn largo secundario" data-acao="ir" data-href="#/sai-daqui?aba=relato&data=${d.data}">${d.vivencia ? 'Ver o relato do procedimento' : 'Ver o registro do encontro'}</button>` : ''}
       ${fechada ? `
@@ -4693,6 +4753,43 @@ document.addEventListener('click', comErro(async (ev) => {
   if (a === 'imprimir')    { window.print(); return; }
 
   // AUTENTICAÇÃO (decisão 39). Antes, "entrar" era escolher um perfil e pronto.
+  if (a === 'salvar-relato-grupo') {
+    const f = ctx.folha;
+    const erroEl = document.getElementById('relato-grupo-erro');
+    if (erroEl) erroEl.textContent = '';
+    alvo.disabled = true;
+    try {
+      await post('/api/relato-grupo', { turma_id: f.turma.id, data: f.data, texto: document.getElementById('relato-grupo').value });
+      toast('Relato guardado com a folha.', 'bom');
+    } catch (e) {
+      // O erro fica NO BLOCO, não num toast que some: quem escreveu um nome
+      // precisa da mensagem enquanto reescreve.
+      if (erroEl) erroEl.textContent = e.message;
+    } finally { alvo.disabled = false; }
+    return;
+  }
+
+  if (a === 'salvar-relato-crianca') {
+    const erroEl = document.getElementById('relato-crianca-erro');
+    if (erroEl) erroEl.textContent = '';
+    alvo.disabled = true;
+    try {
+      await post('/api/relato-crianca', { crianca_id: Number(alvo.dataset.id), texto: document.getElementById('relato-crianca').value });
+      toast('Relato guardado na ficha.', 'bom');
+      navegar();
+    } catch (e) { if (erroEl) erroEl.textContent = e.message; }
+    finally { alvo.disabled = false; }
+    return;
+  }
+
+  if (a === 'apagar-relato-crianca') {
+    if (!confirm('Apagar este relato? Não dá para desfazer.')) return;
+    await api('/api/relato-crianca', { method: 'DELETE', body: JSON.stringify({ id: Number(alvo.dataset.id) }) });
+    toast('Relato apagado.');
+    navegar();
+    return;
+  }
+
   if (a === 'trocar-senha') { modalTrocarSenha(); return; }
 
   if (a === 'redefinir-senha') {

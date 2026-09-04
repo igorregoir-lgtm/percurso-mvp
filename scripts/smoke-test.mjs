@@ -180,17 +180,19 @@ secao('4 · Observação, consentimento e filtro de perímetro (F3 + bloco 6)');
   const rel = (await GET('maria', `/api/observacao?crianca_id=${alvo.crianca_id}`)).corpo;
   T('o rascunho volta preenchido ao reabrir', rel.observacao?.itens?.length === 2);
 
-  // v2: o olhar nao tem mais campo de texto sobre a crianca. Quem tentar gravar
-  // por ele e' recusado com encaminhamento humano, nao com erro tecnico.
+  // O olhar continua sem campo de texto — e isto NAO mudou com a decisao 40. O
+  // campo livre voltou como registro PROPRIO (`relato_crianca`), com
+  // consentimento especifico e descarte no fim do ciclo; enfia-lo de volta na
+  // rubrica faria o texto herdar a base legal, a retencao e os leitores DELA.
   const clinico = await POST('maria', '/api/observacao', {
     crianca_id: alvo.crianca_id, concluir: true,
     itens: o.dimensoes.map(d => ({ dimensao_id: d.id, nivel: 3 })),
     nota_livre: 'A mãe contou que ele foi diagnosticado com depressão.',
   });
   T('texto sobre a criança no olhar é recusado (422)', clinico.status === 422, `(${clinico.status})`);
-  T('a recusa devolve o encaminhamento humano, não um erro técnico',
-    /coordena[çc][ãa]o/i.test(clinico.corpo?.erro || ''), clinico.corpo?.erro);
-  T('a recusa nomeia o motivo para a tela tratar', clinico.corpo?.motivo === 'campo_livre_removido');
+  T('a recusa APONTA O LUGAR CERTO em vez de só dizer não',
+    /ficha dela/i.test(clinico.corpo?.erro || ''), clinico.corpo?.erro);
+  T('a recusa nomeia o motivo para a tela tratar', clinico.corpo?.motivo === 'campo_livre_tem_lugar_proprio');
 
   const limpo = await POST('maria', '/api/observacao', {
     crianca_id: alvo.crianca_id, concluir: true,
@@ -778,6 +780,68 @@ let dataFolha = null;
 
 // ============================================================================
 // 12 · Os três scores (F8, F9, F10)
+// ============================================================================
+secao('11b · Campo livre de relato (decisão 40) — o que ele aceita e o que recusa');
+{
+  // A decisão 40 REVERTE a decisão 15, que tinha tirado o campo livre do
+  // produto ("um filtro é mitigação, não ausência de risco"). A reversão só se
+  // sustenta com as travas de pé — é isso que esta seção mede.
+  const nomes = (await GET('maria', `/api/chamada?turma_id=${turmaId}`)).corpo.criancas;
+  const primeiro = nomes[0].nome.split(' ')[0];
+
+  const comNome = await POST('maria', '/api/relato-grupo',
+    { turma_id: turmaId, texto: `a ${primeiro} bateu no colega e o grupo travou` });
+  T('relato do GRUPO com nome de criança é recusado (422)',
+    comNome.status === 422 && comNome.corpo.motivo === 'nome_no_relato_de_grupo', `(${comNome.status})`);
+  T('e a recusa aponta as DUAS saídas certas: iniciais ou a ficha dela',
+    /iniciais/i.test(comNome.corpo.erro) && /ficha dela/i.test(comNome.corpo.erro));
+
+  const clinico = await POST('maria', '/api/relato-grupo',
+    { turma_id: turmaId, texto: 'a mae de uma delas contou que ela comecou a tomar remedio controlado' });
+  T('conteúdo de atendimento no relato do grupo continua barrado (422)',
+    clinico.status === 422 && clinico.corpo.motivo === 'perimetro', `(${clinico.status})`);
+
+  const limpo = await POST('maria', '/api/relato-grupo',
+    { turma_id: turmaId, texto: 'a roda travou no comeco e destravou quando mudei a ordem da fala' });
+  T('relato do grupo sem nome e sem conteúdo clínico é aceito', limpo.status === 200, `(${limpo.status})`);
+  const folha = (await GET('maria', `/api/folha?turma_id=${turmaId}`)).corpo.folha;
+  T('e volta gravado na folha, com ela', /destravou/.test(folha?.relato_grupo ?? ''));
+
+  // O relato sobre a CRIANÇA depende do consentimento específico.
+  const semCons = (await GET('rita', '/api/consentimentos')).corpo;
+  const pendente = (semCons.criancas ?? []).find(c => (c.campos ?? []).some(x => x.campo === 'campo_livre' && x.status !== 'ativo'));
+  if (pendente) {
+    const barrado = await POST('rita', '/api/relato-crianca', { crianca_id: pendente.id, texto: 'pediu para sentar perto da porta' });
+    T('relato sobre a criança SEM consentimento é recusado (403)',
+      barrado.status === 403 && barrado.corpo.motivo === 'sem_consentimento', `(${barrado.status})`);
+  }
+
+  const alvo = (await GET('maria', '/api/criancas')).corpo.criancas[0];
+  await POST('rita', '/api/consentimento', { crianca_id: alvo.id, campo: 'campo_livre', status: 'ativo', responsavel: 'Mãe' });
+  const ok = await POST('maria', '/api/relato-crianca', { crianca_id: alvo.id, texto: 'pediu para sentar perto da porta e explicou por que' });
+  T('com consentimento ativo, o relato sobre a criança é aceito', ok.status === 200, `(${ok.status})`);
+  const clinicoNaFicha = await POST('maria', '/api/relato-crianca', { crianca_id: alvo.id, texto: 'esta tomando remedio controlado desde marco' });
+  T('mas conteúdo de atendimento continua fora, também na ficha (422)',
+    clinicoNaFicha.status === 422, `(${clinicoNaFicha.status})`);
+
+  const lista = (await GET('maria', `/api/relato-crianca?crianca_id=${alvo.id}`)).corpo;
+  T('o relato volta na ficha, com quem escreveu e quando',
+    lista.relatos.some(r => /porta/.test(r.texto) && r.quem && r.criado_em));
+
+  // O que sai da organização NUNCA leva o campo livre. Aqui a verificação é de
+  // ponta a ponta: o texto está gravado, e não aparece em nenhuma saída.
+  const marca = 'destravou';
+  const rel = (await GET('solange', '/api/relatorio?tipo=ciclo')).corpo;
+  T('o relatório do doador não leva o relato do grupo', !JSON.stringify(rel).includes(marca));
+  const rec = (await GET('maria', `/api/recado?turma_id=${turmaId}`)).corpo;
+  T('o recado aos responsáveis não leva o relato do grupo', !JSON.stringify(rec).includes(marca));
+  const pl = (await GET('rita', '/api/planilha/resumo')).corpo;
+  T('a planilha socioemocional não leva o relato do grupo', !JSON.stringify(pl).includes(marca));
+  const painel = (await GET('rita', '/api/painel')).corpo;
+  T('o painel da coordenação não leva o relato do grupo', !JSON.stringify(painel).includes(marca));
+}
+
+
 // ============================================================================
 secao('12 · Risco de evasão, cobertura do registro e exposição (F8–F10)');
 {

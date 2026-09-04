@@ -86,7 +86,9 @@ saúde **de uma criança**, então os termos são contextualizados ("a saúde de
 
 **Onde ele roda, desde a v2.** Sobre a **transcrição da captura por voz**, antes de o extrator
 tocar no texto — o campo livre da observação saiu do produto (decisão 15) e o filtro mudou de posto
-para onde a revelação sensível é muito mais provável. Quando ele encontra algo, a resposta de
+para onde a revelação sensível é muito mais provável. **Desde 04/09/2026 ele roda também nos dois
+campos livres de relato** (decisão 40), e ali ele **bloqueia**, não avisa: o motivo está escrito na
+própria decisão 40. Quando ele encontra algo, a resposta de
 `POST /api/voz/extrair` traz `conteudo_excluido: true` e a categoria, e a tela devolve
 **encaminhamento humano** ("fale com a coordenação — esse caminho é fora daqui"), não erro técnico.
 Nada é gravado: nem o trecho, nem a transcrição.
@@ -139,8 +141,8 @@ autenticação por senha ou SSO; (b) HTTPS; (c) registro de auditoria de acesso 
 
 ### 9. Dados sintéticos determinísticos
 
-PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 431
-asserções de fluxo e os 177 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
+PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 443
+asserções de fluxo e os 179 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
 a *hoje*, então a demonstração nunca "envelhece".
 
 ---
@@ -259,7 +261,7 @@ de risco. Quem tentar gravar por ele recebe 422 com encaminhamento humano, não 
 ### 16. A diretoria não abre registro individual
 
 O perfil da diretoria existe para gerar, revisar e publicar o relatório do doador. As rotas de
-ficha, lista de crianças e observação respondem **431** para ele (`semAcessoIndividual` em
+ficha, lista de crianças e observação respondem **443** para ele (`semAcessoIndividual` em
 `src/api.js`).
 
 É a regra zero do `08-RELATORIO-DOADOR` levada para dentro do sistema: quem presta contas trabalha
@@ -566,7 +568,7 @@ professora nova nem uma criança nova pela interface — o item 2.8 do horizonte
 coordenação: papel e matrícula são exatamente o que decide, no resto do produto, quem enxerga a
 ficha de quem (escopo de turma, decisão 22; diretoria sem individual, decisão 16). Deixar o
 cadastro na mão de quem registra a chamada seria pôr o controle de acesso na mão de quem ele
-limita. A diretoria também não cadastra criança — 431, pela mesma regra de sempre.
+limita. A diretoria também não cadastra criança — 443, pela mesma regra de sempre.
 
 **2 · O consentimento nasce PENDENTE, e a criança entra bloqueada para observação.** A criança
 entra pela presença (legítimo interesse, LGPD Art. 7º IX) e não fica observável no mesmo gesto:
@@ -1023,6 +1025,55 @@ compartilhada. Tamanho é o que de fato pesa.
 
 **O que muda para quem valida:** o protocolo e a demonstração passam a ter um passo a mais na
 entrada. `scripts/preparar-sessao.mjs` avisa disso, e o README explica o primeiro acesso.
+
+---
+
+### 40. O campo livre de relato volta — e o que isso custa fica declarado
+
+**Origem:** pedido literal da visita (Grav. 84, 12:00): *"existem coisas muito específicas que
+acontecem dentro do grupo que **aqui eu não conseguiria relatar** e lá eu conseguiria."*
+
+**O que isto reverte, e a reversão precisa ser explícita:** a **decisão 15** (*"o campo livre da
+observação saiu do produto"*), a **decisão 31** (*"não há campo livre em nenhuma tela nova"*) e a
+jornada, que vendia a ausência como proteção. **O produto já tinha tentado e voltado atrás de
+propósito**: a v1 tinha campo livre protegido pelo filtro de perímetro e a v2 o removeu porque *"um
+filtro é mitigação, não ausência de risco"*.
+
+**O que mudou não foi a análise de risco** — foi o pedido vir da própria usuária, em campo, com um
+caso concreto; e os **três pré-requisitos ficarem pagos**: HTTPS (dec. 35), rastro de leitura
+(dec. 38) e autenticação (dec. 39). O plano põe esta frente depois das três, e não antes.
+
+**Dois campos, não um.** Base legal, retenção e leitores diferentes — misturá-los faria o descarte
+de um levar o outro junto:
+
+| | Relato do **grupo** | Relato da **criança** |
+|---|---|---|
+| Onde | coluna na `folha` | tabela própria `relato_crianca` |
+| Base legal | legítimo interesse (execução do programa) | **consentimento específico** do responsável |
+| Retenção | 5 anos, como a folha | **descarte no fim do ciclo** |
+| Leitores | equipe do programa | quem convive com a criança |
+| Nome de criança | **barrado** | é o assunto do registro |
+
+**As duas garantias que sustentam a reversão, e as duas são por construção:** o texto **nunca chega
+a um modelo** e **nunca sai em agregado** (síntese, relatório, planilha, recado, SROI). "Por
+construção" só é verdade enquanto ninguém acrescenta a leitura — e uma leitura acrescentada não daria
+erro em lugar nenhum. Daí o gate que varre os módulos de saída e de modelo.
+
+**Onde divergi do plano, e por quê.** O plano dizia que o filtro *"continua bloqueando nome e passa
+a avisar sem bloquear nas outras categorias"*. **Não adotei a segunda metade.** As categorias que o
+perímetro barra são clínicas e protetivas (saúde mental, diagnóstico, violência), e deixá-las passar
+transformaria a folha da turma num prontuário com retenção de cinco anos. O encaminhamento humano
+não é um obstáculo a remover — é a decisão 5, validada em campo. Um aviso que a pessoa pode ignorar,
+sobre conteúdo dessa natureza, é uma porta aberta com um bilhete pedindo para não entrar.
+
+**A rubrica continua sem texto**, e isso também não mudou: enfiar o campo livre de volta dentro da
+observação faria o texto herdar a base legal, a retenção e os leitores **dela** — que foi exatamente
+a mistura que a decisão 15 desfez. A recusa agora **aponta o lugar certo** em vez de só dizer não.
+
+**O custo, declarado.** A proteção deixa de ser *"por construção"* e passa a ser *"por controle de
+acesso"*: existe texto livre sobre criança no banco, e o que impede o vazamento é a autenticação, o
+escopo de turma, o consentimento e o rastro — não mais a ausência do campo. É uma troca consciente,
+e é reversível: apagar a coluna e a tabela devolve o produto ao estado anterior.
 
 ---
 

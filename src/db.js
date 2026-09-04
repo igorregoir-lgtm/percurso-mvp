@@ -175,6 +175,26 @@ const ESQUEMA_SQL = `
   CREATE INDEX IF NOT EXISTS idx_acesso_crianca ON acesso_individual (crianca_id, em);
   CREATE INDEX IF NOT EXISTS idx_acesso_educador ON acesso_individual (educador_id, em);
 
+  -- CAMPO LIVRE DE RELATO SOBRE A CRIANCA (decisao 40). Reverte a decisao 15,
+  -- e a reversao e' explicita: a v1 tinha campo livre protegido pelo filtro de
+  -- perimetro e a v2 o REMOVEU porque "um filtro e' mitigacao, nao ausencia de
+  -- risco". O que mudou foi o pedido vir da propria usuaria, em campo, com um
+  -- caso concreto (Grav. 84, 12:00) — e os tres pre-requisitos ficarem pagos:
+  -- HTTPS, log de acesso e autenticacao.
+  --
+  -- TABELA PROPRIA, nao coluna na observacao: base legal, retencao e leitores
+  -- sao diferentes dos da rubrica, e misturar os dois faria o descarte de um
+  -- levar o outro junto.
+  CREATE TABLE IF NOT EXISTS relato_crianca (
+    id          INTEGER PRIMARY KEY,
+    crianca_id  INTEGER NOT NULL REFERENCES crianca(id) ON DELETE CASCADE,
+    educador_id INTEGER NOT NULL REFERENCES educador(id),
+    ciclo_id    INTEGER REFERENCES ciclo(id),
+    texto       TEXT NOT NULL,
+    criado_em   TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_relato_crianca ON relato_crianca (crianca_id, criado_em);
+
   CREATE TABLE IF NOT EXISTS presenca (
     id          INTEGER PRIMARY KEY,
     encontro_id INTEGER NOT NULL REFERENCES encontro(id) ON DELETE CASCADE,
@@ -339,7 +359,11 @@ const ESQUEMA_SQL = `
     relato_liberado_em  TEXT,
     confirmado_por    INTEGER NOT NULL REFERENCES educador(id),
     confirmado_em     TEXT NOT NULL,
-    status            TEXT NOT NULL CHECK (status IN ('aberta','fechada'))
+    status            TEXT NOT NULL CHECK (status IN ('aberta','fechada')),
+    -- Campo livre sobre O GRUPO (decisao 40). Fica NA FOLHA porque e' o mesmo
+    -- registro: mesma base legal (legitimo interesse), mesma retencao (5 anos),
+    -- mesmos leitores. O de crianca tem tabela propria justamente porque nao e'.
+    relato_grupo     TEXT
   );
 
   CREATE TABLE IF NOT EXISTS folha_marcador (

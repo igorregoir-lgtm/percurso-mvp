@@ -48,7 +48,38 @@
 > - **A velocidade do whisper na máquina do Instituto** continua não medida — dívida declarada, não
 >   número inventado.
 >
-> **Gates: 413 smoke · 177 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.**
+> **Gates: 443 smoke · 179 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.**
+>
+> ### Continuação: autenticação (dec. 39) e o campo livre de relato (dec. 40)
+>
+> **A senha sozinha teria sido teatro.** O cookie era `percurso_uid=5` — o próprio id; qualquer
+> pessoa trocava o número no navegador e virava a psicóloga, e o comentário no código já chamava
+> isso de dívida. As duas peças andam juntas: `scrypt` do `node:crypto` **e** token opaco. Sem
+> dependência nova.
+>
+> **Não há senha semeada, e é deliberado:** senha em seed é senha publicada. `senha_hash = NULL` é
+> primeiro acesso. O limite disso fica escrito na decisão 39 — quem chegar primeiro reivindica a
+> conta —, e com dado real a coordenação define todas antes de entregar o endereço.
+>
+> **Com as três dívidas pagas (HTTPS · rastro · autenticação), a F7 destravou** e o campo livre
+> voltou. Dois campos, não um: o do **grupo** na folha (legítimo interesse, 5 anos, equipe) e o da
+> **criança** em tabela própria (consentimento específico, descarte no fim do ciclo, leitor
+> restrito). Misturá-los faria o descarte de um levar o outro junto.
+>
+> **Divergi do plano num ponto, e está declarado na decisão 40.** Ele dizia que o filtro passaria a
+> *"avisar sem bloquear"* fora da categoria de nome. Não adotei: as categorias que o perímetro barra
+> são clínicas e protetivas, e deixá-las passar transformaria a folha da turma num prontuário com
+> retenção de cinco anos. Um aviso ignorável sobre conteúdo dessa natureza é uma porta aberta com um
+> bilhete pedindo para não entrar.
+>
+> **O que sustenta a reversão são duas garantias por construção** — o texto nunca chega a um modelo
+> e nunca sai em agregado — e "por construção" só é verdade enquanto ninguém acrescenta a leitura.
+> Uma leitura acrescentada não daria erro em lugar nenhum, então virou gate: ele varre relatório,
+> síntese, planilha, scores, SROI, recado, copilot, ai-client, assistente, redação e as pastas
+> `rag/` e `aurora/`.
+>
+> **O custo, declarado:** a proteção deixa de ser *"por construção"* e passa a ser *"por controle de
+> acesso"*. É troca consciente, e reversível.
 >
 
 

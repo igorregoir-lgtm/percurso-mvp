@@ -159,6 +159,31 @@ invalidar a senha de quem já entrou: o hash antigo continua conferível pelos p
 não moram no banco: são token opaco em memória, revogável, e caem quando a pessoa troca a senha, é
 arquivada ou tem a senha redefinida pela coordenação.
 
+## O campo livre de relato (decisão 40)
+
+```sql
+-- na folha, para o GRUPO: mesma base legal, mesma retenção, mesmos leitores
+ALTER TABLE folha ADD COLUMN relato_grupo TEXT;
+
+-- tabela própria, para a CRIANÇA: base legal, retenção e leitores são OUTROS
+CREATE TABLE relato_crianca (
+  id          INTEGER PRIMARY KEY,
+  crianca_id  INTEGER NOT NULL REFERENCES crianca(id) ON DELETE CASCADE,
+  educador_id INTEGER NOT NULL REFERENCES educador(id),
+  ciclo_id    INTEGER REFERENCES ciclo(id),
+  texto       TEXT NOT NULL,
+  criado_em   TEXT NOT NULL
+);
+```
+
+**Por que não é uma coluna em `observacao`.** Base legal (consentimento específico × legítimo
+interesse), retenção (fim do ciclo × 5 anos) e leitores são diferentes. Misturá-los faria o descarte
+de um levar o outro junto — e foi essa mistura que a decisão 15 desfez.
+
+**Nenhum módulo de saída agregada ou de modelo lê estes campos**, e isso tem gate: `unit-test.mjs`
+varre `relatorio`, `sintese`, `planilha`, `scores`, `sroi`, `recado`, `copilot`, `ai-client`,
+`assistente`, `redacao-modelo` e as pastas `rag/` e `aurora/`.
+
 ## Restrições que carregam regra de negócio
 
 | Restrição | O que impede |

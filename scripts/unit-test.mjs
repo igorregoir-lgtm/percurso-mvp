@@ -184,11 +184,17 @@ test('salvarObservacao: o olhar não aceita texto sobre a criança (v2)', () => 
   assert.ok(alvo, 'seed precisa ter criança observável sem observação no ciclo aberto');
   const itens = D.rubrica().map(d => ({ dimensao_id: d.id, nivel: 3 }));
 
-  // Texto sobre a crianca e' recusado com encaminhamento humano — e nada grava.
+  // Texto DENTRO DA RUBRICA continua recusado — e isto não mudou com a decisão
+  // 40. O campo livre voltou como registro PRÓPRIO (`relato_crianca`), com
+  // consentimento específico, descarte no fim do ciclo e leitor restrito;
+  // enfiá-lo de volta na rubrica faria o texto herdar a base legal, a retenção
+  // e os leitores DELA. A recusa agora aponta o lugar certo, em vez de só dizer
+  // não — que era a crítica justa ao comportamento antigo.
   assert.throws(
     () => D.salvarObservacao({ cicloId: ciclo.id, criancaId: alvo.crianca_id, educadorId: 1, itens,
                                notaLivre: 'Está tomando remédio controlado.', concluir: true }),
-    (e) => e.status === 422 && e.extra.motivo === 'campo_livre_removido');
+    (e) => e.status === 422 && e.extra.motivo === 'campo_livre_tem_lugar_proprio'
+        && /ficha dela/i.test(e.message));
   assert.equal(get(`SELECT COUNT(*) n FROM observacao WHERE ciclo_id=? AND crianca_id=?`,
                    ciclo.id, alvo.crianca_id).n, 0);
 
@@ -619,24 +625,24 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     // O botão do recado. O destino virou `#/sai-daqui?aba=recado` na F2, mas o
     // que a âncora guarda é o mesmo: ele leva a TURMA e a DATA do encontro.
     'public/app.js:598': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
-    'public/app.js:1288': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:1320': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:2951': /async function telaScores\(\)/,
-    'public/app.js:3177': /id="pergunta"/,
+    'public/app.js:3011': /async function telaScores\(\)/,
+    'public/app.js:3237': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:4965': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
-    'src/api.js:421': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:585': /'POST \/api\/consentimento'/,
-    'src/api.js:1092': /periodosSugeridos\(\)/,
+    'public/app.js:5062': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'src/api.js:422': /erro\(422.*rubrica por ciclo/,
+    'src/api.js:622': /'POST \/api\/consentimento'/,
+    'src/api.js:1129': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:112': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
     'src/domain.js:154': /a folha e' do ENCONTRO|A folha e' do ENCONTRO/i,
-    'src/domain.js:1036': /export function estadoDeRetomada/,
+    'src/domain.js:1040': /export function estadoDeRetomada/,
     'src/relatorio.js:440': /export function periodosSugeridos/,
     'src/relatorio.js:584': /const INTENCOES/,
     'src/seed.js:74': /rubrica_socioemocional/,
@@ -1111,6 +1117,57 @@ test('faltas por voz: fronteira de palavra — "Ana" NÃO casa dentro de "semana
   // E o que NUNCA pode acontecer: presumir presença para quem a fala não citou.
   assert.deepEqual(faltasDe('a Ana faltou hoje').filter(n => n !== 'Ana Paula Silva'), [],
     'só quem foi citada entra — o produto não inventa presença nem ausência');
+});
+
+test('campo livre: NUNCA chega ao modelo, NUNCA sai em agregado (decisão 40)', async () => {
+  // AS DUAS GARANTIAS QUE SUSTENTAM A DECISÃO 40, e as duas são POR CONSTRUÇÃO:
+  // nenhum módulo de síntese, relatório, planilha, recado, SROI ou IA lê estes
+  // campos. "Por construção" só é verdade enquanto ninguém acrescenta a leitura
+  // — e uma leitura acrescentada não daria erro em lugar nenhum. Daí o gate.
+  //
+  // A decisão 40 reverte a 15, que tinha tirado o campo livre do produto. A
+  // reversão só se sustenta com estas duas travas de pé.
+  const { readFileSync } = await import('node:fs');
+  const arq = (n) => readFileSync(new URL(`../src/${n}`, import.meta.url), 'utf8');
+
+  const PROIBIDOS = [
+    // saída agregada — o que sai da organização
+    'relatorio.js', 'sintese.js', 'planilha.js', 'scores.js', 'sroi.js',
+    // camada de modelo — o que chega a um LLM
+    'copilot.js', 'ai-client.js', 'assistente.js', 'redacao-modelo.js',
+  ];
+  const vazam = [];
+  for (const nome of PROIBIDOS) {
+    let src;
+    try { src = arq(nome); } catch { continue; }   // módulo que não existe: nada a afirmar
+    if (/relato_grupo|relato_crianca|relatosDaCrianca|relatoGrupoDe/.test(src)) vazam.push(nome);
+  }
+  assert.deepEqual(vazam, [],
+    'módulo de saída agregada ou de modelo passou a ler o campo livre — a decisão 40 depende de ele NÃO ler');
+
+  // A pasta do RAG e da Aurora também não pode: o corpus é público por desenho.
+  const { readdirSync } = await import('node:fs');
+  for (const pasta of ['rag', 'aurora']) {
+    let nomes = [];
+    try { nomes = readdirSync(new URL(`../src/${pasta}/`, import.meta.url)); } catch { continue; }
+    for (const n of nomes.filter(x => x.endsWith('.js'))) {
+      const src = readFileSync(new URL(`../src/${pasta}/${n}`, import.meta.url), 'utf8');
+      assert.ok(!/relato_grupo|relato_crianca/.test(src), `src/${pasta}/${n} lê o campo livre`);
+    }
+  }
+
+  // E o recado aos responsáveis, que sai da organização pelo WhatsApp.
+  assert.ok(!/relato_grupo|relato_crianca/.test(arq('recado.js') ?? ''), 'o recado aos responsáveis lê o campo livre');
+});
+
+test('campo livre do GRUPO: nome de criança é barrado, com fronteira de palavra (decisão 40)', async () => {
+  const RL = await import('../src/relato-livre.js');
+  const nomes = ['Carla B.', 'Ana Paula S.', 'Diego G.'];
+  assert.deepEqual(RL.nomesCitados('a Carla bateu no colega', nomes), ['Carla']);
+  assert.deepEqual(RL.nomesCitados('o grupo brigou muito essa semana', nomes), [],
+    '"semana" contém "ana" — a mesma armadilha das faltas por voz');
+  assert.deepEqual(RL.nomesCitados('a turma toda participou', nomes), []);
+  assert.deepEqual(RL.nomesCitados('o Diego e a Carla se estranharam', nomes).sort(), ['Carla', 'Diego']);
 });
 
 test('nenhuma rota do front é engolida por outra (despacho é o PRIMEIRO que casa)', async () => {
