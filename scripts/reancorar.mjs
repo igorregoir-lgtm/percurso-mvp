@@ -78,7 +78,9 @@ for (const c of colisoes) mover.splice(mover.findIndex(m => m === c), 1);
 console.log(`\n  ${ok.length} âncora(s) no lugar · ${mover.length} para mover · ${ambiguas.length} ambígua(s)${colisoes.length ? ` · ${colisoes.length} em colisão` : ''}\n`);
 for (const c of colisoes) console.log(`  COLISÃO   ${c.arquivo}:${c.linha} -> :${c.novo}, mas :${c.novo} já é âncora — decida à mão`);
 for (const m of mover) console.log(`  mover     ${m.arquivo}:${m.linha} -> :${m.novo}`);
-for (const a of ambiguas) console.log(`  AMBÍGUA   ${a.arquivo}:${a.linha} casa em ${a.casam.join(', ')} — decida à mão`);
+for (const a of ambiguas) console.log(a.casam.length
+  ? `  AMBÍGUA   ${a.arquivo}:${a.linha} casa em ${a.casam.join(', ')} — decida à mão`
+  : `  SUMIU     ${a.arquivo}:${a.linha} — o conteúdo prometido não existe mais no arquivo`);
 
 if (!ESCREVER) { console.log(mover.length ? '\n  Nada foi escrito. Rode com --escrever.\n' : '\n'); process.exit(ambiguas.length || colisoes.length ? 1 : 0); }
 

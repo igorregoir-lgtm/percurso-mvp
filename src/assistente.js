@@ -68,16 +68,16 @@ export const CATALOGO_ACOES = [
   { id: 'alertas', rotulo: 'Alertas de ausência', hash: '#/alertas', papeis: ['educador', 'profissional', 'coordenacao'] },
   { id: 'pensar', rotulo: 'Pensar junto', hash: '#/pensar', papeis: ['educador', 'profissional', 'coordenacao'] },
   { id: 'painel', rotulo: 'Painel da coordenação', hash: '#/painel', papeis: ['coordenacao'] },
-  { id: 'scores', rotulo: 'Scores', hash: '#/scores', papeis: ['coordenacao'] },
-  { id: 'safras', rotulo: 'Safras', hash: '#/safras', papeis: ['coordenacao'] },
-  { id: 'sintese', rotulo: 'Síntese do ciclo', hash: '#/sintese', papeis: ['coordenacao'] },
+  { id: 'scores', rotulo: 'Scores', hash: '#/painel?aba=scores', papeis: ['coordenacao'] },
+  { id: 'safras', rotulo: 'Safras', hash: '#/painel?aba=safras', papeis: ['coordenacao'] },
+  { id: 'sintese', rotulo: 'Síntese do ciclo', hash: '#/painel?aba=sintese', papeis: ['coordenacao'] },
   { id: 'consentimentos', rotulo: 'Consentimentos', hash: '#/consentimentos', papeis: ['coordenacao'] },
   { id: 'importar', rotulo: 'Importar planilha', hash: '#/pessoas?aba=importar', papeis: ['coordenacao'] },
   { id: 'pessoas', rotulo: 'Cadastrar pessoas', hash: '#/pessoas', papeis: ['coordenacao'] },
   { id: 'arquivo', rotulo: 'Arquivo (quem saiu)', hash: '#/pessoas?aba=arquivo', papeis: ['coordenacao'] },
   { id: 'relatorio', rotulo: 'Relatório do doador', hash: '#/relatorio', papeis: ['diretoria'] },
-  { id: 'impacto', rotulo: 'Impacto (SROI)', hash: '#/impacto', papeis: ['diretoria'] },
-  { id: 'consulta', rotulo: 'Perguntar à base', hash: '#/consulta', papeis: ['diretoria'] },
+  { id: 'impacto', rotulo: 'Impacto (SROI)', hash: '#/relatorio?aba=impacto', papeis: ['diretoria'] },
+  { id: 'consulta', rotulo: 'Perguntar à base', hash: '#/relatorio?aba=consulta', papeis: ['diretoria'] },
 ];
 
 export const catalogoDoPapel = (papel) => CATALOGO_ACOES.filter(a => a.papeis.includes(papel));

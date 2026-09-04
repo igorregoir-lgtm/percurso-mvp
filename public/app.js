@@ -244,12 +244,14 @@ const NAV_PROFISSIONAL = [
   ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'], ['#/folha', '✎', 'Vivência'],
   ['#/relato', '▤', 'Relato'], ['#/turma', '▥', 'Turma'], ['#/criancas', '☺', 'Crianças'],
 ];
+// F2: scores, safras e síntese viraram abas do Painel; impacto e consulta,
+// abas do Relatório. O menu deixa de repetir o que a tela já oferece.
 const NAV_COORDENACAO = [
-  ['#/painel', '▦', 'Painel'], ['#/scores', '◑', 'Scores'], ['#/safras', '↝', 'Safras'],
-  ['#/sintese', '✎', 'Síntese'], ['#/consentimentos', '⚿', 'Consent.'],
+  ['#/painel', '▦', 'Painel'], ['#/criancas', '☺', 'Crianças'],
+  ['#/pessoas', '⚇', 'Pessoas'], ['#/consentimentos', '⚿', 'Consent.'],
 ];
 const NAV_DIRETORIA = [
-  ['#/relatorio', '▤', 'Relatório'], ['#/impacto', '◬', 'Impacto'], ['#/consulta', '?', 'Perguntar'],
+  ['#/relatorio', '▤', 'Relatório'],
 ];
 
 function pintarNav(rotaAtual) {
@@ -300,6 +302,11 @@ let hashEmVoo = null;
 const FUNDIDAS = {
   '#/arquivo': '#/pessoas?aba=arquivo',
   '#/importar': '#/pessoas?aba=importar',
+  '#/scores': '#/painel?aba=scores',
+  '#/safras': '#/painel?aba=safras',
+  '#/sintese': '#/painel?aba=sintese',
+  '#/impacto': '#/relatorio?aba=impacto',
+  '#/consulta': '#/relatorio?aba=consulta',
 };
 
 /** Resolve o apelido antes de casar a rota. Preserva a query que vier junto. */
@@ -1178,7 +1185,36 @@ rota(/^#\/alertas/, async () => {
 // ======================================================================
 // PAINEL DA COORDENACAO (F1 + F5 + F6)
 // ======================================================================
+// ======================================================================
+// PAINEL DA COORDENAÇÃO (F2) — o painel, os três scores, as safras e a síntese
+// do ciclo eram QUATRO telas, e a única porta para três delas era uma linha de
+// botões `pequeno fantasma` dentro do próprio painel. Isso não é navegação: é
+// um menu escondido dentro de uma tela. Viraram abas do mesmo lugar.
+// ======================================================================
+const ABAS_PAINEL = [
+  ['visao', 'Visão geral'],
+  ['scores', 'Três scores'],
+  ['safras', 'Safras'],
+  ['sintese', 'Síntese do ciclo'],
+];
+
+const cabecalhoPainel = (ativa) => `
+    <p class="kicker">Coordenação · o que o registro devolve</p>
+    <h1>Painel</h1>
+    <div class="linha" style="margin-top:12px;flex-wrap:wrap;gap:8px">
+      ${ABAS_PAINEL.map(([k, rot]) => `<button class="btn pequeno ${k === ativa ? '' : 'fantasma'}"
+        data-acao="ir" data-href="#/painel${k === 'visao' ? '' : `?aba=${k}`}" ${k === ativa ? 'aria-current="page"' : ''}>${rot}</button>`).join('')}
+    </div>`;
+
 rota(/^#\/painel/, async () => {
+  const aba = (location.hash.match(/[?&]aba=([a-z]+)/) || [])[1] || 'visao';
+  if (aba === 'scores') return telaScores();
+  if (aba === 'safras') return telaSafras();
+  if (aba === 'sintese') return telaSintese();
+  return telaVisaoGeral();
+});
+
+async function telaVisaoGeral() {
   // A planilha socioemocional (decisão 34) é leitura à parte: se não houver dois
   // ciclos com observação, o cartão diz isso em vez de derrubar o painel.
   const [d, pl, rg] = await Promise.all([api('/api/painel'), api('/api/planilha/resumo').catch(() => null), api('/api/regua').catch(() => null)]);
@@ -1202,10 +1238,8 @@ rota(/^#\/painel/, async () => {
         <span class="sub">Sem nome: o cadastro que liga código a criança fica com a coordenação.</span>
       </div>
     </div>`;
-  app.innerHTML = `
-    <p class="kicker">Instituto Ebenézer · ${esc(d.ciclo.nome)}</p>
-    <h1>Painel da coordenação</h1>
-    <p class="sub">O que o Instituto tem hoje, medido — não estimado.</p>
+  app.innerHTML = cabecalhoPainel('visao') + `
+    <p class="sub" style="margin-top:12px">${esc(d.ciclo.nome)} · o que o Instituto tem hoje, medido — não estimado.</p>
 
     <div class="kpis" style="margin-top:16px">
       <div class="kpi"><b>${inv.criancasUnicas}</b><span>Crianças únicas ativas</span>
@@ -1297,11 +1331,9 @@ rota(/^#\/painel/, async () => {
         <b style="color:${d.exposicao.lacunas.length ? 'var(--atencao)' : 'var(--ink)'}">${d.exposicao.lacunas.map(l => esc(l.rotulo)).join(', ') || 'nenhuma'}</b></div>
       ${barra(d.cobertura.valor, !d.cobertura.alerta)}
       <div class="linha" style="margin-top:14px">
-        <button class="btn pequeno secundario" data-acao="ir" data-href="#/scores">Ver os três scores</button>
-        <button class="btn pequeno fantasma" data-acao="ir" data-href="#/consulta">Perguntar à base</button>
+        <button class="btn pequeno secundario" data-acao="ir" data-href="#/relatorio?aba=consulta">Perguntar à base</button>
         <button class="btn pequeno fantasma" data-acao="ir" data-href="#/criancas">Buscar criança</button>
-        <button class="btn pequeno fantasma" data-acao="ir" data-href="#/pessoas?aba=importar">Importar planilha antiga</button>
-        <button class="btn pequeno fantasma" data-acao="ir" data-href="#/pessoas">Cadastrar pessoas</button>
+        <button class="btn pequeno fantasma" data-acao="ir" data-href="#/pessoas">Pessoas</button>
       </div>
     </div>
 
@@ -1316,17 +1348,15 @@ rota(/^#\/painel/, async () => {
       </div></div>` : ''}
 
     <p class="rodape">Dados de cobertura desde ${dataBR(inv.cobertura.desde)} · ${inv.cobertura.encontros} encontros · ${inv.cobertura.presencas} registros de presença.</p>`;
-});
+}
 
 // ======================================================================
 // SAFRAS E PERMANENCIA (F6)
 // ======================================================================
-rota(/^#\/safras/, async () => {
+async function telaSafras() {
   const s = await api('/api/safras');
-  app.innerHTML = `
-    <p class="kicker">Coorte sobre o dado que já existe</p>
-    <h1>Safras e permanência</h1>
-    <p class="sub">% de matrículas que permanecem, por safra de entrada. Permanência é <b>proxy de vínculo</b> — declarado como proxy, não como impacto.</p>
+  app.innerHTML = cabecalhoPainel('safras') + `
+    <p class="sub" style="margin-top:12px">% de matrículas que permanecem, por safra de entrada. Permanência é <b>proxy de vínculo</b> — declarado como proxy, não como impacto.</p>
     <div class="cartao" style="margin-top:16px">${graficoSafras(s)}</div>
     <div class="cartao" style="margin-top:14px">
       <h2>Evasão e tempo médio, por programa</h2>
@@ -1338,7 +1368,7 @@ rota(/^#\/safras/, async () => {
         </tbody></table></div>
     </div>
     <p class="rodape">Responde à pergunta 3 do bloco 7 sem coleta nova: a curva sai da planilha de presença que o Instituto já mantém.</p>`;
-});
+}
 
 function graficoSafras(s) {
   const comDados = s.curvas.filter(c => c.pontos.some(p => p.pct != null));
@@ -1370,14 +1400,14 @@ function graficoSafras(s) {
 // ======================================================================
 // SINTESE DO CICLO (F7)
 // ======================================================================
-rota(/^#\/sintese/, async () => {
+async function telaSintese() {
   const params = new URLSearchParams((location.hash.split('?')[1] || ''));
   const prog = params.get('programa_id') || '';
   const d = await api(`/api/sintese${prog ? `?programa_id=${prog}` : ''}`);
   const s = d.sintese;
 
-  app.innerHTML = `
-    <p class="kicker">${esc(d.ciclo.nome)} · fecho do ciclo</p>
+  app.innerHTML = cabecalhoPainel('sintese') + `
+    <p class="kicker" style="margin-top:12px">${esc(d.ciclo.nome)} · fecho do ciclo</p>
     <h1>Síntese do ciclo</h1>
     <p class="sub">Redigida em template contido. Os números vêm da consulta ao banco, nunca de geração livre de texto.</p>
 
@@ -1443,7 +1473,7 @@ rota(/^#\/sintese/, async () => {
         <button class="btn" data-acao="gerar-sintese" data-prog="${prog}">Gerar síntese do ciclo</button>
       </div>
     </div>`}`;
-});
+}
 
 // ======================================================================
 // CONSENTIMENTOS (F1 · governanca)
@@ -2358,7 +2388,7 @@ rota(/^#\/confirmar/, async () => {
 // RELATO DO PROCEDIMENTO (decisão 31) — o texto no padrão do conselho, gerado
 // dos campos fechados, revisado e LIBERADO pela profissional.
 // ======================================================================
-rota(/^#\/relato/, async () => {
+rota(/^#\/relato(?=$|[?&])/, async () => {
   const params = new URLSearchParams(location.hash.split('?')[1] || '');
   let turmaId = params.get('turma_id');
   if (!turmaId) {
@@ -2496,13 +2526,11 @@ rota(/^#\/pauta/, async () => {
 // ======================================================================
 // SCORES (F8/F9/F10) — coordenação e diretoria. Nunca em tela de professora.
 // ======================================================================
-rota(/^#\/scores/, async () => {
+async function telaScores() {
   const d = await api('/api/scores');
   const e = d.evasao, c = d.cobertura, x = d.exposicao;
-  app.innerHTML = `
-    <p class="kicker">Três scores · nenhum pontua a criança</p>
-    <h1>Scores</h1>
-    <p class="sub">${esc(d.doutrina)}</p>
+  app.innerHTML = cabecalhoPainel('scores') + `
+    <p class="sub" style="margin-top:12px"><b>Nenhum pontua a criança.</b> ${esc(d.doutrina)}</p>
 
     <div class="kpis" style="margin-top:16px">
       <div class="kpi"><b>${e.em_risco}</b><span>Matrículas em risco</span><small>de ${e.avaliadas} avaliadas</small></div>
@@ -2569,12 +2597,38 @@ rota(/^#\/scores/, async () => {
       <p class="sub" style="margin-top:8px">Limiar de alerta da pauta: ${d.descarte.limiar}%. ${d.descarte.decididas} sugestões decididas.</p>
     </div>
     <p class="rodape">A cobertura do registro não aparece em tela de educadora e não vira ranking.</p>`;
-});
+}
 
 // ======================================================================
 // RELATÓRIO DO CICLO (F13/F14) — diretoria.
 // ======================================================================
+// ======================================================================
+// RELATÓRIO (F2) — o SROI é um BLOCO do relatório, não um destino; e perguntar
+// à base é perguntar sobre aqueles mesmos números. Três telas para a diretoria
+// (que tinha só três) viraram uma com três abas — e o menu dela, que era o
+// produto inteiro em três botões, passa a ter um item.
+// ======================================================================
+const ABAS_RELATORIO = [
+  ['ciclo', 'Relatório'],
+  ['impacto', 'Impacto potencial'],
+  ['consulta', 'Perguntar à base'],
+];
+
+const cabecalhoRelatorio = (ativa) => `
+    <p class="kicker">Diretoria · saída para quem financia</p>
+    <div class="linha" style="margin-top:10px;flex-wrap:wrap;gap:8px">
+      ${ABAS_RELATORIO.map(([k, rot]) => `<button class="btn pequeno ${k === ativa ? '' : 'fantasma'}"
+        data-acao="ir" data-href="#/relatorio${k === 'ciclo' ? '' : `?aba=${k}`}" ${k === ativa ? 'aria-current="page"' : ''}>${rot}</button>`).join('')}
+    </div>`;
+
 rota(/^#\/relatorio/, async () => {
+  const aba = (location.hash.match(/[?&]aba=([a-z]+)/) || [])[1] || 'ciclo';
+  if (aba === 'impacto') return telaImpactoPotencial();
+  if (aba === 'consulta') return telaPerguntarABase();
+  return telaRelatorioDoCiclo();
+});
+
+async function telaRelatorioDoCiclo() {
   const params = new URLSearchParams(location.hash.split('?')[1] || '');
   const tipo = params.get('tipo') || 'ciclo';
   const periodo = params.get('periodo') || '';
@@ -2582,9 +2636,8 @@ rota(/^#\/relatorio/, async () => {
   ctx.rel = { tipo, periodo, periodos: d.periodos };
   const r = d.relatorio, n = d.previa;
 
-  app.innerHTML = `
-    <p class="kicker">Diretoria · saída para quem financia</p>
-    <h1>Boa tarde, ${esc(sessao.apelido.split(' ')[0])}.</h1>
+  app.innerHTML = cabecalhoRelatorio('ciclo') + `
+    <h1 style="margin-top:12px">Boa tarde, ${esc(sessao.apelido.split(' ')[0])}.</h1>
     <p class="sub">O doador não entra no sistema. Ele recebe este artefato, gerado e revisado aqui.</p>
 
     <div class="cartao" style="margin-top:16px">
@@ -2682,21 +2735,20 @@ rota(/^#\/relatorio/, async () => {
 
     <p class="rodape">Gerado a partir do que já foi registrado. Nada é publicado sem sua revisão.<br>
       Nenhum número no texto que não venha do banco. Nenhuma afirmação causal.</p>`;
-});
+}
 
 // ======================================================================
 // CONSULTA EM LINGUAGEM NATURAL (F15) — só a camada agregada.
 // ======================================================================
-rota(/^#\/consulta/, async () => {
+async function telaPerguntarABase() {
   // As sugestões vêm ANTES da primeira pergunta. Até aqui elas só apareciam na
   // recusa: quem chegava tinha de errar uma vez para descobrir o que a base
   // sabe responder. O placeholder não repete nenhum chip — usa outra formulação
   // de propósito, para dizer que a pergunta não precisa ser copiada daqui.
   const { sugestoes } = await api('/api/consulta');
-  app.innerHTML = `
-    <p class="kicker">Camada agregada · nunca dado individual</p>
-    <h1>Perguntar à base</h1>
-    <p class="sub">Fale ou escreva a pergunta. A resposta é montada com número vindo do banco — se eu não souber, eu digo que não sei.</p>
+  app.innerHTML = cabecalhoRelatorio('consulta') + `
+    <h1 style="margin-top:12px">Perguntar à base</h1>
+    <p class="sub"><b>Camada agregada, nunca dado individual.</b> Fale ou escreva a pergunta. A resposta é montada com número vindo do banco — se eu não souber, eu digo que não sei.</p>
     <div class="cartao" style="margin-top:16px">
       ${(() => { const d = blocoDitado('pergunta', 'pergunta-ditado-estado'); return `
       <div class="linha" style="flex-wrap:nowrap">
@@ -2715,7 +2767,7 @@ rota(/^#\/consulta/, async () => {
     <div id="resposta" class="pilha"></div>
     <p class="rodape">Dado individual de criança não é respondido aqui, em nenhuma formulação.</p>`;
   document.getElementById('pergunta')?.focus();
-});
+}
 
 // ======================================================================
 // INGESTÃO RETROATIVA (F7) — coordenação.
@@ -3099,12 +3151,12 @@ async function telaOQueVeioDeAntes() {
 const sroi = { resultado: null, explicacao: null };
 const brl = (v) => 'R$ ' + Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
 
-rota(/^#\/impacto/, async () => {
+async function telaImpactoPotencial() {
   const [prem, inv] = await Promise.all([api('/api/sroi/premissas'), api('/api/inventario')]);
   const r = sroi.resultado;
-  app.innerHTML = `
-    <p class="kicker">Cenários exploratórios · associação compatível, não causalidade comprovada</p>
-    <h1>Impacto potencial</h1>
+  app.innerHTML = cabecalhoRelatorio('impacto') + `
+    <h1 style="margin-top:12px">Impacto potencial</h1>
+    <p class="sub">Cenários exploratórios · associação compatível, não causalidade comprovada.</p>
     <div class="cartao" style="margin-top:12px">
       <p class="sub" style="margin:0"><b>O que esta tela é:</b> uma faixa exploratória de valor social
         potencial, com todas as premissas expostas, para conversa de captação.
@@ -3151,7 +3203,7 @@ rota(/^#\/impacto/, async () => {
           ${sroi.explicacao.texto.split('\n\n').map(p => `<p class="sub" style="margin:0 0 8px">${esc(p)}</p>`).join('')}
         </div>` : ''}
     </div>` : ''}`;
-});
+}
 
 function pintarSROI(r) {
   return `
@@ -4154,8 +4206,8 @@ const AURORA_ROTAS_POR_PAPEL = {
   // diretoria (src/api.js), e o painel dela já oferece o botão 'Perguntar à
   // base'. Sem a rota aqui, uma sugestão da Aurora para essa tela era engolida
   // com um `return` mudo — sem navegação e sem aviso.
-  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/pessoas', '#/criancas', '#/alertas', '#/relato', '#/consulta', '#/pensar'],
-  diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
+  coordenacao: ['#/painel', '#/consentimentos', '#/pessoas', '#/criancas', '#/alertas', '#/relato', '#/relatorio', '#/pensar'],
+  diretoria: ['#/relatorio'],
 };
 
 // ======================================================================
@@ -4365,7 +4417,7 @@ document.addEventListener('click', comErro(async (ev) => {
       if (ctx.voz) ctx.voz.transcricao = '';
       f.sugestao = null;
       if (enviado) toast(alvo.dataset.fechar === '1' ? 'Folha fechada.' : 'Folha guardada — a devolução do encontro está no Hoje.', 'bom');
-      location.hash = '#/hoje'; navegar();
+      location.hash = '#/hoje'; navegar();   // passo 05 do task flow: volta ao Hoje em vez de abrir o relato
     } finally { alvo.disabled = false; }
     return;
   }

@@ -611,19 +611,22 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
   const { readFileSync } = await import('node:fs');
   const raiz = new URL('../', import.meta.url);
   const ANCORAS = {
-    'public/app.js:457': /rota\(\/\^#\\\/hoje\//,
-    'public/app.js:542': /Revisar e liberar o relato|relato_liberado/,
+    'public/app.js:464': /rota\(\/\^#\\\/hoje\//,
+    'public/app.js:549': /Revisar e liberar o relato|relato_liberado/,
     // Regex ESTREITA de proposito: /recados|#\/recado/ casava em quatro linhas,
     // e a reancorar.mjs nao tinha como decidir qual. Ancora que casa em varios
     // lugares nao ancora nada.
-    'public/app.js:543': /data-href="#\/recado\?turma_id=/,
-    'public/app.js:1048': /coordenacao.*Consentimentos|Registre abaixo/,
-    'public/app.js:2499': /rota\(\/\^#\\\/scores\//,
-    'public/app.js:2703': /id="pergunta"/,
+    'public/app.js:550': /data-href="#\/recado\?turma_id=/,
+    'public/app.js:1055': /coordenacao.*Consentimentos|Registre abaixo/,
+    // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
+    'public/app.js:2529': /async function telaScores\(\)/,
+    'public/app.js:2755': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
-    'public/app.js:4368': /location\.hash = '#\/hoje'; navegar\(\);/,
+    // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
+    // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
+    'public/app.js:4420': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
     'src/api.js:323': /erro\(422.*rubrica por ciclo/,
     'src/api.js:449': /'POST \/api\/consentimento'/,
     'src/api.js:908': /periodosSugeridos\(\)/,
@@ -973,6 +976,38 @@ test('a promessa sobre o áudio não pode ser incondicional (F0)', async () => {
   const sala = seed.split('\n').find((l) => l.includes("campo: 'audio_da_sala'")) || '';
   assert.ok(sala, 'a porta B grava a sala inteira e precisa de linha própria');
   assert.match(sala, /exige_consentimento: 1/, 'gravar a sala com as crianças exige consentimento');
+});
+
+test('nenhuma rota do front é engolida por outra (despacho é o PRIMEIRO que casa)', async () => {
+  // DEFEITO REAL, achado em 04/09/2026 e presente desde a v2: `/^#\/relato/`
+  // casa em `#/relatorio`, e `navegar()` despacha no PRIMEIRO que casa. A tela
+  // principal da DIRETORIA estava inalcançável — quem tocava em "Relatório" caía
+  // em "Sem turma atribuída". Nenhum gate pegava: smoke é HTTP, unitário não tem
+  // DOM, e o defeito mora só no despacho do cliente.
+  //
+  // Este teste lê as rotas do próprio arquivo, então rota nova nasce vigiada.
+  const { readFileSync } = await import('node:fs');
+  const linhas = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8').split('\n');
+  const rotas = linhas.map((l, i) => [i + 1, l])
+    .filter(([, l]) => /^rota\(\//.test(l))
+    .map(([n, l]) => ({ n, fonte: l.match(/rota\((\/.+?\/), /)[1] }));
+  assert.ok(rotas.length >= 15, `só ${rotas.length} rotas lidas — o extrator quebrou`);
+
+  // O caminho literal de cada rota: o que vem depois de `^`, até o primeiro
+  // metacaractere. `/^#\/crianca\/(\d+)/` vira `#/crianca/1`.
+  const caminhoDe = (fonte) => {
+    const corpo = fonte.slice(1, fonte.lastIndexOf('/'));
+    const lit = corpo.replace(/^\^/, '').split(/\(|\[|\\d|\$|\{/)[0].replace(/\\\//g, '/');
+    return lit.endsWith('/') ? `${lit}1` : lit;
+  };
+
+  const sombras = [];
+  rotas.forEach((r, i) => {
+    const alvo = caminhoDe(r.fonte);
+    const primeira = rotas.findIndex(o => new RegExp(o.fonte.slice(1, o.fonte.lastIndexOf('/'))).test(alvo));
+    if (primeira !== i) sombras.push(`${alvo} (linha ${r.n}) é engolida por ${rotas[primeira].fonte} da linha ${rotas[primeira].n}`);
+  });
+  assert.deepEqual(sombras, [], 'rota inalcançável: outra rota casa antes dela');
 });
 
 test('o botão do recado segue o ENCONTRO da folha, não o dia de hoje', async () => {
