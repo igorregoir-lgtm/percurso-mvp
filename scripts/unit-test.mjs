@@ -611,24 +611,24 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
   const { readFileSync } = await import('node:fs');
   const raiz = new URL('../', import.meta.url);
   const ANCORAS = {
-    'public/app.js:501': /rota\(\/\^#\\\/hoje\//,
-    'public/app.js:590': /Revisar e liberar o relato|relato_liberado/,
+    'public/app.js:504': /rota\(\/\^#\\\/hoje\//,
+    'public/app.js:593': /Revisar e liberar o relato|relato_liberado/,
     // Regex ESTREITA de proposito: /recados|#\/recado/ casava em quatro linhas,
     // e a reancorar.mjs nao tinha como decidir qual. Ancora que casa em varios
     // lugares nao ancora nada.
     // O botão do recado. O destino virou `#/sai-daqui?aba=recado` na F2, mas o
     // que a âncora guarda é o mesmo: ele leva a TURMA e a DATA do encontro.
-    'public/app.js:591': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
-    'public/app.js:1158': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:594': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
+    'public/app.js:1161': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:2662': /async function telaScores\(\)/,
-    'public/app.js:2888': /id="pergunta"/,
+    'public/app.js:2681': /async function telaScores\(\)/,
+    'public/app.js:2907': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:4553': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
+    'public/app.js:4572': /location\.hash = '#\/hoje'; navegar\(\);\s+\/\/ passo 05 do task flow/,
     'src/api.js:334': /erro\(422.*rubrica por ciclo/,
     'src/api.js:460': /'POST \/api\/consentimento'/,
     'src/api.js:919': /periodosSugeridos\(\)/,
@@ -1271,12 +1271,12 @@ test('aurora: "como chego" não cai mais na tela de voz por causa do rótulo', (
   assert.equal(r2?.acao?.id, 'folha');
 });
 
-test('aurora: telas antes órfãs (folha, confirmar, alertas) agora têm guia', async () => {
-  const r1 = await A.assistente(eduAurora, { message: 'o que é esta tela?', tela: '#/folha' });
-  assert.match(r1.resposta, /Folha do dia/i);
-  const r2 = await A.assistente(eduAurora, { message: 'já foi gravado?', tela: '#/confirmar' });
+test('aurora: telas antes órfãs (registrar, seus passos e alertas) têm guia', async () => {
+  const r1 = await A.assistente(eduAurora, { message: 'o que é esta tela?', tela: '#/registrar' });
+  assert.match(r1.resposta, /Registrar|conta o encontro|campos/i);
+  const r2 = await A.assistente(eduAurora, { message: 'já foi gravado?', tela: '#/registrar?passo=confirmar' });
   assert.match(r2.resposta, /conferir|confirmar/i);
-  const r3 = await A.assistente(eduAurora, { message: 'quando um alerta dispara?', tela: '#/alertas' });
+  const r3 = await A.assistente(eduAurora, { message: 'quando um alerta dispara?', tela: '#/hoje?detalhe=alertas' });
   assert.match(r3.resposta, /faltas consecutivas/i);
 });
 
@@ -1534,7 +1534,7 @@ test('aurora/perfil: nada de HORA no arquivo — a política que a tela mostra �
 
 test('aurora/perfil: dedupe de "mostrada" cobre as TRÊS famílias', () => {
   PF.salvarPreferencia(23, { aprender: true });
-  for (const [f, k] of [['sugestao', 'edu.duvida.audio'], ['tipo', 'duvida'], ['tela', '#/voz']]) {
+  for (const [f, k] of [['sugestao', 'edu.duvida.audio'], ['tipo', 'duvida'], ['tela', '#/registrar']]) {
     assert.equal(PF.registrar(23, f, k, 'mostrada').gravado, true, `${f}: primeira`);
     assert.equal(PF.registrar(23, f, k, 'mostrada').gravado, false, `${f}: repintura não pode contar de novo`);
   }

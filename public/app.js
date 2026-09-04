@@ -241,7 +241,7 @@ const NAV_EDUCADOR = [
 // Psicóloga (decisão 31): a turma dela não entra na rubrica, então não há Ciclo;
 // e ela não pediu pauta de atividades — o que ela pediu foi registrar.
 const NAV_PROFISSIONAL = [
-  ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'], ['#/folha', '✎', 'Vivência'],
+  ['#/hoje', '☀', 'Hoje'], ['#/chamada', '✓', 'Chamada'], ['#/registrar', '✎', 'Registrar'],
   ['#/sai-daqui', '▤', 'Saídas'], ['#/turma', '▥', 'Turma'], ['#/crianca', '☺', 'Crianças'],
 ];
 // F2: scores, safras e síntese viraram abas do Painel; impacto e consulta,
@@ -313,6 +313,9 @@ const FUNDIDAS = {
   '#/relato': '#/sai-daqui?aba=relato',
   '#/recado': '#/sai-daqui?aba=recado',
   '#/criancas': '#/crianca',
+  '#/voz': '#/registrar',
+  '#/folha': '#/registrar?passo=mao',
+  '#/confirmar': '#/registrar?passo=confirmar',
 };
 
 // As que carregavam ID não cabem num mapa de strings.
@@ -585,8 +588,8 @@ rota(/^#\/hoje/, async () => {
         ? 'Registrada. Dá para ajustar enquanto o dia não fecha.'
         : 'Fale enquanto arruma a sala, pelo tempo que precisar — o resto o Percurso monta.'}</p>
       <div class="linha" style="margin-top:12px">
-        <button class="btn largo" data-acao="ir" data-href="#/voz">${folhaFeita ? 'Contar de novo' : 'Contar como foi'}</button>
-        <button class="btn largo secundario" data-acao="ir" data-href="#/folha">Preencher à mão</button>
+        <button class="btn largo" data-acao="ir" data-href="#/registrar">${folhaFeita ? 'Contar de novo' : 'Contar como foi'}</button>
+        <button class="btn largo secundario" data-acao="ir" data-href="#/registrar?passo=mao">Preencher à mão</button>
         ${folhaFeita && d.na_rubrica === false ? `<button class="btn largo ${d.folha.relato_liberado ? 'fantasma' : 'secundario'}" data-acao="ir" data-href="#/sai-daqui?aba=relato">${d.folha.relato_liberado ? 'Relato liberado' : 'Revisar e liberar o relato'}</button>` : ''}
         ${(d.recados ?? []).map(r => `<button class="btn largo fantasma" data-acao="ir" data-href="#/sai-daqui?aba=recado&turma_id=${r.turma_id}&data=${r.data}">Recado para os responsáveis${d.recados.length > 1 ? ` · ${esc(r.turma)}` : ''}</button>`).join('')}
       </div>
@@ -1887,7 +1890,23 @@ async function carregarFolha(turmaId, data) {
   return d;
 }
 
-rota(/^#\/folha/, async () => {
+// ======================================================================
+// REGISTRAR (F2) — contar por voz, preencher à mão e confirmar eram TRÊS
+// telas. São três estados de UMA tarefa: `#/confirmar` já renderizava
+// `blocosDaFolha()` idêntico ao da folha, e a voz empilhava cinco blocos antes
+// do botão "Terminei". Agora é um lugar só, e o passo mora na URL.
+//
+// O PADRÃO é a voz — foi o que o campo pediu que fosse mais fácil. Escrever
+// continua a um toque, e nunca deixa de estar visível.
+// ======================================================================
+rota(/^#\/registrar/, async () => {
+  const passo = (location.hash.match(/[?&]passo=([a-z]+)/) || [])[1] || 'voz';
+  if (passo === 'mao') return telaFolhaAMao();
+  if (passo === 'confirmar') return telaConfirmar();
+  return telaContarComoFoi();
+});
+
+async function telaFolhaAMao() {
   const h = await api('/api/hoje');
   if (!h.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2></div>`; return; }
   const params = new URLSearchParams(location.hash.split('?')[1] || '');
@@ -1916,14 +1935,14 @@ rota(/^#\/folha/, async () => {
             ? `<div class="linha"><button class="btn pequeno" data-acao="reabrir-folha">Reabrir a folha</button></div>` : ''}
         </div>`
         : `
-        <button class="btn largo" data-acao="ir" data-href="#/voz">Contar como foi</button>
+        <button class="btn largo" data-acao="ir" data-href="#/registrar">Contar como foi</button>
         <button class="btn largo secundario" data-acao="salvar-folha" data-fechar="1">Fechar a folha</button>`}
       <button class="btn largo fantasma" data-acao="imprimir">Imprimir a folha</button>
     </div>
     <p class="rodape">Registro da turma. Base legal: legítimo interesse — execução do programa.</p>`;
   if (fechada) document.querySelectorAll('[data-acao="pill"],[data-acao="ajuda"]')
     .forEach(b => { b.disabled = true; b.style.opacity = '.55'; });
-});
+}
 
 // ======================================================================
 // REGISTRAR POR VOZ (F3) — 40 s, áudio descartado na transcrição.
@@ -1955,11 +1974,11 @@ async function ondeTranscreve() {
 const temReconhecimento = () =>
   typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
 
-rota(/^#\/voz/, async () => {
+async function telaContarComoFoi() {
   const h = await api('/api/hoje');
   if (!h.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2></div>`; return; }
   const d = await carregarFolha(h.turma.id, h.data_folha);
-  if (!d.encontro) { location.hash = '#/folha'; navegar(); return; }
+  if (!d.encontro) { location.hash = '#/registrar?passo=mao'; navegar(); return; }
 
   const nativo = !!temReconhecimento();
   const onde = await ondeTranscreve();
@@ -2008,14 +2027,14 @@ rota(/^#\/voz/, async () => {
 
     <div class="pilha">
       <button class="btn largo" data-acao="voz-terminei" id="btn-terminei">Terminei</button>
-      <button class="btn largo secundario" data-acao="ir" data-href="#/folha">Prefiro escrever</button>
+      <button class="btn largo secundario" data-acao="ir" data-href="#/registrar?passo=mao">Prefiro escrever</button>
     </div>
     <p class="rodape">O áudio é apagado assim que vira texto, aqui e no computador do Instituto.<br>
       ${onde === 'aparelho'
         ? 'A transcrição do microfone acima acontece neste aparelho.'
         : 'A transcrição do microfone acima é feita pelo serviço do seu navegador.'}
       O Percurso nunca guarda áudio.</p>`;
-});
+}
 
 // ======================================================================
 // AS TRES PORTAS LONGAS — A' (narrar sem pressa), B (deixar gravando a sala)
@@ -2451,8 +2470,8 @@ async function magiaExtracao(texto, promessaPost, catalogos) {
 // ======================================================================
 // CONFIRMAR REGISTRO (F6) — nada é gravado antes de confirmar.
 // ======================================================================
-rota(/^#\/confirmar/, async () => {
-  if (!ctx.folha || !ctx.folha.sugestao) { location.hash = '#/voz'; navegar(); return; }
+async function telaConfirmar() {
+  if (!ctx.folha || !ctx.folha.sugestao) { location.hash = '#/registrar'; navegar(); return; }
   const f = ctx.folha;
   app.innerHTML = `
     <p class="kicker">Nada foi gravado ainda</p>
@@ -2481,11 +2500,11 @@ rota(/^#\/confirmar/, async () => {
         </div>` : ''}
       <button class="btn largo" data-acao="salvar-folha" data-fechar="0">Confirmar e guardar</button>
       <button class="btn largo secundario" data-acao="descartar-folha">Descartar</button>
-      <button class="btn largo fantasma" data-acao="ir" data-href="#/voz">Regravar</button>
+      <button class="btn largo fantasma" data-acao="ir" data-href="#/registrar">Regravar</button>
     </div>
     <p class="rodape">Áudio e transcrição são apagados ao confirmar.<br>
       Confiança do extrator nesta fala: ${f.sugestao.confianca != null ? String(f.sugestao.confianca).replace('.', ',') : '—'}.</p>`;
-});
+}
 
 // ======================================================================
 // RELATO DO PROCEDIMENTO (decisão 31) — o texto no padrão do conselho, gerado
@@ -2530,8 +2549,8 @@ async function telaRelato(params) {
   try { r = await api(`/api/relato?turma_id=${turmaId}${params.get('data') ? `&data=${params.get('data')}` : ''}`); }
   catch (e) {
     app.innerHTML = `<p class="kicker">Relato</p><h1>Ainda não há o que relatar</h1><p class="sub">${esc(e.message)}</p>
-      <div class="linha" style="margin-top:16px"><button class="btn" data-acao="ir" data-href="#/voz">Contar como foi</button>
-      <button class="btn secundario" data-acao="ir" data-href="#/folha">Preencher à mão</button></div>`;
+      <div class="linha" style="margin-top:16px"><button class="btn" data-acao="ir" data-href="#/registrar">Contar como foi</button>
+      <button class="btn secundario" data-acao="ir" data-href="#/registrar?passo=mao">Preencher à mão</button></div>`;
     return;
   }
   ctx.relato = { turmaId, data: r.data };
@@ -2550,7 +2569,7 @@ async function telaRelato(params) {
       ${r.liberado ? '' : `<button class="btn largo" data-acao="liberar-relato">Revisei — liberar o relato</button>`}
       <button class="btn largo secundario" data-acao="copiar-relato">Copiar o texto</button>
       <button class="btn largo fantasma" data-acao="imprimir">Imprimir</button>
-      ${r.liberado ? '' : `<button class="btn largo fantasma" data-acao="ir" data-href="#/folha?data=${r.data}">Ajustar a folha antes</button>`}
+      ${r.liberado ? '' : `<button class="btn largo fantasma" data-acao="ir" data-href="#/registrar?passo=mao&data=${r.data}">Ajustar a folha antes</button>`}
     </div>
     ${r.historico.length ? `<div class="cartao compacto" style="margin-top:14px">
       <h2>Relatos liberados desta turma</h2>
@@ -4333,8 +4352,8 @@ document.addEventListener('click', comErro(async (ev) => {
 }));
 
 const AURORA_ROTAS_POR_PAPEL = {
-  educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/sai-daqui', '#/turma', '#/crianca', '#/pensar'],
-  profissional: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/sai-daqui', '#/turma', '#/crianca', '#/pensar'],
+  educador: ['#/hoje', '#/chamada', '#/registrar', '#/sai-daqui', '#/turma', '#/crianca', '#/pensar'],
+  profissional: ['#/hoje', '#/chamada', '#/registrar', '#/sai-daqui', '#/turma', '#/crianca', '#/pensar'],
   // '#/consulta' entrou em 03/09/2026: `exigeGestao` autoriza coordenação E
   // diretoria (src/api.js), e o painel dela já oferece o botão 'Perguntar à
   // base'. Sem a rota aqui, uma sugestão da Aurora para essa tela era engolida
@@ -4750,14 +4769,14 @@ document.addEventListener('click', comErro(async (ev) => {
       // Navega ANTES do modal de encaminhamento: o foco cai no modal por cima
       // da tela pronta (e o véu da magia se desfaz sobre ela). O await importa:
       // o render limpa .veu esquecidos — o modal só pode abrir DEPOIS dele.
-      location.hash = '#/confirmar';
+      location.hash = '#/registrar?passo=confirmar';
       await navegar();
       encerrarMagia?.();
       if (r.excluido) modalEncaminhamento(r.trechos);
     } catch (e) {
       if (e.rede) {
         toast('Sem internet. O registro manual continua funcionando.', 'ruim');
-        location.hash = '#/folha'; navegar();
+        location.hash = '#/registrar?passo=mao'; navegar();
         return;
       }
       throw e;

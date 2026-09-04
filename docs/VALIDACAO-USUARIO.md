@@ -88,7 +88,7 @@ node scripts/reset.mjs && node scripts/preparar-sessao.mjs --lapso && node serve
   > elemento do cartão preso à chamada **de hoje**, então sumia em dia não letivo e o recado só era
   > alcançável pela URL. O protocolo mandava registrar isso como "não — entrada ausente na tela
   > Hoje". Corrigido em `48ec1dd`: o botão passou a seguir o **encontro da folha**
-  > (`public/app.js:591`), como o resto do cartão. **A ressalva não vale mais** — se a tarefa 6
+  > (`public/app.js:594`), como o resto do cartão. **A ressalva não vale mais** — se a tarefa 6
   > falhar agora, é achado de verdade, não defeito conhecido.
 
 **Regras do facilitador.**
@@ -151,7 +151,7 @@ qualquer coisa acima disso na sessão é sinal, não ruído do cenário.
 
 > **Por que a tarefa 5 termina num bloqueio.** Ela não é usabilidade: é o teste de **H3**. A
 > psicóloga não pode registrar o consentimento — só a coordenação (`src/api.js:460`), e a tela diz
-> isso a ela (`public/app.js:1158`). O sucesso da tarefa é ela entender **por que não sai**, não
+> isso a ela (`public/app.js:1161`). O sucesso da tarefa é ela entender **por que não sai**, não
 > conseguir emitir. E o destino é literal do campo: *"que daí seria entre profissionais, que é mais
 > rico ainda"*.
 

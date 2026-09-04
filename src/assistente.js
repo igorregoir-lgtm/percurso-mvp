@@ -55,8 +55,8 @@ export function apagarSessaoAssistente(u, sessaoId) {
 export const CATALOGO_ACOES = [
   { id: 'hoje', rotulo: 'Hoje', hash: '#/hoje', papeis: ['educador', 'profissional'] },
   { id: 'chamada', rotulo: 'Chamada', hash: '#/chamada', papeis: ['educador', 'profissional'] },
-  { id: 'voz', rotulo: 'Contar como foi (voz)', hash: '#/voz', papeis: ['educador', 'profissional'] },
-  { id: 'folha', rotulo: 'Folha do dia', hash: '#/folha', papeis: ['educador', 'profissional'] },
+  { id: 'voz', rotulo: 'Contar como foi (voz)', hash: '#/registrar', papeis: ['educador', 'profissional'] },
+  { id: 'folha', rotulo: 'Folha do dia', hash: '#/registrar?passo=mao', papeis: ['educador', 'profissional'] },
   { id: 'relato', rotulo: 'Relato do procedimento', hash: '#/sai-daqui?aba=relato', papeis: ['educador', 'profissional', 'coordenacao'] },
   { id: 'recado', rotulo: 'Recado da turma (responsáveis)', hash: '#/sai-daqui?aba=recado', papeis: ['educador', 'profissional'] },
   { id: 'pauta', rotulo: 'Pauta de segunda', hash: '#/hoje?detalhe=semana', papeis: ['educador'] },
@@ -93,14 +93,14 @@ export function validarAcao(id, papel) {
 // de instrução em mensagem de sistema.
 const ROTAS_CONHECIDAS = new Set([
   ...CATALOGO_ACOES.map(a => a.hash.split('?')[0]),
-  '#/entrar', '#/confirmar', '#/observacao', '#/crianca', '#/parecer',
+  '#/entrar', '#/registrar', '#/crianca',
 ]);
 /** Mesmo conjunto, exportado: é o vocabulário fechado de `tela` no perfil. */
 export const ROTAS_CONHECIDAS_AURORA = ROTAS_CONHECIDAS;
 export function telaSegura(tela) {
   const rota = String(tela ?? '').split('?')[0];
   if (ROTAS_CONHECIDAS.has(rota)) return rota;
-  const m = rota.match(/^(#\/(?:crianca|observacao|parecer))\/\d+$/);   // fichas com id numérico
+  const m = rota.match(/^(#\/crianca)\/\d+$/);   // a ficha, com id numérico
   return m ? m[1] : '';
 }
 
@@ -131,14 +131,21 @@ export const GUIA = [
     ],
   },
   {
-    id: 'voz', papeis: ['educador', 'profissional'],
-    oQueE: 'Em "Contar como foi", você fala o tempo que precisar sobre o encontro da TURMA e o Percurso transforma a fala em campos — que você confere e confirma antes de qualquer coisa ser gravada.',
-    chips: ['Como funciona a captura por voz?', 'O áudio fica gravado?', 'E se eu preferir escrever?'],
+    // UM guia para os três passos: contar por voz, preencher à mão e conferir
+    // viraram uma tela só (F2), e três guias com o mesmo hash fariam `guiaDe`
+    // responder sempre pelo primeiro — os outros dois virariam texto morto.
+    id: 'registrar', papeis: ['educador', 'profissional'],
+    oQueE: 'Em "Registrar" você conta o encontro da TURMA — falando ou escrevendo — e o Percurso transforma em campos, que você confere antes de qualquer coisa ser gravada.',
+    chips: ['Como funciona a captura por voz?', 'O áudio fica gravado?', 'E se eu preferir escrever?', 'Já foi gravado?'],
     tarefas: [
       { intencoes: ['gravar', 'falar', 'voz', 'microfone', 'audio', 'conto como', 'contar como foi', 'como foi o encontro', 'relato do encontro'], resposta: 'Toque no microfone grande, fale sobre o encontro da turma (atividade, tema, como o grupo esteve) e toque em Terminei. Os campos se preenchem sozinhos para você conferir — nada é gravado antes do seu "Confirmar e guardar".', acao: 'voz' },
-      { intencoes: ['audio fica', 'gravacao', 'fica gravado', 'guardado o audio'], resposta: 'O áudio nunca sai do seu aparelho e nunca chega ao servidor: o navegador transcreve na hora, o texto é usado para preencher os campos e morre na confirmação. Não existe gravação de voz no Percurso.', acao: null },
+      { intencoes: ['audio fica', 'gravacao', 'fica gravado', 'guardado o audio'], resposta: 'Depende do caminho, e a tela diz qual é. Na captura curta quem transcreve é o navegador — no aparelho, quando ele sabe fazer. Na narração longa, no encontro gravado e no arquivo trazido, o áudio vai para o computador do Instituto e é apagado assim que vira texto. O Percurso nunca guarda áudio.', acao: null },
       { intencoes: ['escrever', 'digitar', 'sem falar', 'teclado'], resposta: 'Prefere escrever? Na mesma tela há o campo de texto — ou use "Preencher à mão" na folha do dia. A voz é atalho, nunca obrigação.', acao: 'folha' },
       { intencoes: ['nome de crianca', 'posso falar nome', 'falar da crianca'], resposta: 'Fale da TURMA, não de uma criança. Se algo sensível sobre alguém escapar, o filtro de proteção segura o trecho: ele não vira campo, não é gravado, e a tela orienta o caminho humano (coordenação).', acao: null },
+      { intencoes: ['preench', 'registrar a folha', 'como faco a folha', 'campos'], resposta: 'Toque em "Prefiro escrever": escolha a atividade e a área, marque como a turma esteve e quantos pediram ajuda, e guarde. A voz faz o mesmo caminho falando — nenhum dos dois grava nada sem a sua confirmação.', acao: 'folha' },
+      { intencoes: ['ajustar', 'corrig', 'editar', 'mudar depois', 'errado', 'errou'], resposta: 'Ajuste qualquer campo à vontade — vale o que você confirmar, não o que a extração sugeriu. E dá para ajustar depois: abra a mesma data e registre de novo; o que você confirmar por último é o que vale.', acao: 'folha' },
+      { intencoes: ['diferenca', 'voz ou folha', 'em vez de falar'], resposta: 'Falar e escrever preenchem os MESMOS campos, na mesma tela: a voz é atalho, escrever é o caminho à mão. A escolha é sua, todo dia.', acao: null },
+      { intencoes: ['ja foi gravado', 'já foi gravado', 'salvou', 'ta gravado', 'está gravado'], resposta: 'Ainda não: o passo de conferir existe exatamente para isso. Só o seu toque em confirmar grava — e a transcrição morre nesse momento.', acao: null },
     ],
   },
   {
@@ -263,25 +270,6 @@ export const GUIA = [
   // ATENÇÃO À ORDEM, e agora também à barra: com a fusão da F2 a lista e a ficha
   // vivem no MESMO hash (`#/crianca` e `#/crianca/7`), então `startsWith` casa
   // nas duas. `guiaDe` passou a exigir a fronteira depois do id.
-  {
-    id: 'folha', papeis: ['educador', 'profissional'],
-    oQueE: 'A Folha do dia é o registro à mão do encontro da TURMA — atividade, área temática, como o grupo esteve e quantos pediram ajuda: os mesmos campos que a voz preenche.',
-    chips: ['Como preencho a folha?', 'Posso ajustar depois?', 'Qual a diferença para a voz?'],
-    tarefas: [
-      { intencoes: ['preench', 'registrar a folha', 'como faco a folha', 'campos'], resposta: 'Escolha a atividade e a área, marque como a turma esteve e quantos pediram ajuda, e guarde. A voz faz o mesmo caminho falando — nenhum dos dois grava nada sem a sua confirmação.', acao: 'folha' },
-      { intencoes: ['ajustar', 'corrig', 'editar', 'mudar depois'], resposta: 'Dá para ajustar enquanto o dia não fecha: abra a mesma data e registre de novo — o que você confirmar por último é o que vale.', acao: 'folha' },
-      { intencoes: ['diferenca', 'voz ou folha', 'em vez de falar'], resposta: 'Voz e folha preenchem os MESMOS campos: a voz é atalho, a folha é o caminho à mão. A escolha é sua, todo dia.', acao: null },
-    ],
-  },
-  {
-    id: 'confirmar', papeis: ['educador', 'profissional'],
-    oQueE: 'A tela "O que entendi" mostra os campos extraídos da sua fala para você conferir e ajustar — NADA é gravado antes do seu toque em confirmar, e a transcrição é descartada nesse momento.',
-    chips: ['Já foi gravado?', 'Posso corrigir um campo?', 'E se estiver tudo errado?'],
-    tarefas: [
-      { intencoes: ['ja foi gravado', 'já foi gravado', 'salvou', 'ta gravado', 'está gravado'], resposta: 'Ainda não: esta tela existe exatamente para você conferir antes. Só o seu toque em confirmar grava — e a transcrição morre nesse momento.', acao: null },
-      { intencoes: ['corrig', 'ajustar', 'mudar', 'errado', 'errou'], resposta: 'Ajuste qualquer campo à vontade — vale o que você confirmar, não o que a extração sugeriu. Se estiver tudo errado, descarte e conte de novo, ou preencha à mão na folha.', acao: null },
-    ],
-  },
   {
     id: 'alertas', papeis: ['educador', 'profissional', 'coordenacao'],
     oQueE: 'Os Alertas de ausência disparam com faltas consecutivas na chamada — para agir antes de virar evasão: a coordenação liga para a família e a tratativa fica registrada.',
