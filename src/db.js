@@ -150,6 +150,25 @@ const ESQUEMA_SQL = `
     UNIQUE (turma_id, data)
   );
 
+  -- LOG DE ACESSO INDIVIDUAL (decisao 38). Divida declarada desde a v1 como
+  -- "exigivel sob LGPD, antes do primeiro dado real" — e pre-requisito escrito
+  -- do campo livre de relato: sem rastro, qualquer pessoa que abrisse a pagina
+  -- leria a ficha de qualquer crianca e ninguem saberia.
+  --
+  -- Guarda QUEM leu O QUE e QUANDO. Nao guarda o conteudo lido: o log existe
+  -- para responder "quem viu a ficha da Yasmin em agosto", nao para virar uma
+  -- segunda copia do prontuario.
+  CREATE TABLE IF NOT EXISTS acesso_individual (
+    id         INTEGER PRIMARY KEY,
+    educador_id INTEGER NOT NULL REFERENCES educador(id),
+    papel      TEXT NOT NULL,
+    recurso    TEXT NOT NULL,      -- 'ficha' | 'observacao' | 'parecer' | 'trajetoria'
+    crianca_id INTEGER NOT NULL REFERENCES crianca(id),
+    em         TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_acesso_crianca ON acesso_individual (crianca_id, em);
+  CREATE INDEX IF NOT EXISTS idx_acesso_educador ON acesso_individual (educador_id, em);
+
   CREATE TABLE IF NOT EXISTS presenca (
     id          INTEGER PRIMARY KEY,
     encontro_id INTEGER NOT NULL REFERENCES encontro(id) ON DELETE CASCADE,

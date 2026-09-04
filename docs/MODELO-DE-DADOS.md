@@ -125,6 +125,24 @@ alguém manter à mão, e a casa cabe em duas pessoas. `temEncontro(turma, data)
 e `encontro.registrado_em` é quando foi registrado. Quando os dois não batem, a tela diz — e o
 registro vale igual.
 
+## O rastro de acesso individual (decisão 38)
+
+```sql
+CREATE TABLE acesso_individual (
+  id          INTEGER PRIMARY KEY,
+  educador_id INTEGER NOT NULL REFERENCES educador(id),
+  papel       TEXT NOT NULL,
+  recurso     TEXT NOT NULL,      -- 'ficha' | 'observacao' | 'parecer' | 'trajetoria'
+  crianca_id  INTEGER NOT NULL REFERENCES crianca(id),
+  em          TEXT NOT NULL
+);
+```
+
+**Guarda quem, o quê e quando — nunca o conteúdo lido.** O log responde *"quem viu a ficha da Yasmin
+em agosto"*; virar uma segunda cópia do prontuário seria exatamente o risco que ele existe para
+reduzir. A gravação mora em `exigeAcessoCrianca`, o portão único: espalhá-la por rota garantiria que
+a próxima rota esqueceria.
+
 ## Restrições que carregam regra de negócio
 
 | Restrição | O que impede |

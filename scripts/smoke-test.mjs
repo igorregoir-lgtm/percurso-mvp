@@ -424,6 +424,37 @@ secao('9c · As faltas ditas na fala viram sugestão, nunca presunção (F6)');
 }
 
 // ============================================================================
+secao('9a · Rastro de acesso a dado individual (decisão 38)');
+{
+  const c = (await GET('maria', '/api/criancas')).corpo.criancas[0];
+  const antes = (await GET('rita', '/api/acessos/resumo')).corpo.total;
+
+  await GET('maria', `/api/crianca?id=${c.id}`);
+  await GET('maria', `/api/observacao?crianca_id=${c.id}`);
+  const rastro = (await GET('maria', `/api/acessos?crianca_id=${c.id}`)).corpo.acessos;
+  T('ler a ficha e o olhar deixa rastro, com quem e quando',
+    rastro.length >= 2 && rastro.every(a => a.quem && a.em && a.recurso), `(${rastro.length})`);
+  T('o rastro distingue O QUE foi lido', new Set(rastro.map(a => a.recurso)).size >= 2,
+    [...new Set(rastro.map(a => a.recurso))].join(', '));
+  T('e NÃO guarda o conteúdo lido — só quem, o quê e quando',
+    rastro.every(a => Object.keys(a).sort().join() === 'em,papel,quem,recurso'));
+
+  const resumo = (await GET('rita', '/api/acessos/resumo')).corpo;
+  T('a coordenação vê o padrão de acesso, sem nome de criança',
+    resumo.total > antes && JSON.stringify(resumo).indexOf(c.nome) === -1, `(${antes} → ${resumo.total})`);
+
+  const invasao = await GET('maria', '/api/acessos/resumo');
+  T('educadora não lê o resumo de acesso da casa (403)', invasao.status === 403, `(${invasao.status})`);
+
+  const dela = new Set((await GET('maria', '/api/criancas')).corpo.criancas.map(x => x.id));
+  const alheia = (await GET('rita', '/api/criancas')).corpo.criancas.find(x => !dela.has(x.id));
+  if (alheia) {
+    const fora = await GET('maria', `/api/acessos?crianca_id=${alheia.id}`);
+    T('ler o rastro de criança de outra turma é barrado (403)', fora.status === 403, `(${fora.status})`);
+  }
+}
+
+// ============================================================================
 secao('9b · A rubrica na língua dela — piorou / manteve / evoluiu (F5)');
 {
   const lista = (await GET('maria', '/api/criancas')).corpo.criancas;

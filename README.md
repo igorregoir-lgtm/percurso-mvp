@@ -76,7 +76,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **407 asserções de fluxo** e **177 testes unitários** — mais a avaliação do RAG
+São **413 asserções de fluxo** e **177 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização), a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo) e a da transcrição de áudio com stub (`npm run test:audio`: o ciclo de vida do arquivo, que
@@ -196,7 +196,7 @@ O MVP não guarda senha — o controle de acesso real é uma decisão da coorden
 
 \* Refletir é a sala de reflexão do copilot local — só responde com `AI_ENABLED=1` (camada opcional).
 
-A diretoria recebe **407** nas rotas de ficha, lista de crianças e no chat do copilot, por decisão de desenho: quem
+A diretoria recebe **413** nas rotas de ficha, lista de crianças e no chat do copilot, por decisão de desenho: quem
 presta contas trabalha sobre a camada agregada, então não precisa de acesso individual e não tem
 (decisão técnica nº 16).
 
@@ -304,7 +304,7 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 
 ```
 server.js                 servidor HTTP (Node puro, sem framework)
-src/db.js                 esquema do banco (26 tabelas) e helpers de SQL
+src/db.js                 esquema do banco (27 tabelas) e helpers de SQL
 src/domain.js             regras de presença, ciclo, consentimento, safras e síntese
 src/voz.js                catálogos fechados, agente extrator e folha do dia (v2)
 src/scores.js             os três scores, a supressão e a pauta de segunda (v2)
@@ -328,7 +328,7 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    407 asserções do fluxo principal (contra o servidor no ar)
+scripts/smoke-test.mjs    413 asserções do fluxo principal (contra o servidor no ar)
 scripts/unit-test.mjs     177 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo

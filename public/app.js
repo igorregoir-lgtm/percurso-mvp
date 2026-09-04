@@ -1249,10 +1249,31 @@ const listaCriancas = (r) => {
 };
 
 async function telaFichaDaCrianca(id) {
-  const [f, par] = await Promise.all([api(`/api/crianca?id=${id}`), api(`/api/parecer?crianca_id=${id}`).catch(() => null)]);
+  const [f, par, ac] = await Promise.all([
+    api(`/api/crianca?id=${id}`),
+    api(`/api/parecer?crianca_id=${id}`).catch(() => null),
+    api(`/api/acessos?crianca_id=${id}`).catch(() => null),
+  ]);
   ctx.parecer = { criancaId: Number(id) };
   // Decisão 32: o parecer para profissional parceiro — o único dado individual
   // que sai, por código, sob consentimento e liberado. A ficha é a porta.
+  // QUEM LEU ESTA FICHA (decisão 38). Era dívida declarada desde a v1
+  // ("exigível sob LGPD") e é pré-requisito escrito do campo livre de relato:
+  // sem rastro, qualquer pessoa que abrisse a página leria a ficha de qualquer
+  // criança e ninguém saberia. Fica NA FICHA, e não numa tela de administração,
+  // porque é aqui que a pergunta nasce.
+  const cartaoAcessos = !ac?.acessos?.length ? '' : `
+    <details class="cartao compacto" style="margin-top:14px">
+      <summary style="cursor:pointer;font-weight:600">Quem abriu esta ficha · ${ac.acessos.length}</summary>
+      <p class="sub" style="margin-top:8px">O registro guarda quem, o quê e quando — nunca o que foi lido.
+        Ler este rastro também fica registrado.</p>
+      <div class="pilha" style="margin-top:8px">
+        ${ac.acessos.slice(0, 12).map(a2 => `<div class="dado">
+          <span class="k">${esc(a2.quem)} · ${esc(a2.papel)}</span>
+          <b style="font-weight:500">${esc(a2.recurso)} · ${dataBR(a2.em)}</b></div>`).join('')}
+      </div>
+    </details>`;
+
   const cartaoParecer = !par ? '' : `
     <div class="cartao compacto" style="margin-top:14px">
       <div class="linha"><h2 class="cresce">Parecer a profissional parceiro</h2>
@@ -1315,6 +1336,7 @@ async function telaFichaDaCrianca(id) {
     </div>
 
     ${cartaoParecer}
+    ${cartaoAcessos}
 
     <div class="cartao compacto" style="margin-top:14px">
       <h2>Governança dos campos</h2>
@@ -1687,11 +1709,28 @@ async function telaSintese() {
 // CONSENTIMENTOS (F1 · governanca)
 // ======================================================================
 rota(/^#\/consentimentos/, async () => {
-  const d = await api('/api/consentimentos');
+  const [d, ac] = await Promise.all([api('/api/consentimentos'), api('/api/acessos/resumo').catch(() => null)]);
+  // O RESUMO DE ACESSO (decisão 38). Volume por recurso e por papel, SEM nome
+  // de criança: a coordenação vê o PADRÃO, não o caso a caso. O caso a caso
+  // mora na ficha, que é onde a pergunta nasce e onde há motivo para abrir.
+  const cartaoAcessos = !ac ? '' : `
+    <div class="cartao compacto" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Quem lê dado individual</h2>
+        <span class="selo ${ac.total ? 'ok' : 'pend'}">${ac.total} leitura(s)</span></div>
+      <p class="sub">Desde ${dataBR(ac.desde)}. Toda leitura de ficha, olhar ou parecer deixa rastro —
+        exigência da LGPD e pré-requisito do campo livre de relato. O log guarda quem, o quê e quando; nunca o conteúdo.</p>
+      ${ac.total ? `<div class="pilha" style="margin-top:10px">
+        ${ac.por_recurso.map(r => `<div class="dado"><span class="k">${esc(r.recurso)}</span>
+          <b>${r.n}<span class="sub"> em ${r.criancas} criança(s)</span></b></div>`).join('')}
+        ${ac.por_papel.map(r => `<div class="dado"><span class="k">por ${esc(r.papel)}</span>
+          <b>${r.n}<span class="sub"> · ${r.pessoas} pessoa(s)</span></b></div>`).join('')}
+      </div>` : '<p class="sub" style="margin-top:8px">Nenhuma leitura individual neste período.</p>'}
+    </div>`;
   app.innerHTML = `
     <p class="kicker">LGPD Art. 14 · consentimento específico do responsável</p>
     <h1>Consentimentos</h1>
     <p class="sub">Campo sem consentimento nasce bloqueado — a proteção é regra do sistema, não lembrete de processo.</p>
+    ${cartaoAcessos}
 
     <div class="kpis" style="margin-top:16px;grid-template-columns:1fr 1fr">
       <div class="kpi"><b>${d.ativos}</b><span>Ativos</span></div>

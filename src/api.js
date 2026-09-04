@@ -19,6 +19,7 @@ import * as PF from './aurora/perfil.js';
 import * as PO from './aurora/orquestrador.js';
 import * as SROI from './sroi/calculator.js';
 import * as PL from './planilha.js';
+import * as AUD from './auditoria.js';
 import * as REL from './relato.js';
 import * as REC from './recado.js';
 import * as TRANSC from './transcricao.js';
@@ -159,19 +160,29 @@ function exigeAcessoTurma(req, turmaId) {
 
 /** Escopo por criança (A4): coordenação passa; educadora só se a criança tem
  *  matrícula ativa em turma DELA. Usado nas rotas de leitura individual. */
-function exigeAcessoCrianca(req, criancaId) {
+/**
+ * Acesso a dado individual — e AGORA COM RASTRO (decisao 38).
+ *
+ * O log fica AQUI, no unico portao por onde todo acesso individual passa. Pôr
+ * a chamada em cada rota seria garantir que a proxima rota esqueceria.
+ *
+ * `recurso` diz O QUE foi lido. Quem nao informa entra como 'ficha', que e' o
+ * caso geral — nenhuma leitura individual sai sem registro.
+ */
+function exigeAcessoCrianca(req, criancaId, recurso = 'ficha') {
   const u = semAcessoIndividual(exigeUsuario(req));
   // Criança que não existe é 404 para qualquer papel — o 403 de escopo só faz
   // sentido sobre uma criança real (e não vira oráculo de existência: a lista
   // da educadora já é restrita às turmas dela).
   if (!get(`SELECT 1 x FROM crianca WHERE id = ?`, criancaId))
     throw D.erro(404, 'Criança não encontrada.');
-  if (u.papel === 'coordenacao') return u;
+  if (u.papel === 'coordenacao') { AUD.registrarAcesso(u, recurso, criancaId); return u; }
   const vinculo = get(
     `SELECT 1 x FROM matricula m JOIN turma t ON t.id = m.turma_id
       WHERE m.crianca_id = ? AND m.status='ativa' AND t.educador_id = ?`, criancaId, u.id);
   if (!vinculo)
     throw D.erro(403, 'Esta criança é de outra turma. O acesso é do educador da criança e da coordenação.');
+  AUD.registrarAcesso(u, recurso, criancaId);
   return u;
 }
 // Escopo de leitura individual: professora e profissional (psicóloga) só nas
@@ -357,7 +368,7 @@ export const rotas = {
     const criancaId = num(q.get('crianca_id'), 'crianca_id');
     const c = get(`SELECT id, codigo, nome FROM crianca WHERE id = ?`, criancaId);
     if (!c) throw D.erro(404, 'Criança não encontrada.');
-    exigeAcessoCrianca(req, criancaId);
+    exigeAcessoCrianca(req, criancaId, 'observacao');
     return {
       ciclo, crianca: c,
       elegibilidade: D.elegibilidade(criancaId, ciclo.id),
@@ -447,6 +458,24 @@ export const rotas = {
     });
     ficha.legenda_planilha = PL.LEGENDA_PLANILHA;
     return ficha;
+  },
+
+  // ---- Rastro de acesso individual (decisao 38) ---------------------------
+  // Quem leu a ficha de quem. E' o que a coordenacao precisa responder a um
+  // responsavel que pergunte — e o que a LGPD chama de rastreabilidade.
+  'GET /api/acessos': (req, _b, q) => {
+    const criancaId = num(q.get('crianca_id'), 'crianca_id');
+    // Ler o rastro E' ler dado individual: passa pelo mesmo portao, e fica
+    // registrado tambem. Auditoria sem auditoria de si mesma nao e' auditoria.
+    exigeAcessoCrianca(req, criancaId);
+    return { acessos: AUD.acessosDaCrianca(criancaId) };
+  },
+
+  // O resumo, para a tela de governanca: volume por recurso e por papel, SEM
+  // nome de crianca. A coordenacao ve o padrao de acesso, nao o caso a caso.
+  'GET /api/acessos/resumo': (req, _b, q) => {
+    exigeGestao(req);
+    return AUD.resumoDeAcesso({ desde: q.get('desde') || null });
   },
 
   'GET /api/alertas': (req) => {
@@ -873,7 +902,7 @@ export const rotas = {
   // A diretoria nunca chega aqui (decisao 16).
   'GET /api/parecer': (req, _b, q) => {
     const criancaId = num(q.get('crianca_id'), 'crianca_id');
-    exigeAcessoCrianca(req, criancaId);
+    exigeAcessoCrianca(req, criancaId, 'parecer');
     return {
       consentimento: D.consentimentoDe(criancaId, 'parecer_profissional').status,
       previa: PAR.numerosDoParecer(criancaId),
@@ -882,12 +911,12 @@ export const rotas = {
   },
   'GET /api/parecer/ver': (req, _b, q) => {
     const p = PAR.parecerDe(num(q.get('id'), 'id'));
-    exigeAcessoCrianca(req, p.crianca_id);
+    exigeAcessoCrianca(req, p.crianca_id, 'parecer');
     return p;
   },
   'POST /api/parecer/gerar': (req, body) => {
     const criancaId = num(body.crianca_id, 'crianca_id');
-    const u = exigeAcessoCrianca(req, criancaId);
+    const u = exigeAcessoCrianca(req, criancaId, 'parecer');
     return { ok: true, parecer: PAR.gerarParecer({ criancaId, destinatario: body.destinatario, usuarioId: u.id }) };
   },
   'POST /api/parecer/liberar': (req, body) => {

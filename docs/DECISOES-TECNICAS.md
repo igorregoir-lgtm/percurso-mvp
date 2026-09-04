@@ -139,7 +139,7 @@ autenticação por senha ou SSO; (b) HTTPS; (c) registro de auditoria de acesso 
 
 ### 9. Dados sintéticos determinísticos
 
-PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 407
+PRNG com semente fixa (`mulberry32(20261009)`). O mesmo banco toda vez, o que torna as 413
 asserções de fluxo e os 177 testes unitários reproduzíveis e permite que a demonstração seja idêntica em qualquer máquina. As datas são relativas
 a *hoje*, então a demonstração nunca "envelhece".
 
@@ -259,7 +259,7 @@ de risco. Quem tentar gravar por ele recebe 422 com encaminhamento humano, não 
 ### 16. A diretoria não abre registro individual
 
 O perfil da diretoria existe para gerar, revisar e publicar o relatório do doador. As rotas de
-ficha, lista de crianças e observação respondem **407** para ele (`semAcessoIndividual` em
+ficha, lista de crianças e observação respondem **413** para ele (`semAcessoIndividual` em
 `src/api.js`).
 
 É a regra zero do `08-RELATORIO-DOADOR` levada para dentro do sistema: quem presta contas trabalha
@@ -566,7 +566,7 @@ professora nova nem uma criança nova pela interface — o item 2.8 do horizonte
 coordenação: papel e matrícula são exatamente o que decide, no resto do produto, quem enxerga a
 ficha de quem (escopo de turma, decisão 22; diretoria sem individual, decisão 16). Deixar o
 cadastro na mão de quem registra a chamada seria pôr o controle de acesso na mão de quem ele
-limita. A diretoria também não cadastra criança — 407, pela mesma regra de sempre.
+limita. A diretoria também não cadastra criança — 413, pela mesma regra de sempre.
 
 **2 · O consentimento nasce PENDENTE, e a criança entra bloqueada para observação.** A criança
 entra pela presença (legítimo interesse, LGPD Art. 7º IX) e não fica observável no mesmo gesto:
@@ -954,15 +954,44 @@ referenciada). Na primeira execução ele achou uma segunda tabela já faltando:
 
 ---
 
+### 38. Toda leitura de dado individual deixa rastro
+
+**Origem:** dívida declarada desde a v1 — *"sem log de auditoria de acesso individual · exigível sob
+LGPD · antes do primeiro dado real"* — e **pré-requisito escrito do campo livre de relato** (F7). O
+plano é explícito: sem autenticação, sem HTTPS e sem log, qualquer pessoa que abrisse a página leria
+o relato de qualquer criança, sem rastro. F7 entra **depois** das três.
+
+**Decisão.** `acesso_individual` guarda **quem** leu **o quê** e **quando**. Não guarda o conteúdo
+lido: o log existe para responder *"quem viu a ficha da Yasmin em agosto"*, não para virar uma
+segunda cópia do prontuário — que seria exatamente o risco que ele existe para reduzir.
+
+**A chamada mora no portão, não nas rotas.** `exigeAcessoCrianca` é o único lugar por onde todo
+acesso individual passa. Espalhar a chamada por rota seria garantir que a próxima rota esqueceria.
+
+**Ler o rastro também é ler dado individual** — passa pelo mesmo portão e fica registrado. Auditoria
+sem auditoria de si mesma não é auditoria.
+
+**Duas superfícies, dois recortes.** Na **ficha**, o caso a caso — é ali que a pergunta nasce e onde
+há motivo para abrir. Na **governança**, o resumo por recurso e por papel, **sem nome de criança**:
+a coordenação vê o padrão de acesso, não quem olhou quem.
+
+**O que isto NÃO destrava.** F7 continua fechada: falta **autenticação**. Hoje entrar é escolher um
+perfil numa lista, sem senha — identificação, não autenticação. Um campo de texto livre sobre uma
+criança, num produto em que qualquer pessoa que abra a página escolhe ser a psicóloga, não é uma
+frente de produto: é um risco. Ligar autenticação muda o protocolo de validação e a demonstração, e
+essa é decisão de quem responde pelo Instituto — não do código.
+
+---
+
 ---
 
 ## Dívidas técnicas conhecidas
 
 | Dívida | Impacto | Quando pagar |
 |---|---|---|
-| Sem autenticação | Bloqueante para dado real | Antes do primeiro dado real |
+| Sem autenticação | Bloqueante para dado real — e é o **último** bloqueio do campo livre de relato (F7), já que HTTPS e log de auditoria foram pagos | Antes do primeiro dado real; ligar muda o protocolo de validação e a demonstração, então é decisão de quem responde pelo Instituto |
 | HTTPS existe, mas com certificado autoassinado | O aparelho avisa "conexão não privada" na primeira visita, e alguém precisa aceitar | Certificado de autoridade real quando houver domínio; hoje o aviso é o custo declarado |
-| Sem log de auditoria de acesso individual | Exigível sob LGPD | Antes do primeiro dado real |
+| ~~Sem log de auditoria de acesso individual~~ **— pago em 04/09/2026 (decisão 38)** | Era exigível sob LGPD e bloqueava a F7 | Feito: `acesso_individual`, no portão único de acesso |
 | Filtro de perímetro por termo, não por sentido | Deixa passar paráfrase | Depende de avaliação com a psicóloga |
 | Sem exportação (CSV/PDF) da síntese | Copiar e colar resolve hoje | Quando o relatório anual for montado |
 | Sem paginação na lista de crianças (limite 60, agora com aviso de corte) | Irrelevante em 106 crianças | Se a operação dobrar |
