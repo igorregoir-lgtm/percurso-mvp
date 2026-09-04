@@ -504,7 +504,7 @@ rota(/^#\/hoje/, async () => {
         <span class="selo ${folhaFeita ? 'ok' : 'pend'}">${folhaFeita ? (d.folha.origem === 'voz' ? 'por voz' : 'manual') : 'pendente'}</span></div>
       <p class="sub">${folhaFeita
         ? 'Registrada. Dá para ajustar enquanto o dia não fecha.'
-        : 'Fale por 40 segundos enquanto arruma a sala — o resto o Percurso monta.'}</p>
+        : 'Fale enquanto arruma a sala, pelo tempo que precisar — o resto o Percurso monta.'}</p>
       <div class="linha" style="margin-top:12px">
         <button class="btn largo" data-acao="ir" data-href="#/voz">${folhaFeita ? 'Contar de novo' : 'Contar como foi'}</button>
         <button class="btn largo secundario" data-acao="ir" data-href="#/folha">Preencher à mão</button>
@@ -570,7 +570,7 @@ rota(/^#\/hoje/, async () => {
     <div class="pilha">
       ${retomada}${cartaoChamada}${cartaoFolha}${cartaoDevolucao}${paraEstaSemana}${alertas}${cartaoCiclo}${abertas}
     </div>
-    <p class="rodape">Chamada em um toque, 40 segundos de voz — e o resto o Percurso organiza para você.</p>`;
+    <p class="rodape">Chamada em um toque, o encontro contado em voz — e o resto o Percurso organiza para você.</p>`;
 });
 
 // ======================================================================
@@ -1802,7 +1802,7 @@ rota(/^#\/voz/, async () => {
   // As portas longas dependem de o transcritor existir NESTA maquina. A rota
   // devolve isso; se ela falhar, a tela segue com o que sempre teve.
   const estadoAudio = await api('/api/audio/status').catch(() => null);
-  ctx.voz = { transcricao: '', gravando: false, restante: d.catalogos.voz_segundos, rec: null, timer: null, onde, longa: null, estadoAudio };
+  ctx.voz = { transcricao: '', gravando: false, decorridos: 0, rec: null, timer: null, onde, longa: null, estadoAudio };
 
   app.innerHTML = `
     <p class="kicker">Folha do dia · turma</p>
@@ -1814,11 +1814,11 @@ rota(/^#\/voz/, async () => {
       <button class="mic" id="mic" data-acao="voz-toggle" aria-pressed="false"
               aria-label="Começar a gravar" ${nativo ? '' : 'disabled'}><i aria-hidden="true"></i></button>
       <div class="onda" id="onda" aria-hidden="true">${Array.from({ length: 15 }, () => '<i style="height:5px"></i>').join('')}</div>
-      <div class="contagem-voz" id="contagem" role="status" aria-live="polite">0:00 de 0:${String(d.catalogos.voz_segundos).padStart(2, '0')}</div>
+      <div class="contagem-voz" id="contagem" role="status" aria-live="polite">0:00</div>
     </div>
 
     <div class="cartao compacto" style="margin-top:10px">
-      <p class="sub">Fale enquanto arruma a sala. Diga como foi a turma, o que fizeram${d.vivencia ? ', o procedimento e as contagens do grupo (quantas ajudaram sem pedir, quantas participaram do começo ao fim, conflitos)' : ' e quem faltou'}.</p>
+      <p class="sub">Fale enquanto arruma a sala, sem pressa — cerca de ${d.catalogos.voz_sugestao_segundos} segundos costumam bastar, e não há limite. Diga como foi a turma, o que fizeram${d.vivencia ? ', o procedimento e as contagens do grupo (quantas ajudaram sem pedir, quantas participaram do começo ao fim, conflitos)' : ' e quem faltou'}.</p>
     </div>
     <div class="aviso ${onde === 'aparelho' ? 'calmo' : ''}" style="margin-top:10px">
       <h3>O que este botão grava — e o que não grava</h3>
@@ -4422,7 +4422,19 @@ document.addEventListener('click', comErro(async (ev) => {
         ? 'O navegador bloqueou o microfone. Dá para escrever — o resto é igual.'
         : 'A transcrição falhou. O registro manual continua funcionando.', 'ruim');
     };
-    v.rec = rec; v.gravando = true; v.restante = ctx.folha.catalogos.voz_segundos;
+    // O RELIGAMENTO, que aqui faltava. O iOS/Safari encerra o reconhecimento
+    // sozinho depois de uma pausa; enquanto a captura tinha teto de 40 s isso
+    // quase nunca aparecia. Sem teto, aparece SEMPRE — tirar o limite sem pôr o
+    // religamento seria prometer "fale sem pressa" e desligar o microfone na
+    // primeira respirada. Mesmo desenho do ditado de campo: respiro de 250 ms,
+    // teto de 12, e nem tenta com o app em segundo plano.
+    v.religadas = 0;
+    rec.onend = () => {
+      if (!v.gravando || document.hidden || v.religadas >= 12) return;
+      v.religadas++;
+      setTimeout(() => { if (v.gravando && !document.hidden) { try { rec.start(); } catch {} } }, 250);
+    };
+    v.rec = rec; v.gravando = true; v.decorridos = 0;
     try { rec.start(); } catch {}
     alvo.classList.add('gravando');
     alvo.setAttribute('aria-pressed', 'true');
@@ -4430,19 +4442,16 @@ document.addEventListener('click', comErro(async (ev) => {
     document.getElementById('onda').classList.add('ativa');
     document.getElementById('voz-estado').textContent = 'Gravando';
     v.timer = setInterval(() => {
-      v.restante--;
+      v.decorridos++;
       animarOnda();
-      const total = ctx.folha.catalogos.voz_segundos;
+      // O relogio CONTA PARA CIMA e nao interrompe ninguem. A sugestao vira uma
+      // frase quando passa, nunca um desligamento.
+      const sug = ctx.folha.catalogos.voz_sugestao_segundos;
       const dec = document.getElementById('contagem');
-      if (dec) {
-        const usado = total - v.restante;
-        dec.textContent = `0:${String(Math.max(0, usado)).padStart(2, '0')} de 0:${total}`;
-        dec.classList.toggle('acabando', v.restante <= 8);
-      }
-      if (v.restante <= 0) {
-        pararVoz();
+      if (dec) dec.textContent = `${Math.floor(v.decorridos / 60)}:${String(v.decorridos % 60).padStart(2, '0')}`;
+      if (v.decorridos === sug) {
         const el = document.getElementById('voz-estado');
-        if (el) el.textContent = 'Quarenta segundos — pode tocar em Terminei';
+        if (el) el.textContent = 'Já dá para tocar em Terminei — ou siga falando';
       }
     }, 1000);
     return;

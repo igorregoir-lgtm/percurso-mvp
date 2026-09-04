@@ -389,7 +389,11 @@ let dataFolha = null;
   const cat = (await GET('maria', '/api/catalogos')).corpo;
   T('catálogos são listas fechadas, não texto livre',
     cat.atividades.length > 0 && cat.areas.length > 0 && cat.marcadores.length === 6);
-  T('a janela da voz é de 40 segundos', cat.voz_segundos === 40);
+  // A janela deixou de ser TETO em 03/09/2026 (F1). O teste guarda as duas
+  // metades: o numero sugerido continua 40, e o nome antigo — que se lia como
+  // limite — nao volta pela porta dos fundos.
+  T('a janela da voz é sugestão, não teto',
+    cat.voz_sugestao_segundos === 40 && cat.voz_segundos === undefined);
   T('o piso de confiança do extrator é 0,6', cat.confianca_minima === 0.6);
 
   // A folha e' do ENCONTRO, nao do calendario: a rota resolve para o ultimo
@@ -414,6 +418,18 @@ let dataFolha = null;
     ex.corpo.extracao.marcadores_turma.length <= 4 &&
     ex.corpo.extracao.marcadores_turma.every(m => cat.marcadores.some(x => x.codigo === m)));
   T('"pediram ajuda" é contagem, não lista de nomes', ex.corpo.extracao.pediram_ajuda === 3);
+
+  // O teto de tamanho do texto (F1). Era 4000 caracteres, medida de uma fala de
+  // 40 s — e as portas longas produzem MUITO mais que isso. Um teto que recusa
+  // justamente a captura que o produto passou a oferecer nao e' protecao, e' um
+  // defeito. Estes dois casos guardam as duas bordas.
+  const falaLonga = (fala + ' ').repeat(80);   // ~10 mil caracteres, uns 10 min de fala
+  const exLonga = await POST('maria', '/api/voz/extrair', { turma_id: turmaId, transcricao: falaLonga });
+  T('transcrição de encontro inteiro é aceita, não recusada por tamanho',
+    exLonga.status === 200, `(${exLonga.status}, ${falaLonga.length} caracteres)`);
+  const absurda = await POST('maria', '/api/voz/extrair', { turma_id: turmaId, transcricao: 'a'.repeat(60001) });
+  T('mas o teto continua existindo, e explica o que fazer',
+    absurda.status === 422 && /duas partes/.test(absurda.corpo.erro || ''), `(${absurda.status})`);
   T('confiança alta em fala clara', ex.corpo.extracao.confianca >= 0.6, String(ex.corpo.extracao.confianca));
   T('o extrator não escreve texto livre em campo nenhum',
     Object.values(ex.corpo.extracao).every(v =>
@@ -465,7 +481,7 @@ let dataFolha = null;
     ruido.corpo.extracao.marcadores_turma.length === 0);
 
   const longa = await POST('maria', '/api/voz/extrair', { turma_id: turmaId, transcricao: 'a'.repeat(4001) });
-  T('transcrição longa demais para 40 s é recusada (422)', longa.status === 422);
+  T('uma fala de mais de 4 mil caracteres já NÃO é recusada (o teto era de 40 s)', longa.status === 200);
 
   // --- F6: a confirmacao humana e' a primeira gravacao ----------------------
   const antes = (await GET('maria', `/api/folha?turma_id=${turmaId}&data=${dataFolha}`)).corpo;
@@ -614,7 +630,7 @@ secao('13 · Pauta de segunda — o laço de devolução (F11)');
   T('a coordenação passa em qualquer turma', coordPassa.status === 200);
   T('a própria turma continua aberta para a educadora', p.risco.criancas.every(c => c.crianca_id > 0));
   T('a sugestão sai da lacuna de exposição', !p.exposicao.area || p.sugestao?.origem === 'exposição');
-  T('a pauta lembra o custo real do registro', /chamada e de 40 segundos/i.test(p.rodape));
+  T('a pauta lembra o custo real do registro', /chamada e de um pouco de voz/i.test(p.rodape));
 
   const ruim = await POST('maria', '/api/pauta/decidir', { turma_id: turmaId, decisao: 'talvez' });
   T('decisão fora de aceita/descartada é recusada (422)', ruim.status === 422);

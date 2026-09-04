@@ -708,7 +708,11 @@ export const rotas = {
     const turmaId = num(body.turma_id, 'turma_id');
     exigeAcessoTurma(req, turmaId);
     const texto = String(body.transcricao ?? '');
-    if (texto.length > 4000) throw D.erro(422, 'Transcrição longa demais para uma fala de 40 segundos.');
+    // O teto era 4000 — cabia numa fala de 40 s e NAO cabe num encontro
+    // inteiro: cinco minutos de narracao ja' passam disso. Com as portas longas
+    // (F1) o limite antigo recusaria justamente a captura que elas existem para
+    // permitir. O novo teto e' generoso e continua sendo um teto.
+    if (texto.length > 60000) throw D.erro(422, 'Esse texto é maior do que o Percurso consegue ler de uma vez. Dá para guardar em duas partes.');
     const nomes = D.criancasDaTurma(turmaId).map(c => c.nome);
     const vivencia = !D.turmaNaRubrica(turmaId);
     // Modo A com modelo e' OPT-IN (AI_EXTRATOR=1) e cai para o extrator lexical

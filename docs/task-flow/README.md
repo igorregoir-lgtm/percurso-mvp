@@ -11,7 +11,7 @@ Artefato do **Grupo 06** para o exercício de task flow. Sai da **jornada de usu
 
 ## 1. A história escolhida
 
-> **US-6 — Como psicóloga da Vivência, quero contar em 40 segundos como foi o encontro, para que o
+> **US-6 — Como psicóloga da Vivência, quero contar de viva voz como foi o encontro, para que o
 > relatório no padrão do conselho exista sem eu ter que escrever à noite.**
 
 Ela **não estava** nas cinco user stories de [`../LEAN-INCEPTION.md`](../LEAN-INCEPTION.md) §5 nem em

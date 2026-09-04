@@ -132,7 +132,7 @@ export const GUIA = [
   },
   {
     id: 'voz', papeis: ['educador', 'profissional'],
-    oQueE: 'Em "Contar como foi", você fala por até 40 segundos sobre o encontro da TURMA e o Percurso transforma a fala em campos — que você confere e confirma antes de qualquer coisa ser gravada.',
+    oQueE: 'Em "Contar como foi", você fala o tempo que precisar sobre o encontro da TURMA e o Percurso transforma a fala em campos — que você confere e confirma antes de qualquer coisa ser gravada.',
     chips: ['Como funciona a captura por voz?', 'O áudio fica gravado?', 'E se eu preferir escrever?'],
     tarefas: [
       { intencoes: ['gravar', 'falar', 'voz', 'microfone', 'audio', 'conto como', 'contar como foi', 'como foi o encontro', 'relato do encontro'], resposta: 'Toque no microfone grande, fale sobre o encontro da turma (atividade, tema, como o grupo esteve) e toque em Terminei. Os campos se preenchem sozinhos para você conferir — nada é gravado antes do seu "Confirmar e guardar".', acao: 'voz' },

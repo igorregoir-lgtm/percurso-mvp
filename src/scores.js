@@ -355,7 +355,7 @@ export function pautaDaSemana(turmaId, ref = hoje()) {
         : 'Todas as áreas com interesse declarado tiveram atividade no período.',
     },
     sugestao: sugestao ? { ...sugestao, decisao: gravada?.decisao ?? null, decidido_em: gravada?.decidido_em ?? null } : null,
-    rodape: 'Você não preencheu nada além da chamada e de 40 segundos de voz.',
+    rodape: 'Você não preencheu nada além da chamada e de um pouco de voz.',
     doutrina: 'Pauta gerada por regra fixa sobre os registros. Nenhum item nasce de modelo.',
   };
 }

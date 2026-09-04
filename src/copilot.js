@@ -351,7 +351,12 @@ export async function extrairComModelo(transcricao, nomesDaTurma = [], nomesTodo
   if (!AI_ENABLED) return fallback();
 
   // 1. perímetro no texto ORIGINAL (a 5ª categoria precisa dos nomes reais).
-  const perimetro = filtrarPerimetro((transcricao || '').trim(), nomesDaTurma);
+  //    CORTE DE CONTEXTO: com as portas longas a transcrição pode ter um
+  //    encontro inteiro, e este porte de modelo não lê isso — mandar tudo faria
+  //    o slot falhar (e cair no extrator lexical) em vez de responder. O corte
+  //    é declarado aqui, não escondido no prompt.
+  const cabe = (transcricao || '').trim().slice(0, 8000);
+  const perimetro = filtrarPerimetro(cabe, nomesDaTurma);
   if (!perimetro.limpo || perimetro.limpo.split(/\s+/).length < 4) return fallback();
 
   // 2. pseudonimização reversível — o modelo só vê tokens. A substituição usa

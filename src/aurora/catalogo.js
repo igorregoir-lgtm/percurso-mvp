@@ -81,7 +81,7 @@ const EDUCADOR = [
     gatilho: (e) => e.folhas_atrasadas > 0,
     rotulo: 'Contar como foi um encontro que ficou',
     texto: (e) => plural(e.folhas_atrasadas, 'Um encontro ficou sem folha.', '{n} encontros ficaram sem folha.')
-      + ' Dá para contar como foi falando por quarenta segundos — e a data não expira.',
+      + ' Dá para contar como foi falando, no tempo que der — e a data não expira.',
     porque: () => 'há encontro registrado sem folha correspondente',
     acao: 'voz',
   },
@@ -182,7 +182,7 @@ const EDUCADOR = [
     nucleo: false, base: 46, telas: ['#/folha', '#/chamada', '#/hoje'], suprimidoEm: ['#/voz'],
     gatilho: (e) => e.folhas_por_voz === 0 && e.folhas_total >= 3,
     rotulo: 'A voz preenche a folha falando. Como?',
-    texto: () => 'A voz preenche os mesmos campos da folha: você fala por quarenta segundos sobre o encontro e confere os campos antes de guardar. É atalho, nunca obrigação.',
+    texto: () => 'A voz preenche os mesmos campos da folha: você fala sobre o encontro pelo tempo que precisar e confere os campos antes de guardar. É atalho, nunca obrigação.',
     porque: () => 'todas as suas folhas foram preenchidas à mão',
     acao: 'voz',
   },

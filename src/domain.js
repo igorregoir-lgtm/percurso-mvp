@@ -28,8 +28,12 @@ export const PARAMS = {
   // (logica populacional do EDI — protege contra reidentificacao).
   MINIMO_CELULA: 5,
   // --- v2 -----------------------------------------------------------------
-  // Janela maxima da captura por voz, em segundos.
-  VOZ_SEGUNDOS: 40,
+  // Quanto tempo de fala costuma bastar para preencher a folha. E' SUGESTAO,
+  // nao teto: ate' 03/09/2026 a captura PARAVA sozinha aos 40 s, e o campo pediu
+  // o contrario — "e esta forma tem que ser a mais simples e facil possivel".
+  // Quem esta arrumando a sala nao deve perder o fio porque o relogio zerou. O
+  // nome mudou junto com a natureza: `VOZ_SEGUNDOS` lia-se como limite.
+  VOZ_SUGESTAO_SEGUNDOS: 40,
   // Abaixo disto o extrator nao pre-marca nada: falhar em branco e' melhor que
   // falhar preenchido (06-AGENTES-IA).
   CONFIANCA_MINIMA: 0.6,

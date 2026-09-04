@@ -3,7 +3,7 @@
   "subtitulo": "Exercício 03 · Grupo 06 · Produto: Percurso · Instituto Ebenézer · fluxo de tarefa da jornada v2 (02/09/2026)",
   "historia": {
     "id": "US-6",
-    "texto": "Como psicóloga da Vivência, quero contar em 40 segundos como foi o encontro, para que o relatório no padrão do conselho exista sem eu ter que escrever à noite.",
+    "texto": "Como psicóloga da Vivência, quero contar de viva voz como foi o encontro, para que o relatório no padrão do conselho exista sem eu ter que escrever à noite.",
     "origem": "Decisão 31 de DECISOES-TECNICAS.md, aberta pela visita de 29/08/2026. Não estava nas cinco user stories da Lean Inception — aquelas são de pedagoga, e o campo mostrou que quem escreve o relatório é a psicóloga.",
     "tarefa": "Registrar o encontro de hoje falando, e sair com o relato do procedimento liberado.",
     "gatilho": "Sábado, 11h40. O grupo acabou de sair e ela está arrumando a sala.",
@@ -31,7 +31,7 @@
     },
     {
       "n": "03", "tipo": "aurora", "tela": "#/voz",
-      "titulo": "Fala 40 segundos",
+      "titulo": "Fala como foi",
       "faz": "Lê o aviso do que é e do que não é gravado, aperta o microfone e conta do jeito dela. Toca \"Terminei\".",
       "tempo": "~40 s + 5 s", "estado": "existe"
     },
@@ -66,7 +66,7 @@
     ["04", "Ela entende que nada foi gravado ainda?", "O título da tela diz isso. Se ela hesita em confirmar por medo de estar errando, o texto falhou", "H6"],
     ["05", "Segundos até achar \"Revisar e liberar o relato\" — e se pede ajuda", "Acima de 20 s ou com ajuda: é achado de navegação. A tarefa não termina na folha, e o sistema está soltando a mão dela no meio", "H1"],
     ["06", "A primeira coisa que ela faz com o texto pronto", "No campo, a primeira pergunta espontânea diante do relato gerado foi se dava para editar depois. Se ela procurar o editar e não achar, isso é o achado", "H4"],
-    ["todos", "Tempo total do gatilho ao relato liberado", "A promessa é 40 segundos de fala. O que a tarefa mede é o custo inteiro — a promessa só se sustenta se o total couber em ~3 min", "H1"]
+    ["todos", "Tempo total do gatilho ao relato liberado", "A janela de 40 s virou SUGESTÃO em 03/09/2026, não teto. O que a tarefa mede é o custo inteiro — a promessa só se sustenta se o total couber em ~3 min", "H1"]
   ],
   "perguntas": [
     {

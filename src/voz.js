@@ -103,7 +103,7 @@ export function catalogos() {
     objetivos: OBJETIVOS.map(({ codigo, rotulo }) => ({ codigo, rotulo })),
     checkin: CHECKIN.map(({ campo, rotulo }) => ({ campo, rotulo })),
     checkin_max: CHECKIN_MAX,
-    voz_segundos: PARAMS.VOZ_SEGUNDOS,
+    voz_sugestao_segundos: PARAMS.VOZ_SUGESTAO_SEGUNDOS,
     confianca_minima: PARAMS.CONFIANCA_MINIMA,
   };
 }

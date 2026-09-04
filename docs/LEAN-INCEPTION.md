@@ -170,7 +170,7 @@ escreve o relatório com adjetivos, porque não tem substantivos.
    expor nenhuma criança. *(F5, F7)*
 5. Como **coordenação**, quero campos sem consentimento bloqueados por padrão, para que a proteção
    seja regra do sistema. *(F1)*
-6. Como **psicóloga da Vivência**, quero contar em 40 segundos como foi o encontro, para que o
+6. Como **psicóloga da Vivência**, quero contar de viva voz como foi o encontro, para que o
    relatório no padrão do conselho exista sem eu ter que escrever à noite. *(decisão 31)*
 
 > **A sexta chegou depois, e pelo campo.** As cinco de cima saíram da inception, com a pedagoga como

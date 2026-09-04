@@ -46,7 +46,7 @@ nada de volta pelo que observa.
    aberto.
 2. **`#/chamada`** — presença em um toque por criança. Sem rede, o registro entra na fila offline
    e sobe sozinho quando a conexão volta.
-3. **`#/folha` → `#/voz` → `#/confirmar`** — fala ~40 segundos sobre o dia da **turma**; o áudio é
+3. **`#/folha` → `#/voz` → `#/confirmar`** — fala sobre o dia da **turma**, sem teto de tempo; o áudio é
    transcrito pelo navegador — no aparelho quando ele sabe, no serviço do fornecedor quando não sabe,
    e a tela diz qual dos dois — e descartado; o extrator pré-preenche a folha em listas
    fechadas; **nada é gravado antes de ela confirmar**. Se preferir, digita — o caminho manual
@@ -204,7 +204,7 @@ cérebro"*); o que ela vê não vira evidência.
    ciclo**: a turma dela fica fora da rubrica por decisão (o olhar clínico não vira dado).
 2. **`#/chamada`** — presença em um toque, igual às demais turmas. É a mesma régua de 75% que o
    Instituto já usa.
-3. **`#/voz` → `#/confirmar`** — fala ~40 segundos sobre **o grupo**: o procedimento (lista
+3. **`#/voz` → `#/confirmar`** — fala sobre **o grupo**, sem teto de tempo: o procedimento (lista
    fechada), o objetivo, como o grupo esteve, e o **check-in estruturado** que ela validou ao
    vivo — *quantas ajudaram sem ninguém pedir, quantas participaram do começo ao fim, quantos
    conflitos e quantos resolvidos conversando, quantas não observadas*. Se falar um nome, a tela
@@ -237,7 +237,7 @@ ela responde *"Não dá, não dá"*. Faltam, portanto, seis coisas, nenhuma dela
 
 | O que falta | Por quê | O que exige |
 |---|---|---|
-| **Calendário de encontros** | ela, a coordenação ou a direção marcam quando são os encontros, e a partir daí o sistema sabe o que vem pela frente | entidade de encontro agendado e tela de calendário para os três papéis; hoje a folha nasce do encontro do dia e não há agenda futura (`src/domain.js:141`) |
+| **Calendário de encontros** | ela, a coordenação ou a direção marcam quando são os encontros, e a partir daí o sistema sabe o que vem pela frente | entidade de encontro agendado e tela de calendário para os três papéis; hoje a folha nasce do encontro do dia e não há agenda futura (`src/domain.js:145`) |
 | **Aviso antes de cada encontro** | o lembrete precisa chegar quando ainda dá para apertar "gravar", não depois | notificação da PWA com regra de antecedência; hoje o produto não emite nenhuma notificação |
 | **O encontro nunca fecha** | registro atrasado precisa entrar com a data do encontro, não a de hoje | modelo de dados aceitar data retroativa + marca de "registrado depois"; o encontro em aberto continua aparecendo até ser registrado |
 | **A fala preenche os seis indicadores** | a rubrica é o instrumento da casa e não pode continuar dependendo de digitação | hoje os seis indicadores são respondidos à mão, criança por criança (~3 min cada, `#/observacao/:id`), e o extrator de `src/voz.js` só preenche a folha do dia e o check-in de grupo — falta extrair a escala 1–4 por indicador, com o mesmo gate de confirmação humana |

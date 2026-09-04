@@ -110,7 +110,7 @@ demonstração verificável e não declaratória: cada história tem teste autom
 | **US-3** | Como **pedagoga**, quero ser avisada de ausências acumuladas, para agir antes da evasão. *(F6)* | `#/hoje`, `#/alertas` | smoke §6 — alerta em duas faltas, tratativa registrada, permanência por safra |
 | **US-4** | Como **coordenação**, quero painel agregado e síntese de ciclo, para demonstrar resultado sem expor nenhuma criança. *(F5, F7)* | `#/painel` → `#/sintese` | smoke §7 (revisor, ressalva, números conferidos contra o SQL) e §5b (**nenhuma média com n < 5**) |
 | **US-5** | Como **coordenação**, quero campos sem consentimento bloqueados por padrão, para que a proteção seja regra do sistema. *(F1)* | `#/consentimentos` | smoke §8 — ativação sem responsável recusada, **revogação volta a bloquear**; §3 — bloqueio aparece na agenda com o motivo |
-| **US-6** | Como **psicóloga da Vivência**, quero contar em 40 segundos como foi o encontro, para que o relatório no padrão do conselho exista sem eu ter que escrever à noite. *(decisão 31)* | `#/voz` → `#/confirmar` → `#/relato` | smoke §24 (a Vivência fora da rubrica) e §26 (check-in de grupo gravado, relato gerado dos campos fechados, liberação registrada e devolução por encontro); unit — relato sem nome por construção |
+| **US-6** | Como **psicóloga da Vivência**, quero contar de viva voz como foi o encontro, para que o relatório no padrão do conselho exista sem eu ter que escrever à noite. *(decisão 31)* | `#/voz` → `#/confirmar` → `#/relato` | smoke §24 (a Vivência fora da rubrica) e §26 (check-in de grupo gravado, relato gerado dos campos fechados, liberação registrada e devolução por encontro); unit — relato sem nome por construção |
 
 **A leitura que interessa ao avaliador:** as seis histórias saem de três papéis e cobrem o ciclo
 inteiro do Desafio B — registrar (US-1, US-6), acompanhar (US-2, US-3), demonstrar (US-4) e proteger
@@ -217,7 +217,7 @@ participantes**, além de uma educadora; e o retorno dela sobre o protótipo, qu
 Este documento consolida, sem duplicar: [`JORNADAS.md`](JORNADAS.md) (jornadas completas das três
 personas), [`LEAN-INCEPTION.md`](LEAN-INCEPTION.md) (origem das User Stories e do escopo),
 [`MVP-CANVAS.md`](MVP-CANVAS.md) (proposta e hipóteses), [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md)
-(protocolo da sessão), [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) (saída das 381
+(protocolo da sessão), [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) (saída das 383
 asserções citadas na §3) e [`PENDENCIAS-DE-ENTREGA.md`](PENDENCIAS-DE-ENTREGA.md) (CFL-03 e o
 checklist do processo de entrega).
 

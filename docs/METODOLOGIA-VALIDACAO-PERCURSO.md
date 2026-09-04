@@ -33,13 +33,13 @@ jornada, e testar o opcional antes do fluxo principal inverte a pergunta.
 
 As duas metades importam separadamente. A primeira é medida por tempo e conclusão de tarefa. A
 segunda é medida pelo **Protocolo do Lapso** (§5.5) e não é medida por nenhum outro instrumento
-deste documento — nem por nenhum dos 167 testes unitários ou das 381 asserções de fluxo do
+deste documento — nem por nenhum dos 170 testes unitários ou das 383 asserções de fluxo do
 repositório.
 
 **Por que teste automatizado não responde.** Ele prova que o sistema faz o que o código diz. O
 produto está ancorado em duas frases literais da psicóloga na visita de 29/08/2026 (*"o maior
 desafio aqui é registrar o que você fez, né?"* e *"você depois tem que sair daqui, preencher o
-relatório… não dá, não dá"*) e em promessas verificáveis só por observação: 40 segundos de fala
+relatório… não dá, não dá"*) e em promessas verificáveis só por observação: uma fala curta
 que viram registro, o relatório do conselho sem escrever à noite, ~3 minutos por observação na
 rubrica. Enquanto ninguém real passar pelo fluxo, isso é hipótese.
 
@@ -191,7 +191,7 @@ falha), e bloqueio explicado como protocolo. Este protocolo mede os seis de uma 
 
 **Preparação.** `node scripts/preparar-sessao.mjs --lapso` empurra a última atividade da
 profissional para **9 dias atrás** — acima do gatilho de 5 dias (`PARAMS.DIAS_LAPSO`) da retomada
-sem culpa em `#/hoje`. A retomada lê a tabela `atividade` (`src/domain.js:937`), não os encontros:
+sem culpa em `#/hoje`. A retomada lê a tabela `atividade` (`src/domain.js:941`), não os encontros:
 mexer só nos encontros não dispara o lapso. O script imprime o estado; conferir antes de começar.
 
 **Provocação longa**, enunciado literal:

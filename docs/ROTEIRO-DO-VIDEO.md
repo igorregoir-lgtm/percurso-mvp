@@ -111,7 +111,7 @@ entra é presença, procedimento e check-in de grupo.
 ### 7 · Contar como foi — voz + filtro de perímetro — [1:00 · `#/voz` → `#/confirmar`]
 
 **Ação:** tocar em **"Contar como foi"**. Ler em voz alta o aviso da tela — *o que este botão grava
-e o que não grava*. Mostrar o microfone, a onda e a contagem de **40 segundos**. Falar (ou digitar
+e o que não grava*. Mostrar o microfone, a onda e o relógio contando **para cima** — a janela de 40 s é sugestão, não teto. Falar (ou digitar
 no campo de baixo — a saída manual está sempre ali):
 
 > *"Hoje a gente fez a roda das emoções, para eles nomearem o que sentem. Duas crianças ajudaram
@@ -258,8 +258,8 @@ só o Instituto tem. A tela mostra as premissas e diz isso, em vez de inventar a
 `data/percurso.db` — o backup é copiar um arquivo. Rodar as duas baterias e mostrar os totais:
 
 ```
-node scripts/smoke-test.mjs   → 381 passaram · 0 falharam
-node scripts/unit-test.mjs    → 167 passaram · 0 falharam
+node scripts/smoke-test.mjs   → 383 passaram · 0 falharam
+node scripts/unit-test.mjs    → 170 passaram · 0 falharam
 ```
 
 > **Conferir os números antes de gravar.** Eles mudam a cada bateria nova, e o roteiro anterior

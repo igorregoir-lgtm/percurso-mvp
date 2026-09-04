@@ -33,14 +33,14 @@ avaliação acadêmica". A exigência vem da semana 5, está admitida como pende
 [`TESTES.md`](TESTES.md) ("a validação com usuário real é a etapa seguinte") e aparece como item
 1.3 do Horizonte 1 em [`ARQUITETURA.md`](ARQUITETURA.md).
 
-O motivo é simples. O MVP tem 381 asserções de fluxo e 167 testes unitários — mas teste
+O motivo é simples. O MVP tem 383 asserções de fluxo e 170 testes unitários — mas teste
 automatizado prova que o sistema faz o que o código diz, não que a profissional consegue usá-lo.
 Desde a visita, o produto está ancorado em duas frases dela, literais:
 
 > *"Eu acho que o maior desafio aqui é registrar o que você fez, né? Essa é a maior dificuldade, é
 > o registro."* · *"Você depois tem que sair daqui, preencher o relatório… Não dá, não dá."*
 
-E em promessas verificáveis só por observação: **40 segundos de fala que viram registro**, o
+E em promessas verificáveis só por observação: **uma fala curta que vira registro**, o
 **relatório no padrão do conselho sem escrever à noite**, e o **custo total do gatilho ao relato
 liberado dentro de ~3 minutos**. Enquanto nenhuma profissional real passou pelo fluxo com o
 aparelho na própria mão, essas promessas são hipótese, não evidência. Este protocolo existe para

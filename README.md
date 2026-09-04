@@ -5,7 +5,7 @@
 Transforma a observação de minutos do educador em indicador de evolução por trajetória e por
 programa — sem que dado individual de criança saia da organização.
 
-**Versão 2** (22/08/2026): a professora fala 40 segundos e o sistema se alimenta; três scores que
+**Versão 2** (22/08/2026): a professora fala e o sistema se alimenta; três scores que
 não pontuam a criança; pauta de segunda como devolução; e o relatório do ciclo que a diretoria gera,
 revisa e envia a quem financia. O que mudou, feature a feature, está em
 [`docs/O-QUE-VEIO-DA-V2.md`](docs/O-QUE-VEIO-DA-V2.md).
@@ -76,7 +76,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **381 asserções de fluxo** e **167 testes unitários** — mais a avaliação do RAG
+São **383 asserções de fluxo** e **170 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização) e a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo). As quatro baterias rodam a cada push (`.github/workflows/ci.yml`), sempre com
@@ -183,7 +183,7 @@ presta contas trabalha sobre a camada agregada, então não precisa de acesso in
 
 ## O que o produto faz — e o que deliberadamente não faz
 
-**Faz.** Registra presença em um toque. Converte 40 segundos de fala em campos de uma folha de
+**Faz.** Registra presença em um toque. Converte a fala em campos de uma folha de
 turma, dentro de listas fechadas, com confirmação humana antes de qualquer gravação. Reconstrói anos
 de histórico a partir das planilhas antigas, deduplicando criança por nome mais nascimento. Calcula
 três scores que medem vínculo, sistema e oferta — nunca a criança. Devolve, toda segunda, três
@@ -307,8 +307,8 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    381 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     167 testes unitários das regras críticas (banco temporário)
+scripts/smoke-test.mjs    383 asserções do fluxo principal (contra o servidor no ar)
+scripts/unit-test.mjs     170 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
 scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)
