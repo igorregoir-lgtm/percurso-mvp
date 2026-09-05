@@ -1,5 +1,60 @@
 # Handoff — 04/09/2026, 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
 
+> ## Sessão de 04/09/2026 (noite) — WhatsApp, Instagram e a câmera que vira
+>
+> Três pedidos, e o segundo é o mais importante **porque metade dele não é possível**.
+>
+> **1. "Permita virar a câmera do celular"** (dec. 49). Óbvio em uso, não trivial em desenho:
+> `MediaRecorder` fica preso ao stream em que começou, e virar no meio da gravação perderia o que já
+> foi dito — emendar dois arquivos tampouco serve, são dois contêineres. Então a escolha passou a
+> acontecer **antes**, com a imagem na tela, que é quando ela importa. Dois detalhes que só aparecem
+> usando: a prévia frontal é **espelhada na tela** (sem isso a pessoa não se enquadra) e o **arquivo
+> não é** — prova invertida seria prova adulterada; e o botão só aparece se houver duas câmeras.
+>
+> **2. "Um botão que mande para vários grupos de WhatsApp"** (dec. 47). **Isso não existe, e a tela
+> passou a dizer isso.** Não é limitação do produto: a Groups API oficial só cria grupos novos de até
+> oito com um selo que quase ninguém tem; a Cloud API é 1-para-1; e as bibliotecas que postam em
+> grupo violam os Termos, com o número como preço possível — e o número é o único canal do Instituto
+> com as famílias. `PESQUISA-WHATSAPP.md` já tinha medido isso; o que faltava era **executar o Degrau
+> 0**, e é o que foi feito.
+>
+> **O que realmente custava caro nunca foi o toque.** Era montar o texto, lembrar quais grupos
+> existem, decidir o que pode ir para cada um e perder a conta de quais já receberam. Os quatro
+> saíram do caminho: os grupos viraram cadastro (`canal`), o texto é montado e copiado **uma vez**, a
+> fila **sobrevive a sair do navegador** (`localStorage`) e o que saiu fica registrado (`disparo`).
+> Sobra um toque por grupo, que é o que a Meta exige.
+>
+> **A trava que mais vale:** o público do canal não é etiqueta. A tabela do §4 da pesquisa virou
+> código, e a recusa é **do servidor** — carta do período não vai para grupo de responsáveis (repasse
+> do dado de cada criança a terceiros, Art. 14 §3º), recado da turma não vai para o Instagram.
+>
+> **3. "Integrações com Instagram"** (dec. 48). *"Na medida do possível"* tem medida exata: postar por
+> API exige conta Business, token de servidor e revisão de aplicativo na Meta — infraestrutura que
+> esta casa não opera. O que não exige nada disso é o trabalho **antes** do post, e é o que entrou: o
+> card do período desenhado em `<canvas>` no próprio navegador, sem biblioteca (decisão 1 intacta, com
+> gate varrendo o gerador atrás de `import(` e CDN), do mesmo agregado do relatório, com supressão de
+> célula pequena e passando pelo revisor de sobre-alegação. A ressalva metodológica vai **dentro da
+> imagem**, não só na legenda: legenda se corta, imagem circula.
+>
+> **Três coisas que só apareceram exercitando:**
+>
+> - **`lerFila` já existia neste arquivo**, e é OUTRA fila — a dos POSTs sem rede. Duas filas com o
+>   mesmo nome viram um defeito que ninguém enxerga; virou `lerDivulgacao`, com gate contando que só
+>   há um `lerFila`.
+> - **Eu escrevi uma asserção vazia no smoke** (`(await0 => 0)()` devolvendo `true`) e ela passou
+>   verde. Um gate que passa aconteça o que acontecer é pior que gate nenhum: removida.
+> - **`textoObrigatorio` não era exportada** de `domain.js`, e o módulo novo só quebrou no primeiro
+>   `import` real — nenhum `node --check` pegaria.
+>
+> **A honestidade que fica na tela, e é o que eu não quero que a próxima pessoa apague:** o rodapé de
+> `#/divulgar` explica por que não há o botão único. Sem ele, alguém vai "melhorar" isso instalando
+> Baileys, e o Instituto perde o WhatsApp.
+>
+> **Gates: 489 smoke · 198 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.** 31 tabelas, 113 rotas,
+> 13 telas.
+>
+
+
 > ## Sessão de 04/09/2026 (tarde) — as seis perguntas do campo, respondidas com código
 >
 > O dono do produto abriu o artefato no celular e mandou seis perguntas sobre **telas que ele estava

@@ -28,6 +28,7 @@ import * as TRANSC from './transcricao.js';
 import * as PAR from './parecer.js';
 import * as EVI from './evidencia.js';
 import * as BOL from './boletim.js';
+import * as CAN from './canais.js';
 import { conversar, AI_ENABLED } from './ai-client.js';
 const { nomesParaAnonimizar } = C;
 
@@ -633,6 +634,128 @@ export const rotas = {
   },
   'GET /api/safras': (req) => { exigeCoordenacao(req); return D.safras(); },
   'GET /api/consentimentos': (req) => { exigeCoordenacao(req); return D.painelConsentimentos(); },
+
+  // ---- Canais: onde o Instituto fala com quem (decisao 47) ---------------
+  // Cadastro de coordenacao pelo mesmo motivo do resto: e' o publico do canal
+  // que decide o que pode ser montado para ele.
+  'GET /api/canais': (req, _b, q) => {
+    exigeUsuario(req);
+    const u = usuarioDa(req);
+    const canais = CAN.listarCanais({ incluirArquivados: q.get('todos') === '1' && u.papel === 'coordenacao' });
+    return {
+      canais: u.papel === 'coordenacao' || u.papel === 'diretoria'
+        ? canais
+        // Quem esta' em sala ve' os canais das PROPRIAS turmas e os que nao sao
+        // de turma nenhuma. Nao e' segredo — e' nao oferecer o grupo de outra
+        // turma a quem nao responde por ela.
+        : canais.filter(c => c.turma_id == null
+            || all(`SELECT id FROM turma WHERE educador_id = ?`, u.id).some(t => t.id === c.turma_id)),
+      tipos: CAN.TIPOS, publicos: CAN.PUBLICOS, conteudos: CAN.CONTEUDOS,
+      turmas: D.turmasDetalhadas(),
+      recentes: u.papel === 'coordenacao' || u.papel === 'diretoria' ? CAN.disparosRecentes() : [],
+    };
+  },
+
+  // O que EXISTE para ser divulgado agora. Duas regras moram aqui:
+  //
+  //  1. so' sai o que ja' foi PUBLICADO. Carta e relatorio em rascunho nao
+  //     aparecem — mandar para fora um texto que ainda nao passou pelo revisor
+  //     de sobre-alegacao seria burlar o revisor por um caminho lateral.
+  //  2. o recado nao persiste (decisao 33): ele e' montado do encontro na hora
+  //     em que ela escolhe. Aqui vem so' a LISTA de encontros que tem recado.
+  'GET /api/divulgar': (req) => {
+    exigeGestao(req);
+    const publicados = R.relatorios().filter(r => r.status === 'publicado').slice(0, 8).map(r => {
+      const cheio = R.relatorioDe(r.tipo, r.periodo);
+      return {
+        tipo: r.tipo, periodo: r.periodo, publicado_em: r.publicado_em,
+        rotulo: `${r.tipo === 'carta' ? 'Carta' : 'Relatório'} · ${r.periodo}`,
+        destaque: cheio?.blocos?.[0]?.destaque ?? null,
+        texto: cheio?.texto ?? '',
+        primeiro_bloco: cheio?.blocos?.[0]?.texto ?? '',
+      };
+    });
+    // Encontros com folha liberada, das ultimas semanas: sao os que tem recado.
+    const recados = all(
+      `SELECT e.turma_id, t.nome AS turma, e.data
+         FROM encontro e JOIN turma t ON t.id = e.turma_id
+         JOIN folha f ON f.encontro_id = e.id
+        WHERE e.data >= date('now', '-28 days')
+        ORDER BY e.data DESC, t.nome LIMIT 12`);
+    return { canais: CAN.listarCanais(), tipos: CAN.TIPOS, publicos: CAN.PUBLICOS,
+      conteudos: CAN.CONTEUDOS, turmas: D.turmasDetalhadas(),
+      recados, publicados, recentes: CAN.disparosRecentes() };
+  },
+
+  // O CARD do período — a peça que vai para o Instagram (decisão 48).
+  //
+  // Nasce de `redigirCarta`, que é template fechado sobre números de SQL:
+  // NENHUM modelo escreve aqui, e a supressão de célula pequena já aconteceu
+  // antes, dentro de `numerosDoPeriodo`. Ainda assim passa pelo revisor de
+  // sobre-alegação antes de sair — o Instagram é público, e público não tem
+  // errata.
+  'GET /api/divulgar/card': (req, _b, q) => {
+    exigeGestao(req);
+    const periodo = q.get('periodo') || '';
+    const [inicio, fim] = periodo.split('..');
+    if (!inicio || !fim) throw D.erro(422, 'Informe o período como inicio..fim.');
+    const n = R.numerosDoPeriodo({ inicio, fim });
+    const carta = R.redigirCarta(n)[0];
+    const revisor = D.revisarSobreAlegacao(carta.texto);
+    if (revisor.status !== 'aprovado')
+      throw D.erro(422, `O revisor de sobre-alegação barrou este texto: ${revisor.achados?.join('; ') || 'sobre-alegação'}.`);
+    return {
+      periodo, rotulo: `${D.dataBR(inicio)} a ${D.dataBR(fim)}`,
+      destaque: carta.destaque,
+      // As três linhas do card. Só agregado — nenhuma delas pode apontar para
+      // uma criança, e o mínimo de célula já foi aplicado lá atrás.
+      linhas: [
+        { valor: String(n.cobertura.criancas_unicas), rotulo: 'crianças no período' },
+        { valor: n.permanencia.presenca_pct != null ? `${n.permanencia.presenca_pct}%` : '—', rotulo: 'de presença nos encontros' },
+        { valor: String(n.exposicao.aspiracoes_declaradas), rotulo: 'disseram o que querem ser' },
+      ],
+      legenda: carta.texto,
+      ressalva: 'Nenhuma criança aparece sozinha: grupos com menos de '
+        + `${n.minimo_celula} são agrupados ou suprimidos antes de qualquer publicação.`,
+      revisor: revisor.status,
+    };
+  },
+
+  'POST /api/canais': (req, body) => {
+    exigeCoordenacao(req);
+    return CAN.criarCanal({
+      tipo: String(body.tipo ?? ''), nome: body.nome, publico: String(body.publico ?? ''),
+      turmaId: body.turma_id ? num(body.turma_id, 'turma_id') : null,
+      destino: body.destino, observacao: body.observacao,
+    });
+  },
+
+  'POST /api/canais/editar': (req, body) => {
+    exigeCoordenacao(req);
+    return CAN.editarCanal(num(body.id, 'id'), {
+      nome: body.nome, publico: String(body.publico ?? ''),
+      turmaId: body.turma_id ? num(body.turma_id, 'turma_id') : null,
+      destino: body.destino, observacao: body.observacao,
+    });
+  },
+
+  'POST /api/canais/arquivar': (req, body) => {
+    exigeCoordenacao(req);
+    return body.reativar ? CAN.reativarCanal(num(body.id, 'id')) : CAN.arquivarCanal(num(body.id, 'id'));
+  },
+
+  // O registro de que SAIU. O Percurso nao envia — quem envia e' a pessoa —,
+  // mas "ja' mandei para os pais?" precisa de resposta que nao seja a memoria
+  // de quem passou o sabado inteiro em pe' dentro da sala.
+  'POST /api/disparo': (req, body) => {
+    const u = exigeUsuario(req);
+    return CAN.registrarDisparo({
+      canalId: num(body.canal_id, 'canal_id'),
+      conteudo: String(body.conteudo ?? ''),
+      referencia: body.referencia ?? null,
+      porUsuarioId: u.id,
+    });
+  },
 
   // ---- Boletim da crianca para o responsavel (decisao 42) ----------------
   // Contraparte do recado da turma, e o oposto dele no destinatario: aqui vai

@@ -109,7 +109,7 @@ export function semear() {
   const T = hoje();
 
   return tx(() => {
-    for (const t of ['importacao','relatorio','pauta','atividade_area','folha_marcador','folha','aspiracao','atividade','sintese','alerta','consentimento_evidencia','consentimento','observacao_item','observacao','presenca','encontro','calendario_excecao','parecer','acesso_individual','relato_crianca','matricula','crianca','turma','programa','ancora','dimensao','ciclo','educador','governanca_campo'])
+    for (const t of ['importacao','relatorio','pauta','atividade_area','folha_marcador','folha','aspiracao','atividade','sintese','alerta','disparo','canal','consentimento_evidencia','consentimento','observacao_item','observacao','presenca','encontro','calendario_excecao','parecer','acesso_individual','relato_crianca','matricula','crianca','turma','programa','ancora','dimensao','ciclo','educador','governanca_campo'])
       db.exec(`DELETE FROM ${t};`);
 
     for (const g of GOVERNANCA)
@@ -147,6 +147,18 @@ export function semear() {
       (5,3,'Primeira infância · Manhã','semana',3),
       (6,4,'Vivência · Sábado manhã','sabado',5),
       (7,4,'Vivência · Sábado tarde','sabado',5)`);
+
+    // Canais (decisão 47). SINTÉTICOS, como todo o resto: os links de convite
+    // abaixo não existem no WhatsApp — são a forma do link, para a tela ter o
+    // que mostrar. Com dado real, a coordenação cadastra os de verdade.
+    run(`INSERT INTO canal (id,tipo,nome,publico,turma_id,destino,observacao,ativo,criado_em) VALUES
+      (1,'whatsapp','Responsáveis · Vivência Sábado manhã','pais',6,'https://chat.whatsapp.com/EXEMPLOvivmanha1','Só o recado da turma. Nunca lista com nome.',1,?),
+      (2,'whatsapp','Responsáveis · Vivência Sábado tarde','pais',7,'https://chat.whatsapp.com/EXEMPLOvivtarde12','Só o recado da turma. Nunca lista com nome.',1,?),
+      (3,'whatsapp','Responsáveis · Reforço Tarde A','pais',1,'https://chat.whatsapp.com/EXEMPLOreforcoA12','Só o recado da turma. Nunca lista com nome.',1,?),
+      (4,'whatsapp','Apoiadores do Instituto','apoiadores',NULL,'https://chat.whatsapp.com/EXEMPLOapoiadores1','Prestação de contas: só agregado.',1,?),
+      (5,'whatsapp','Equipe Ebenézer','equipe',NULL,'https://chat.whatsapp.com/EXEMPLOequipe1234','Pauta da semana e avisos internos.',1,?),
+      (6,'instagram','@institutoebenezer','apoiadores',NULL,'@institutoebenezer','Perfil público: só o card agregado, nunca rosto sem termo.',1,?)`,
+      T, T, T, T, T, T);
 
     const c1i = addDias(T, -165), c1f = addDias(T, -135);
     const c2i = addDias(T, -14),  c2f = addDias(T, 26);

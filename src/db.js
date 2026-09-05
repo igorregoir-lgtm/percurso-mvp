@@ -286,6 +286,42 @@ const ESQUEMA_SQL = `
   -- O arquivo NAO fica no banco nem em public/: fica em data/consentimento/,
   -- modo 0600, e so' sai por rota autenticada de coordenacao, com log. A linha
   -- aqui guarda o ponteiro e o que a auditoria precisa saber sem abrir o video.
+  -- ONDE O INSTITUTO FALA COM QUEM (decisao 47). Grupo de WhatsApp e perfil de
+  -- Instagram deixam de viver na cabeca da coordenacao e passam a ser cadastro:
+  -- e' o unico jeito de o produto saber, ANTES de montar a mensagem, para QUEM
+  -- ela vai — e a pesquisa de WhatsApp diz que a embalagem muda com o publico
+  -- (pais nao recebem o mesmo que apoiadores).
+  --
+  -- A coluna destino guarda o LINK DE CONVITE do grupo (chat.whatsapp.com/...) ou o
+  -- @perfil. Nao guarda telefone: grupo nao tem telefone, e o link e' publico
+  -- para quem ja' esta' dentro.
+  CREATE TABLE IF NOT EXISTS canal (
+    id         INTEGER PRIMARY KEY,
+    tipo       TEXT NOT NULL CHECK (tipo IN ('whatsapp','instagram')),
+    nome       TEXT NOT NULL,
+    publico    TEXT NOT NULL CHECK (publico IN ('pais','apoiadores','equipe')),
+    turma_id   INTEGER REFERENCES turma(id),
+    destino    TEXT NOT NULL,
+    observacao TEXT,
+    ativo      INTEGER NOT NULL DEFAULT 1,
+    criado_em  TEXT NOT NULL,
+    UNIQUE (tipo, destino)
+  );
+
+  -- O QUE SAIU, PARA ONDE E POR QUEM. Mesma doutrina do parecer (decisao 32): o
+  -- Percurso nao envia — quem envia e' a pessoa —, mas o registro de que saiu
+  -- fica. Sem isto, "ja' mandei para os pais?" so' tem a memoria como resposta,
+  -- e o disparo repetido e' o erro mais comum de quem manda no sabado corrido.
+  CREATE TABLE IF NOT EXISTS disparo (
+    id         INTEGER PRIMARY KEY,
+    canal_id   INTEGER NOT NULL REFERENCES canal(id) ON DELETE CASCADE,
+    conteudo   TEXT NOT NULL,
+    referencia TEXT,
+    por        INTEGER NOT NULL REFERENCES educador(id),
+    em         TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS ix_disparo_canal ON disparo (canal_id, em);
+
   CREATE TABLE IF NOT EXISTS consentimento_evidencia (
     id            INTEGER PRIMARY KEY,
     crianca_id    INTEGER NOT NULL REFERENCES crianca(id) ON DELETE CASCADE,

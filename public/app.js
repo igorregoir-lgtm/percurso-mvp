@@ -1,7 +1,7 @@
 // Percurso — aplicacao. Sem framework: DOM + hash routing.
 // A ordem das telas segue a jornada da persona: hoje -> chamada -> ciclo -> turma.
 import { criarFila } from './fila.js';
-import { paraWav16k, iniciarGravacao, gravarVideoConsentimento, podeGravar, juntarBlocos, TETO_ARQUIVO_BYTES, BLOCO_SEGUNDOS } from './audio.js';
+import { paraWav16k, iniciarGravacao, gravarVideoConsentimento, abrirCamera, encerrarStream, temDuasCameras, podeGravar, juntarBlocos, TETO_ARQUIVO_BYTES, BLOCO_SEGUNDOS } from './audio.js';
 
 const app     = document.getElementById('app');
 const navEl   = document.getElementById('nav');
@@ -1662,6 +1662,9 @@ async function telaVisaoGeral() {
     </div>`;
   app.innerHTML = cabecalhoPainel('visao') + `
     <p class="sub" style="margin-top:12px">${esc(d.ciclo.nome)} · o que o Instituto tem hoje, medido — não estimado.</p>
+
+    <button class="btn largo secundario" data-acao="ir" data-href="#/divulgar" style="margin-top:14px">
+      Divulgar · grupos e Instagram</button>
 
     <div class="kpis" style="margin-top:16px">
       <div class="kpi"><b>${inv.criancasUnicas}</b><span>Crianças únicas ativas</span>
@@ -3329,6 +3332,9 @@ async function telaRelatorioDoCiclo() {
     <h1 style="margin-top:12px">Boa tarde, ${esc(sessao.apelido.split(' ')[0])}.</h1>
     <p class="sub">O doador não entra no sistema. Ele recebe este artefato, gerado e revisado aqui.</p>
 
+    <button class="btn largo secundario" data-acao="ir" data-href="#/divulgar" style="margin-top:14px">
+      Divulgar · grupos e Instagram</button>
+
     <div class="cartao" style="margin-top:16px">
       <div class="lbl">Tipo</div>
       <button class="p ${tipo === 'ciclo' ? 'on' : 'off'}" data-acao="rel-tipo" data-tipo="ciclo">Relatório do ciclo</button>
@@ -3498,6 +3504,391 @@ const cabecalhoPessoas = (ativa) => `
       ${ABAS_PESSOAS.map(([k, rot]) => `<button class="btn pequeno ${k === ativa ? '' : 'fantasma'}"
         data-acao="ir" data-href="#/pessoas?aba=${k}" ${k === ativa ? 'aria-current="page"' : ''}>${rot}</button>`).join('')}
     </div>`;
+
+// ======================================================================
+// DIVULGAR (decisões 47 e 48) — os grupos cadastrados, a fila de envio e o
+// card do Instagram.
+//
+// O PEDIDO E O QUE DELE É POSSÍVEL. Em 04/09/2026: *"ao clicar um botão não
+// precise ficar depois clicando em cada grupo do WhatsApp, mas que os grupos já
+// estejam pré-cadastrados no próprio artefato"*.
+//
+// A metade que não existe está medida em `docs/PESQUISA-WHATSAPP.md` e dita na
+// própria tela: **não há como um site postar num grupo de WhatsApp existente**.
+// A Groups API da Meta só cria grupos novos de até 8 pessoas com selo que quase
+// ninguém tem; a Cloud API é 1-para-1; e as bibliotecas que postam em grupo
+// violam os Termos, com o número como preço possível — e o número é o único
+// canal do Instituto com as famílias.
+//
+// A metade que existe é onde estava o tempo dela, e é toda entregue aqui: os
+// grupos ficam cadastrados, o texto é montado e copiado UMA vez, a fila lembra
+// onde ela parou, e o que já saiu fica registrado. Sobra um toque por grupo —
+// que é o toque que a Meta exige, e só ele.
+// ======================================================================
+const CHAVE_DIVULGACAO = 'percurso_fila_divulgacao';
+
+// Nome longo de propósito: `lerFila` já existe neste arquivo e é OUTRA fila —
+// a dos POSTs que ficaram sem rede. Duas filas com o mesmo nome viram um bug
+// que ninguém enxerga.
+const lerDivulgacao = () => { try { return JSON.parse(localStorage.getItem(CHAVE_DIVULGACAO) || 'null'); } catch { return null; } };
+const gravarDivulgacao = (f) => { try { localStorage.setItem(CHAVE_DIVULGACAO, JSON.stringify(f)); } catch { /* aba anônima */ } };
+const limparDivulgacao = () => { try { localStorage.removeItem(CHAVE_DIVULGACAO); } catch { /* idem */ } };
+
+rota(/^#\/divulgar(?=$|[?&])/, async () => {
+  const d = await api('/api/divulgar');
+  ctx.divulgar = { ...d, fila: lerDivulgacao() };
+  pintarDivulgar();
+});
+
+function pintarDivulgar() {
+  const d = ctx.divulgar;
+  const fila = d.fila;
+  const podeCadastrar = sessao.papel === 'coordenacao';
+  const PUB = Object.fromEntries(d.publicos.map(p => [p.id, p]));
+
+  app.innerHTML = `
+    <p class="kicker">Coordenação · o que sai do Instituto</p>
+    <h1>Divulgar</h1>
+    <p class="sub">Os grupos já estão aqui. Você escolhe o que vai, marca para quem, e o texto sai
+      pronto e copiado — resta abrir cada grupo e colar.</p>
+
+    ${fila ? blocoFila(fila, d) : blocoMontar(d, PUB)}
+
+    <div class="cartao compacto" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Canais cadastrados</h2>
+        <span class="sub">${d.canais.length}</span></div>
+      <div class="pilha" style="margin-top:10px">
+        ${d.canais.map(c => `<div class="item" style="cursor:default;flex-direction:column;align-items:stretch;gap:6px">
+          <div class="linha">
+            <div class="cresce"><div class="nome">${c.tipo === 'instagram' ? '◎' : '✆'} ${esc(c.nome)}</div>
+              <div class="meta">${esc(PUB[c.publico]?.rotulo ?? c.publico)}${c.turma ? ` · ${esc(c.turma)}` : ''}${
+                c.ultimo_envio ? ` · último envio ${dataBR(c.ultimo_envio.slice(0, 10))}` : ' · nunca usado'}</div></div>
+            ${podeCadastrar ? `<button class="btn pequeno fantasma" data-acao="canal-arquivar" data-id="${c.id}">Arquivar</button>` : ''}
+          </div>
+          ${c.observacao ? `<p class="sub" style="margin:0">${esc(c.observacao)}</p>` : ''}
+        </div>`).join('') || '<p class="vazio">Nenhum canal cadastrado ainda.</p>'}
+      </div>
+      ${podeCadastrar ? `<details style="margin-top:12px">
+        <summary style="cursor:pointer;font-size:13px;color:var(--tinta-fraca)">Cadastrar um grupo ou perfil</summary>
+        <label class="rot-campo" for="cn-tipo">Tipo</label>
+        <select id="cn-tipo">${d.tipos.map(t => `<option value="${t.id}">${esc(t.rotulo)}</option>`).join('')}</select>
+        <label class="rot-campo" for="cn-nome">Nome (o que você chama ele)</label>
+        <input type="text" id="cn-nome" placeholder="Ex.: Responsáveis · Vivência Sábado manhã" autocomplete="off">
+        <label class="rot-campo" for="cn-publico">Quem está desse lado</label>
+        <select id="cn-publico">${d.publicos.map(p => `<option value="${p.id}">${esc(p.rotulo)}</option>`).join('')}</select>
+        <p class="sub" id="cn-regra" style="margin-top:6px"></p>
+        <label class="rot-campo" for="cn-turma">Turma <span class="sub">(se o grupo é de uma turma só)</span></label>
+        <select id="cn-turma">
+          <option value="">Não é de uma turma</option>
+          ${d.turmas.map(t => `<option value="${t.id}">${esc(t.nome)}</option>`).join('')}
+        </select>
+        <label class="rot-campo" for="cn-destino">Destino</label>
+        <input type="text" id="cn-destino" placeholder="https://chat.whatsapp.com/…" autocomplete="off">
+        <p class="sub" id="cn-ajuda" style="margin-top:6px">No WhatsApp: abra o grupo → Dados do grupo →
+          Convidar por link → Copiar. É esse link que o Percurso guarda — nunca o telefone de ninguém.</p>
+        <button class="btn pequeno secundario" data-acao="canal-criar" style="margin-top:10px">Cadastrar</button>
+      </details>` : ''}
+    </div>
+
+    ${d.recentes.length ? `<details class="cartao compacto" style="margin-top:14px">
+      <summary style="cursor:pointer;font-weight:600">O que já saiu · ${d.recentes.length}</summary>
+      <p class="sub" style="margin-top:8px">O Percurso não envia — quem envia é você. O registro de que
+        saiu, para onde e por quem fica aqui, para "já mandei para os pais?" ter resposta que não seja a memória.</p>
+      <div class="pilha" style="margin-top:8px">
+        ${d.recentes.map(r => `<div class="dado">
+          <span class="k">${esc(r.canal)}</span>
+          <b style="font-weight:500">${esc(d.conteudos[r.conteudo]?.rotulo ?? r.conteudo)} · ${dataBR(r.em.slice(0, 10))}</b></div>`).join('')}
+      </div>
+    </details>` : ''}
+
+    <p class="rodape">Por que não um botão só: nenhum site consegue postar num grupo de WhatsApp já
+      existente. A API oficial da Meta só cria grupos novos de até 8 pessoas, e as bibliotecas que
+      postam em grupo violam os Termos — o preço possível é o número do Instituto, que é o único canal
+      com as famílias. O que dá para tirar do caminho, o Percurso tirou: montar o texto, lembrar quais
+      grupos existem, decidir o que pode ir para cada um e não perder a conta.</p>`;
+
+  const tipo = document.getElementById('cn-tipo');
+  const publico = document.getElementById('cn-publico');
+  if (tipo && publico) {
+    const sincronizar = () => {
+      const p = PUB[publico.value];
+      document.getElementById('cn-regra').textContent = p ? `Pode receber: ${p.pode.map(k => d.conteudos[k]?.rotulo ?? k).join(', ')}. ${p.nao}` : '';
+      document.getElementById('cn-destino').placeholder = tipo.value === 'instagram' ? '@perfil' : 'https://chat.whatsapp.com/…';
+      document.getElementById('cn-turma').disabled = tipo.value === 'instagram';
+    };
+    tipo.addEventListener('change', sincronizar);
+    publico.addEventListener('change', sincronizar);
+    sincronizar();
+  }
+}
+
+/** Passo 1: o que vai sair, e para quem. */
+function blocoMontar(d, PUB) {
+  const conteudos = [
+    ...d.recados.map(r => ({ chave: `recado:${r.turma_id}:${r.data}`, tipo: 'recado',
+      rotulo: `Recado · ${r.turma}`, detalhe: dataBR(r.data) })),
+    ...d.publicados.map(p => ({ chave: `carta:${p.tipo}:${p.periodo}`, tipo: 'carta',
+      rotulo: p.rotulo, detalhe: `publicado em ${dataBR((p.publicado_em || '').slice(0, 10))}` })),
+    { chave: 'card:periodo', tipo: 'card', rotulo: 'Card do período (imagem)',
+      detalhe: 'para o Instagram e para os apoiadores' },
+  ];
+  return `
+    <div class="cartao" style="margin-top:16px">
+      <h2>O que vai sair</h2>
+      <p class="sub">Só o que já existe: o recado nasce do encontro registrado, e carta e relatório
+        precisam estar <b>publicados</b> — texto que não passou pelo revisor não sai daqui.</p>
+      <div class="pilha" style="margin-top:10px">
+        ${conteudos.map((c, i) => `<button class="item" data-acao="div-conteudo" data-chave="${esc(c.chave)}"
+          ${i === 0 ? 'aria-current="true"' : ''}>
+          <div class="cresce"><div class="nome">${esc(c.rotulo)}</div>
+            <div class="meta">${esc(c.detalhe)}</div></div>
+          <span class="seta" aria-hidden="true">›</span>
+        </button>`).join('')}
+      </div>
+      ${d.publicados.length ? '' : `<p class="sub" style="margin-top:10px">Nenhuma carta publicada ainda —
+        quem publica é a diretoria, em Relatório. O card do período não depende disso: ele é montado
+        agora, do número que já está no banco.</p>`}
+    </div>`;
+}
+
+/** Passo 2: a fila, que é o que devolve o tempo. */
+function blocoFila(fila, d) {
+  const feitos = fila.canais.filter(c => c.feito).length;
+  const proximo = fila.canais.find(c => !c.feito);
+  return `
+    <div class="cartao" style="margin-top:16px">
+      <div class="linha"><h2 class="cresce">${esc(fila.rotulo)}</h2>
+        <span class="selo ${feitos === fila.canais.length ? 'ok' : 'pend'}">${feitos} de ${fila.canais.length}</span></div>
+      ${barra(Math.round((feitos / fila.canais.length) * 100), feitos === fila.canais.length)}
+      ${fila.imagem ? `<img src="${fila.imagem}" alt="Card do período" style="width:100%;border-radius:10px;margin-top:12px">` : `
+        <div class="cartao" style="margin-top:12px;background:var(--fundo)">
+          <pre id="div-texto" style="white-space:pre-wrap;font:inherit;line-height:1.55;margin:0">${esc(fila.texto)}</pre>
+        </div>`}
+      <div class="pilha" style="margin-top:12px">
+        <button class="btn largo secundario" data-acao="div-copiar">${fila.imagem ? 'Copiar a legenda' : 'Copiar o texto de novo'}</button>
+        ${fila.imagem ? '<button class="btn largo fantasma" data-acao="div-baixar">Baixar a imagem</button>' : ''}
+        <button class="btn largo fantasma" data-acao="div-compartilhar">Compartilhar pelo celular</button>
+      </div>
+      <p class="sub" style="margin-top:10px">${fila.imagem
+        ? 'O texto já está copiado. Baixe a imagem, abra o perfil e cole a legenda.'
+        : 'O texto já está copiado. Abra cada grupo e cole — o Percurso marca aqui quais já foram.'}</p>
+    </div>
+
+    <div class="cartao compacto" style="margin-top:14px">
+      <h2>Onde colar</h2>
+      <div class="pilha" style="margin-top:10px">
+        ${fila.canais.map(c => `<div class="item" style="cursor:default;flex-direction:column;align-items:stretch;gap:8px${
+            proximo && proximo.id === c.id ? ';border-color:var(--vermelho)' : ''}">
+          <div class="linha">
+            <div class="cresce"><div class="nome">${esc(c.nome)}</div>
+              <div class="meta">${c.feito ? 'já enviado' : proximo && proximo.id === c.id ? 'o próximo' : 'na fila'}</div></div>
+            <span class="selo ${c.feito ? 'ok' : 'pend'}">${c.feito ? '✓' : fila.canais.indexOf(c) + 1}</span>
+          </div>
+          <div class="linha" style="gap:8px">
+            <a class="btn pequeno ${c.feito ? 'fantasma' : ''} cresce" href="${c.endereco}" target="_blank"
+              rel="noopener" data-acao="div-abrir" data-id="${c.id}" style="text-align:center">${
+              c.tipo === 'instagram' ? 'Abrir o perfil' : 'Abrir o grupo'}</a>
+            ${c.feito ? `<button class="btn pequeno fantasma" data-acao="div-desfazer" data-id="${c.id}">Desfazer</button>` : ''}
+          </div>
+        </div>`).join('')}
+      </div>
+      <div class="linha" style="margin-top:12px">
+        <button class="btn pequeno fantasma cresce" data-acao="div-encerrar">${
+          feitos === fila.canais.length ? 'Terminei' : 'Cancelar este envio'}</button>
+      </div>
+    </div>`;
+}
+
+// ----------------------------------------------------------------------
+// Passo 2 de Divulgar: escolher para quem, e montar a fila.
+// ----------------------------------------------------------------------
+async function escolherCanais(chave) {
+  const d = ctx.divulgar;
+  const [tipo] = chave.split(':');
+  const elegiveis = d.canais.filter(c => (d.publicos.find(p => p.id === c.publico)?.pode ?? []).includes(tipo));
+  if (!elegiveis.length) {
+    toast(`Nenhum canal cadastrado pode receber "${d.conteudos[tipo]?.rotulo ?? tipo}".`, 'ruim');
+    return;
+  }
+  // Um recado é de UMA turma: só os grupos daquela turma (e os que não são de
+  // turma) entram pré-marcados. Mandar o recado da Vivência para o grupo do
+  // Reforço é o erro que a pressa do sábado produz.
+  const turmaDoRecado = tipo === 'recado' ? Number(chave.split(':')[1]) : null;
+  const marcado = (c) => tipo !== 'recado' || c.turma_id == null || c.turma_id === turmaDoRecado;
+
+  const veu = document.createElement('div');
+  veu.className = 'veu';
+  veu.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dv">
+      <h2 id="dv">Para quem vai</h2>
+      <p>${esc(d.conteudos[tipo]?.rotulo ?? tipo)}. Só aparecem os canais cujo público pode receber isto.</p>
+      <div class="pilha" style="margin-top:12px;max-height:46vh;overflow:auto">
+        ${elegiveis.map(c => `<label class="item" style="cursor:pointer">
+          <input type="checkbox" data-canal="${c.id}" ${marcado(c) ? 'checked' : ''}
+            style="width:auto;min-height:0;margin-right:10px">
+          <div class="cresce"><div class="nome">${esc(c.nome)}</div>
+            <div class="meta">${esc(d.publicos.find(p => p.id === c.publico)?.rotulo ?? c.publico)}${
+              c.turma ? ` · ${esc(c.turma)}` : ''}</div></div>
+        </label>`).join('')}
+      </div>
+      <p class="sub" id="dv-erro" style="color:var(--red);font-size:13px;margin-top:8px;display:none"></p>
+      <div class="linha" style="margin-top:16px">
+        <button class="btn cresce" data-acao="dv-ok" type="button">Preparar o envio</button>
+        <button class="btn secundario cresce" data-acao="dv-cancelar" type="button">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(veu);
+  prenderFoco(veu);
+
+  veu.addEventListener('click', comErro(async (e) => {
+    const a2 = e.target.dataset?.acao;
+    if (a2 === 'dv-cancelar' || e.target === veu) { veu.remove(); return; }
+    if (a2 !== 'dv-ok') return;
+    const ids = [...veu.querySelectorAll('input[data-canal]:checked')].map(i => Number(i.dataset.canal));
+    const erro = veu.querySelector('#dv-erro');
+    if (!ids.length) { erro.textContent = 'Marque pelo menos um canal.'; erro.style.display = 'block'; return; }
+    e.target.disabled = true;
+    try { await montarFila(chave, ids.map(id => elegiveis.find(c => c.id === id))); veu.remove(); }
+    catch (err) { e.target.disabled = false; erro.textContent = err.message; erro.style.display = 'block'; }
+  }));
+}
+
+async function montarFila(chave, canais) {
+  const d = ctx.divulgar;
+  const [tipo, a, b] = chave.split(':');
+  let texto = '', rotulo = '', imagem = null, periodo = null, referencia = null;
+
+  if (tipo === 'recado') {
+    const r = await api(`/api/recado?turma_id=${a}&data=${b}`);
+    texto = r.texto; rotulo = `Recado · ${r.turma.nome}`; referencia = `${r.turma.nome} · ${b}`;
+  } else if (tipo === 'carta') {
+    const p = d.publicados.find(x => x.tipo === a && x.periodo === b);
+    if (!p) throw new Error('Esse texto não está mais publicado.');
+    texto = p.texto; rotulo = p.rotulo; referencia = p.periodo;
+  } else {
+    const per = d.periodo_card || periodoPadraoDoCard();
+    const c = await api(`/api/divulgar/card?periodo=${per}`);
+    imagem = await desenharCard(c);
+    texto = c.legenda; rotulo = `Card · ${c.rotulo}`; periodo = per; referencia = per;
+  }
+
+  // O texto é copiado UMA vez, aqui. É a diferença entre "um toque por grupo" e
+  // "montar de novo a cada grupo", que era o custo real.
+  try { await navigator.clipboard.writeText(texto); } catch { /* sem permissão: o botão de copiar continua na tela */ }
+
+  const fila = { chave, tipo, rotulo, texto, imagem, periodo, referencia,
+    canais: canais.map(c => ({ id: c.id, nome: c.nome, tipo: c.tipo, endereco: c.endereco, feito: false })) };
+  gravarDivulgacao(fila);
+  ctx.divulgar.fila = fila;
+  pintarDivulgar();
+  toast('Texto copiado. Agora é abrir cada grupo e colar.', 'bom');
+}
+
+const periodoPadraoDoCard = () => {
+  const h = hojeIso();
+  const ano = h.slice(0, 4);
+  return Number(h.slice(5, 7)) <= 6 ? `${ano}-01-01..${ano}-06-30` : `${ano}-07-01..${ano}-12-31`;
+};
+
+/** Marca que este canal já recebeu — e registra no servidor, que é o que dá
+ *  resposta a "já mandei para os pais?" depois que a tela fechar. */
+function marcarEnviado(id) {
+  const f = ctx.divulgar?.fila;
+  const c = f?.canais.find(x => x.id === id);
+  if (!c || c.feito) return;
+  c.feito = true;
+  gravarDivulgacao(f);
+  postComFila('/api/disparo', { canal_id: id, conteudo: f.tipo, referencia: f.referencia })
+    .catch(() => { /* a fila offline reenvia; a marca local já valeu */ });
+  setTimeout(pintarDivulgar, 60);
+}
+
+/** Web Share: no celular ele abre a folha do sistema, onde WhatsApp e Instagram
+ *  aparecem. Continua sendo um toque por destino — mas com o arquivo junto, que
+ *  o link de convite não leva. */
+async function compartilharDivulgacao() {
+  const f = ctx.divulgar?.fila;
+  if (!f) return;
+  try {
+    if (f.imagem && navigator.canShare) {
+      const blob = await (await fetch(f.imagem)).blob();
+      const arq = new File([blob], `percurso-${f.periodo || 'card'}.png`, { type: 'image/png' });
+      if (navigator.canShare({ files: [arq] })) {
+        await navigator.share({ files: [arq], text: f.texto, title: f.rotulo });
+        return;
+      }
+    }
+    if (navigator.share) { await navigator.share({ text: f.texto, title: f.rotulo }); return; }
+    toast('Este navegador não abre a folha de compartilhar. Use "Copiar" e cole no aplicativo.');
+  } catch (e) {
+    if (e?.name !== 'AbortError') toast('O compartilhamento foi cancelado ou não é suportado aqui.');
+  }
+}
+
+// ----------------------------------------------------------------------
+// O CARD DO INSTAGRAM (decisão 48), desenhado no próprio navegador.
+//
+// Canvas puro: nenhuma biblioteca, nenhum servidor de imagem, nada de npm — a
+// decisão 1 continua de pé. E o conteúdo é o mesmo agregado que já passou pela
+// supressão de célula pequena e pelo revisor de sobre-alegação: o que não pode
+// sair no relatório também não sai aqui.
+// ----------------------------------------------------------------------
+async function desenharCard(c) {
+  const L = 1080;
+  const cv = document.createElement('canvas');
+  cv.width = L; cv.height = L;
+  const g = cv.getContext('2d');
+
+  g.fillStyle = '#F4EFE5'; g.fillRect(0, 0, L, L);
+  g.fillStyle = '#B0392C'; g.fillRect(0, 0, L, 14);
+
+  const fonte = (px, peso = '400') => `${peso} ${px}px ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+
+  g.fillStyle = '#8B8478'; g.font = fonte(30, '600');
+  g.fillText('INSTITUTO EBENÉZER · JARDIM ÂNGELA', 84, 130);
+  g.fillStyle = '#2E2A24'; g.font = fonte(46, '700');
+  g.fillText(esc(c.rotulo).replace(/&[a-z]+;/g, ''), 84, 196);
+
+  let y = 320;
+  for (const linha of c.linhas) {
+    g.fillStyle = '#B0392C'; g.font = fonte(104, '700');
+    g.fillText(linha.valor, 84, y);
+    const largura = g.measureText(linha.valor).width;
+    g.fillStyle = '#2E2A24'; g.font = fonte(36, '400');
+    g.fillText(linha.rotulo, 84 + largura + 24, y - 8);
+    y += 148;
+  }
+
+  // A ressalva metodológica vai NA IMAGEM, não só na legenda: legenda se corta,
+  // imagem é o que circula quando alguém salva e reenvia.
+  g.fillStyle = '#8B8478'; g.font = fonte(27, '400');
+  let ly = y + 30;
+  for (const l of quebrar(g, c.ressalva, L - 168)) { g.fillText(l, 84, ly); ly += 38; }
+  g.fillStyle = '#8B8478'; g.font = fonte(25, '400');
+  for (const l of quebrar(g, 'A leitura é de associação: fatores externos não foram isolados.', L - 168)) {
+    g.fillText(l, 84, ly + 14); ly += 36;
+  }
+
+  g.fillStyle = '#E6A400';
+  g.beginPath(); g.arc(L - 132, L - 132, 46, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#6B4410';
+  g.beginPath(); g.arc(L - 132, L - 132, 20, 0, Math.PI * 2); g.fill();
+
+  return cv.toDataURL('image/png');
+}
+
+function quebrar(g, texto, largura) {
+  const palavras = String(texto).split(/\s+/);
+  const linhas = [];
+  let atual = '';
+  for (const p of palavras) {
+    const tentativa = atual ? `${atual} ${p}` : p;
+    if (g.measureText(tentativa).width > largura && atual) { linhas.push(atual); atual = p; }
+    else atual = tentativa;
+  }
+  if (atual) linhas.push(atual);
+  return linhas;
+}
 
 rota(/^#\/pessoas/, async () => {
   const aba = (location.hash.match(/[?&]aba=([a-z]+)/) || [])[1] || 'equipe';
@@ -4356,7 +4747,9 @@ function modalConsentimento({ id, nome }) {
         <video id="cv-video" playsinline muted style="width:100%;border-radius:10px;margin-top:8px;display:none;background:#000"></video>
         <p class="sub" id="cv-estado" style="min-height:18px;margin-top:6px"></p>
         <div class="pilha" style="margin-top:8px">
-          <button class="btn pequeno secundario" data-acao="cv-gravar" type="button">Gravar agora</button>
+          <button class="btn pequeno secundario" data-acao="cv-abrir" type="button">Abrir a câmera</button>
+          <button class="btn pequeno" data-acao="cv-gravar" type="button" hidden>Começar a gravar</button>
+          <button class="btn pequeno fantasma" data-acao="cv-virar" type="button" hidden>Virar a câmera</button>
           <button class="btn pequeno fantasma" data-acao="cv-escolher" type="button">Escolher um vídeo do celular</button>
         </div>
         <input type="file" id="cv-arquivo" accept="video/*,audio/*" hidden>
@@ -4376,9 +4769,30 @@ function modalConsentimento({ id, nome }) {
   const estado = veu.querySelector('#cv-estado');
   const selo = veu.querySelector('#cv-selo');
   const video = veu.querySelector('#cv-video');
+  const btnAbrir = veu.querySelector('[data-acao="cv-abrir"]');
   const btnGravar = veu.querySelector('[data-acao="cv-gravar"]');
-  let blob = null, gravador = null, duracao = 0;
+  const btnVirar = veu.querySelector('[data-acao="cv-virar"]');
+  let blob = null, gravador = null, duracao = 0, camera = null, traseira = false;
   campo.focus();
+
+  // A prévia: a imagem na tela ANTES de gravar, que é quando a escolha da
+  // câmera importa. Quem grava o responsável sentado do outro lado da mesa
+  // precisa da traseira; quem grava a si mesmo, da frontal.
+  const mostrarPrevia = async () => {
+    if (camera) encerrarStream(camera);
+    camera = await abrirCamera({ traseira });
+    video.srcObject = camera; video.src = ''; video.muted = true; video.controls = false;
+    video.style.display = 'block';
+    // A frontal é espelhada na tela, como todo aplicativo de selfie faz — sem
+    // isso a pessoa se vê ao contrário e não consegue se enquadrar. O ARQUIVO
+    // não é espelhado: prova invertida seria prova adulterada.
+    video.style.transform = traseira ? 'none' : 'scaleX(-1)';
+    video.play?.().catch(() => {});
+    btnAbrir.hidden = true; btnGravar.hidden = false;
+    btnVirar.hidden = !(await temDuasCameras());
+    estado.textContent = traseira ? 'Câmera de trás. Enquadre e comece.' : 'Câmera da frente. Enquadre e comece.';
+  };
+  const fecharCamera = () => { if (camera) { encerrarStream(camera); camera = null; } };
 
   const marcarProva = (b, segundos) => {
     blob = b; duracao = segundos || 0;
@@ -4397,25 +4811,48 @@ function modalConsentimento({ id, nome }) {
     }, { once: true });
   };
 
-  const encerrarGravacao = () => { try { gravador?.cancelar(); } catch { /* já parou */ } gravador = null; };
+  const encerrarGravacao = () => {
+    try { gravador?.cancelar(); } catch { /* já parou */ }
+    gravador = null; fecharCamera();
+  };
 
   veu.addEventListener('click', comErro(async (e) => {
     const a2 = e.target.dataset?.acao;
-    if (a2 === 'cv-cancelar' || e.target === veu) { encerrarGravacao(); veu.remove(); return; }
+    if (a2 === 'cv-cancelar' || e.target === veu) { encerrarGravacao(); fecharCamera(); veu.remove(); return; }
 
-    if (a2 === 'cv-escolher') { veu.querySelector('#cv-arquivo').click(); return; }
+    if (a2 === 'cv-escolher') { fecharCamera(); veu.querySelector('#cv-arquivo').click(); return; }
+
+    if (a2 === 'cv-abrir') {
+      if (!podeGravar()) { estado.textContent = 'Este aparelho não deixa gravar pelo navegador. Dá para escolher um vídeo já gravado.'; return; }
+      try { await mostrarPrevia(); }
+      catch { estado.textContent = 'Não consegui abrir a câmera. Confira a permissão do navegador, ou escolha um vídeo já gravado.'; }
+      return;
+    }
+
+    if (a2 === 'cv-virar') {
+      if (gravador) return;   // no meio da gravação, virar perderia o que já foi dito
+      traseira = !traseira;
+      try { await mostrarPrevia(); }
+      catch { traseira = !traseira; estado.textContent = 'Este aparelho não deixou trocar de câmera.'; }
+      return;
+    }
 
     if (a2 === 'cv-gravar') {
       if (gravador) { gravador.parar(); return; }
-      if (!podeGravar()) { estado.textContent = 'Este aparelho não deixa gravar pelo navegador. Dá para escolher um vídeo já gravado.'; return; }
+      if (!camera) { await mostrarPrevia(); return; }
       let segundos = 0;
       btnGravar.textContent = 'Parar e usar este vídeo';
+      btnVirar.hidden = true;   // virar agora perderia o que já foi dito
       gravador = await gravarVideoConsentimento({
+        stream: camera,
         aoSegundo: (n) => { segundos = n; estado.textContent = `Gravando… ${n} s (para sozinho em 90 s)`; },
-        aoParar: (b) => { gravador = null; btnGravar.textContent = 'Gravar de novo'; marcarProva(b, segundos); },
+        aoParar: (b) => {
+          gravador = null; camera = null;
+          btnGravar.hidden = true; btnAbrir.hidden = false; btnAbrir.textContent = 'Gravar de novo';
+          video.style.transform = 'none';
+          marcarProva(b, segundos);
+        },
       });
-      video.style.display = 'block'; video.muted = true; video.controls = false;
-      video.srcObject = gravador.stream; video.play?.().catch(() => {});
       return;
     }
 
@@ -4445,7 +4882,7 @@ function modalConsentimento({ id, nome }) {
   veu.querySelector('#cv-arquivo').addEventListener('change', (e) => {
     const arq = e.target.files?.[0];
     e.target.value = '';
-    if (arq) marcarProva(arq, 0);
+    if (arq) { btnGravar.hidden = true; btnAbrir.hidden = false; marcarProva(arq, 0); }
   });
   campo.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') veu.querySelector('[data-acao="cv-ok"]').click();
@@ -5195,8 +5632,8 @@ const AURORA_ROTAS_POR_PAPEL = {
   // diretoria (src/api.js), e o painel dela já oferece o botão 'Perguntar à
   // base'. Sem a rota aqui, uma sugestão da Aurora para essa tela era engolida
   // com um `return` mudo — sem navegação e sem aviso.
-  coordenacao: ['#/painel', '#/consentimentos', '#/pessoas', '#/crianca', '#/sai-daqui', '#/relatorio', '#/pensar'],
-  diretoria: ['#/relatorio'],
+  coordenacao: ['#/painel', '#/consentimentos', '#/pessoas', '#/crianca', '#/sai-daqui', '#/relatorio', '#/divulgar', '#/pensar'],
+  diretoria: ['#/relatorio', '#/divulgar'],
 };
 
 // ======================================================================
@@ -5624,6 +6061,71 @@ document.addEventListener('click', comErro(async (ev) => {
     finally { alvo.disabled = false; }
     return;
   }
+  // ---- Divulgar (decisões 47 e 48) ---------------------------------------
+  if (a === 'div-conteudo') {
+    await escolherCanais(alvo.dataset.chave);
+    return;
+  }
+  if (a === 'div-copiar') {
+    const t = ctx.divulgar?.fila?.texto ?? '';
+    try { await navigator.clipboard.writeText(t); toast('Copiado. Agora é colar em cada grupo.', 'bom'); }
+    catch { toast('Não deu para copiar automaticamente — selecione o texto e copie.'); }
+    return;
+  }
+  if (a === 'div-baixar') {
+    const f = ctx.divulgar?.fila;
+    if (!f?.imagem) return;
+    const link = document.createElement('a');
+    link.href = f.imagem; link.download = `percurso-${f.periodo || 'card'}.png`;
+    link.click();
+    toast('Imagem baixada. Abra o Instagram e escolha ela.', 'bom');
+    return;
+  }
+  if (a === 'div-compartilhar') {
+    await compartilharDivulgacao();
+    return;
+  }
+  if (a === 'div-abrir') {
+    // NÃO impede a navegação: o <a> abre o grupo numa aba nova, e aqui só
+    // marcamos que este foi. Marcar no clique (e não "ao voltar") é o único
+    // caminho honesto — o navegador não avisa quando ela volta do WhatsApp.
+    marcarEnviado(Number(alvo.dataset.id));
+    return;
+  }
+  if (a === 'div-desfazer') {
+    const f = ctx.divulgar.fila;
+    const c = f.canais.find(x => x.id === Number(alvo.dataset.id));
+    if (c) { c.feito = false; gravarDivulgacao(f); pintarDivulgar(); }
+    return;
+  }
+  if (a === 'div-encerrar') {
+    limparDivulgacao();
+    ctx.divulgar.fila = null;
+    ctx.divulgar = { ...ctx.divulgar, ...(await api('/api/divulgar')) };
+    pintarDivulgar();
+    return;
+  }
+  if (a === 'canal-criar') {
+    const corpo = {
+      tipo: document.getElementById('cn-tipo').value,
+      nome: document.getElementById('cn-nome').value,
+      publico: document.getElementById('cn-publico').value,
+      turma_id: document.getElementById('cn-turma').value || null,
+      destino: document.getElementById('cn-destino').value,
+    };
+    alvo.disabled = true;
+    let r;
+    try { r = await post('/api/canais', corpo); }
+    finally { alvo.disabled = false; }
+    toast(`${r.nome} cadastrado.`, 'bom');
+    navegar(); return;
+  }
+  if (a === 'canal-arquivar') {
+    await post('/api/canais/arquivar', { id: alvo.dataset.id });
+    toast('Canal arquivado — o histórico do que saiu continua.', 'bom');
+    navegar(); return;
+  }
+
   if (a === 'copiar-boletim') {
     const t = document.getElementById('boletim-texto')?.textContent ?? '';
     try { await navigator.clipboard.writeText(t); toast('Boletim copiado — cole na conversa com o responsável.', 'bom'); }

@@ -627,19 +627,19 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     'public/app.js:613': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
     'public/app.js:1418': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:3213': /async function telaScores\(\)/,
-    'public/app.js:3444': /id="pergunta"/,
+    'public/app.js:3216': /async function telaScores\(\)/,
+    'public/app.js:3450': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:5521': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
-    'src/api.js:424': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:684': /'POST \/api\/consentimento'/,
-    'src/api.js:1191': /periodosSugeridos\(\)/,
+    'public/app.js:5958': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'src/api.js:425': /erro\(422.*rubrica por ciclo/,
+    'src/api.js:807': /'POST \/api\/consentimento'/,
+    'src/api.js:1314': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
-    'src/assistente.js:112': /export const GUIA/,
+    'src/assistente.js:113': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
     'src/domain.js:154': /a folha e' do ENCONTRO|A folha e' do ENCONTRO/i,
     'src/domain.js:1040': /export function estadoDeRetomada/,
@@ -2864,4 +2864,116 @@ test('importar áudio não filtra o que o celular mostra, e o app recebe compart
   // O arquivo compartilhado é CONSUMIDO: cache que fica seria a cópia que a
   // tela promete não guardar.
   assert.match(front, /cache\.delete\('\/__ultimo-compartilhado'\)/);
+});
+
+// ===========================================================================
+// CANAIS, DISPARO E O CARD (decisões 47 e 48) — os três pedidos de 04/09/2026
+// sobre WhatsApp e Instagram.
+// ===========================================================================
+const CAN = await import('../src/canais.js');
+
+test('canal: o destino é o link de convite do grupo, e o resto é recusado', () => {
+  assert.equal(CAN.normalizarDestino('whatsapp', ' https://chat.whatsapp.com/AbC123xyz '),
+    'https://chat.whatsapp.com/AbC123xyz');
+  // O erro mais provável no sábado corrido: colar o telefone, ou o link de
+  // conversa, achando que é o do grupo.
+  for (const errado of ['5511988887777', 'https://wa.me/5511988887777', 'chat.whatsapp.com/AbC123xyz', ''])
+    assert.throws(() => CAN.normalizarDestino('whatsapp', errado), /link de convite|destino do canal/);
+  assert.equal(CAN.normalizarDestino('instagram', 'institutoebenezer'), '@institutoebenezer');
+  assert.equal(CAN.normalizarDestino('instagram', '@instituto.ebenezer'), '@instituto.ebenezer');
+  assert.throws(() => CAN.normalizarDestino('instagram', 'perfil com espaço'), /@ do perfil/);
+});
+
+test('canal: o público decide o que pode ser montado — e a recusa é do servidor', () => {
+  const grupoPais = CAN.criarCanal({ tipo: 'whatsapp', nome: 'Teste · pais', publico: 'pais',
+    destino: 'https://chat.whatsapp.com/TESTEpais001' });
+  const perfil = CAN.criarCanal({ tipo: 'instagram', nome: '@teste', publico: 'apoiadores', destino: '@teste' });
+
+  // A tabela do §4 da pesquisa de WhatsApp, virada em trava:
+  assert.deepEqual(CAN.conteudosDoPublico('pais'), ['recado']);
+  assert.ok(CAN.conteudosDoPublico('apoiadores').includes('card'));
+  assert.throws(() => CAN.exigeCompatibilidade(grupoPais, 'carta'), /não vai para responsáveis/);
+  assert.throws(() => CAN.exigeCompatibilidade(grupoPais, 'card'), /não vai para responsáveis/);
+  assert.throws(() => CAN.exigeCompatibilidade(perfil, 'recado'), /não vai para apoiadores/);
+  assert.doesNotThrow(() => CAN.exigeCompatibilidade(grupoPais, 'recado'));
+  assert.doesNotThrow(() => CAN.exigeCompatibilidade(perfil, 'card'));
+
+  // Instagram é público: nem se amarra a turma, nem recebe o que é dos pais.
+  assert.throws(() => CAN.criarCanal({ tipo: 'instagram', nome: 'x', publico: 'pais', destino: '@x' }),
+    /Instagram é público/);
+  assert.throws(() => CAN.criarCanal({ tipo: 'instagram', nome: 'y', publico: 'apoiadores',
+    destino: '@y', turmaId: 1 }), /não se amarra a uma turma/);
+  // Destino repetido é o caminho para mandar duas vezes para o mesmo lugar.
+  assert.throws(() => CAN.criarCanal({ tipo: 'whatsapp', nome: 'Outro nome', publico: 'pais',
+    destino: 'https://chat.whatsapp.com/TESTEpais001' }), /já está cadastrado/);
+});
+
+test('canal: arquivar não apaga — o registro do que saiu aponta para ele', () => {
+  const c = CAN.criarCanal({ tipo: 'whatsapp', nome: 'Teste · arquivar', publico: 'equipe',
+    destino: 'https://chat.whatsapp.com/TESTEarquiva1' });
+  CAN.registrarDisparo({ canalId: c.id, conteudo: 'recado', referencia: 'turma X', porUsuarioId: 2 });
+  const morto = CAN.arquivarCanal(c.id);
+  assert.equal(morto.ativo, 0);
+  assert.ok(!CAN.listarCanais().some(x => x.id === c.id), 'canal arquivado continua na lista viva');
+  assert.ok(CAN.listarCanais({ incluirArquivados: true }).some(x => x.id === c.id));
+  // E o disparo continua: apagar o canal apagaria a prova de que algo saiu.
+  assert.ok(CAN.disparosRecentes().some(d => d.canal_id === c.id));
+  assert.ok(CAN.porId(c.id).ultimo_envio, 'o último envio some quando arquiva');
+  CAN.reativarCanal(c.id);
+});
+
+test('canal: só quem pode receber aparece — e a lista diz quando cada um recebeu', () => {
+  const c = CAN.listarCanais().find(x => x.publico === 'pais');
+  assert.ok(c.endereco.startsWith('https://chat.whatsapp.com/'));
+  const ig = CAN.listarCanais().find(x => x.tipo === 'instagram');
+  assert.equal(ig.endereco, `https://instagram.com/${ig.destino.replace('@', '')}`);
+});
+
+// --- travas de tela ---------------------------------------------------------
+test('a câmera do consentimento abre em prévia e deixa virar (pedido do campo)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const audio = readFileSync(new URL('../public/audio.js', import.meta.url), 'utf8');
+  const front = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  // As duas câmeras existem, e a escolha acontece ANTES de gravar: MediaRecorder
+  // fica preso ao stream em que começou, e virar no meio perderia o que já foi
+  // dito. O gate trava as duas metades.
+  assert.match(audio, /facingMode/);
+  assert.match(audio, /environment/);
+  assert.match(audio, /export async function abrirCamera/);
+  assert.match(front, /data-acao="cv-virar"/);
+  assert.match(front, /if \(gravador\) return;\s*\/\/ no meio da gravação/);
+  // E o arquivo NÃO sai espelhado: prova invertida seria prova adulterada.
+  assert.match(front, /video\.style\.transform = traseira \? 'none' : 'scaleX\(-1\)'/);
+});
+
+test('divulgar: a tela diz por que não existe o botão único, em vez de prometê-lo', async () => {
+  const { readFileSync } = await import('node:fs');
+  const front = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  const tela = front.slice(front.indexOf('function pintarDivulgar'), front.indexOf('function blocoMontar'));
+  assert.match(tela, /nenhum site consegue postar num grupo de WhatsApp já\s+existente/);
+  // A fila da divulgação NÃO pode se confundir com a fila offline dos POSTs:
+  // dois `lerFila` no mesmo arquivo seria um defeito que ninguém enxerga.
+  assert.match(front, /const lerDivulgacao/);
+  assert.equal((front.match(/^const lerFila = /gm) || []).length, 1);
+  // O card é desenhado no cliente, sem biblioteca nenhuma (decisão 1).
+  assert.match(front, /async function desenharCard/);
+  assert.match(front, /createElement\('canvas'\)/);
+  for (const proibido of ['unpkg', 'cdn.jsdelivr', 'html2canvas', 'import(']) {
+    const trecho = front.slice(front.indexOf('async function desenharCard'), front.indexOf('function quebrar'));
+    assert.ok(!trecho.includes(proibido), `${proibido} entrou no gerador do card`);
+  }
+});
+
+test('[hidden] vence toda regra de display — a classe inteira, não o remendo', async () => {
+  // Duas vezes o mesmo defeito: `el.hidden = true` e o elemento continuava na
+  // tela, porque o display:none do navegador tem especificidade zero e qualquer
+  // `.btn{display:inline-flex}` o vence. As duas foram remendadas uma a uma (a
+  // barra de navegação, depois os botões da câmera). Esta asserção fecha a
+  // classe: se alguém tirar a regra geral, o gate cai antes do usuário.
+  const { readFileSync } = await import('node:fs');
+  const css = readFileSync(new URL('../public/styles.css', import.meta.url), 'utf8');
+  assert.match(css, /\[hidden\]\{display:none !important\}/);
+  // E o remendo antigo não deve voltar: um seletor por elemento é a forma de
+  // esquecer o próximo.
+  assert.ok(!css.includes('nav.barra-nav[hidden]'), 'o remendo por elemento voltou');
 });

@@ -1,3 +1,12 @@
+/* [hidden] PRECISA GANHAR DE TODA REGRA DE display DESTE ARQUIVO.
+   O `display:none` que o navegador dá a [hidden] tem especificidade zero, e
+   qualquer `.btn{display:inline-flex}` o vence — então `el.hidden = true`
+   deixava o elemento na tela, visível, e o código parecia certo. Já tinha
+   acontecido duas vezes (a barra de navegação na tela de entrada; os botões da
+   câmera no modal de consentimento), e as duas foram remendadas uma a uma.
+   Esta linha fecha a classe inteira. */
+[hidden]{display:none !important}
+
 /* Percurso — sistema visual v2.
    Tokens do board `percurso-v2-pack/html/percurso-board-v2.html`, sem excecao:
    fundo creme #F4EFE5, cartao branco com borda #E6DFD0 e canto de 11px, botao
@@ -337,9 +346,6 @@ nav.barra-nav{
   display:flex; padding:18px 4px calc(19px + env(safe-area-inset-bottom));
   view-transition-name:nav;
 }
-/* o display:flex acima vence o [hidden] do UA — sem esta linha, a nav da
-   sessão anterior continuava visível na tela de entrada */
-nav.barra-nav[hidden]{display:none}
 nav.barra-nav a{
   flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:3px;
   padding:8px 2px; font-size:9.5px; font-weight:500; color:var(--muted);

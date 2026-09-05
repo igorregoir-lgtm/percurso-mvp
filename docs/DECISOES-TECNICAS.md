@@ -1254,6 +1254,99 @@ pior que ausência de botão: parece defeito do produto, e é.
 
 ---
 
+### 47. Os grupos passam a ser cadastro — e o botão único continua não existindo (04/09/2026)
+
+**Origem:** *"crie no campo do coordenador uma integração com WhatsApp na qual é possível compartilhar
+conteúdo com diversos grupos ao mesmo tempo… que ao clicar um botão não precise ficar depois clicando
+em cada grupo, mas que os grupos já estejam pré-cadastrados no próprio artefato."*
+
+**A metade que não existe, e é melhor dizer agora.** Nenhum site posta num grupo de WhatsApp já
+existente. Isso não é limitação deste produto — é desenho da Meta, e `PESQUISA-WHATSAPP.md` já tinha
+medido:
+
+| Caminho | Chega ao grupo existente? |
+|---|---|
+| Groups API oficial | **Não** — só cria grupos novos de até 8, e exige o selo *Official Business Account* |
+| Cloud API (1-para-1) | **Não** — chega ao responsável, nunca ao grupo |
+| Baileys / whatsapp-web.js e afins | Sim, **violando os Termos** — o preço possível é o número, que é o único canal do Instituto com as famílias |
+| `wa.me` / link de convite / Web Share | Sim, **com um toque humano por grupo** |
+
+Escrever o botão único aqui seria escrever uma frase que o WhatsApp desmente na primeira tentativa.
+**A tela diz isso, em vez de esconder.**
+
+**A metade que existe é onde estava o tempo dela.** O custo real nunca foi o toque — era montar o
+texto, lembrar quais grupos existem, decidir o que pode ir para cada um e perder a conta de quais já
+receberam. Os quatro são resolvidos:
+
+1. **os grupos ficam cadastrados**, com público declarado (`canal`);
+2. **o texto é montado e copiado UMA vez**, na hora em que ela escolhe o conteúdo;
+3. **a fila lembra onde ela parou** — e sobrevive a sair do navegador, porque mora no `localStorage`;
+4. **o que saiu fica registrado** (`disparo`), para *"já mandei para os pais?"* ter resposta que não
+   seja a memória de quem passou o sábado em pé dentro da sala.
+
+Sobra um toque por grupo: o que a Meta exige, e só ele.
+
+**O público não é etiqueta — é trava.** A tabela do §4 da pesquisa virou código em `PUBLICOS`, e a
+recusa acontece **no servidor**, não no botão: carta do período não vai para o grupo dos responsáveis
+(seria repasse do dado de cada criança a terceiros, LGPD Art. 14 §3º) e recado da turma não vai para o
+Instagram, que é público.
+
+**O destino é o link de convite, nunca telefone.** Grupo não tem telefone; e guardar telefone de
+responsável para "mandar no grupo" seria coletar dado que a função não usa.
+
+**Arquivar, não apagar** (decisão 30 outra vez): o registro do que saiu aponta para o canal, e apagar
+o canal apagaria a prova de que algo saiu.
+
+---
+
+### 48. O card do Instagram, desenhado no próprio navegador (04/09/2026)
+
+**Origem:** *"o WhatsApp e o Instagram são os super-app brasileiros, portanto, na medida do possível
+crie integrações entre o WhatsApp e o Instagram e este artefato."*
+
+**"Na medida do possível" é a parte honesta do pedido, e ela tem uma medida exata.** Postar no
+Instagram por API exige conta Business, Graph API, token de servidor e revisão de aplicativo na Meta —
+infraestrutura que uma casa sem profissional de tecnologia não opera. O que **não** exige nada disso é
+o trabalho que antecede o post: montar a peça e a legenda.
+
+**O card é desenhado em `<canvas>`, no próprio navegador.** Sem biblioteca, sem servidor de imagem,
+sem npm — a decisão 1 continua de pé, e há gate que varre o gerador atrás de `import(` e de CDN.
+
+**O conteúdo é o mesmo agregado do relatório, e por construção:** vem de `redigirCarta` sobre
+`numerosDoPeriodo`, que é template fechado sobre número de SQL — **nenhum modelo escreve aqui** — e a
+supressão de célula pequena já aconteceu antes. Ainda assim passa pelo **revisor de sobre-alegação**
+antes de sair, porque Instagram é público e público não tem errata.
+
+**A ressalva metodológica vai NA IMAGEM, não só na legenda.** Legenda se corta; imagem é o que
+circula quando alguém salva e reenvia.
+
+**O que fecha o caminho até o aplicativo é o `navigator.share` com arquivo** — a folha do sistema, onde
+WhatsApp e Instagram aparecem. Continua sendo um toque por destino, mas com o arquivo junto, que o
+link de convite não leva. Era o item (a) do Degrau 0 da pesquisa, declarado como pendência desde então.
+
+---
+
+### 49. A câmera do consentimento escolhe o lado antes de gravar (04/09/2026)
+
+**Origem:** *"na câmera quando abre para o registro permita também virar a câmera do celular."*
+
+Óbvio em uso e não trivial em desenho: `MediaRecorder` fica preso ao stream em que começou. Virar a
+câmera no meio da gravação obriga a parar e recomeçar, e **o que já foi dito se perde**; emendar dois
+arquivos tampouco serve — são dois contêineres com cabeçalhos próprios, e a prova viraria dois
+pedaços.
+
+Por isso a escolha acontece **antes**, com a imagem na tela — que é quando ela importa: quem grava o
+responsável sentado do outro lado da mesa precisa da câmera de trás; quem grava a si mesmo, da
+frontal. O botão de virar some enquanto grava, e volta depois.
+
+**Dois detalhes que só aparecem usando:** a prévia frontal é **espelhada na tela**, como todo
+aplicativo de selfie faz — sem isso a pessoa se vê ao contrário e não consegue se enquadrar —, mas o
+**arquivo não é espelhado**: prova invertida seria prova adulterada. E o botão de virar só aparece se
+`enumerateDevices` acusar duas câmeras: num notebook há uma só, e oferecer "virar" onde não há para
+onde virar é botão que não faz nada.
+
+---
+
 ---
 
 ## Dívidas técnicas conhecidas
@@ -1271,6 +1364,9 @@ pior que ausência de botão: parece defeito do produto, e é.
 | Anonimização não cobre apelido/paráfrase | Risco residual declarado na UI | Reavaliar com a PoC; orientação de uso é a mitigação |
 | Vídeo de consentimento sem política de retenção automática | O arquivo fica até alguém apagar com motivo; o fecho de ciclo não o alcança | Ligar ao `fecharCiclo` quando a retenção declarada (consentimento + 5 anos) vencer pela primeira vez |
 | Share target não funciona no iOS nem sem HTTPS | Metade dos aparelhos do Instituto cai no seletor de arquivo | Nada a fazer no produto: depende do Safari e do certificado. O caminho manual está declarado na tela |
+| Postar no Instagram continua manual | O card sai pronto, mas quem publica é a pessoa | Graph API exige conta Business, token de servidor e revisão de aplicativo na Meta — infraestrutura que a casa não opera (decisão 48) |
+| Envio a grupo de WhatsApp continua com um toque por grupo | O que a Meta permite; o resto viola os Termos | Só muda se a Meta abrir a API de grupos existentes, ou se a diretoria aceitar o Degrau 2 da pesquisa, que não recomendo |
+| O disparo marca "enviado" no CLIQUE, não na entrega | Quem abre o grupo e desiste fica marcado como enviado | Não há como saber: o navegador não avisa quando a pessoa volta do WhatsApp. O botão "Desfazer" é a mitigação, e está na tela |
 | Telefone do responsável sem verificação | Um dígito errado manda o boletim para um desconhecido | Confirmação por mensagem antes do primeiro envio, quando houver operação real |
 | Educadora substituta sem representação no modelo | Escopo de turma barra acesso legítimo temporário | Decisão da coordenação (decisão 22) |
 | Políticas A-06/A-11 propostas, não validadas | Pendência de governança | Validação da coordenação (decisão 23) |

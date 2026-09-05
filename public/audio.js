@@ -88,17 +88,50 @@ export function melhorTipoVideo() {
 }
 
 /**
+ * Abre a camera SEM gravar — e' o passo que faltava (pedido do campo,
+ * 04/09/2026: "permita tambem virar a camera do celular").
+ *
+ * POR QUE PREVIA ANTES DE GRAVAR, e nao um botao de virar no meio da gravacao.
+ * MediaRecorder fica preso ao stream em que comecou: trocar a camera no meio
+ * obriga a parar e recomecar, e o que ja' foi dito se perde. Duas gravacoes
+ * emendadas tampouco servem — sao dois arquivos com cabecalhos proprios, e a
+ * prova viraria dois pedacos. Entao a escolha da camera acontece ANTES, com a
+ * imagem na tela, que e' quando ela importa: quem grava o responsavel sentado
+ * do outro lado da mesa precisa da camera de tras, nao da selfie.
+ */
+export async function abrirCamera({ traseira = false } = {}) {
+  return navigator.mediaDevices.getUserMedia({
+    video: { facingMode: traseira ? { ideal: 'environment' } : { ideal: 'user' },
+      width: { ideal: 640 }, height: { ideal: 480 } },
+    audio: true,
+  });
+}
+
+/** Ha' uma segunda camera neste aparelho? Notebook costuma ter uma so', e
+ *  oferecer "virar" onde nao ha' para onde virar e' botao que nao faz nada. */
+export async function temDuasCameras() {
+  try {
+    const ds = await navigator.mediaDevices.enumerateDevices();
+    return ds.filter(d => d.kind === 'videoinput').length > 1;
+  } catch { return false; }
+}
+
+export function encerrarStream(stream) {
+  for (const t of stream?.getTracks?.() ?? []) { try { t.stop(); } catch { /* ja' parou */ } }
+}
+
+/**
  * Grava o VIDEO do responsavel consentindo — a prova do consentimento.
  *
  * Ao contrario de `iniciarGravacao`, aqui NAO ha' blocos: o arquivo e' um so',
  * curto, e vai inteiro para o servidor. O teto de tempo existe para o vídeo
  * caber no limite do servidor sem a pessoa precisar saber o que e' um megabyte.
+ *
+ * Recebe o stream JA' ABERTO por `abrirCamera` — quem escolheu a camera foi a
+ * pessoa, olhando a imagem.
  */
-export async function gravarVideoConsentimento({ aoSegundo, aoParar, tetoSegundos = 90 } = {}) {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-    audio: true,
-  });
+export async function gravarVideoConsentimento({ stream, aoSegundo, aoParar, tetoSegundos = 90 } = {}) {
+  if (!stream) stream = await abrirCamera();
   const tipo = melhorTipoVideo();
   const rec = new MediaRecorder(stream, tipo ? { mimeType: tipo, videoBitsPerSecond: 900_000 } : undefined);
   const pedacos = [];
@@ -111,7 +144,7 @@ export async function gravarVideoConsentimento({ aoSegundo, aoParar, tetoSegundo
 
   const encerrar = () => {
     clearInterval(relogio);
-    for (const t of stream.getTracks()) { try { t.stop(); } catch { /* ja' parou */ } }
+    encerrarStream(stream);
   };
   function parar() { try { rec.state !== 'inactive' && rec.stop(); } catch { encerrar(); } }
 

@@ -64,7 +64,8 @@ Quatro camadas em um processo, um arquivo de banco, interface servida estaticame
 
 ```
 navegador (public/ — HTML+CSS+JS puro, hash routing, sem build)
-                 12 rotas desde 04/09/2026 (eram 28; decisão 36) — o mapa
+                 13 rotas desde 04/09/2026 (eram 28; decisão 36, mais
+                 #/divulgar da decisão 47) — o mapa
                  FUNDIDAS traduz o endereço antigo, e um gate reprova rota
                  engolida por outra
     │   SpeechRecognition nativo: o ÁUDIO nunca sai daqui
@@ -73,7 +74,7 @@ navegador (public/ — HTML+CSS+JS puro, hash routing, sem build)
     ▼
 server.js        HTTP puro (node:http) — estáticos + despacho de /api/*
     ▼
-src/api.js       106 rotas — sessão por perfil; RBAC educadora / coordenação /
+src/api.js       113 rotas — sessão por perfil; RBAC educadora / coordenação /
     │            diretoria (a diretoria não abre registro individual)
     ▼
     ├── src/domain.js     núcleo: elegibilidade, perímetro, alertas, safras,
@@ -83,13 +84,16 @@ src/api.js       106 rotas — sessão por perfil; RBAC educadora / coordenaçã
     ├── src/relatorio.js  sete blocos do doador, carta, consulta agregada
     └── src/ingestao.js   ingestão retroativa com deduplicação de criança
     ▼
-src/db.js        esquema (29 tabelas) + helpers — SQLite via node:sqlite
+src/db.js        esquema (31 tabelas) + helpers — SQLite via node:sqlite
     │            migração pela assinatura do próprio DDL (decisão 14)
     ▼
 data/percurso.db local ou /var/data/percurso.db no Render
                    (WAL; disco persistente; backup externo obrigatório)
 
 src/seed.js      dados 100% sintéticos, PRNG com semente fixa (regra 1 do bloco 6)
+src/canais.js    grupos de WhatsApp e perfil de Instagram (decisao 47) — o
+                 publico do canal e' TRAVA: decide o que pode ser montado para
+                 ele, e a recusa e' do servidor, nao do botao
 src/evidencia.js prova do consentimento em video (decisao 42) — arquivo em
                  data/consentimento/ (0600, FORA de public/), linha com ponteiro;
                  o OPOSTO de transcricao.js: aqui apagar e' apagar a prova
@@ -108,7 +112,7 @@ data/audio-temp/    unico lugar onde audio toca disco, e sempre de passagem
 public/audio.js     conversao para WAV 16 kHz no NAVEGADOR (evita o ffmpeg) e
                     gravacao em blocos fechados de 5 min (evita 1 GB de Float32)
 
-scripts/         reset.mjs · smoke-test.mjs (471 asserções) · unit-test.mjs (192) · preparar-sessao.mjs
+scripts/         reset.mjs · smoke-test.mjs (489 asserções) · unit-test.mjs (199) · preparar-sessao.mjs
                  rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
                  audio-stub-test.mjs (ciclo de vida do áudio, sem modelo) · reancorar.mjs
                  whisper-stub.mjs · ai-stub.mjs (imitam a interface, não o comportamento)

@@ -1737,5 +1737,55 @@ secao('29 · Turma, matrícula, prova em vídeo e boletim do responsável');
     comp.status === 303 && /#\/registrar\?porta=C/.test(comp.headers.get('location') || ''));
 }
 
+
+// -------------------------- 30. divulgação: grupos, fila e o card do Instagram
+secao('30 · Canais de WhatsApp e Instagram (decisões 47 e 48)');
+{
+  const div = await GET('rita', '/api/divulgar');
+  T('a coordenação vê os canais cadastrados', div.status === 200 && div.corpo.canais.length >= 6);
+  T('a diretoria também divulga', (await GET('solange', '/api/divulgar')).status === 200);
+  T('a professora NÃO abre a tela de divulgação (403)', (await GET('maria', '/api/divulgar')).status === 403);
+  const canaisMaria = (await GET('maria', '/api/canais')).corpo.canais;
+  T('a professora vê só os canais das turmas dela (e os que não são de turma)',
+    canaisMaria.length > 0 && canaisMaria.every(c => c.turma_id == null || c.turma == 'Reforço · Tarde A'));
+
+  // --- o que pode ir para cada público, recusado no SERVIDOR ---------------
+  const grupoPais = div.corpo.canais.find(c => c.publico === 'pais');
+  const perfil = div.corpo.canais.find(c => c.tipo === 'instagram');
+  T('carta do período NÃO vai para o grupo dos responsáveis (422)',
+    (await POST('rita', '/api/disparo', { canal_id: grupoPais.id, conteudo: 'carta' })).status === 422);
+  T('recado da turma NÃO vai para o Instagram (422)',
+    (await POST('rita', '/api/disparo', { canal_id: perfil.id, conteudo: 'recado' })).status === 422);
+  const okDisparo = await POST('rita', '/api/disparo',
+    { canal_id: grupoPais.id, conteudo: 'recado', referencia: 'smoke' });
+  T('o recado vai para o grupo dos responsáveis, e o envio fica registrado',
+    okDisparo.status === 200 && !!okDisparo.corpo.ultimo_envio);
+  T('o que já saiu aparece na lista, com quem mandou',
+    (await GET('rita', '/api/divulgar')).corpo.recentes.some(r => r.referencia === 'smoke' && r.quem));
+
+  // --- cadastro de canal ---------------------------------------------------
+  T('telefone no lugar do link de convite é recusado (422)',
+    (await POST('rita', '/api/canais', { tipo: 'whatsapp', nome: 'X', publico: 'pais', destino: '5511988887777' })).status === 422);
+  const novo = await POST('rita', '/api/canais',
+    { tipo: 'whatsapp', nome: 'Smoke · apoiadores', publico: 'apoiadores', destino: 'https://chat.whatsapp.com/SMOKEapoia001' });
+  T('a coordenação cadastra um grupo novo', novo.status === 200 && novo.corpo.ativo === 1);
+  T('a professora NÃO cadastra canal (403)',
+    (await POST('maria', '/api/canais', { tipo: 'whatsapp', nome: 'Y', publico: 'equipe', destino: 'https://chat.whatsapp.com/SMOKEy0000001' })).status === 403);
+  const arq = await POST('rita', '/api/canais/arquivar', { id: novo.corpo.id });
+  T('arquivar tira da lista viva sem apagar', arq.status === 200 && arq.corpo.ativo === 0);
+
+  // --- o card do Instagram -------------------------------------------------
+  const card = await GET('rita', '/api/divulgar/card?periodo=2026-07-01..2026-12-31');
+  T('o card do período é montado do agregado', card.status === 200 && card.corpo.linhas.length === 3);
+  T('o card passa pelo revisor de sobre-alegação', card.corpo.revisor === 'aprovado');
+  T('a legenda não afirma causa', !/graças a|por causa|resultado d[eo] nosso|comprova/i.test(card.corpo.legenda));
+  T('o card carrega a ressalva de supressão na própria imagem',
+    /menos de \d+/.test(card.corpo.ressalva));
+  T('período inválido é recusado (422)',
+    (await GET('rita', '/api/divulgar/card?periodo=xxx')).status === 422);
+  T('a professora NÃO gera o card (403)',
+    (await GET('maria', '/api/divulgar/card?periodo=2026-07-01..2026-12-31')).status === 403);
+}
+
 console.log(`\n\x1b[1m${ok} passaram · ${falhas} falharam\x1b[0m\n`);
 process.exit(falhas ? 1 : 0);

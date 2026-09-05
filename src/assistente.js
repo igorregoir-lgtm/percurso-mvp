@@ -68,6 +68,7 @@ export const CATALOGO_ACOES = [
   { id: 'alertas', rotulo: 'Alertas de ausência', hash: '#/hoje?detalhe=alertas', papeis: ['educador', 'profissional', 'coordenacao'] },
   { id: 'pensar', rotulo: 'Pensar junto', hash: '#/pensar', papeis: ['educador', 'profissional', 'coordenacao'] },
   { id: 'painel', rotulo: 'Painel da coordenação', hash: '#/painel', papeis: ['coordenacao'] },
+  { id: 'divulgar', rotulo: 'Divulgar (grupos e Instagram)', hash: '#/divulgar', papeis: ['coordenacao', 'diretoria'] },
   { id: 'scores', rotulo: 'Scores', hash: '#/painel?aba=scores', papeis: ['coordenacao'] },
   { id: 'safras', rotulo: 'Safras', hash: '#/painel?aba=safras', papeis: ['coordenacao'] },
   { id: 'sintese', rotulo: 'Síntese do ciclo', hash: '#/painel?aba=sintese', papeis: ['coordenacao'] },
@@ -110,6 +111,22 @@ export function telaSegura(tela) {
 // `naoEnxergo`: o limite declarado — a Aurora não vê dado nenhum.
 // ---------------------------------------------------------------------------
 export const GUIA = [
+  {
+    id: 'divulgar', papeis: ['coordenacao', 'diretoria'],
+    oQueE: 'Divulgar é onde os grupos de WhatsApp e o perfil de Instagram do Instituto ficam cadastrados, e de onde sai o recado da turma, a carta do período e o card com os números. O Percurso monta o texto e guarda a fila de quem já recebeu; o envio é seu.',
+    chips: ['Por que não manda para todos os grupos de uma vez?', 'Como cadastro um grupo?', 'O que pode ir para cada grupo?'],
+    tarefas: [
+      { intencoes: ['todos os grupos', 'de uma vez', 'um botão só', 'automatico', 'automático'],
+        resposta: 'Não existe caminho para um site postar num grupo de WhatsApp já existente: a API oficial da Meta só cria grupos novos de até oito pessoas, e as bibliotecas que postam em grupo violam os Termos — o preço possível é o número do Instituto. O que o Percurso tira do caminho é o resto: o texto sai montado e copiado uma vez só, os grupos já estão cadastrados, e a fila lembra quais já receberam.',
+        acao: 'divulgar' },
+      { intencoes: ['cadastrar grupo', 'link do grupo', 'novo grupo'],
+        resposta: 'No WhatsApp, abra o grupo → Dados do grupo → Convidar por link → Copiar. Em Divulgar, abra "Cadastrar um grupo ou perfil" e cole esse link. O Percurso guarda o link do convite, nunca o telefone de ninguém.',
+        acao: 'divulgar' },
+      { intencoes: ['o que pode ir', 'pode mandar', 'pais recebem'],
+        resposta: 'O público do canal decide: grupo de responsáveis recebe o recado da turma, que é agregado e sem nome; apoiadores e Instagram recebem a carta e o card do período, que são agregados com supressão. Lista nominal de presença não sai para grupo nenhum — é repasse do dado de cada criança a terceiros.',
+        acao: 'divulgar' },
+    ],
+  },
   {
     id: 'hoje', papeis: ['educador', 'profissional'],
     oQueE: 'A tela Hoje é o ponto de partida da educadora: mostra a chamada do dia, a folha do dia, a agenda do ciclo e o que precisa de atenção nesta semana.',

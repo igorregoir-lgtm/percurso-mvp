@@ -79,6 +79,14 @@ Consentimento de matrícula genérico "não se sustenta" para imagem (ConJur). A
 
 ## 5. Recomendação para o Percurso — três degraus
 
+> **O Degrau 0 foi executado em 04/09/2026** (decisões 47 e 48). Os três itens que faltavam abaixo —
+> Web Share com arquivo, pacotes distintos por público e consulta à governança — estão no produto, em
+> `#/divulgar`: os grupos viraram cadastro (`canal`), o público virou trava de servidor, o texto é
+> montado e copiado uma vez, a fila lembra quais já receberam e o que saiu fica registrado
+> (`disparo`). O card do período para o Instagram é desenhado em `<canvas>` no próprio navegador, do
+> mesmo agregado do relatório e passando pelo revisor de sobre-alegação. **A conclusão desta pesquisa
+> não mudou:** o botão único não existe, e o pedido real era tempo.
+
 **Degrau 0 — já existe, custo zero, dentro das regras: o "pacote pronto" com um toque por grupo.** O Percurso gera o recado da turma (agregado + atividade + próximo encontro) e abre o WhatsApp para a pessoa escolher o grupo (decisão 33). O que falta e cabe agora: (a) **Web Share com arquivos** — anexar ao mesmo toque o PDF agregado e o vídeo já filtrado; (b) **dois pacotes distintos** — pais (agregado + recado + vídeo sem rosto) e apoiadores (agregado + recado + vídeo só de crianças com termo "apoiadores"); (c) o produto **consulta a governança** (consentimento de imagem por finalidade) antes de montar o vídeo. Custo: 1 toque por grupo, ~10 segundos, contra os minutos de hoje. Esta é a única automação que **não** depende de nada externo e não arrisca o número.
 
 **Degrau 1 — presença individual pela API oficial, ~R$ 18–31/mês.** O que a LGPD pede (cada responsável recebe só o próprio filho) é exatamente o que a Cloud API faz bem: um template *utility* aprovado ("Hoje o seu filho esteve presente / faltou na turma X"), com opt-in registrado no cadastro. Requer número dedicado, Meta Business, templates aprovados e alguém para configurar uma vez; depois é `POST` do Percurso. Substitui o PDF nominal por algo mais protetor e mais útil para a família. Provedor recomendado para começar sem mensalidade: Cloud API direta ou Gupshup; quando houver quem opere, Twilio.

@@ -1375,7 +1375,7 @@ export const rotuloDoPapel = (papel) => PAPEIS.find(p => p.id === papel)?.rotulo
  *  'pendente' para ele sugeriria que um dia vai ser coletado. Não vai. */
 const CONSENTIMENTOS_DA_MATRICULA = ['rubrica_socioemocional', 'campo_livre', 'parecer_profissional'];
 
-function textoObrigatorio(v, campo, max = 120) {
+export function textoObrigatorio(v, campo, max = 120) {
   const t = String(v ?? '').trim().replace(/\s+/g, ' ');
   if (!t) throw erro(422, `${campo} é obrigatório.`);
   if (t.length > max) throw erro(422, `${campo} passa de ${max} caracteres.`);
