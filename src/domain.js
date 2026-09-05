@@ -1583,22 +1583,79 @@ export const TURNOS = [
   { id: 'sabado', rotulo: 'Sábado' },
 ];
 
-/** Telefone do responsavel: guarda so' digito, e recusa o que nao e' telefone. */
+// DDDs QUE EXISTEM. Lista fechada, como o resto do produto faz com catálogo:
+// "11 a 99" aceita 20, 23, 25, 26, 29, 30… que a Anatel nunca atribuiu, e um
+// número com DDD inexistente é erro de digitação com cara de telefone.
+const DDDS = new Set([
+  11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 24, 27, 28,
+  31, 32, 33, 34, 35, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+  51, 53, 54, 55, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+  71, 73, 74, 75, 77, 79, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+  91, 92, 93, 94, 95, 96, 97, 98, 99,
+]);
+
+/**
+ * Telefone do responsavel: guarda so' digito, e recusa o que nao e' telefone.
+ *
+ * ISTO FICOU MAIS ESTRITO EM 05/09/2026, e o motivo e' um defeito medido, nao
+ * zelo. A versao anterior validava COMPRIMENTO e mais nada, entao:
+ *
+ *   · `351912345678` (Portugal) passava intacto — 12 digitos —, e a tela
+ *     mostrava `(19) 1234-5678`. Quem conferia via um telefone brasileiro
+ *     plausivel: o erro era INVISIVEL na revisao.
+ *   · `1000000000` virava `551000000000` e aparecia como `(10) 0000-0000`.
+ *   · `11111111111` passava.
+ *
+ * E o destino desse numero e' o boletim: nome da crianca, presenca, evolucao
+ * socioemocional. Um digito errado entrega a ficha a um desconhecido.
+ *
+ * A validacao de forma NAO fecha o buraco — numero valido e errado continua
+ * valido. Ela reduz o ruido; quem fecha e' a conferencia registrada
+ * (`marcarContatoConferido`).
+ */
 export function normalizarContato(bruto) {
   const t = String(bruto ?? '').trim();
   if (!t) return null;
-  const so = t.replace(/\D+/g, '').replace(/^0+/, '');
-  // 10 = fixo com DDD, 11 = celular com DDD, 12/13 = com o 55 na frente.
-  if (so.length < 10 || so.length > 13)
-    throw erro(422, 'O telefone do responsável precisa ter DDD — ex.: (11) 98888-7777.');
-  return so.length <= 11 ? `55${so}` : so;
+  let so = t.replace(/\D+/g, '');
+  const recusa = (porque) => { throw erro(422, `${porque} Esperado: (11) 98888-7777.`); };
+
+  // O 55 so' e' prefixo de pais quando o numero tem 12 ou 13 digitos. Em 10 ou
+  // 11 ele e' o DDD do Rio Grande do Sul, e tirar seria corromper um numero bom.
+  if (so.length === 12 || so.length === 13) {
+    if (!so.startsWith('55'))
+      recusa('Esse número não parece brasileiro: com 12 ou 13 dígitos ele precisa começar com 55.');
+    so = so.slice(2);
+  } else {
+    so = so.replace(/^0+/, '');   // 0xx de operadora
+  }
+  if (so.length !== 10 && so.length !== 11)
+    recusa('O telefone do responsável precisa ter DDD e 8 ou 9 dígitos.');
+  if (!DDDS.has(Number(so.slice(0, 2))))
+    recusa(`Não existe o DDD ${so.slice(0, 2)}.`);
+  if (so.length === 11 && so[2] !== '9')
+    recusa('Celular com 9 dígitos começa com 9 depois do DDD.');
+  if (so.length === 10 && !'2345'.includes(so[2]))
+    recusa('Telefone fixo começa com 2, 3, 4 ou 5 depois do DDD.');
+  // Todos os dígitos iguais depois do DDD é o teclado travado, não um telefone.
+  if (new Set(so.slice(2)).size === 1)
+    recusa('Esse número tem todos os dígitos iguais.');
+  return `55${so}`;
 }
 
-/** Como o telefone aparece na tela. Nunca em lista, nunca em agregado. */
+/**
+ * Como o telefone aparece na tela. Nunca em lista, nunca em agregado.
+ *
+ * NAO FORMATA A FORCA o que nao tem forma brasileira: era assim que a tela
+ * mentia sobre um numero de outro pais gravado antes desta validacao existir.
+ * Linha antiga fora do padrao aparece crua, que e' o unico jeito de quem
+ * confere perceber que ha' algo errado ali.
+ */
 export function contatoLegivel(e164) {
   const d = String(e164 ?? '').replace(/\D+/g, '');
-  if (d.length < 12) return e164 || '';
+  if (!d) return '';
+  if (!d.startsWith('55') || (d.length !== 12 && d.length !== 13)) return `${e164} (fora do padrão)`;
   const ddd = d.slice(2, 4), resto = d.slice(4);
+  if (!DDDS.has(Number(ddd))) return `${e164} (DDD ${ddd} não existe)`;
   return resto.length === 9
     ? `(${ddd}) ${resto.slice(0, 5)}-${resto.slice(5)}`
     : `(${ddd}) ${resto.slice(0, 4)}-${resto.slice(4)}`;

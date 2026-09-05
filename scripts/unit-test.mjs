@@ -3109,3 +3109,79 @@ test('régua: a faixa de atenção existe na seed em QUALQUER data — e a granu
   const emAtencao = r.criancas.find(c => c.faixa === 'atencao');
   assert.ok(alcancaveis(emAtencao.encontros).includes(emAtencao.pct));
 });
+
+// ===========================================================================
+// OPAR 05/09/2026 — o extrator parava de dizer "não sei" e dizia "1".
+//
+// A dívida declarada dizia que "umas seis" ficava em branco. Estava ERRADA:
+// "umas seis" sempre devolveu 6. O defeito era o oposto e pior — o extrator
+// INVENTAVA 1 sempre que não entendia, contra a doutrina escrita no próprio
+// arquivo ("falhar em branco é melhor que falhar preenchido", src/voz.js:295).
+// ===========================================================================
+const FALA_VIVENCIA = 'Hoje fizemos o jogo da rede de apoio, sobre cidadania. ';
+const ck = (frase) => V.extrairDaFala(FALA_VIVENCIA + frase, [], { vivencia: true }).extracao.checkin;
+
+test('extrator: quantificador não vira número — o produto não sabe o tamanho da turma', () => {
+  // ERA 1. Numa turma de 24, "todas participaram" entrava na planilha
+  // socioemocional como UMA criança, e o indicador despencava sozinho.
+  assert.equal(ck('Todas participaram do começo ao fim.').participaram_inteiro, null);
+  assert.equal(ck('A turma toda participou do começo ao fim.').participaram_inteiro, null);
+  assert.equal(ck('Participaram do começo ao fim.').participaram_inteiro, null);
+  // O numeral inequívoco continua passando — inclusive com hedge na frente.
+  assert.equal(ck('Seis participaram do começo ao fim.').participaram_inteiro, 6);
+  assert.equal(ck('Umas seis participaram do começo ao fim.').participaram_inteiro, 6);
+  assert.equal(ck('Acho que seis participaram do começo ao fim.').participaram_inteiro, 6);
+  // "meia dúzia" é fechado e literal: conta, e não é inferência.
+  assert.equal(ck('Meia dúzia participou do começo ao fim.').participaram_inteiro, 6);
+});
+
+test('extrator: faixa e número fora da escala ficam em branco, não viram 1', () => {
+  // ERA 7 — o regex pegava o numeral mais próximo e transformava a faixa em
+  // número firme. A fala não escolheu; o produto também não escolhe.
+  assert.equal(ck('Seis ou sete participaram do começo ao fim.').participaram_inteiro, null);
+  assert.equal(ck('Dois a três participaram do começo ao fim.').participaram_inteiro, null);
+  // ERA 1 — acima de CHECKIN_MAX a coerção virava o menor número possível.
+  assert.equal(ck('32 participaram do começo ao fim.').participaram_inteiro, null);
+  assert.ok(V.CHECKIN_MAX === 30, 'a escala do check-in mudou; reveja este gate');
+});
+
+test('extrator: negação posposta é negação — e "resolveram" sozinho não inventa conflito', () => {
+  // ERA 1 CONFLITO. O regex exigia o negador ANTES ("sem conflito"); posposto
+  // caía na contagem nua e a negação virava afirmação.
+  assert.equal(ck('Conflito nenhum hoje.').conflitos, 0);
+  assert.equal(ck('Sem conflito hoje.').conflitos, 0);
+  // ERA conflitos=1. "Resolveram conversando" pode falar de um combinado, não
+  // de briga: sem total conhecido, não há conflito para contar.
+  const so = ck('Resolveram conversando.');
+  assert.equal(so.conflitos, null);
+  assert.equal(so.conflitos_resolvidos_conversando, null);
+  // Mas com o total conhecido, "resolveram" qualifica o total — isto é o que a
+  // fala diz, e é o que o teste do check-in já esperava.
+  const com = ck('Teve um conflito e resolveram conversando.');
+  assert.equal(com.conflitos, 1);
+  assert.equal(com.conflitos_resolvidos_conversando, 1);
+  const dois = ck('Dois conflitos, resolveram conversando.');
+  assert.equal(dois.conflitos, 2);
+  assert.equal(dois.conflitos_resolvidos_conversando, 2);
+});
+
+test('extrator: "dezesseis" deixou de virar 6 — a fronteira de palavra faltava', () => {
+  const A = (f) => V.extrairDaFala('Fizemos leitura no pátio, a turma colaborou e ficou cansada. ' + f, []).extracao.pediram_ajuda;
+  // ERA 6: a alternação sem fronteira casava o sufixo "seis" dentro de
+  // "dezesseis". O mesmo valia para dezessete→7, dezoito→8, dezenove→9.
+  assert.equal(A('Dezesseis crianças pediram ajuda.'), 16);
+  assert.equal(A('Dezessete crianças pediram ajuda.'), 17);
+  assert.equal(A('Dezenove crianças pediram ajuda.'), 19);
+  // ERA 0: `pediram?` nunca casava `pediu`, e todo singular se perdia.
+  assert.equal(A('Uma criança pediu ajuda.'), 1);
+  assert.equal(A('Duas crianças pediram ajuda.'), 2);
+});
+
+test('extrator: o portão de confiança continua sendo a primeira defesa', () => {
+  // Fala curta demais não extrai NADA, mesmo com numeral — é o mecanismo de
+  // src/voz.js:295, e ele é anterior a tudo o que os gates acima travam.
+  const curta = V.extrairDaFala('Seis participaram do começo ao fim.', [], { vivencia: true }).extracao;
+  assert.ok(curta.confianca < D.PARAMS.CONFIANCA_MINIMA);
+  assert.equal(curta.checkin.participaram_inteiro, null);
+  assert.equal(curta.pediram_ajuda, 0);
+});
