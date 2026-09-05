@@ -1813,8 +1813,21 @@ secao('31 · Passe para o celular, envio duplicado e o texto no link (decisão 5
   T('outra referência não conta como duplicado',
     !(await GET('rita', `/api/divulgar/ja-recebeu?conteudo=recado&referencia=outra&desde=${encodeURIComponent(meiaNoite)}`)).corpo.canal_ids.includes(grupo.id));
 
+  // Quem manda o recado no sábado é quem está em sala — e o produto tem de
+  // servir a ela sem abrir a divulgação inteira.
+  const todos = (await GET('rita', '/api/canais')).corpo.canais;
+  const daMaria = todos.find(c => c.turma === 'Reforço · Tarde A');
+  const deOutra = todos.find(c => c.turma && c.turma !== 'Reforço · Tarde A');
+  T('a professora registra o envio ao grupo da própria turma',
+    (await POST('maria', '/api/disparo', { canal_id: daMaria.id, conteudo: 'recado', referencia: 'smoke-maria' })).status === 200);
+  T('a professora NÃO registra envio ao grupo de outra turma (403)',
+    (await POST('maria', '/api/disparo', { canal_id: deOutra.id, conteudo: 'recado', referencia: 'smoke-maria' })).status === 403);
+  T('a professora pergunta quem já recebeu — devolve só ids, e o dela está lá',
+    (await GET('maria', `/api/divulgar/ja-recebeu?conteudo=recado&referencia=smoke-maria&desde=${encodeURIComponent(meiaNoite)}`)).corpo.canal_ids.includes(daMaria.id));
+
   const rec = (await GET('rita', '/api/divulgar')).corpo.recados[0];
   const recado = await GET('rita', `/api/recado?turma_id=${rec.turma_id}&data=${rec.data}`);
+  T('o link do recado já leva o texto formatado', decodeURIComponent(recado.corpo.whatsapp_url.split('text=')[1]).startsWith('*'));
   T('o recado sai também formatado para o WhatsApp (primeira linha em negrito)',
     recado.status === 200 && recado.corpo.texto_whatsapp?.startsWith('*') && recado.corpo.texto === recado.corpo.texto.replace(/^\*/, ''));
   T('a assinatura do recado vai em itálico', /_— Instituto Ebenézer_$/.test(recado.corpo.texto_whatsapp.trim()));

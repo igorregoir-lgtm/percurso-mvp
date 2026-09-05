@@ -227,14 +227,17 @@ cérebro"*); o que ela vê não vira evidência.
    mostra o nome virando código antes de qualquer gravação. Se falar de um caso, o filtro de
    perímetro devolve encaminhamento humano — e a frase "vivência terapêutica" não dispara o
    filtro, porque é o nome do procedimento, não conteúdo sobre criança.
-4. **`#/sai-daqui?aba=relato`** — o registro do procedimento nasce pronto, no padrão do conselho, sem nome por
+4. **`#/sai-daqui?aba=recado`** — o recado da turma sai para o **grupo da própria turma**, já
+   cadastrado pela coordenação (decisão 50): um toque abre o WhatsApp com o texto escrito, e a
+   tela marca "já recebeu este recado hoje". Grupo de outra turma não aparece.
+5. **`#/sai-daqui?aba=relato`** — o registro do procedimento nasce pronto, no padrão do conselho, sem nome por
    construção; ela **revisa e libera** (ou não). O texto é dela; a IA, quando ligada, só organiza.
-5. **`#/turma`** — a devolução por encontro: como o grupo de hoje se compara às últimas
+6. **`#/turma`** — a devolução por encontro: como o grupo de hoje se compara às últimas
    vivências, em contagens; e a régua de presença da turma.
-6. **Parecer para profissional parceiro** — quando a assistente social perguntar, ela (ou a
+7. **Parecer para profissional parceiro** — quando a assistente social perguntar, ela (ou a
    coordenação) gera um parecer por **código**, com presença, participação e evolução por
    indicador — só com consentimento específico do responsável e com a liberação registrada.
-7. **`#/crianca/:id`** — na ficha, dois caminhos que antes não existiam (04/09/2026): o cartão do
+8. **`#/crianca/:id`** — na ficha, dois caminhos que antes não existiam (04/09/2026): o cartão do
    ciclo **abre o registro do olhar** em vez de só mostrar a tabela (decisão 46), e o **boletim do
    responsável** monta, num texto só, matrícula, presença e evolução em piorou/manteve/evoluiu,
    com o link direto do WhatsApp de quem responde pela criança (decisão 43). O relato livre e o

@@ -724,7 +724,9 @@ export const rotas = {
   // Quem JÁ recebeu este conteúdo hoje — para a tela desmarcar por padrão e
   // dizer por quê. Não proíbe: repetir pode ser intencional.
   'GET /api/divulgar/ja-recebeu': (req, _b, q) => {
-    exigeGestao(req);
+    // Quem manda o recado no sábado é a professora — a trava de duplicidade
+    // tem de valer para ela também. Devolve só ids, nunca conteúdo.
+    exigeUsuario(req);
     return { canal_ids: CAN.jaRecebeuHoje(String(q.get('conteudo') ?? ''), q.get('referencia'), { desde: q.get('desde') }) };
   },
 
@@ -768,6 +770,15 @@ export const rotas = {
   // de quem passou o sabado inteiro em pe' dentro da sala.
   'POST /api/disparo': (req, body) => {
     const u = exigeUsuario(req);
+    // Quem está em sala registra envio só em canal da PRÓPRIA turma (ou sem
+    // turma). Não é segredo — é não deixar o grupo do Reforço receber o recado
+    // da Vivência por um clique errado, e não deixar o registro mentir.
+    if (!['coordenacao', 'diretoria'].includes(u.papel)) {
+      const canal = CAN.porId(num(body.canal_id, 'canal_id'));
+      const minhas = all(`SELECT id FROM turma WHERE educador_id = ?`, u.id).map(t => t.id);
+      if (canal.turma_id != null && !minhas.includes(canal.turma_id))
+        throw D.erro(403, `${canal.nome} não é da sua turma.`);
+    }
     return CAN.registrarDisparo({
       canalId: num(body.canal_id, 'canal_id'),
       conteudo: String(body.conteudo ?? ''),
@@ -1203,7 +1214,8 @@ export const rotas = {
     // o WhatsApp entende *asteriscos*, e e' assim que o recado chega legível
     // no celular de quem lê no ônibus. O `texto` cru continua, para quem cola
     // em outro lugar.
-    return { ...r, texto_whatsapp: CAN.formatarParaWhatsApp(r.texto) };
+    const texto_whatsapp = CAN.formatarParaWhatsApp(r.texto);
+    return { ...r, texto_whatsapp, whatsapp_url: 'https://wa.me/?text=' + encodeURIComponent(texto_whatsapp) };
   },
 
   // ---- Parecer profissional-a-profissional (decisao 32) --------------------

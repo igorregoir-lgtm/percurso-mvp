@@ -35,7 +35,7 @@
 > repositório no branch (`graphify-out/` no worktree, 1.773 nós, agora no `.gitignore`). Quem for
 > fundir o branch: rode `graphify update .` na raiz do produto depois.
 >
-> **Gates: 500 smoke · 204 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.** 31 tabelas, 116 rotas.
+> **Gates: 504 smoke · 204 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.** 31 tabelas, 116 rotas.
 >
 
 

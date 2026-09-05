@@ -52,7 +52,7 @@ aberto**, que é onde a fusão de superfícies da F6 se vê.
 
 - **A dor dela** — `#/entrar` → Carolina → `#/hoje` → *Falar agora* → `#/registrar` capturando →
   *Terminei* → `#/registrar` conferindo → *Confirmar e guardar* → **`#/sai-daqui`**. Este último
-  passo era o conserto do **passo 05** do task flow, feito em 04/09/2026: `public/app.js:6175` passou a abrir o relato e
+  passo era o conserto do **passo 05** do task flow, feito em 04/09/2026: `public/app.js:6209` passou a abrir o relato e
   o relato não abre sozinho. No v3, confirmar a folha abre o relato.
 - **A segunda turma** — `#/hoje` → chip *Sábado tarde* → `#/hoje` da tarde. Hoje esse caminho não
   existe: `GET /api/hoje` monta tudo a partir de `turmas[0]`.
@@ -163,7 +163,9 @@ mostra a origem de cada campo; e existe seletor de turma.
 > celular**. Os QRs do protótipo são grade desenhada — o produto gera os de verdade em
 > `public/qr.js`, verificados com leitor real. As outras peças da decisão 50 (texto dentro do link,
 > "já recebeu hoje", story e carrossel) mudam botões e estados das duas telas de `#/divulgar` já
-> existentes, não criam tela.
+> existentes, não criam tela. O mesmo vale para o recado da professora em `#/sai-daqui`: o grupo
+> da própria turma entra como bloco na tela que já existe — o desenho canônico dela continua o
+> mesmo, e o bloco novo é estado, não tela.
 
 > **Ressalva de leitura, registrada em 03/09/2026.** O conector do Figma expõe apenas **uma página
 > por arquivo**, e no `h6AnLVYLfpeVl2N4ie0Qzv` a página exposta é o `Leia-me` — cujo texto manda

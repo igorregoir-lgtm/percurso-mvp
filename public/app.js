@@ -3135,6 +3135,39 @@ async function telaRecado(params) {
       <div class="linha" style="margin-top:16px"><button class="btn" data-acao="ir" data-href="#/chamada">Fazer a chamada</button></div>`;
     return;
   }
+  // Os grupos cadastrados DESTA turma (decisão 50): a coordenação cadastra, a
+  // professora manda. Cada grupo é um toque que abre o WhatsApp com o texto
+  // escrito — e o servidor lembra quem já recebeu este recado hoje.
+  const referencia = `${r.turma.nome} · ${r.data}`;
+  let grupos = [], jaHoje = [];
+  try {
+    const c = await api('/api/canais');
+    grupos = c.canais.filter(x => x.tipo === 'whatsapp' && x.publico === 'pais'
+      && (x.turma_id === Number(turmaId) || x.turma_id == null));
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    jaHoje = (await api(`/api/divulgar/ja-recebeu?conteudo=recado&referencia=${encodeURIComponent(referencia)}&desde=${encodeURIComponent(d.toISOString())}`)).canal_ids;
+  } catch { /* sem canais ou sem rede: o botão genérico continua */ }
+  ctx.recadoRef = referencia;
+  const blocoGrupos = grupos.length ? `
+    <div class="cartao compacto" style="margin-top:12px">
+      <h2>Para o grupo da turma</h2>
+      <p class="sub">Abre o WhatsApp já com o recado escrito — é só escolher o grupo e enviar.</p>
+      <div class="pilha" style="margin-top:10px">
+        ${grupos.map(g => `<div class="item" style="cursor:default;flex-direction:column;align-items:stretch;gap:8px">
+          <div class="linha">
+            <div class="cresce"><div class="nome">${esc(g.nome)}</div>
+              <div class="meta">${jaHoje.includes(g.id) ? '<b>já recebeu este recado hoje</b>' : g.ultimo_envio ? `último envio ${dataBR(g.ultimo_envio.slice(0, 10))}` : 'nunca usado'}</div></div>
+            ${jaHoje.includes(g.id) ? '<span class="selo ok">✓</span>' : ''}
+          </div>
+          <div class="linha" style="gap:8px">
+            <a class="btn pequeno ${jaHoje.includes(g.id) ? 'fantasma' : ''} cresce" href="${r.whatsapp_url}" target="_blank" rel="noopener"
+              data-acao="recado-grupo" data-id="${g.id}" style="text-align:center">Abrir com o texto pronto</a>
+            <a class="btn pequeno fantasma" href="${esc(g.endereco)}" target="_blank" rel="noopener"
+              data-acao="recado-grupo" data-id="${g.id}">Abrir o grupo</a>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>` : '';
   app.innerHTML = cabecalhoSaida('recado', qsDoEncontro(params)) + `
     <p class="kicker" style="margin-top:12px">${esc(r.turma.nome)}</p>
     <h1>Recado para os responsáveis</h1>
@@ -3146,9 +3179,10 @@ async function telaRecado(params) {
       <h3>Da turma, nunca de uma criança</h3>
       <p>${esc(r.doutrina)}</p>
     </div>
+    ${blocoGrupos}
     <div class="pilha">
-      <button class="btn largo" data-acao="copiar-recado">Copiar o recado</button>
-      <a class="btn largo secundario" href="${r.whatsapp_url}" target="_blank" rel="noopener">Abrir no WhatsApp</a>
+      <button class="btn largo ${grupos.length ? 'fantasma' : ''}" data-acao="copiar-recado">Copiar o recado</button>
+      ${grupos.length ? '' : `<a class="btn largo secundario" href="${r.whatsapp_url}" target="_blank" rel="noopener">Abrir no WhatsApp</a>`}
       <button class="btn largo fantasma" data-acao="ir" data-href="#/hoje">Voltar</button>
     </div>
     <p class="rodape">Base legal: legítimo interesse — comunicação com os responsáveis sobre a turma. O recado não é guardado: é gerado agora, do registro.</p>`;
@@ -6327,6 +6361,12 @@ document.addEventListener('click', comErro(async (ev) => {
       document.addEventListener('visibilitychange', () => { if (document.hidden) clearTimeout(t); }, { once: true });
       location.href = `instagram://user?username=${alvo.dataset.instagram}`;
     }
+    return;
+  }
+  if (a === 'recado-grupo') {
+    postComFila('/api/disparo', { canal_id: Number(alvo.dataset.id), conteudo: 'recado', referencia: ctx.recadoRef })
+      .catch(() => { /* a fila offline reenvia */ });
+    setTimeout(navegar, 400);
     return;
   }
   if (a === 'div-desfazer') {

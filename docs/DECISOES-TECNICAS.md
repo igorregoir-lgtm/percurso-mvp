@@ -1391,6 +1391,15 @@ membros de todos os grupos de uma vez. A tela passou a dizer isso, e o produto a
 como canal de público "Responsáveis da turma", sem turma. É o único caminho dentro dos Termos, e
 a pesquisa de WhatsApp já o listava sem que ninguém o tivesse ligado ao pedido.
 
+**Quem cadastra, quem manda — e o buraco que a pergunta dele revelou.** Cadastrar, editar e
+arquivar canal é da **coordenação**, e só dela: o público do canal decide o que pode ser enviado
+para ele, então cadastrar é decidir. Coordenação e diretoria **enviam** de `#/divulgar`. Mas quem
+manda o recado no sábado é **quem está em sala** — e a tela de recado dela não oferecia o grupo já
+cadastrado: continuava com o botão genérico, sem registro de que saiu. Entrou: o grupo da **própria
+turma** (o servidor filtra; grupo de outra turma responde 403 no registro), um toque que abre o
+WhatsApp com o texto escrito, e a marca "já recebeu este recado hoje". A pergunta *"e quem
+cadastra os canais e etc?"* foi o que fez o buraco aparecer — o `etc.` era a professora.
+
 **O que continua fora, e por quê:** postar no Instagram por API (conta Business, token, revisão da
 Meta — infraestrutura que a casa não opera); e o *deep link* `instagram://story-camera`, que entrou
 só no celular e só como atalho — no notebook não existe, e prometer o que não abre é o defeito que

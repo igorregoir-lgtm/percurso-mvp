@@ -627,17 +627,17 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     'public/app.js:614': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
     'public/app.js:1419': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:3217': /async function telaScores\(\)/,
-    'public/app.js:3451': /id="pergunta"/,
+    'public/app.js:3251': /async function telaScores\(\)/,
+    'public/app.js:3485': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:6175': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'public/app.js:6209': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
     'src/api.js:425': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:826': /'POST \/api\/consentimento'/,
-    'src/api.js:1338': /periodosSugeridos\(\)/,
+    'src/api.js:837': /'POST \/api\/consentimento'/,
+    'src/api.js:1350': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:113': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
@@ -3074,8 +3074,12 @@ test('a fila não depende mais do clipboard: o texto vai dentro do link, e o QR 
   assert.match(front, /https:\/\/wa\.me\/\?text=\$\{encodeURIComponent\(t\)\}/);
   // O copiar tem o caminho antigo como reserva — é o que funciona em http na rede local.
   assert.match(front, /execCommand\('copy'\)/);
-  // A referência do disparo tem UMA fonte (o defeito de ontem era duas).
-  assert.equal((front.match(/referencia = `\$\{r\.turma\.nome\}/g) || []).length, 0);
+  // A referência do disparo tem UMA fonte dentro da fila (o defeito de ontem
+  // era `montarFila` sobrescrevendo o que `referenciaDe` tinha calculado). A
+  // tela do recado da professora monta a MESMA forma ("turma · data") por conta
+  // própria, e isso é legítimo — o gate olha só a fila.
+  const fila = front.slice(front.indexOf('async function montarFila'), front.indexOf('const periodoPadraoDoCard'));
+  assert.ok(!/referencia = `\$\{r\.turma\.nome\}/.test(fila), 'montarFila voltou a sobrescrever a referência');
   assert.match(front, /const referenciaDe = /);
   // "Hoje" é o dia de quem manda: meia-noite LOCAL, não UTC.
   assert.match(front, /const inicioDeHojeIso = /);
