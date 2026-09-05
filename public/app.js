@@ -2434,6 +2434,52 @@ async function telaFolhaAMao() {
 // tivesse sido corrigida.
 //
 // Devolve: 'aparelho' | 'servico' | 'nenhum'. A tela diz o que for verdade.
+/**
+ * "Tenho um áudio de três semanas atrás" — e aquele dia não tem chamada.
+ *
+ * Antes isto era um redirecionamento mudo para a folha à mão, e a porta C
+ * morria ali. A saída NÃO é criar o encontro sozinho: encontro sem presença
+ * entra no denominador da cobertura do registro e no número de encontros que
+ * sai para o doador — a auditoria mediu os dois. Quem cria o encontro continua
+ * sendo a chamada, que é o que sabe QUEM esteve lá.
+ *
+ * Então a tela faz o que a pessoa faria: mostra as datas em aberto, leva à
+ * chamada daquele dia, e volta para cá com a data no endereço.
+ */
+function telaSemEncontroParaCapturar(h, data) {
+  const abertas = (h.chamadas_abertas || []).slice(-8).reverse();
+  app.innerHTML = `
+    <p class="kicker">${esc(h.turma.nome)}</p>
+    <h1>Antes, quem esteve lá</h1>
+    <p class="sub">Para contar como foi ${data === h.data_folha ? 'este encontro' : `o encontro de ${dataBR(data)}`},
+      o Percurso precisa saber quem esteve — é a chamada que cria o encontro. Ela aceita data passada:
+      nada expira, e nada se perde por ter ficado para depois.</p>
+
+    <div class="cartao" style="margin-top:16px">
+      <h2>Fazer a chamada de ${dataBR(data)}</h2>
+      <p class="sub">Depois dela, o áudio e a folha deste dia abrem normalmente.</p>
+      <button class="btn largo" data-acao="ir" data-href="#/chamada?data=${data}&volta=registrar" style="margin-top:12px">
+        Fazer a chamada deste dia</button>
+    </div>
+
+    ${abertas.length ? `<div class="cartao compacto" style="margin-top:14px">
+      <h2>Outras datas em aberto</h2>
+      <p class="sub">Da sua turma, ainda sem chamada. Escolha a do áudio que você tem.</p>
+      <div class="pilha" style="margin-top:10px">
+        ${abertas.map(dt => `<button class="item" data-acao="ir" data-href="#/registrar?data=${dt}">
+          <div class="cresce"><div class="nome">${dataBR(dt)}</div>
+            <div class="meta">${dt === data ? 'é a data escolhida' : 'sem chamada'}</div></div>
+          <span class="seta" aria-hidden="true">›</span>
+        </button>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="pilha" style="margin-top:14px">
+      <button class="btn largo fantasma" data-acao="ir" data-href="#/registrar?passo=mao">Preencher a folha à mão</button>
+      <button class="btn largo fantasma" data-acao="ir" data-href="#/hoje">Voltar</button>
+    </div>`;
+}
+
 async function ondeTranscreve() {
   const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!Rec) return 'nenhum';
@@ -2453,8 +2499,18 @@ const temReconhecimento = () =>
 async function telaContarComoFoi() {
   const h = await api('/api/hoje');
   if (!h.turma) { app.innerHTML = `<div class="cartao"><h2>Sem turma atribuída</h2></div>`; return; }
-  const d = await carregarFolha(h.turma.id, h.data_folha);
-  if (!d.encontro) { location.hash = '#/registrar?passo=mao'; navegar(); return; }
+  // A DATA PODE SER ESCOLHIDA (porta C, OPAR 05/09/2026). A dívida dizia que
+  // capturar dependia de "encontro agendado + data retroativa"; medindo, a
+  // chamada JÁ aceita data passada (só recusa futura) e as datas em aberto já
+  // são listadas. O que faltava era esta tela deixar escolher — e não morrer
+  // num redirecionamento para a folha à mão quando a data não tem encontro.
+  const paramsReg = new URLSearchParams(location.hash.split('?')[1] || '');
+  // A data vem do ENDEREÇO, que é editável à mão: sem esta guarda, `?data=null`
+  // ou `?data=ontem` renderizava "o encontro de null" na tela.
+  const pedida = paramsReg.get('data');
+  const dataEscolhida = /^\d{4}-\d{2}-\d{2}$/.test(pedida || '') ? pedida : h.data_folha;
+  const d = await carregarFolha(h.turma.id, dataEscolhida);
+  if (!d.encontro) return telaSemEncontroParaCapturar(h, dataEscolhida);
 
   const nativo = !!temReconhecimento();
   const onde = await ondeTranscreve();
@@ -6150,7 +6206,13 @@ document.addEventListener('click', comErro(async (ev) => {
       // OFERECE, não navega (F3). Salvar a chamada e ser levada para OUTRA data
       // sem pedir é o sistema decidindo o próximo passo pela pessoa — e ela
       // acabou de terminar uma tarefa. A oferta fica no Hoje, onde ela já vai.
-      location.hash = '#/hoje';
+      //
+      // A EXCEÇÃO é quem veio da porta C: ela chegou aqui querendo contar como
+      // foi aquele dia, e a chamada era o passo que faltava. Voltar para o Hoje
+      // a faria refazer o caminho inteiro. Isto não é o sistema decidindo — é
+      // devolver a pessoa à tarefa que ela já tinha começado.
+      const volta = new URLSearchParams(location.hash.split('?')[1] || '').get('volta');
+      location.hash = volta === 'registrar' ? `#/registrar?data=${c.data}` : '#/hoje';
       if (r.abertas?.length) {
         toast(`Ainda há ${r.abertas.length} data(s) em aberto — estão no Hoje quando você quiser.`);
       }

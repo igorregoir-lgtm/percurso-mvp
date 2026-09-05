@@ -627,14 +627,14 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     'public/app.js:614': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
     'public/app.js:1435': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:3267': /async function telaScores\(\)/,
-    'public/app.js:3501': /id="pergunta"/,
+    'public/app.js:3323': /async function telaScores\(\)/,
+    'public/app.js:3557': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:6307': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'public/app.js:6369': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
     'src/api.js:425': /erro\(422.*rubrica por ciclo/,
     'src/api.js:856': /'POST \/api\/consentimento'/,
     'src/api.js:1369': /periodosSugeridos\(\)/,
@@ -3278,4 +3278,26 @@ test('evidência: a reconciliação do boot conta os dois desencontros e não ap
   // do áudio temporário (src/transcricao.js), onde o órfão é lixo por construção.
   assert.ok(EVI.reconciliar().sem_linha.includes('orfao-de-teste.mp4'), 'a reconciliação apagou o órfão');
   rmSync(join(EVI.DIR, 'orfao-de-teste.mp4'), { force: true });
+});
+
+test('porta C: a data é escolhida, e sem encontro a tela leva à chamada — não a um beco', async () => {
+  const { readFileSync } = await import('node:fs');
+  const front = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  const iniTela = front.indexOf('async function telaContarComoFoi');
+  const tela = front.slice(iniTela, iniTela + 2600);
+  // ERA um redirecionamento mudo para a folha à mão, e a porta C morria ali.
+  assert.ok(!/location\.hash = '#\/registrar\?passo=mao'; navegar\(\); return;/.test(tela),
+    'o redirecionamento mudo voltou — a porta C morre de novo');
+  assert.match(tela, /telaSemEncontroParaCapturar/);
+  // A data vem do endereço, que é editável à mão.
+  assert.match(tela, /\/\^\\d\{4\}-\\d\{2\}-\\d\{2\}\$\//, 'a data do endereço deixou de ser validada');
+  // E a tela NÃO cria o encontro sozinha: quem cria é a chamada, que sabe QUEM
+  // esteve lá. Encontro sem presença entraria no denominador da cobertura e no
+  // número de encontros que sai para o doador — a auditoria mediu os dois.
+  const iniSem = front.indexOf('function telaSemEncontroParaCapturar');
+  const semEncontro = front.slice(iniSem, front.indexOf('async function ondeTranscreve', iniSem));
+  assert.ok(!/\/api\/chamada|POST/.test(semEncontro), 'a tela passou a criar encontro por conta própria');
+  assert.match(semEncontro, /#\/chamada\?data=\$\{data\}&volta=registrar/);
+  // E a chamada devolve a pessoa à tarefa que ela começou, em vez de ao Hoje.
+  assert.match(front, /volta === 'registrar' \? `#\/registrar\?data=\$\{c\.data\}` : '#\/hoje'/);
 });
