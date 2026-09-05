@@ -1782,8 +1782,41 @@ export function atualizarResponsavel(criancaId, { responsavel, contato }) {
   if (!c) throw erro(404, 'Criança não encontrada.');
   const resp = textoObrigatorio(responsavel, 'O responsável');
   const tel = normalizarContato(contato);
-  run(`UPDATE crianca SET responsavel = ?, responsavel_contato = ? WHERE id = ?`, resp, tel, criancaId);
-  return get(`SELECT id, nome, responsavel, responsavel_contato FROM crianca WHERE id = ?`, criancaId);
+  // Trocar o telefone DERRUBA a conferencia — por comparacao de valor, sem
+  // maquina de estado, sem gatilho, sem cron. Reconfirmar um numero e' o mesmo
+  // UPDATE de troca-lo, e so' a comparacao distingue os dois.
+  run(`UPDATE crianca SET responsavel = ?, responsavel_contato = ?,
+         contato_conferido_em    = CASE WHEN ? IS NOT contato_conferido_valor THEN NULL ELSE contato_conferido_em END,
+         contato_conferido_por   = CASE WHEN ? IS NOT contato_conferido_valor THEN NULL ELSE contato_conferido_por END,
+         contato_conferido_valor = CASE WHEN ? IS NOT contato_conferido_valor THEN NULL ELSE contato_conferido_valor END
+       WHERE id = ?`, resp, tel, tel, tel, tel, criancaId);
+  return get(`SELECT id, nome, responsavel, responsavel_contato, contato_conferido_em
+                FROM crianca WHERE id = ?`, criancaId);
+}
+
+/**
+ * A CONFERENCIA DO TELEFONE, registrada (OPAR 05/09/2026).
+ *
+ * O Percurso nao envia mensagem — quem envia e' a pessoa. Entao a confirmacao
+ * e' humana e o produto guarda o registro dela, como faz com o disparo e com a
+ * revogacao: exige o COMO ("respondeu no WhatsApp", "confirmou na portaria")
+ * pelo mesmo motivo que `EVI.apagar` exige o motivo. Caixinha que a coordenacao
+ * marca da propria cadeira viraria formalidade e tornaria o registro mentira
+ * auditavel.
+ */
+export function marcarContatoConferido(criancaId, { valor, como, porUsuarioId }) {
+  const c = get(`SELECT * FROM crianca WHERE id = ?`, criancaId);
+  if (!c) throw erro(404, 'Criança não encontrada.');
+  if (!c.responsavel_contato) throw erro(422, 'Esta criança não tem telefone cadastrado para conferir.');
+  const oQue = textoObrigatorio(como, 'Como a confirmação aconteceu', 200);
+  // O valor confirmado tem de ser o que esta' no cadastro AGORA: sem isso, uma
+  // troca de telefone entre a conversa e o clique passaria por conferida.
+  const conferido = normalizarContato(valor);
+  if (conferido !== c.responsavel_contato)
+    throw erro(409, 'O telefone mudou desde a conversa. Confira de novo com o número que está no cadastro.');
+  run(`UPDATE crianca SET contato_conferido_em = ?, contato_conferido_por = ?, contato_conferido_valor = ?
+        WHERE id = ?`, hoje(), porUsuarioId, conferido, criancaId);
+  return { id: c.id, nome: c.nome, contato_conferido_em: hoje(), como: oQue };
 }
 
 /**

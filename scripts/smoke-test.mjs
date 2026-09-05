@@ -1721,7 +1721,31 @@ secao('29 · Turma, matrícula, prova em vídeo e boletim do responsável');
     (await POST('rita', '/api/crianca/responsavel', { crianca_id: alvoM.id, responsavel: 'X', contato: '999' })).status === 422);
   const bol = (await GET('rita', `/api/boletim?crianca_id=${alvoM.id}`)).corpo;
   T('o boletim traz o link de WhatsApp do responsável, não do grupo',
-    bol.whatsapp_url.startsWith('https://wa.me/5511988887777?text='));
+    bol.primeiro_contato_url.startsWith('https://wa.me/5511988887777?text='));
+  T('sem conferência do telefone, o boletim NÃO tem link — só o desafio',
+    bol.whatsapp_url === null && bol.contato_conferido === false);
+  T('o desafio não diz o nome de nenhuma criança',
+    !bol.primeiro_contato_texto.includes(alvoM.nome.split(' ')[0]));
+  // A diretoria é o caso forte e sempre verdadeiro: por desenho ela nunca abre
+  // registro individual, e conferir de quem é o telefone é ato sobre a criança.
+  // (Não uso "professora de outra turma" aqui porque a criança que sai em
+  // primeiro na lista está em três turmas, e quem é de fora varia com a seed.)
+  T('a diretoria NÃO registra a conferência (403)',
+    (await POST('solange', '/api/crianca/contato-conferido', { crianca_id: alvoM.id, valor: bol.contato, como: 'x' })).status === 403);
+  T('conferir sem dizer COMO é recusado (422)',
+    (await POST('rita', '/api/crianca/contato-conferido', { crianca_id: alvoM.id, valor: bol.contato, como: '  ' })).status === 422);
+  T('conferir um número diferente do cadastrado é recusado (409)',
+    (await POST('rita', '/api/crianca/contato-conferido', { crianca_id: alvoM.id, valor: '(11) 90000-0001', como: 'x' })).status === 409);
+  const conf = await POST('rita', '/api/crianca/contato-conferido',
+    { crianca_id: alvoM.id, valor: bol.contato, como: 'respondeu no WhatsApp' });
+  T('a coordenação registra a conferência', conf.status === 200 && !!conf.corpo.contato_conferido_em);
+  const bol2 = (await GET('rita', `/api/boletim?crianca_id=${alvoM.id}`)).corpo;
+  T('depois de conferido, o boletim ganha o link',
+    bol2.contato_conferido === true && bol2.whatsapp_url.startsWith('https://wa.me/5511988887777?text='));
+  await POST('rita', '/api/crianca/responsavel', { crianca_id: alvoM.id, responsavel: 'Mãe do smoke', contato: '(11) 97777-6666' });
+  T('trocar o telefone derruba a conferência',
+    (await GET('rita', `/api/boletim?crianca_id=${alvoM.id}`)).corpo.contato_conferido === false);
+  await POST('rita', '/api/crianca/responsavel', { crianca_id: alvoM.id, responsavel: 'Mãe do smoke', contato: '(11) 98888-7777' });
   T('o boletim NÃO leva conteúdo clínico nem detalhe de alerta',
     !/Faltou nos|laudo|terapia|abuso/i.test(bol.texto));
   T('o boletim NÃO leva o nível 1–4 da rubrica', !/\b[1-4]\/4\b/.test(bol.texto));

@@ -635,6 +635,16 @@ export const rotas = {
   'GET /api/safras': (req) => { exigeCoordenacao(req); return D.safras(); },
   'GET /api/consentimentos': (req) => { exigeCoordenacao(req); return D.painelConsentimentos(); },
 
+  // A CONFERENCIA DO TELEFONE (OPAR 05/09/2026). Passa pelo mesmo portao do
+  // boletim, e por isso fica no log de acesso individual: confirmar de quem e'
+  // o numero e' ato sobre a crianca, nao sobre um campo de cadastro.
+  'POST /api/crianca/contato-conferido': (req, body) => {
+    const u = exigeUsuario(req);
+    const id = num(body.crianca_id, 'crianca_id');
+    exigeAcessoCrianca(req, id, 'boletim');
+    return D.marcarContatoConferido(id, { valor: body.valor, como: body.como, porUsuarioId: u.id });
+  },
+
   // ---- Canais: onde o Instituto fala com quem (decisao 47) ---------------
   // Cadastro de coordenacao pelo mesmo motivo do resto: e' o publico do canal
   // que decide o que pode ser montado para ele.

@@ -115,6 +115,17 @@ const ESQUEMA_SQL = `
     -- Guardado sem mascara porque e' ele que monta o link do WhatsApp; quem le
     -- a ficha ja' passou pelo controle de acesso e pelo log.
     responsavel_contato TEXT,
+    -- CONFERENCIA DO TELEFONE (OPAR 05/09/2026). Validar formato nao fecha o
+    -- buraco: o modo de falha e' um numero VALIDO e ERRADO, e o destino dele e'
+    -- a ficha socioemocional nominal de uma crianca. Quem fecha e' a
+    -- conferencia humana, registrada aqui.
+    --
+    -- A coluna contato_conferido_valor guarda o E.164 confirmado — e' o truque
+    -- que dispensa maquina de estado: se o telefone mudar, o valor deixa de
+    -- casar e a conferencia cai sozinha, por comparacao.
+    contato_conferido_em    TEXT,
+    contato_conferido_por   INTEGER REFERENCES educador(id),
+    contato_conferido_valor TEXT,
     ativo        INTEGER NOT NULL DEFAULT 1,
     criado_em    TEXT NOT NULL
   );

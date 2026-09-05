@@ -625,19 +625,19 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     // O botão do recado. O destino virou `#/sai-daqui?aba=recado` na F2, mas o
     // que a âncora guarda é o mesmo: ele leva a TURMA e a DATA do encontro.
     'public/app.js:614': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
-    'public/app.js:1419': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:1435': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:3251': /async function telaScores\(\)/,
-    'public/app.js:3485': /id="pergunta"/,
+    'public/app.js:3267': /async function telaScores\(\)/,
+    'public/app.js:3501': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:6291': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'public/app.js:6307': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
     'src/api.js:425': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:846': /'POST \/api\/consentimento'/,
-    'src/api.js:1359': /periodosSugeridos\(\)/,
+    'src/api.js:856': /'POST \/api\/consentimento'/,
+    'src/api.js:1369': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:113': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
@@ -2770,7 +2770,18 @@ test('boletim: leva matrícula, presença e evolução — nunca relato livre, a
   const b = BOL.boletimDaCrianca(c.id);
   assert.equal(b.responsavel, 'Fulana de Tal');
   assert.equal(b.contato, '5511988887777');
-  assert.match(b.whatsapp_url, /^https:\/\/wa\.me\/5511988887777\?text=/);
+  // MUDOU EM 05/09/2026 (OPAR): o link só existe depois que o telefone foi
+  // conferido com o responsável. Antes disso a tela oferece o DESAFIO — uma
+  // mensagem sem nome de criança —, porque este texto leva nome, presença e
+  // evolução, e um dígito errado o entregaria a um desconhecido.
+  assert.equal(b.whatsapp_url, null, 'o link saiu sem conferência do telefone');
+  assert.equal(b.contato_conferido, false);
+  assert.match(b.primeiro_contato_url, /^https:\/\/wa\.me\/5511988887777\?text=/);
+  assert.ok(!b.primeiro_contato_texto.includes(b.crianca.nome.split(' ')[0]),
+    'o desafio menciona a criança — era exatamente o que ele não pode fazer');
+  D.marcarContatoConferido(c.id, { valor: b.contato, como: 'respondeu no WhatsApp', porUsuarioId: 2 });
+  const conferido = BOL.boletimDaCrianca(c.id);
+  assert.match(conferido.whatsapp_url, /^https:\/\/wa\.me\/5511988887777\?text=/);
   assert.match(b.texto, /Presença: \d+%/);
   assert.ok(/piorou|manteve|evoluiu/.test(b.texto), 'sem a leitura na língua dela');
 
@@ -3029,7 +3040,12 @@ test('WhatsApp: a primeira linha vira negrito, a assinatura itálico, e o resto 
   // O boletim leva a formatação dentro do link — o responsável abre o WhatsApp
   // com o cabeçalho em negrito, sem que ninguém precise editar nada.
   const c = get(`SELECT id FROM crianca WHERE responsavel_contato IS NOT NULL LIMIT 1`);
-  const b = BOL.boletimDaCrianca(c.id);
+  let b = BOL.boletimDaCrianca(c.id);
+  // O link só nasce depois da conferência (OPAR 05/09) — e o desafio, que vem
+  // antes dela, também sai formatado.
+  assert.ok(decodeURIComponent(b.primeiro_contato_url.split('text=')[1]).startsWith('*Instituto Ebenézer'));
+  D.marcarContatoConferido(c.id, { valor: b.contato, como: 'confirmou na portaria', porUsuarioId: 2 });
+  b = BOL.boletimDaCrianca(c.id);
   assert.ok(decodeURIComponent(b.whatsapp_url.split('text=')[1]).startsWith('*Instituto Ebenézer'));
 });
 

@@ -1429,6 +1429,27 @@ devolveria a linha e não os bytes, que é o desfecho que o próprio `evidencia.
 prova"); destruir prova tem de ter dono e motivo (Art. 18, VI); e **prova de consentimento ativo
 nunca entra na lista, qualquer que seja a data** — é exatamente quando ela precisa existir.
 
+**A conferência do telefone (OPAR 05/09/2026).** A validação anterior conferia **comprimento e nada
+mais**, e o resultado medido foi pior que a ausência de validação: `351912345678` (Portugal) era
+aceito intacto e a tela mostrava **`(19) 1234-5678`** — um telefone brasileiro plausível. Quem
+conferisse visualmente não teria como perceber. `1000000000` virava `(10) 0000-0000`; `11111111111`
+passava.
+
+Agora a forma é checada contra o que existe: DDD em lista fechada (a Anatel nunca atribuiu 20, 23,
+25, 26, 29, 30…), nono dígito obrigatório em celular, prefixo de fixo, prefixo 55 exigido quando há
+12 ou 13 dígitos, e todos os dígitos iguais recusados. E `contatoLegivel` **parou de formatar à
+força** o que não tem forma brasileira: linha antiga fora do padrão aparece crua, que é o único jeito
+de quem confere perceber que há algo errado ali.
+
+**Mas forma não fecha o buraco** — o modo de falha é um número **válido e errado**. Quem fecha é a
+conferência humana, registrada: três colunas em `crianca`, e a invalidação por **comparação de
+valor** (trocar o telefone derruba a conferência sozinho, sem máquina de estado, sem gatilho).
+
+**A peça central é qual mensagem vai primeiro.** Enquanto o telefone não foi conferido, o boletim
+**não tem link** — a tela oferece um desafio que não diz o nome de nenhuma criança, nem turma, nem
+número. Se o dígito estiver errado, o desconhecido recebe um cumprimento; não presença, evolução e
+aspiração de uma criança.
+
 **O que continua fora, e por quê:** postar no Instagram por API (conta Business, token, revisão da
 Meta — infraestrutura que a casa não opera); e o *deep link* `instagram://story-camera`, que entrou
 só no celular e só como atalho — no notebook não existe, e prometer o que não abre é o defeito que
@@ -1454,13 +1475,13 @@ esta rodada veio consertar.
 | Share target não funciona no iOS nem sem HTTPS | Metade dos aparelhos do Instituto cai no seletor de arquivo | Nada a fazer no produto: depende do Safari e do certificado. O caminho manual está declarado na tela |
 | Retenção da prova em vídeo é DETECTADA, não executada | O fecho de ciclo marca `expira_em` e nomeia as provas vencidas; apagar continua sendo gesto humano com motivo | Deliberado (OPAR 05/09): o disco não participa da transação — um rollback devolveria a linha e não os bytes —, e destruir prova do Art. 8º §1º tem de ter dono e rastro |
 | Órfãos em `data/consentimento/` são reportados, não varridos | O boot conta arquivo sem linha e linha sem arquivo e avisa; não apaga | Deliberado: ao contrário do áudio temporário, aqui o órfão é prova desgarrada. Quem decide é a coordenação |
+| A conferência do telefone é declarada por quem confere | Ninguém impede a coordenação de marcar "conferido" da própria cadeira | Deliberado: o produto não tem canal de saída próprio (não envia SMS nem OTP), e construir um quebraria a decisão 1 e poria o Instituto na posição de operadora. O que existe é o registro com nome, data e o COMO — a mesma forma do disparo e da revogação |
 | A faixa "atenção" da régua pode ser aritmeticamente inalcançável | A faixa tem 5 pontos (75–79%) e o denominador é o nº de encontros na janela: com 10 encontros só existem múltiplos de 10, então ninguém pode estar "em atenção" numa turma de sábado no começo do semestre | Descoberto em 05/09/2026, quando a virada do dia derrubou o gate que dizia "a seed força as duas faixas". Não é erro de cálculo — é granularidade. Decidir com a coordenação se a faixa vira intervalo relativo (ex.: "1 falta da régua") em vez de percentual, que é o que resolve de verdade |
 | O passe morre com o servidor | Reiniciar o processo apaga os passes em trânsito (memória) | Deliberado: é trânsito de dez minutos, e a pessoa monta de novo com um toque. Só vira banco se a operação mostrar reinícios frequentes |
 | QR só até a versão 10 (213 bytes) | Um `wa.me/?text=` com o recado inteiro não cabe num QR; o passe resolve levando a fila, não o texto | Estender as tabelas até a v40 se algum dia houver conteúdo curto que precise ir por QR e passe de 213 bytes |
 | Postar no Instagram continua manual | O card sai pronto, mas quem publica é a pessoa | Graph API exige conta Business, token de servidor e revisão de aplicativo na Meta — infraestrutura que a casa não opera (decisão 48) |
 | Envio a grupo de WhatsApp continua com um toque por grupo | O que a Meta permite; o resto viola os Termos | Só muda se a Meta abrir a API de grupos existentes, ou se a diretoria aceitar o Degrau 2 da pesquisa, que não recomendo |
 | O disparo marca "enviado" no CLIQUE, não na entrega | Quem abre o grupo e desiste fica marcado como enviado | Não há como saber: o navegador não avisa quando a pessoa volta do WhatsApp. O botão "Desfazer" é a mitigação, e está na tela |
-| Telefone do responsável sem verificação | Um dígito errado manda o boletim para um desconhecido | Confirmação por mensagem antes do primeiro envio, quando houver operação real |
 | Educadora substituta sem representação no modelo | Escopo de turma barra acesso legítimo temporário | Decisão da coordenação (decisão 22) |
 | Políticas A-06/A-11 propostas, não validadas | Pendência de governança | Validação da coordenação (decisão 23) |
 | Mapeamento 1–4 → 0–2 da planilha é provisório | A exportação pode divergir do que a psicóloga faria à mão | Aval da psicóloga sobre as 6 rubricas e o mapeamento (decisão 34) |

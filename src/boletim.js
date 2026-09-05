@@ -104,8 +104,29 @@ export function boletimDaCrianca(criancaId) {
     contato: c.responsavel_contato ?? null,
     contato_legivel: c.responsavel_contato ? D.contatoLegivel(c.responsavel_contato) : null,
     texto,
-    whatsapp_url: c.responsavel_contato
+    // A CONFERENCIA E' PRE-REQUISITO DO LINK (OPAR 05/09/2026). Enquanto o
+    // telefone nao foi confirmado com o responsavel, `whatsapp_url` e' null e o
+    // que a tela oferece e' o DESAFIO abaixo. O motivo esta' no que este texto
+    // carrega: nome da crianca, presenca, evolucao socioemocional, aspiracao.
+    // Um digito errado entregaria isso a um desconhecido em um clique.
+    contato_conferido: !!c.contato_conferido_em,
+    contato_conferido_em: c.contato_conferido_em ?? null,
+    whatsapp_url: (c.responsavel_contato && c.contato_conferido_em)
       ? `https://wa.me/${c.responsavel_contato}?text=${encodeURIComponent(formatarParaWhatsApp(texto))}`
+      : null,
+    // A PRIMEIRA MENSAGEM NAO E' O BOLETIM. Ela nao tem nome de crianca, nem
+    // turma, nem numero: se o telefone estiver errado, o desconhecido recebe um
+    // cumprimento — nao a ficha de uma crianca. E' a peca central do desenho.
+    primeiro_contato_texto: c.responsavel_contato
+      ? formatarParaWhatsApp('Instituto Ebenézer\n\nBoa tarde! Aqui é do Instituto Ebenézer, do Jardim '
+        + 'Ângela. Estamos conferindo o contato de quem responde pelas crianças que atendemos.\n\n'
+        + 'Podemos falar com você por aqui? É só responder que sim.\n— Instituto Ebenézer')
+      : null,
+    primeiro_contato_url: c.responsavel_contato
+      ? `https://wa.me/${c.responsavel_contato}?text=${encodeURIComponent(formatarParaWhatsApp(
+          'Instituto Ebenézer\n\nBoa tarde! Aqui é do Instituto Ebenézer, do Jardim Ângela. Estamos '
+          + 'conferindo o contato de quem responde pelas crianças que atendemos.\n\n'
+          + 'Podemos falar com você por aqui? É só responder que sim.\n— Instituto Ebenézer'))}`
       : null,
     // O que ficou de fora, dito na tela — para quem envia saber que ficou, e
     // por quê. Silêncio aqui viraria "o sistema não tinha o dado".

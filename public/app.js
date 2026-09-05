@@ -1337,10 +1337,26 @@ function cartaoBoletim(bol, crianca) {
     </details>
     <div class="pilha" style="margin-top:12px">
       <button class="btn largo secundario" data-acao="copiar-boletim">Copiar o boletim</button>
-      ${bol.whatsapp_url
-        ? `<a class="btn largo" href="${bol.whatsapp_url}" target="_blank" rel="noopener">Enviar no WhatsApp para ${esc(bol.responsavel.split(' ')[0])}</a>`
-        : `<p class="sub" style="margin:0">Sem telefone cadastrado, o WhatsApp não abre. ${
-            sessao.papel === 'coordenacao' ? 'Preencha ali em cima, em "Quem responde por ' + prim + '".' : 'A coordenação cadastra o telefone na ficha.'}</p>`}
+      ${!bol.contato ? `<p class="sub" style="margin:0">Sem telefone cadastrado, o WhatsApp não abre. ${
+            sessao.papel === 'coordenacao' ? 'Preencha ali em cima, em "Quem responde por ' + prim + '".' : 'A coordenação cadastra o telefone na ficha.'}</p>`
+        : bol.contato_conferido
+        ? `<a class="btn largo" href="${bol.whatsapp_url}" target="_blank" rel="noopener">Enviar no WhatsApp para ${esc(bol.responsavel.split(' ')[0])}</a>
+           <p class="sub" style="margin:0">Telefone conferido em ${dataBR(bol.contato_conferido_em)}. Trocar o número derruba a conferência.</p>`
+        // O TELEFONE AINDA NÃO FOI CONFERIDO. O que este texto leva — nome,
+        // presença, evolução — não pode ir para um número que ninguém checou:
+        // um dígito errado entrega a ficha de uma criança a um desconhecido.
+        // A primeira mensagem é um cumprimento SEM dado nenhum da criança.
+        : `<div class="aviso calmo" style="margin:0">
+             <h3>Antes de enviar, confira o telefone</h3>
+             <p>Este texto leva o nome, a presença e a evolução de ${esc(prim)}. O número
+               <b>${esc(bol.contato_legivel)}</b> ainda não foi confirmado com quem responde por ela.</p>
+             <p class="sub" style="margin-top:6px">A mensagem abaixo não diz o nome de nenhuma criança:
+               se o número estiver errado, quem recebe lê só um cumprimento.</p>
+           </div>
+           <a class="btn largo" href="${bol.primeiro_contato_url}" target="_blank" rel="noopener"
+             data-acao="abrir-desafio">Mandar a mensagem de conferência</a>
+           <button class="btn largo secundario" data-acao="contato-conferido"
+             data-id="${bol.crianca.id}" data-valor="${esc(bol.contato)}">Ele confirmou que é o responsável</button>`}
     </div>
   </div>`;
 }
@@ -6501,6 +6517,22 @@ document.addEventListener('click', comErro(async (ev) => {
     navegar(); return;
   }
 
+  if (a === 'contato-conferido') {
+    const { id, valor } = alvo.dataset;
+    modalCampo({
+      titulo: 'Registrar a conferência',
+      texto: 'O telefone só passa a valer depois que alguém falou com o responsável. '
+           + 'Como a confirmação aconteceu? Fica registrado com o seu nome.',
+      rotulo: 'Como você confirmou',
+      dica: 'Ex.: respondeu no WhatsApp',
+      confirmar: 'Registrar',
+    }, comErro(async (como) => {
+      await post('/api/crianca/contato-conferido', { crianca_id: id, valor, como });
+      toast('Telefone conferido. O boletim já pode ser enviado.', 'bom');
+      navegar();
+    }));
+    return;
+  }
   if (a === 'copiar-boletim') {
     const t = document.getElementById('boletim-texto')?.textContent ?? '';
     try { await navigator.clipboard.writeText(t); toast('Boletim copiado — cole na conversa com o responsável.', 'bom'); }
