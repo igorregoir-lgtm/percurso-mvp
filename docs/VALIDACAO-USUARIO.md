@@ -151,7 +151,7 @@ qualquer coisa acima disso na sessão é sinal, não ruído do cenário.
 
 > **Por que a tarefa 5 termina num bloqueio.** Ela não é usabilidade: é o teste de **H3**. A
 > psicóloga não pode registrar o consentimento — só a coordenação (`src/api.js:862`), e a tela diz
-> isso a ela (`public/app.js:1435`). O sucesso da tarefa é ela entender **por que não sai**, não
+> isso a ela (`public/app.js:1445`). O sucesso da tarefa é ela entender **por que não sai**, não
 > conseguir emitir. E o destino é literal do campo: *"que daí seria entre profissionais, que é mais
 > rico ainda"*.
 

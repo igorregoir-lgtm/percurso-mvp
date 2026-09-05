@@ -625,16 +625,16 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     // O botão do recado. O destino virou `#/sai-daqui?aba=recado` na F2, mas o
     // que a âncora guarda é o mesmo: ele leva a TURMA e a DATA do encontro.
     'public/app.js:614': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
-    'public/app.js:1435': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:1445': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:3328': /async function telaScores\(\)/,
-    'public/app.js:3562': /id="pergunta"/,
+    'public/app.js:3338': /async function telaScores\(\)/,
+    'public/app.js:3572': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:6374': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'public/app.js:6384': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
     'src/api.js:431': /erro\(422.*rubrica por ciclo/,
     'src/api.js:862': /'POST \/api\/consentimento'/,
     'src/api.js:1375': /periodosSugeridos\(\)/,
@@ -3300,4 +3300,20 @@ test('porta C: a data é escolhida, e sem encontro a tela leva à chamada — n�
   assert.match(semEncontro, /#\/chamada\?data=\$\{data\}&volta=registrar/);
   // E a chamada devolve a pessoa à tarefa que ela começou, em vez de ao Hoje.
   assert.match(front, /volta === 'registrar' \? `#\/registrar\?data=\$\{c\.data\}` : '#\/hoje'/);
+});
+
+test('régua: quando a faixa de atenção é aritmeticamente impossível, a tela diz', () => {
+  const r = D.reguaDaTurma(6);
+  // Com 10 encontros na janela só existem múltiplos de 10 — 70 (abaixo) ou 80
+  // (ok). A faixa 75–79 não tem nenhum inteiro, e "0 em atenção" seria lido
+  // como boa notícia quando é impossibilidade.
+  assert.ok(r.sem_faixa_de_atencao > 0, 'a seed deixou de exercitar o caso');
+  assert.ok(r.criancas.some(c => c.faixa_atencao_alcancavel === false));
+  // E o produto diz de quanto seria preciso — sem decidir a política, que é da
+  // coordenação (a correção de verdade é a faixa virar intervalo relativo).
+  assert.ok(Number.isInteger(r.encontros_para_atencao) && r.encontros_para_atencao > 10);
+  const alcanca = (n) => Array.from({ length: n + 1 }, (_, k) => Math.round((k / n) * 100))
+    .some(p => p >= r.minima_pct && p < r.atencao_pct);
+  assert.ok(alcanca(r.encontros_para_atencao), 'o número sugerido também não alcança a faixa');
+  assert.ok(!alcanca(r.encontros_para_atencao - 1), 'existe um número menor que já alcançaria');
 });

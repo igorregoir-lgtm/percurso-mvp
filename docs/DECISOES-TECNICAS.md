@@ -1050,9 +1050,20 @@ de um levar o outro junto:
 |---|---|---|
 | Onde | coluna na `folha` | tabela própria `relato_crianca` |
 | Base legal | legítimo interesse (execução do programa) | **consentimento específico** do responsável |
-| Retenção | 5 anos, como a folha | **descarte no fim do ciclo** |
+| Retenção | 5 anos, como a folha | **enquanto a matrícula estiver ativa + 2 anos** *(corrigido em 05/09/2026 — ver nota abaixo)* |
 | Leitores | equipe do programa | quem convive com a criança |
 | Nome de criança | **barrado** | é o assunto do registro |
+
+> **Correção de 05/09/2026 (OPAR).** Esta tabela dizia *"descarte no fim do ciclo"*, e o produto
+> nunca fez isso. `src/seed.js` grava, em `governanca_campo`, `retencao: "Enquanto a matrícula
+> estiver ativa + 2 anos"` — e é **essa** linha que a tela de consentimentos mostra e que uma
+> fiscalização leria. Pior: `src/relato-livre.js` traz o comentário explícito *"o fecho de ciclo NÃO
+> chama isto — se chamasse, a retenção seria outra"*. Ou seja: o documento de governança e o
+> registro em banco declaravam retenções **diferentes para o mesmo campo**, e a discrepância vivia
+> exatamente no artefato que existe para não deixar isso acontecer. A tabela foi alinhada ao que o
+> código faz. **O que continua aberto e nomeado:** `descartarRelatosDoCiclo` não tem nenhum
+> chamador — a retenção de 2 anos não tem mecanismo, é gesto manual, e isso precisa virar decisão
+> da coordenação (executar automático, ou declarar manual na tela).
 
 **As duas garantias que sustentam a reversão, e as duas são por construção:** o texto **nunca chega
 a um modelo** e **nunca sai em agregado** (síntese, relatório, planilha, recado, SROI). "Por
@@ -1494,6 +1505,7 @@ esta rodada veio consertar.
 | Share target não funciona no iOS nem sem HTTPS | Metade dos aparelhos do Instituto cai no seletor de arquivo | Nada a fazer no produto: depende do Safari e do certificado. O caminho manual está declarado na tela |
 | Retenção da prova em vídeo é DETECTADA, não executada | O fecho de ciclo marca `expira_em` e nomeia as provas vencidas; apagar continua sendo gesto humano com motivo | Deliberado (OPAR 05/09): o disco não participa da transação — um rollback devolveria a linha e não os bytes —, e destruir prova do Art. 8º §1º tem de ter dono e rastro |
 | Órfãos em `data/consentimento/` são reportados, não varridos | O boot conta arquivo sem linha e linha sem arquivo e avisa; não apaga | Deliberado: ao contrário do áudio temporário, aqui o órfão é prova desgarrada. Quem decide é a coordenação |
+| `descartarRelatosDoCiclo` não tem chamador | A retenção do relato da criança ("matrícula ativa + 2 anos") não tem mecanismo: é gesto manual, e a função existente dá aparência de implementação | Decisão da coordenação: executar automático (no padrão detector do fecho de ciclo) ou declarar manual na tela |
 | A conferência do telefone é declarada por quem confere | Ninguém impede a coordenação de marcar "conferido" da própria cadeira | Deliberado: o produto não tem canal de saída próprio (não envia SMS nem OTP), e construir um quebraria a decisão 1 e poria o Instituto na posição de operadora. O que existe é o registro com nome, data e o COMO — a mesma forma do disparo e da revogação |
 | A faixa "atenção" da régua pode ser aritmeticamente inalcançável | A faixa tem 5 pontos (75–79%) e o denominador é o nº de encontros na janela: com 10 encontros só existem múltiplos de 10, então ninguém pode estar "em atenção" numa turma de sábado no começo do semestre | Descoberto em 05/09/2026, quando a virada do dia derrubou o gate que dizia "a seed força as duas faixas". Não é erro de cálculo — é granularidade. Decidir com a coordenação se a faixa vira intervalo relativo (ex.: "1 falta da régua") em vez de percentual, que é o que resolve de verdade |
 | O passe morre com o servidor | Reiniciar o processo apaga os passes em trânsito (memória) | Deliberado: é trânsito de dez minutos, e a pessoa monta de novo com um toque. Só vira banco se a operação mostrar reinícios frequentes |

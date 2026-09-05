@@ -76,7 +76,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **504 asserções de fluxo** e **205 testes unitários** — mais a avaliação do RAG
+São **512 asserções de fluxo** e **215 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização), a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo) e a da transcrição de áudio com stub (`npm run test:audio`: o ciclo de vida do arquivo, que
@@ -328,7 +328,7 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 
 ```
 server.js                 servidor HTTP (Node puro, sem framework)
-src/db.js                 esquema do banco (31 tabelas) e helpers de SQL
+src/db.js                 esquema do banco (32 tabelas) e helpers de SQL
 src/domain.js             regras de presença, ciclo, consentimento, safras e síntese
 src/voz.js                catálogos fechados, agente extrator e folha do dia (v2)
 src/scores.js             os três scores, a supressão e a pauta de segunda (v2)
@@ -352,8 +352,8 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    504 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     205 testes unitários das regras críticas (banco temporário)
+scripts/smoke-test.mjs    512 asserções do fluxo principal (contra o servidor no ar)
+scripts/unit-test.mjs     215 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
 scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)

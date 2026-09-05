@@ -1146,6 +1146,16 @@ function cartaoRegua(r) {
         <span class="selo alerta">${res.abaixo} abaixo</span>
         ${res.sem_base ? `<span class="selo">${res.sem_base} sem base (menos de ${r.minimo_encontros} encontros)</span>` : ''}
       </div>
+      ${r.sem_faixa_de_atencao ? `<div class="aviso calmo" style="margin-top:10px">
+        <h3>A faixa de atenção não cabe nesta janela</h3>
+        <p>Para ${r.sem_faixa_de_atencao} de ${r.criancas.length} crianças, <b>nenhum número de presenças
+          cai entre ${r.minima_pct}% e ${r.atencao_pct - 1}%</b>: com poucos encontros no período, os
+          percentuais possíveis pulam a faixa inteira. Quem está em ${r.atencao_pct}% e quem está em
+          ${r.minima_pct - 5}% aparecem como "na régua" e "abaixo", sem meio-termo.</p>
+        <p class="sub" style="margin-top:6px">Não é erro de conta — é o tamanho do denominador.
+          ${r.encontros_para_atencao ? `A partir de ${r.encontros_para_atencao} encontros na janela a faixa volta a existir.` : ''}
+          Ler "${res.atencao} em atenção" como boa notícia, aqui, seria ler uma impossibilidade como resultado.</p>
+      </div>` : ''}
       <div class="pilha" style="margin-top:10px">
         ${r.criancas.filter(c => c.faixa !== 'ok').map(c => `
           <button class="link" data-acao="ir" data-href="#/crianca/${c.id}">

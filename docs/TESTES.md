@@ -14,10 +14,10 @@ Em outro:
 node scripts/smoke-test.mjs
 ```
 
-Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **504 passaram,
+Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **512 passaram,
 0 falharam**.
 
-Há também uma bateria de **205 testes unitários** das regras críticas de domínio (filtro de
+Há também uma bateria de **215 testes unitários** das regras críticas de domínio (filtro de
 perímetro, validação do schema do extrator, determinismo do agente, os três scores, supressão com
 agrupamento, deduplicação da ingestão, revisor de sobre-alegação, consentimento, imutabilidade da
 síntese, fecho de ciclo, cadastro e arquivo de pessoas, base fixa da curva de permanência), que roda sem servidor, contra um banco temporário descartável:
@@ -26,7 +26,7 @@ síntese, fecho de ciclo, cadastro e arquivo de pessoas, base fixa da curva de p
 node scripts/unit-test.mjs
 ```
 
-E uma bateria de **15 asserções da transcrição de áudio** (decisão 35), que não precisa dos 465 MB
+E uma bateria de **19 asserções da transcrição de áudio** (decisão 35), que não precisa dos 465 MB
 do modelo — o `scripts/whisper-stub.mjs` imita a interface do `whisper-cli`, e o que se testa é o
 que importa e não depende do modelo: **o ciclo de vida do arquivo**. *"O áudio é apagado assim que
 vira texto"* é a frase que a tela mostra no instante do toque; sem este gate ela seria só frase.

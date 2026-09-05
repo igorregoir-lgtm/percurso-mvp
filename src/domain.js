@@ -2097,12 +2097,34 @@ export function reguaDaTurma(turmaId, { desde = null, ref = hoje() } = {}) {
     });
   const resumo = { ok: 0, atencao: 0, abaixo: 0, sem_base: 0 };
   for (const c of criancas) resumo[c.faixa]++;
+  // QUANTAS CRIANCAS NAO PODEM ESTAR "EM ATENCAO", POR ARITMETICA (OPAR 05/09).
+  //
+  // A faixa tem cinco pontos (75 a 79%) e o denominador e' o numero de encontros
+  // que a crianca tem na janela. Com dez encontros, os unicos percentuais
+  // possiveis sao multiplos de dez — 70 (abaixo) ou 80 (ok) —, e NINGUEM pode
+  // cair no meio. Nao e' erro de calculo: e' granularidade, e numa turma de
+  // sabado no comeco do semestre ela apaga a faixa inteira.
+  //
+  // O produto nao decide a politica (a correcao de verdade e' a faixa virar
+  // intervalo relativo, e isso e' da coordenacao). Ele DIZ, para ninguem ler
+  // "zero em atencao" como boa noticia quando o zero e' impossibilidade.
+  const faixaAlcancavel = (n) => Number.isInteger(n) && n >= PARAMS.REGUA_MINIMO_ENCONTROS
+    && Array.from({ length: n + 1 }, (_, k) => Math.round((k / n) * 100))
+      .some(p => p >= PARAMS.PRESENCA_MINIMA_PCT && p < PARAMS.PRESENCA_ATENCAO_PCT);
+  const semFaixaDeAtencao = criancas.filter(c => c.faixa !== 'sem_base' && !faixaAlcancavel(c.encontros));
   return {
     turma: { id: turma.id, nome: turma.nome, programa: turma.programa },
     desde: inicio, ate: ref,
     minima_pct: PARAMS.PRESENCA_MINIMA_PCT, atencao_pct: PARAMS.PRESENCA_ATENCAO_PCT,
     minimo_encontros: PARAMS.REGUA_MINIMO_ENCONTROS,
-    criancas, resumo,
+    criancas: criancas.map(c => ({ ...c, faixa_atencao_alcancavel: faixaAlcancavel(c.encontros) })),
+    resumo,
+    sem_faixa_de_atencao: semFaixaDeAtencao.length,
+    encontros_para_atencao: semFaixaDeAtencao.length
+      ? (() => { let n = (semFaixaDeAtencao[0].encontros || 0) + 1;
+                 while (n < 60 && !faixaAlcancavel(n)) n++;
+                 return n < 60 ? n : null; })()
+      : null,
     doutrina: 'A régua é a do Instituto (75% para permanecer e para o grupo de benefícios). Abaixo dela não é erro de ninguém: é protocolo — a conversa é com a família.',
   };
 }
