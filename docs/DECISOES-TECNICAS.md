@@ -1450,6 +1450,25 @@ valor** (trocar o telefone derruba a conferência sozinho, sem máquina de estad
 número. Se o dígito estiver errado, o desconhecido recebe um cumprimento; não presença, evolução e
 aspiração de uma criança.
 
+**A porta C, e por que ela era menor do que a dívida dizia (OPAR 05/09/2026).** A dívida mandava
+construir «encontro agendado + data retroativa». Medindo: **a data retroativa já funcionava** — a
+chamada só recusa data futura, e as datas em aberto já eram listadas. O que faltava era a tela de
+capturar deixar escolher a data e, quando aquele dia não tem encontro, **levar à chamada dele** em
+vez de redirecionar mudo para a folha à mão, que era onde a porta C morria.
+
+**E a metade cara ficou de fora, com razão medida.** Encontro agendado é uma linha em `encontro`
+sem presença, e ela entra em cinco denominadores. Um deles **atravessa a fronteira do Instituto**:
+o relatório do doador publica `COUNT(*) FROM encontro` como *"em N encontros ao longo do período"* —
+agendar o semestre inflaria o número que sai para quem financia. Os outros quatro: cobertura do
+registro (com peso maior nos mais recentes, o que acenderia o alerta de "pararam de registrar" por
+puro artefato), chamadas em aberto (o anti-abandono deixaria de cobrar justamente a turma que
+agendou), estado do registro por criança, e a contagem de chamadas por educador.
+
+A raiz é anterior a tudo isso: **«existe encontro» e «a chamada foi feita» são a mesma expressão**
+(`!!encontroDe(...)`) em sete lugares. Enquanto forem, agendar quebra os cinco. Por isso a porta C
+foi destravada pelo caminho que **não cria encontro vazio**: quem cria o encontro continua sendo a
+chamada, que é o que sabe quem esteve lá.
+
 **O que continua fora, e por quê:** postar no Instagram por API (conta Business, token, revisão da
 Meta — infraestrutura que a casa não opera); e o *deep link* `instagram://story-camera`, que entrou
 só no celular e só como atalho — no notebook não existe, e prometer o que não abre é o defeito que
@@ -1489,4 +1508,5 @@ esta rodada veio consertar.
 | Extrator lê contagens por padrão lexical | ~~"umas seis" fica em branco~~ **A premissa estava errada (OPAR 05/09): "umas seis" sempre devolveu 6; o defeito era o extrator gravar 1 quando não entendia — corrigido.** O que resta é medir a taxa de correção na operação | Medição em campo; Modo A por modelo continua opt-in |
 | Neutralização do perímetro por lista fechada | Sintagma novo do procedimento volta a ser barrado | Ampliar `NEUTRALIZAVEIS_VIVENCIA` com a psicóloga, nunca por inferência |
 | Velocidade do whisper na máquina do Instituto nunca medida | A porta B (encontro inteiro) pode levar tempo que ninguém dimensionou; "~6× tempo real" não diz a direção | Medir com áudio de ~10 min no notebook mais fraco e escrever o número em `METODOLOGIA-VALIDACAO-PERCURSO.md` §5.3 (decisão 35) |
-| Capturar ainda depende de um encontro já existir | `#/registrar` redireciona para `#/registrar?passo=mao` sem encontro e `src/voz.js` devolve 404 — a porta C (áudio de três semanas atrás) esbarra nisso | Frente do calendário (encontro agendado + data retroativa), que é pré-requisito declarado da porta C |
+| ~~Capturar depende de um encontro já existir~~ **— paga em 05/09/2026 (OPAR)** | Era o beco da porta C | Feito, e menor do que a dívida dizia: a chamada já aceitava data retroativa. Faltava `#/registrar` deixar escolher a data e, sem encontro, levar à chamada daquele dia |
+| Encontro agendado (agenda futura) continua fora | Não dá para pré-lançar o semestre | Deliberado (OPAR 05/09): encontro sem presença entra em cinco denominadores — cobertura do registro, número de encontros do relatório do doador, chamadas em aberto, estado do registro e contagem por educador. Antes de agendar, «existe encontro» tem de deixar de significar «a chamada foi feita» em sete lugares |
