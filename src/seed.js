@@ -333,13 +333,49 @@ export function semear() {
     // Régua de presença do Instituto (75%, decisão 33): na Vivência da manhã,
     // uma criança fica claramente abaixo da régua e outra na faixa de atenção,
     // para a tela ter as três faixas e a coordenação ter com quem conversar.
+    //
+    // O PADRÃO É FORÇADO DENTRO DA JANELA QUE A RÉGUA LÊ — o semestre corrente
+    // —, não sobre o histórico inteiro. A primeira versão distribuía as faltas
+    // por índice sobre todos os encontros da criança; como `reguaDaTurma` só
+    // conta do início do semestre para cá, a fatia que caía na janela mudava
+    // conforme o dia, e a criança de "atenção" escorregava para "ok" sozinha.
+    // O gate acusou na virada de 04 para 05/09/2026: falhava por data, que é o
+    // modo de falha que este repositório já pagou uma vez (handoff de 04/09).
+    // Aqui as faltas são CONTADAS para cair no meio de cada faixa, e o número
+    // não depende do calendário.
     {
+      const inicioSemestre = Number(T.slice(5, 7)) >= 7 ? `${T.slice(0, 4)}-07-01` : `${T.slice(0, 4)}-01-01`;
       const manha = all(`SELECT crianca_id FROM matricula WHERE turma_id = 6 AND status='ativa' ORDER BY crianca_id`);
-      const alvoAbaixo = manha[3]?.crianca_id, alvoAtencao = manha[7]?.crianca_id;
-      const pres = (id) => all(`SELECT p.id FROM presenca p JOIN encontro e ON e.id = p.encontro_id
-                                 WHERE p.crianca_id = ? AND e.turma_id = 6 ORDER BY e.data`, id);
-      if (alvoAbaixo) pres(alvoAbaixo).forEach((p, i) => run(`UPDATE presenca SET status = ? WHERE id = ?`, i % 5 < 3 ? 'F' : 'P', p.id));
-      if (alvoAtencao) pres(alvoAtencao).forEach((p, i) => run(`UPDATE presenca SET status = ? WHERE id = ?`, i % 9 === 0 || i % 9 === 4 ? 'F' : 'P', p.id));
+      const naJanela = (id) => all(
+        `SELECT p.id FROM presenca p JOIN encontro e ON e.id = p.encontro_id
+          WHERE p.crianca_id = ? AND e.turma_id = 6 AND e.data >= ? AND e.data <= ?
+          ORDER BY e.data`, id, inicioSemestre, T);
+      // E a faixa é procurada, não estimada. Com POUCOS encontros na janela a
+      // faixa de atenção (75 a 79%) pode ser ARITMETICAMENTE INALCANÇÁVEL: numa
+      // turma de sábado, dez encontros no semestre só produzem múltiplos de 10 —
+      // 70% (abaixo) ou 80% (ok), e nada entre os dois. Não é defeito do cálculo;
+      // é a granularidade do denominador, e está declarada nas dívidas técnicas.
+      // Aqui, quando nenhum número de presenças cai na faixa, a criança perde o
+      // encontro mais antigo — que é o que acontece com quem entrou depois do
+      // começo do semestre — até existir um inteiro que caiba.
+      const forcarFaixa = (id, min, max) => {
+        let linhas = naJanela(id);
+        while (linhas.length >= 5) {
+          const n = linhas.length;
+          for (let k = n; k >= 0; k--) {
+            const pct = Math.round((k / n) * 100);
+            if (pct >= min && pct < max) {
+              linhas.forEach((l, j) => run(`UPDATE presenca SET status = ? WHERE id = ?`, j < k ? 'P' : 'F', l.id));
+              return pct;
+            }
+          }
+          run(`DELETE FROM presenca WHERE id = ?`, linhas[0].id);   // entrou depois
+          linhas = naJanela(id);
+        }
+        return null;
+      };
+      if (manha[3]) forcarFaixa(manha[3].crianca_id, 40, 70);   // claramente abaixo
+      if (manha[7]) forcarFaixa(manha[7].crianca_id, 75, 80);   // na faixa de atenção
     }
 
     // --- Folha do dia, exposicao e pauta (v2) --------------------------------

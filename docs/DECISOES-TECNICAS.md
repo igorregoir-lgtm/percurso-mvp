@@ -1391,6 +1391,14 @@ membros de todos os grupos de uma vez. A tela passou a dizer isso, e o produto a
 como canal de público "Responsáveis da turma", sem turma. É o único caminho dentro dos Termos, e
 a pesquisa de WhatsApp já o listava sem que ninguém o tivesse ligado ao pedido.
 
+**Onde o cadastro mora, e por que a primeira tentativa não servia.** Eu tinha posto o formulário
+num `<details>` recolhido no fim de `#/divulgar`, depois da fila e da lista — e o dono do produto
+não achou: *"não vi as telas e funcionalidades para cadastrar os grupos"*. Cadastro, neste produto,
+mora em **Pessoas** (Quem entra · Turmas · Quem saiu), e é ali que se procura cadastro. Virou a aba
+**Canais**, com criar, **editar**, arquivar e trazer de volta; `#/divulgar` ficou só com o envio e
+um botão que aponta para lá. A lição não é de layout: **funcionalidade escondida atrás de um
+`<details>` numa tela de outra tarefa é funcionalidade que não existe.**
+
 **Quem cadastra, quem manda — e o buraco que a pergunta dele revelou.** Cadastrar, editar e
 arquivar canal é da **coordenação**, e só dela: o público do canal decide o que pode ser enviado
 para ele, então cadastrar é decidir. Coordenação e diretoria **enviam** de `#/divulgar`. Mas quem
@@ -1424,6 +1432,7 @@ esta rodada veio consertar.
 | Anonimização não cobre apelido/paráfrase | Risco residual declarado na UI | Reavaliar com a PoC; orientação de uso é a mitigação |
 | Vídeo de consentimento sem política de retenção automática | O arquivo fica até alguém apagar com motivo; o fecho de ciclo não o alcança | Ligar ao `fecharCiclo` quando a retenção declarada (consentimento + 5 anos) vencer pela primeira vez |
 | Share target não funciona no iOS nem sem HTTPS | Metade dos aparelhos do Instituto cai no seletor de arquivo | Nada a fazer no produto: depende do Safari e do certificado. O caminho manual está declarado na tela |
+| A faixa "atenção" da régua pode ser aritmeticamente inalcançável | A faixa tem 5 pontos (75–79%) e o denominador é o nº de encontros na janela: com 10 encontros só existem múltiplos de 10, então ninguém pode estar "em atenção" numa turma de sábado no começo do semestre | Descoberto em 05/09/2026, quando a virada do dia derrubou o gate que dizia "a seed força as duas faixas". Não é erro de cálculo — é granularidade. Decidir com a coordenação se a faixa vira intervalo relativo (ex.: "1 falta da régua") em vez de percentual, que é o que resolve de verdade |
 | O passe morre com o servidor | Reiniciar o processo apaga os passes em trânsito (memória) | Deliberado: é trânsito de dez minutos, e a pessoa monta de novo com um toque. Só vira banco se a operação mostrar reinícios frequentes |
 | QR só até a versão 10 (213 bytes) | Um `wa.me/?text=` com o recado inteiro não cabe num QR; o passe resolve levando a fila, não o texto | Estender as tabelas até a v40 se algum dia houver conteúdo curto que precise ir por QR e passe de 213 bytes |
 | Postar no Instagram continua manual | O card sai pronto, mas quem publica é a pessoa | Graph API exige conta Business, token de servidor e revisão de aplicativo na Meta — infraestrutura que a casa não opera (decisão 48) |

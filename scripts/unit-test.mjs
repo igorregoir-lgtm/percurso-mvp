@@ -634,7 +634,7 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:6209': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'public/app.js:6291': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
     'src/api.js:425': /erro\(422.*rubrica por ciclo/,
     'src/api.js:837': /'POST \/api\/consentimento'/,
     'src/api.js:1350': /periodosSugeridos\(\)/,
@@ -3088,4 +3088,24 @@ test('a fila não depende mais do clipboard: o texto vai dentro do link, e o QR 
   // O gerador do QR continua sem dependência (decisão 1).
   const qr = readFileSync(new URL('../public/qr.js', import.meta.url), 'utf8');
   assert.ok(!/^import /m.test(qr), 'qr.js passou a importar alguma coisa');
+});
+
+test('régua: a faixa de atenção existe na seed em QUALQUER data — e a granularidade do denominador é declarada', () => {
+  // O gate anterior dizia "a seed força as duas faixas" e passava por sorte: as
+  // faltas eram distribuídas por índice sobre TODO o histórico, enquanto a
+  // régua só lê o semestre corrente. Na virada de 04 para 05/09/2026 a criança
+  // de "atenção" escorregou para "ok" sozinha, sem ninguém tocar em nada.
+  const r = D.reguaDaTurma(6);
+  assert.ok(r.resumo.abaixo >= 1, 'a seed deixou de ter criança abaixo da régua');
+  assert.ok(r.resumo.atencao >= 1, 'a seed deixou de ter criança na faixa de atenção');
+  // E o motivo pelo qual isso é difícil, fixado como conhecimento: a faixa tem
+  // 5 pontos de largura, e com poucos encontros o denominador não produz
+  // nenhum inteiro dentro dela. Com 10 encontros só existem múltiplos de 10.
+  const alcancaveis = (n) => Array.from({ length: n + 1 }, (_, k) => Math.round((k / n) * 100))
+    .filter(p => p >= D.PARAMS.PRESENCA_MINIMA_PCT && p < D.PARAMS.PRESENCA_ATENCAO_PCT);
+  assert.equal(alcancaveis(10).length, 0, 'com 10 encontros a faixa de atenção deixou de ser inalcançável — reveja a dívida declarada');
+  assert.ok(alcancaveis(9).length > 0 && alcancaveis(8).length > 0);
+  // A criança em atenção tem, por isso, um denominador que permite a faixa.
+  const emAtencao = r.criancas.find(c => c.faixa === 'atencao');
+  assert.ok(alcancaveis(emAtencao.encontros).includes(emAtencao.pct));
 });

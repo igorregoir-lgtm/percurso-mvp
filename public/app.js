@@ -3528,6 +3528,7 @@ const hojeIso = () => {
 const ABAS_PESSOAS = [
   ['equipe', 'Quem entra'],
   ['turmas', 'Turmas'],
+  ['canais', 'Canais'],
   ['arquivo', 'Quem saiu'],
   ['importar', 'O que veio de antes'],
 ];
@@ -3651,26 +3652,8 @@ function pintarDivulgar() {
         <button class="btn pequeno secundario" data-acao="ir" data-href="#/divulgar?folha=1">Folha da turma para imprimir</button>
         <span class="sub">QR de cada grupo e do Instagram: cola na parede, o responsável escaneia e entra.</span>
       </div>
-      ${podeCadastrar ? `<details style="margin-top:12px">
-        <summary style="cursor:pointer;font-size:13px;color:var(--tinta-fraca)">Cadastrar um grupo ou perfil</summary>
-        <label class="rot-campo" for="cn-tipo">Tipo</label>
-        <select id="cn-tipo">${d.tipos.map(t => `<option value="${t.id}">${esc(t.rotulo)}</option>`).join('')}</select>
-        <label class="rot-campo" for="cn-nome">Nome (o que você chama ele)</label>
-        <input type="text" id="cn-nome" placeholder="Ex.: Responsáveis · Vivência Sábado manhã" autocomplete="off">
-        <label class="rot-campo" for="cn-publico">Quem está desse lado</label>
-        <select id="cn-publico">${d.publicos.map(p => `<option value="${p.id}">${esc(p.rotulo)}</option>`).join('')}</select>
-        <p class="sub" id="cn-regra" style="margin-top:6px"></p>
-        <label class="rot-campo" for="cn-turma">Turma <span class="sub">(se o grupo é de uma turma só)</span></label>
-        <select id="cn-turma">
-          <option value="">Não é de uma turma</option>
-          ${d.turmas.map(t => `<option value="${t.id}">${esc(t.nome)}</option>`).join('')}
-        </select>
-        <label class="rot-campo" for="cn-destino">Destino</label>
-        <input type="text" id="cn-destino" placeholder="https://chat.whatsapp.com/…" autocomplete="off">
-        <p class="sub" id="cn-ajuda" style="margin-top:6px">No WhatsApp: abra o grupo → Dados do grupo →
-          Convidar por link → Copiar. É esse link que o Percurso guarda — nunca o telefone de ninguém.</p>
-        <button class="btn pequeno secundario" data-acao="canal-criar" style="margin-top:10px">Cadastrar</button>
-      </details>` : ''}
+      ${podeCadastrar ? `<button class="btn pequeno fantasma" data-acao="ir" data-href="#/pessoas?aba=canais"
+        style="margin-top:10px">Cadastrar ou editar grupos e perfil</button>` : ''}
     </div>
 
     ${d.recentes.length ? `<details class="cartao compacto" style="margin-top:14px">
@@ -3692,19 +3675,6 @@ function pintarDivulgar() {
       <b>Comunidade</b>, cujo grupo de avisos alcança todos os membros de todos os grupos de uma vez —
       cadastre esse grupo de avisos aqui como público "Responsáveis da turma", sem turma.</p>`;
 
-  const tipo = document.getElementById('cn-tipo');
-  const publico = document.getElementById('cn-publico');
-  if (tipo && publico) {
-    const sincronizar = () => {
-      const p = PUB[publico.value];
-      document.getElementById('cn-regra').textContent = p ? `Pode receber: ${p.pode.map(k => d.conteudos[k]?.rotulo ?? k).join(', ')}. ${p.nao}` : '';
-      document.getElementById('cn-destino').placeholder = tipo.value === 'instagram' ? '@perfil' : 'https://chat.whatsapp.com/…';
-      document.getElementById('cn-turma').disabled = tipo.value === 'instagram';
-    };
-    tipo.addEventListener('change', sincronizar);
-    publico.addEventListener('change', sincronizar);
-    sincronizar();
-  }
 }
 
 /** Passo 1: o que vai sair, e para quem. */
@@ -4146,8 +4116,120 @@ rota(/^#\/pessoas/, async () => {
   if (aba === 'arquivo') return telaQuemSaiu();
   if (aba === 'importar') return telaOQueVeioDeAntes();
   if (aba === 'turmas') return telaTurmas();
+  if (aba === 'canais') return telaCanais();
   return telaQuemEntra();
 });
+
+// ======================================================================
+// CANAIS (decisão 50) — o cadastro dos grupos de WhatsApp e do perfil do
+// Instagram, na tela de cadastro, onde se procura cadastro.
+//
+// A primeira versão escondia isto num "detalhes" recolhido no fim de
+// Divulgar, depois da fila e da lista. O dono do produto não achou — e quem
+// não acha, não cadastra. Cadastro mora em Pessoas, ao lado de Quem entra e
+// Turmas; Divulgar fica só com o envio.
+// ======================================================================
+async function telaCanais() {
+  const d = await api('/api/canais?todos=1');
+  const PUB = Object.fromEntries(d.publicos.map(p => [p.id, p]));
+  const vivos = d.canais.filter(c => c.ativo);
+  const arquivados = d.canais.filter(c => !c.ativo);
+  const opcoesTipo = (sel) => d.tipos.map(t => `<option value="${t.id}" ${t.id === sel ? 'selected' : ''}>${esc(t.rotulo)}</option>`).join('');
+  const opcoesPub = (sel) => d.publicos.map(p => `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${esc(p.rotulo)}</option>`).join('');
+  const opcoesTurma = (sel) => `<option value="">Não é de uma turma</option>` + d.turmas.map(t =>
+    `<option value="${t.id}" ${t.id === sel ? 'selected' : ''}>${esc(t.nome)}</option>`).join('');
+  const regra = (pub) => PUB[pub] ? `Pode receber: ${PUB[pub].pode.map(k => d.conteudos[k]?.rotulo ?? k).join(', ')}. ${PUB[pub].nao}` : '';
+
+  app.innerHTML = cabecalhoPessoas('canais') + `
+    <p class="sub" style="margin-top:12px">Os grupos de WhatsApp e o perfil de Instagram por onde o Instituto
+      fala. O <b>público</b> não é etiqueta: é ele que decide o que pode ser enviado para cada um — e a recusa
+      é do servidor, não do botão.</p>
+
+    <div class="cartao" style="margin-top:16px">
+      <h2>Novo grupo ou perfil</h2>
+      <label class="rot-campo" for="cn-tipo">Tipo</label>
+      <select id="cn-tipo">${opcoesTipo(null)}</select>
+      <label class="rot-campo" for="cn-nome">Nome <span class="sub">(o que você chama ele)</span></label>
+      <input type="text" id="cn-nome" placeholder="Ex.: Responsáveis · Vivência Sábado manhã" autocomplete="off">
+      <label class="rot-campo" for="cn-publico">Quem está desse lado</label>
+      <select id="cn-publico">${opcoesPub(null)}</select>
+      <p class="sub" id="cn-regra" style="margin-top:6px"></p>
+      <label class="rot-campo" for="cn-turma">Turma <span class="sub">(se o grupo é de uma turma só)</span></label>
+      <select id="cn-turma">${opcoesTurma(null)}</select>
+      <label class="rot-campo" for="cn-destino">Destino</label>
+      <input type="text" id="cn-destino" placeholder="https://chat.whatsapp.com/…" autocomplete="off">
+      <p class="sub" id="cn-ajuda" style="margin-top:6px">No WhatsApp: abra o grupo → Dados do grupo → Convidar por
+        link → Copiar. É esse link que o Percurso guarda — nunca o telefone de ninguém.</p>
+      <label class="rot-campo" for="cn-obs">Observação <span class="sub">(opcional)</span></label>
+      <input type="text" id="cn-obs" placeholder="Ex.: só o recado da turma, nunca lista com nome" autocomplete="off">
+      <button class="btn" data-acao="canal-criar" style="margin-top:14px">Cadastrar</button>
+    </div>
+
+    <div class="cartao compacto" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">Canais hoje</h2><span class="sub">${vivos.length}</span></div>
+      <div class="pilha" style="margin-top:10px">
+        ${vivos.map(c => `<details class="item" style="cursor:default;flex-direction:column;align-items:stretch;gap:8px">
+          <summary style="cursor:pointer;list-style:none">
+            <div class="linha">
+              <div class="cresce"><div class="nome">${c.tipo === 'instagram' ? '◎' : '✆'} ${esc(c.nome)}</div>
+                <div class="meta">${esc(PUB[c.publico]?.rotulo ?? c.publico)}${c.turma ? ` · ${esc(c.turma)}` : ''}${
+                  c.ultimo_envio ? ` · último envio ${dataBR(c.ultimo_envio.slice(0, 10))}` : ' · nunca usado'}</div></div>
+              <span class="sub">editar ›</span>
+            </div>
+          </summary>
+          <label class="rot-campo" for="ce-nome-${c.id}">Nome</label>
+          <input type="text" id="ce-nome-${c.id}" value="${esc(c.nome)}" autocomplete="off">
+          <label class="rot-campo" for="ce-pub-${c.id}">Quem está desse lado</label>
+          <select id="ce-pub-${c.id}">${opcoesPub(c.publico)}</select>
+          ${c.tipo === 'instagram' ? '' : `<label class="rot-campo" for="ce-turma-${c.id}">Turma</label>
+          <select id="ce-turma-${c.id}">${opcoesTurma(c.turma_id)}</select>`}
+          <label class="rot-campo" for="ce-dest-${c.id}">Destino</label>
+          <input type="text" id="ce-dest-${c.id}" value="${esc(c.destino)}" autocomplete="off">
+          <label class="rot-campo" for="ce-obs-${c.id}">Observação</label>
+          <input type="text" id="ce-obs-${c.id}" value="${esc(c.observacao || '')}" autocomplete="off">
+          <div class="linha" style="margin-top:10px;gap:8px">
+            <button class="btn pequeno secundario" data-acao="canal-editar" data-id="${c.id}">Salvar</button>
+            <button class="btn pequeno fantasma" data-acao="canal-arquivar" data-id="${c.id}">Arquivar</button>
+          </div>
+        </details>`).join('') || '<p class="vazio">Nenhum canal cadastrado ainda.</p>'}
+      </div>
+      <p class="sub" style="margin-top:12px">Canal não se apaga: o registro do que saiu aponta para ele. Arquivar tira da
+        lista de envio e mantém o histórico.</p>
+    </div>
+
+    ${arquivados.length ? `<details class="cartao compacto" style="margin-top:14px">
+      <summary style="cursor:pointer;font-weight:600">Arquivados · ${arquivados.length}</summary>
+      <div class="pilha" style="margin-top:10px">
+        ${arquivados.map(c => `<div class="item" style="cursor:default">
+          <div class="cresce"><div class="nome">${esc(c.nome)}</div>
+            <div class="meta">${esc(PUB[c.publico]?.rotulo ?? c.publico)}${c.turma ? ` · ${esc(c.turma)}` : ''}</div></div>
+          <button class="btn pequeno fantasma" data-acao="canal-reativar" data-id="${c.id}">Trazer de volta</button>
+        </div>`).join('')}
+      </div>
+    </details>` : ''}
+
+    <div class="cartao compacto" style="margin-top:14px">
+      <div class="linha"><h2 class="cresce">E o envio?</h2></div>
+      <p class="sub">Cadastrado o canal, o envio acontece em <b>Divulgar</b> — recado, carta e card do
+        período — e a professora manda o recado da própria turma pela tela dela.</p>
+      <button class="btn pequeno secundario" data-acao="ir" data-href="#/divulgar" style="margin-top:10px">Ir para Divulgar</button>
+    </div>`;
+
+  const tipo = document.getElementById('cn-tipo');
+  const publico = document.getElementById('cn-publico');
+  const sincronizar = () => {
+    document.getElementById('cn-regra').textContent = regra(publico.value);
+    document.getElementById('cn-destino').placeholder = tipo.value === 'instagram' ? '@perfil' : 'https://chat.whatsapp.com/…';
+    document.getElementById('cn-ajuda').textContent = tipo.value === 'instagram'
+      ? 'O @ do perfil, como aparece no Instagram. O perfil é da organização inteira — não se amarra a uma turma.'
+      : 'No WhatsApp: abra o grupo → Dados do grupo → Convidar por link → Copiar. É esse link que o Percurso guarda — nunca o telefone de ninguém.';
+    document.getElementById('cn-turma').disabled = tipo.value === 'instagram';
+  };
+  tipo.addEventListener('change', sincronizar);
+  publico.addEventListener('change', sincronizar);
+  sincronizar();
+}
+
 
 // ======================================================================
 // TURMAS (decisão 39) — o cadastro que não existia.
@@ -6382,6 +6464,21 @@ document.addEventListener('click', comErro(async (ev) => {
     pintarDivulgar();
     return;
   }
+  if (a === 'canal-editar') {
+    const id = alvo.dataset.id;
+    const v = (k) => document.getElementById(`ce-${k}-${id}`)?.value;
+    alvo.disabled = true;
+    let r;
+    try { r = await post('/api/canais/editar', { id, nome: v('nome'), publico: v('pub'), turma_id: v('turma') || null, destino: v('dest'), observacao: v('obs') }); }
+    finally { alvo.disabled = false; }
+    toast(`${r.nome} atualizado.`, 'bom');
+    navegar(); return;
+  }
+  if (a === 'canal-reativar') {
+    await post('/api/canais/arquivar', { id: alvo.dataset.id, reativar: true });
+    toast('Canal de volta à lista de envio.', 'bom');
+    navegar(); return;
+  }
   if (a === 'canal-criar') {
     const corpo = {
       tipo: document.getElementById('cn-tipo').value,
@@ -6389,6 +6486,7 @@ document.addEventListener('click', comErro(async (ev) => {
       publico: document.getElementById('cn-publico').value,
       turma_id: document.getElementById('cn-turma').value || null,
       destino: document.getElementById('cn-destino').value,
+      observacao: document.getElementById('cn-obs')?.value || null,
     };
     alvo.disabled = true;
     let r;

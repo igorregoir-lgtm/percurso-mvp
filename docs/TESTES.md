@@ -17,7 +17,7 @@ node scripts/smoke-test.mjs
 Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **504 passaram,
 0 falharam**.
 
-Há também uma bateria de **204 testes unitários** das regras críticas de domínio (filtro de
+Há também uma bateria de **205 testes unitários** das regras críticas de domínio (filtro de
 perímetro, validação do schema do extrator, determinismo do agente, os três scores, supressão com
 agrupamento, deduplicação da ingestão, revisor de sobre-alegação, consentimento, imutabilidade da
 síntese, fecho de ciclo, cadastro e arquivo de pessoas, base fixa da curva de permanência), que roda sem servidor, contra um banco temporário descartável:
