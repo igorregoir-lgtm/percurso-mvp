@@ -1,5 +1,14 @@
 # Handoff — 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
 
+
+> **Sessão de revisão do repositório (03/09/2026).** Varredura em busca de erros e lacunas —
+> relatório em [`docs/revisao/14-REVISAO-REPOSITORIO.md`](revisao/14-REVISAO-REPOSITORIO.md).
+> O bug do recado em dia não letivo já tinha sido corrigido em `main` (`48ec1dd`) e evoluído
+> para um botão por turma; esta branch chegou em paralelo com a mesma correção. O que permanece
+> dela: o relatório 14, a coerência de docs (US-6 no task-flow, título das stories) e a nota de
+> ambiente (Node 22 do Cloud Agent sem FTS5 em `node:sqlite` — use o 24 do `.nvmrc` para
+> `test:rag` / `test:ia`).
+>
 > **Auditoria OPAR desta sessão:** `~/.claude/AUDITORIA-OPAR-sessao-2026-09-03.md` — três eixos
 > adversariais, **45 achados, 44 confirmados e 1 refutado**, 44 corrigidos em `b657846` (infra),
 > `60c0cf3` (domínio) e `f481bec` (docs). Três itens ficaram **abertos por decisão** e estão
@@ -10,6 +19,7 @@
 >
 > **Sessão de 02–03/09/2026 — o que mudou.** De `1322a77` até este commit — **dezenove até
 > aqui**; a faixa é o que vale, o número envelhece a cada commit novo. Todos em
+
 > `main` e em `pos-visita-ebenezer-e-jornada-v2` (as duas apontam para o mesmo commit). Nada de
 > arquitetura mudou: a sessão foi de **coerência, cobertura visual e um bug de classificação**.
 >
@@ -60,9 +70,11 @@
 >
 > **5. Roteiro do vídeo v3.** Tinha 13 cenas e nenhuma da psicóloga. Agora tem o bloco dela com
 > cinco cenas, mais a consulta, **dentro dos mesmos 7m00** — o que foi cortado está declarado em
+
 > tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; hoje são **381 · 167**.
 >
 > **Gates: 167 unitários · 381 smoke · 6 rag · 24 ia-stub.**
+
 >
 > **Armadilhas novas — as do Figma custaram a maior parte do tempo:**
 > (1) **`SF Pro` aparece em `listAvailableFontsAsync` mas renderiza largura ZERO** nesta conta; o
