@@ -434,7 +434,10 @@ const ESQUEMA_SQL = `
     encontro_id       INTEGER NOT NULL UNIQUE REFERENCES encontro(id) ON DELETE CASCADE,
     atividade         TEXT NOT NULL,
     area_tematica     TEXT NOT NULL,
-    pediram_ajuda     INTEGER NOT NULL DEFAULT 0 CHECK (pediram_ajuda BETWEEN 0 AND 30),
+    -- NULL = nao informado (OPAR 05/09/2026). Era NOT NULL DEFAULT 0, e zero e'
+    -- afirmacao: "ninguem pediu ajuda" e' um fato que a fala nao disse. A mesma
+    -- doutrina que o check-in ja' seguia — e que este campo contradizia.
+    pediram_ajuda     INTEGER CHECK (pediram_ajuda IS NULL OR pediram_ajuda BETWEEN 0 AND 30),
     origem            TEXT NOT NULL CHECK (origem IN ('voz','manual')),
     -- Confianca devolvida pelo extrator e quantos campos a educadora corrigiu na
     -- confirmacao: e' a metrica-chave de qualidade do agente (07-SCORES).

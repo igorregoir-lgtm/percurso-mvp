@@ -42,6 +42,35 @@
 >
 > **Gates: 512 smoke · 215 unitários · 6 RAG · 24 ia-stub · 19 áudio-stub.** 32 tabelas, 117 rotas.
 >
+> ### Segunda rodada, mesma noite — "conserte tudo que precisa ser consertado"
+>
+> Do que ficou aberto, o que era código entrou; o que é política ou depende de fora continua
+> nomeado. **Sete correções**, cada uma verificada antes e travada por gate depois:
+>
+> - **O extrator dizia 0 quando não sabia** (`pediram_ajuda` era `NOT NULL DEFAULT 0`). Zero é
+>   afirmação; agora é `NULL` no esquema, no extrator e na tela (traço). E "vinte e um" a "vinte e
+>   nove" passaram a contar — composição fechada, não inferência.
+> - **O recado anunciava feriado como "próximo encontro"** no texto que vai para as famílias:
+>   `proximoEncontro` lia só o dia da semana. Agora lê o calendário da casa (decisão 37).
+> - **`descartarRelatosDoCiclo` era retenção de aparência** — sem chamador, apagava por ciclo. Virou
+>   `descartarRelatosVencidos`, por criança, e o servidor **recusa** se a matrícula está ativa ou o
+>   prazo não venceu. O fecho de ciclo detecta e lista; apagar é rota de coordenação com motivo e log.
+> - **`"."` passava como motivo** para destruir prova. Agora exige texto por extenso.
+> - **A régua ganhou "N faltas da régua"** ao lado do percentual — a leitura relativa que não sofre da
+>   granularidade e responde a pergunta que a coordenação faz. A faixa da decisão 33 continua igual.
+> - **A porta C guarda a data do endereço** — `?data=null` renderizava "o encontro de null".
+> - **O modal de retenção vencida nascia e morria no mesmo tique**: `navegar()` remove todo `.veu` ao
+>   re-renderizar, e eu o chamava depois de montar o modal. Visto no navegador — três tentativas até
+>   olhar o JSON cru e perceber que o back devolvia tudo. A lição é a de sempre: quando o servidor está
+>   certo e a tela não mostra, o culpado é a ordem, não o dado.
+>
+> **Continua aberto, com nome:** certificado HTTPS (domínio), medir o whisper na máquina deles (o
+> produto agora mede sozinho), encontro agendado como entidade (quebra cinco denominadores), a faixa
+> de atenção como intervalo (política), a conferência do telefone sem canal próprio (limite de
+> desenho), e o schema do copilot por modelo que ainda força `pediram_ajuda: 0` (opt-in, sem PoC).
+>
+> **Gates: 517 smoke · 222 unitários · 6 RAG · 24 ia-stub · 19 áudio-stub.** 32 tabelas, 118 rotas.
+>
 
 
 > ## Sessão de 04/09/2026 (madrugada) — a segunda rodada de WhatsApp e Instagram (dec. 50)

@@ -641,6 +641,16 @@ export const rotas = {
   'GET /api/safras': (req) => { exigeCoordenacao(req); return D.safras(); },
   'GET /api/consentimentos': (req) => { exigeCoordenacao(req); return D.painelConsentimentos(); },
 
+  // DESCARTE DOS RELATOS VENCIDOS (OPAR 05/09/2026). O fecho de ciclo so'
+  // detecta; apagar e' aqui, de coordenacao, com motivo, e passa pelo portao de
+  // acesso individual — destruir texto sobre a crianca e' ato sobre a crianca.
+  'POST /api/relato-crianca/descartar-vencidos': (req, body) => {
+    const u = exigeCoordenacao(req);
+    const id = num(body.crianca_id, 'crianca_id');
+    exigeAcessoCrianca(req, id, 'ficha');
+    return RL.descartarRelatosVencidos(id, { motivo: body.motivo, porUsuarioId: u.id });
+  },
+
   // A CONFERENCIA DO TELEFONE (OPAR 05/09/2026). Passa pelo mesmo portao do
   // boletim, e por isso fica no log de acesso individual: confirmar de quem e'
   // o numero e' ato sobre a crianca, nao sobre um campo de cadastro.

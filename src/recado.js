@@ -8,15 +8,28 @@
 // em número, como o grupo esteve. Nenhuma criança nomeada — a régua individual
 // de presença é para dentro, nunca para o grupo.
 import { get } from './db.js';
-import { chamada, encontroDe, erro, dataBR, diaLetivo, addDias, hoje, turmaNaRubrica } from './domain.js';
+import { chamada, encontroDe, erro, dataBR, diaLetivo, temEncontro, addDias, hoje, turmaNaRubrica } from './domain.js';
 import { folhaDe, rotuloDe, ATIVIDADES, AREAS, MARCADORES, PROCEDIMENTOS, OBJETIVOS } from './voz.js';
 
 const porExtenso = (iso) => new Date(iso + 'T12:00:00Z')
   .toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
 
-export function proximoEncontro(turno, apos) {
+/**
+ * O proximo encontro — pelo CALENDARIO DA CASA, nao pelo dia da semana (OPAR
+ * 05/09/2026). Esta funcao ignorava `calendario_excecao` e anunciava feriado
+ * como "proximo encontro" no texto que vai por WhatsApp para as familias: a
+ * unica linha do recado que fala do futuro era a unica que nao lia a agenda.
+ *
+ * `turmaId` e' opcional para nao quebrar quem so' tem o turno; com ele, a
+ * decisao 37 vale aqui como vale em `proximosEncontros`.
+ */
+export function proximoEncontro(turno, apos, turmaId = null) {
   let d = addDias(apos, 1);
-  for (let i = 0; i < 14; i++) { if (diaLetivo(turno, d)) return d; d = addDias(d, 1); }
+  for (let i = 0; i < 60; i++) {
+    const ha = turmaId != null ? temEncontro(turmaId, d) : diaLetivo(turno, d);
+    if (ha) return d;
+    d = addDias(d, 1);
+  }
   return null;
 }
 
@@ -63,7 +76,7 @@ export function recadoDaTurma(turmaId, data) {
   linhas.push(`${doDia ? 'Presença de hoje' : 'Presença no encontro'}: ${presentes} de ${total} crianças.`);
   if (pctMes != null) linhas.push(`Presença da turma no mês: ${pctMes}%. A régua do Instituto continua 75%.`);
   // a partir de HOJE quando o encontro e' antigo — senao o "proximo" ja passou
-  const prox = proximoEncontro(ch.turma.turno, data < hoje() ? hoje() : data);
+  const prox = proximoEncontro(ch.turma.turno, data < hoje() ? hoje() : data, turmaId);
   if (prox) linhas.push(`Próximo encontro: ${dataBR(prox)}.`);
   linhas.push('— Instituto Ebenézer');
   const texto = linhas.join('\n');

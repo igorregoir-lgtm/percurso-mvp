@@ -1857,5 +1857,55 @@ secao('31 · Passe para o celular, envio duplicado e o texto no link (decisão 5
   T('a assinatura do recado vai em itálico', /_— Instituto Ebenézer_$/.test(recado.corpo.texto_whatsapp.trim()));
 }
 
+
+// ------------------------------ 32. OPAR, segunda rodada: relatos vencidos e feriado
+secao('32 · Relato vencido é detectado e descartado com motivo; o recado respeita o feriado');
+{
+  // Uma criança fora da ativa, saída há três anos, com um relato guardado.
+  const arq = (await GET('rita', '/api/arquivo')).corpo;
+  const alvo = (arq.criancas ?? [])[0];
+  if (alvo) {
+    const desc = await POST('solange', '/api/relato-crianca/descartar-vencidos', { crianca_id: alvo.id, motivo: 'retenção vencida no fecho' });
+    T('a diretoria NÃO descarta relato (403)', desc.status === 403, `(${desc.status})`);
+    T('descartar sem motivo por extenso é recusado (422)',
+      (await POST('rita', '/api/relato-crianca/descartar-vencidos', { crianca_id: alvo.id, motivo: '.' })).status === 422);
+  } else {
+    T('há criança arquivada para o cenário', false, 'lista vazia');
+  }
+  const ativa = (await GET('rita', '/api/criancas')).corpo.criancas[0];
+  T('descartar relato de quem ainda tem matrícula ativa é recusado (422)',
+    (await POST('rita', '/api/relato-crianca/descartar-vencidos', { crianca_id: ativa.id, motivo: 'retenção vencida no fecho' })).status === 422);
+
+  // O recado da turma: marcar o próximo sábado como feriado tem de mudar o
+  // "próximo encontro" que sai por WhatsApp.
+  const hojeC = (await GET('carolina', '/api/hoje')).corpo;
+  const tid = hojeC.turma.id;
+  const encontros = (await GET('carolina', `/api/hoje`)).corpo;
+  const dataRec = (await GET('rita', '/api/divulgar')).corpo.recados.find(r => r.turma_id === tid)?.data;
+  if (dataRec) {
+    const antes = (await GET('carolina', `/api/recado?turma_id=${tid}&data=${dataRec}`)).corpo;
+    const mProx = /Próximo encontro: (\d{2}\/\d{2}\/\d{4})/.exec(antes.texto);
+    if (mProx) {
+      const [d, m, a] = mProx[1].split('/');
+      const iso = `${a}-${m}-${d}`;
+      const marca = await POST('rita', '/api/calendario', { turma_id: tid, data: iso, tipo: 'sem_encontro', motivo: 'feriado do smoke' });
+      const depois = (await GET('carolina', `/api/recado?turma_id=${tid}&data=${dataRec}`)).corpo;
+      T('o recado não anuncia o feriado como próximo encontro',
+        marca.status === 200 && !depois.texto.includes(`Próximo encontro: ${mProx[1]}`), depois.texto.match(/Próximo encontro: [^\n]+/)?.[0]);
+      await DELETE('rita', '/api/calendario', { turma_id: tid, data: iso });
+    } else {
+      T('o recado traz "Próximo encontro"', false, antes.texto.slice(-80));
+    }
+  } else {
+    T('há recado da turma da psicóloga para o cenário', false);
+  }
+
+  // pediram_ajuda: a folha aceita o "não informado" e devolve null, não 0.
+  const rec = (await GET('rita', '/api/divulgar')).corpo.recados[0];
+  const folha = (await GET('rita', `/api/folha?turma_id=${rec.turma_id}&data=${rec.data}`)).corpo;
+  T('a folha existente devolve pediram_ajuda como inteiro ou null, nunca string',
+    folha.folha == null || folha.folha.pediram_ajuda === null || Number.isInteger(folha.folha.pediram_ajuda));
+}
+
 console.log(`\n\x1b[1m${ok} passaram · ${falhas} falharam\x1b[0m\n`);
 process.exit(falhas ? 1 : 0);

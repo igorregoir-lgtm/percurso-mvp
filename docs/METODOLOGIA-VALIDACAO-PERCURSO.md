@@ -33,7 +33,7 @@ jornada, e testar o opcional antes do fluxo principal inverte a pergunta.
 
 As duas metades importam separadamente. A primeira é medida por tempo e conclusão de tarefa. A
 segunda é medida pelo **Protocolo do Lapso** (§5.5) e não é medida por nenhum outro instrumento
-deste documento — nem por nenhum dos 215 testes unitários ou das 512 asserções de fluxo do
+deste documento — nem por nenhum dos 221 testes unitários ou das 517 asserções de fluxo do
 repositório.
 
 **Por que teste automatizado não responde.** Ele prova que o sistema faz o que o código diz. O
@@ -170,7 +170,7 @@ protocolo, nunca erro dela" chegou até a cabeça de quem usa. Se ela explicar c
 produto está gerando culpa — e culpa é o combustível do abandono medido em M5.
 
 **A tarefa 4 mede uma costura, não uma tela.** Confirmar a folha devolve a usuária a `#/hoje`
-(`public/app.js:6384`); desde 04/09/2026 o relato **abre sozinho** na Vivência, logo depois de confirmar a folha. O limiar de 20 s existe para separar "ela não
+(`public/app.js:6389`); desde 04/09/2026 o relato **abre sozinho** na Vivência, logo depois de confirmar a folha. O limiar de 20 s existe para separar "ela não
 entendeu o relatório" de "o produto soltou a mão dela no meio da tarefa" — são achados diferentes,
 com correções diferentes.
 
@@ -191,7 +191,7 @@ falha), e bloqueio explicado como protocolo. Este protocolo mede os seis de uma 
 
 **Preparação.** `node scripts/preparar-sessao.mjs --lapso` empurra a última atividade da
 profissional para **9 dias atrás** — acima do gatilho da retomada, que desde 04/09/2026 conta ENCONTROS DA TURMA (`PARAMS.ENCONTROS_LAPSO`, decisão 37) e não dias de calendário — numa turma de sábado, use 15 ou mais
-sem culpa em `#/hoje`. A retomada lê a tabela `atividade` (`src/domain.js:1094`), não os encontros:
+sem culpa em `#/hoje`. A retomada lê a tabela `atividade` (`src/domain.js:1114`), não os encontros:
 mexer só nos encontros não dispara o lapso. O script imprime o estado; conferir antes de começar.
 
 **Provocação longa**, enunciado literal:

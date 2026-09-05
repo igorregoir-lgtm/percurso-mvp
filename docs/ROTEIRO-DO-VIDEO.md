@@ -268,8 +268,8 @@ só o Instituto tem. A tela mostra as premissas e diz isso, em vez de inventar a
 `data/percurso.db` — o backup é copiar um arquivo. Rodar as duas baterias e mostrar os totais:
 
 ```
-node scripts/smoke-test.mjs   → 512 passaram · 0 falharam
-node scripts/unit-test.mjs    → 215 passaram · 0 falharam
+node scripts/smoke-test.mjs   → 517 passaram · 0 falharam
+node scripts/unit-test.mjs    → 221 passaram · 0 falharam
 ```
 
 > **Conferir os números antes de gravar.** Eles mudam a cada bateria nova, e o roteiro anterior

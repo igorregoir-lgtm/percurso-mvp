@@ -123,8 +123,9 @@ export function validarExtracao(obj) {
     if (new Set(o.marcadores_turma).size !== o.marcadores_turma.length) erros.push('marcadores_turma com repetição');
     for (const m of o.marcadores_turma) if (!codigos(MARCADORES).includes(m)) erros.push(`marcador fora da lista: ${m}`);
   }
-  if (!Number.isInteger(o.pediram_ajuda) || o.pediram_ajuda < 0 || o.pediram_ajuda > 30)
-    erros.push('pediram_ajuda deve ser inteiro de 0 a 30');
+  // null = nao informado, e e' valido (OPAR 05/09): zero e' afirmacao.
+  if (o.pediram_ajuda != null && (!Number.isInteger(o.pediram_ajuda) || o.pediram_ajuda < 0 || o.pediram_ajuda > 30))
+    erros.push('pediram_ajuda deve ser inteiro de 0 a 30, ou vazio');
   if (o.faltas_mencionadas != null && !Array.isArray(o.faltas_mencionadas))
     erros.push('faltas_mencionadas deve ser lista');
   if (typeof o.confianca !== 'number' || o.confianca < 0 || o.confianca > 1)
@@ -166,7 +167,11 @@ const NUMEROS = { um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5,
                   sete: 7, oito: 8, nove: 9, dez: 10, onze: 11, doze: 12, treze: 13, quatorze: 14, catorze: 14,
                   quinze: 15, dezesseis: 16, dezessete: 17, dezoito: 18, dezenove: 19, vinte: 20, trinta: 30,
                   nenhum: 0, nenhuma: 0, ninguem: 0 };
-const PALAVRA_NUMERO = '(\\d{1,2}|' + Object.keys(NUMEROS).join('|') + ')';
+// "vinte e um" a "vinte e nove": composicao fechada, nao inferencia. Antes caia
+// em branco (seguro), agora conta — e a alternacao poe o composto ANTES do
+// simples, senao "vinte e tres" casaria so' "vinte".
+for (const [u, n] of Object.entries(NUMEROS)) if (n >= 1 && n <= 9) NUMEROS[`vinte e ${u}`] = 20 + n;
+const PALAVRA_NUMERO = '(\\d{1,2}|' + Object.keys(NUMEROS).sort((a, b) => b.length - a.length).join('|') + ')';
 
 // Contagem do check-in: o numero que vem ANTES do termo, na mesma frase
 // ("duas ajudaram sem ninguem pedir", "seis participaram do comeco ao fim").
@@ -266,8 +271,12 @@ function contarPediramAjuda(texto) {
     const n = /^\d+$/.test(bruto) ? Number(bruto) : NUMEROS[bruto];
     if (Number.isInteger(n) && n >= 0 && n <= 30) return n;
   }
-  if (/ped(?:iu|iram|ira|irao)\s+ajuda/.test(texto)) return 1;
-  return 0;
+  // Singular explicito ("uma crianca pediu ajuda" ja' casou acima com 'uma';
+  // "pediu ajuda" sozinho e' um sujeito so') conta 1. Plural sem numeral
+  // ("pediram ajuda") nao diz quantas — e nao inventamos. Sem mencao, nao
+  // informado: null, nunca 0, porque zero e' afirmacao.
+  if (/(?<![a-z])pediu\s+ajuda/.test(texto)) return 1;
+  return null;
 }
 
 /**
@@ -290,7 +299,7 @@ export function extrairDaFala(transcricao, nomesDaTurma = [], { vivencia = false
 
   const vazia = {
     atividade: 'nao_identificada', area_tematica: 'nenhuma', marcadores_turma: [],
-    pediram_ajuda: 0, faltas_mencionadas: [], confianca: 0, conteudo_excluido: perimetro.bloqueado,
+    pediram_ajuda: null, faltas_mencionadas: [], confianca: 0, conteudo_excluido: perimetro.bloqueado,
     procedimento: vivencia ? 'nao_identificado' : null, objetivo: vivencia ? 'nenhum' : null,
     checkin: checkinVazio(),
   };
@@ -435,7 +444,7 @@ export function salvarFolha({ encontroId, educadorId, campos, origem = 'manual',
     atividade: c.atividade ?? 'nao_identificada',
     area_tematica: c.area_tematica ?? 'nenhuma',
     marcadores_turma: [...new Set(c.marcadores_turma ?? [])],
-    pediram_ajuda: Number.isFinite(Number(c.pediram_ajuda)) ? Number(c.pediram_ajuda) : 0,
+    pediram_ajuda: (c.pediram_ajuda === '' || c.pediram_ajuda == null) ? null : Number(c.pediram_ajuda),
     faltas_mencionadas: [],
     // A confianca e' do AGENTE, nunca do corpo enviado pelo cliente: quem edita
     // a folha a mao nao pode reescrever a metrica que mede o proprio agente.

@@ -76,7 +76,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **512 asserções de fluxo** e **215 testes unitários** — mais a avaliação do RAG
+São **517 asserções de fluxo** e **221 testes unitários** — mais a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização), a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo) e a da transcrição de áudio com stub (`npm run test:audio`: o ciclo de vida do arquivo, que
@@ -304,6 +304,8 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 | C8 | **Canais de divulgação** — os grupos de WhatsApp e o perfil de Instagram ficam cadastrados, com o público declarado. O público é **trava**: carta não vai para grupo de responsáveis, recado não vai para o Instagram, e a recusa é do servidor. Destino é o **link de convite**, nunca telefone | `#/divulgar`, `POST /api/canais` |
 | C9 | **Fila de divulgação** — o texto é montado e copiado **uma vez**, a fila lembra quais grupos já receberam (sobrevive a sair do navegador) e o envio fica registrado. **Não existe botão que poste em todos os grupos**: nenhum site posta em grupo de WhatsApp existente, e a tela diz por quê | `#/divulgar`, `POST /api/disparo` |
 | C10 | **Card do período para o Instagram** — desenhado em `<canvas>` no próprio navegador, do mesmo agregado do relatório, com supressão de célula pequena, revisor de sobre-alegação e a ressalva metodológica **dentro da imagem** | `#/divulgar`, `GET /api/divulgar/card` |
+| C15 | **Retenção detectada, não executada** — o fecho de ciclo olha o relógio e lista, com nome e prazo, a prova em vídeo e os relatos livres cuja retenção venceu; **nada é apagado**. Descartar é gesto de coordenação, com motivo e log, e o servidor recusa se a matrícula está ativa ou o prazo não venceu | `POST /api/ciclo/fechar`, `POST /api/relato-crianca/descartar-vencidos` |
+| C16 | **Régua com a leitura relativa** — ao lado do percentual, "quantas faltas até sair da régua"; e a tela diz quando a faixa de atenção é aritmeticamente impossível para a janela | `#/turma`, `GET /api/turma/presenca` |
 | C14 | **Conferência do telefone antes do boletim** — a forma é validada contra DDD real e prefixo; e o link do boletim só nasce depois que alguém confirmou o número com o responsável, com o **como** registrado. A primeira mensagem é um desafio **sem nome de criança**: dígito errado recebe um cumprimento, não a ficha | `#/crianca/:id`, `POST /api/crianca/contato-conferido` |
 | C13 | **Cadastro de canais** — criar, editar, arquivar e trazer de volta grupos de WhatsApp e o perfil de Instagram, ao lado de Quem entra e Turmas. O **público** do canal é trava: define o que pode ser enviado, e a regra aparece no formulário enquanto se escolhe | `#/pessoas?aba=canais`, `POST /api/canais`, `.../editar`, `.../arquivar` |
 | C11 | **Folha da turma** — QR de cada grupo de WhatsApp e do Instagram, gerado no próprio navegador **sem biblioteca** (`public/qr.js`, verificado com leitor real), para imprimir e colar na parede: o responsável aponta a câmera e entra no grupo | `#/divulgar?folha=1` |
@@ -352,8 +354,8 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    512 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     215 testes unitários das regras críticas (banco temporário)
+scripts/smoke-test.mjs    517 asserções do fluxo principal (contra o servidor no ar)
+scripts/unit-test.mjs     221 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
 scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)

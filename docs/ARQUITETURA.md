@@ -74,7 +74,7 @@ navegador (public/ — HTML+CSS+JS puro, hash routing, sem build)
     ▼
 server.js        HTTP puro (node:http) — estáticos + despacho de /api/*
     ▼
-src/api.js       117 rotas — sessão por perfil; RBAC educadora / coordenação /
+src/api.js       118 rotas — sessão por perfil; RBAC educadora / coordenação /
     │            diretoria (a diretoria não abre registro individual)
     ▼
     ├── src/domain.js     núcleo: elegibilidade, perímetro, alertas, safras,
@@ -115,7 +115,7 @@ data/audio-temp/    unico lugar onde audio toca disco, e sempre de passagem
 public/audio.js     conversao para WAV 16 kHz no NAVEGADOR (evita o ffmpeg) e
                     gravacao em blocos fechados de 5 min (evita 1 GB de Float32)
 
-scripts/         reset.mjs · smoke-test.mjs (512 asserções) · unit-test.mjs (215) · preparar-sessao.mjs
+scripts/         reset.mjs · smoke-test.mjs (517 asserções) · unit-test.mjs (221) · preparar-sessao.mjs
                  rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
                  audio-stub-test.mjs (ciclo de vida do áudio, sem modelo) · reancorar.mjs
                  whisper-stub.mjs · ai-stub.mjs (imitam a interface, não o comportamento)

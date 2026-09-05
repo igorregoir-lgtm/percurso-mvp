@@ -20,7 +20,7 @@
 //     ao fim do ciclo, so' quem convive com ela. Aqui o nome nao e' risco — a
 //     crianca ja' e' o assunto; o risco e' conteudo clinico.
 import { get, all, run } from './db.js';
-import { erro, agora, filtrarPerimetro, criancasDaTurma, consentimentoDe, listarCriancas } from './domain.js';
+import { erro, agora, filtrarPerimetro, criancasDaTurma, consentimentoDe, listarCriancas, hoje, dataBR, PARAMS } from './domain.js';
 import { anonimizarTexto } from './rag/anonimizar.js';
 
 export const TETO = 2000;
@@ -142,11 +142,32 @@ export function apagarRelatoCrianca(id, educadorId) {
   return { ok: true };
 }
 
-/** Descarte POR DECISAO da casa, nao automatico: a retencao declarada e'
- *  "enquanto a matricula estiver ativa + 2 anos" (governanca, campo_livre).
- *  O fecho de ciclo NAO chama isto — se chamasse, a retencao seria outra. */
-export function descartarRelatosDoCiclo(cicloId) {
-  const n = all(`SELECT id FROM relato_crianca WHERE ciclo_id = ?`, cicloId).length;
-  run(`DELETE FROM relato_crianca WHERE ciclo_id = ?`, cicloId);
-  return { apagados: n };
+/**
+ * Descarte POR DECISAO da casa, nao automatico — e SO' do que venceu.
+ *
+ * A retencao declarada e' "enquanto a matricula estiver ativa + N anos"
+ * (governanca `campo_livre`). A versao anterior desta funcao apagava por
+ * CICLO, nao tinha chamador nenhum, e o proprio comentario dizia que o fecho
+ * de ciclo nao a chamava "porque a retencao seria outra": era retencao de
+ * aparencia (OPAR 05/09/2026).
+ *
+ * Agora ela apaga por CRIANCA, e RECUSA se a retencao ainda nao venceu — o
+ * servidor confere a matricula e o relogio; a tela nao decide isso. O fecho de
+ * ciclo detecta e lista; quem apaga e' a coordenacao, com motivo e log.
+ */
+export function descartarRelatosVencidos(criancaId, { motivo, porUsuarioId }) {
+  const c = get(`SELECT id, nome FROM crianca WHERE id = ?`, criancaId);
+  if (!c) throw erro(404, 'Criança não encontrada.');
+  if (String(motivo ?? '').trim().replace(/[^\p{L}\p{N}]/gu, '').length < 6)
+    throw erro(422, 'Descartar relato exige o motivo por extenso — ele fica no log com o seu nome.');
+  if (get(`SELECT 1 x FROM matricula WHERE crianca_id = ? AND status = 'ativa'`, criancaId))
+    throw erro(422, `${c.nome} ainda tem matrícula ativa: a retenção do relato não venceu.`);
+  const venc = get(
+    `SELECT date(MAX(saida), '+${PARAMS.ANOS_RETENCAO_RELATO} years') AS expira_em
+       FROM matricula WHERE crianca_id = ?`, criancaId);
+  if (!venc?.expira_em || venc.expira_em > hoje())
+    throw erro(422, `A retenção dos relatos de ${c.nome} só vence em ${venc?.expira_em ? dataBR(venc.expira_em) : 'data indefinida'}.`);
+  const n = all(`SELECT id FROM relato_crianca WHERE crianca_id = ?`, criancaId).length;
+  run(`DELETE FROM relato_crianca WHERE crianca_id = ?`, criancaId);
+  return { crianca_id: criancaId, apagados: n, por: porUsuarioId, motivo: String(motivo).trim(), expirou_em: venc.expira_em };
 }

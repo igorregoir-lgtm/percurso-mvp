@@ -341,7 +341,9 @@ test('extrairDaFala: abaixo do piso de confiança nada é pré-marcado', () => {
   assert.equal(extracao.atividade, 'nao_identificada');
   assert.equal(extracao.area_tematica, 'nenhuma');
   assert.deepEqual(extracao.marcadores_turma, []);
-  assert.equal(extracao.pediram_ajuda, 0);
+  // ERA 0. Abaixo do piso nada foi entendido — e "ninguém pediu ajuda" é uma
+  // afirmação que a fala não fez. Não informado é null (OPAR 05/09/2026).
+  assert.equal(extracao.pediram_ajuda, null);
 });
 
 test('extrairDaFala: falta só entra com nome da turma e verbo explícito', () => {
@@ -625,24 +627,24 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     // O botão do recado. O destino virou `#/sai-daqui?aba=recado` na F2, mas o
     // que a âncora guarda é o mesmo: ele leva a TURMA e a DATA do encontro.
     'public/app.js:614': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
-    'public/app.js:1445': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:1447': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:3338': /async function telaScores\(\)/,
-    'public/app.js:3572': /id="pergunta"/,
+    'public/app.js:3343': /async function telaScores\(\)/,
+    'public/app.js:3577': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:6384': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'public/app.js:6389': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
     'src/api.js:431': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:862': /'POST \/api\/consentimento'/,
-    'src/api.js:1375': /periodosSugeridos\(\)/,
+    'src/api.js:872': /'POST \/api\/consentimento'/,
+    'src/api.js:1385': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:113': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
-    'src/domain.js:159': /a folha e' do ENCONTRO|A folha e' do ENCONTRO/i,
-    'src/domain.js:1094': /export function estadoDeRetomada/,
+    'src/domain.js:163': /a folha e' do ENCONTRO|A folha e' do ENCONTRO/i,
+    'src/domain.js:1114': /export function estadoDeRetomada/,
     'src/relatorio.js:440': /export function periodosSugeridos/,
     'src/relatorio.js:584': /const INTENCOES/,
     'src/seed.js:74': /rubrica_socioemocional/,
@@ -3199,7 +3201,7 @@ test('extrator: o portão de confiança continua sendo a primeira defesa', () =>
   const curta = V.extrairDaFala('Seis participaram do começo ao fim.', [], { vivencia: true }).extracao;
   assert.ok(curta.confianca < D.PARAMS.CONFIANCA_MINIMA);
   assert.equal(curta.checkin.participaram_inteiro, null);
-  assert.equal(curta.pediram_ajuda, 0);
+  assert.equal(curta.pediram_ajuda, null);   // não informado — nunca 0 (OPAR 05/09, segunda rodada)
 });
 
 // ===========================================================================
@@ -3241,7 +3243,9 @@ test('fecho de ciclo: detecta prova vencida, NUNCA apaga, e nunca toca prova viv
         WHERE crianca_id = ? AND campo = 'rubrica_socioemocional'`, morta);
 
   const ciclo = get(`SELECT id FROM ciclo WHERE status = 'aberto'`);
-  const r = D.fecharCiclo(ciclo.id, 2, {});
+  // `abrirProximo`: o teste do relato livre, mais abaixo, precisa de um ciclo
+  // aberto para fechar também.
+  const r = D.fecharCiclo(ciclo.id, 2, { abrirProximo: true });
   // Detecta e NOMEIA — a coordenação precisa saber de quem é a prova vencida.
   assert.ok(r.provas_vencidas.some(v => v.id === eMorta.id), 'a prova vencida não foi detectada');
   assert.equal(r.provas_vencidas.find(v => v.id === eMorta.id).expira_em, '2024-01-10',
@@ -3316,4 +3320,113 @@ test('régua: quando a faixa de atenção é aritmeticamente impossível, a tela
     .some(p => p >= r.minima_pct && p < r.atencao_pct);
   assert.ok(alcanca(r.encontros_para_atencao), 'o número sugerido também não alcança a faixa');
   assert.ok(!alcanca(r.encontros_para_atencao - 1), 'existe um número menor que já alcançaria');
+});
+
+
+// ===========================================================================
+// OPAR 05/09/2026 — segunda rodada: o que ficou aberto e era código.
+// ===========================================================================
+test('pediram_ajuda: não informado é null, nunca 0 — e a folha aceita o vazio', () => {
+  const A = (f) => V.extrairDaFala('Fizemos leitura no pátio, a turma colaborou e ficou cansada. ' + f, []).extracao.pediram_ajuda;
+  assert.equal(A('Foi tranquilo.'), null, 'sem menção virou 0 — zero é afirmação');
+  assert.equal(A('Pediram ajuda.'), null, 'plural sem numeral inventou quantidade');
+  assert.equal(A('Pediu ajuda.'), 1);
+  assert.equal(A('Duas crianças pediram ajuda.'), 2);
+  assert.equal(V.validarExtracao({ atividade: 'leitura', area_tematica: 'nenhuma', marcadores_turma: [],
+    pediram_ajuda: null, faltas_mencionadas: [], confianca: 0.7, conteudo_excluido: false, checkin: V.checkinVazio() }).valido, true);
+  // E o esquema deixou de forçar 0: a coluna aceita NULL e continua travando a escala.
+  const ddl = get(`SELECT sql FROM sqlite_master WHERE name = 'folha'`).sql;
+  assert.match(ddl, /pediram_ajuda\s+INTEGER\s+CHECK \(pediram_ajuda IS NULL OR/);
+});
+
+test('extrator: "vinte e um" a "vinte e nove" contam — composição fechada, não inferência', () => {
+  assert.equal(ck('Vinte e um participaram do começo ao fim.').participaram_inteiro, 21);
+  assert.equal(ck('Vinte e três participaram do começo ao fim.').participaram_inteiro, 23);
+  // E o simples não foi engolido pelo composto na alternação.
+  assert.equal(ck('Vinte participaram do começo ao fim.').participaram_inteiro, 20);
+  assert.equal(ck('Três participaram do começo ao fim.').participaram_inteiro, 3);
+});
+
+test('evidência: apagar exige motivo por extenso — "." e "ok" não são motivo', () => {
+  const c = get(`SELECT id FROM crianca WHERE ativo = 1 LIMIT 1`);
+  const e = EVI.guardar(Buffer.alloc(16, 5), { criancaId: c.id, campo: 'consentimento_em_video',
+    mime: 'video/mp4', responsavel: 'x', registradoPor: 2 });
+  assert.throws(() => EVI.apagar(e.id, { motivo: '.' }), /por extenso/);
+  assert.throws(() => EVI.apagar(e.id, { motivo: 'ok' }), /por extenso/);
+  assert.throws(() => EVI.apagar(e.id, { motivo: '  !!!  ' }), /por extenso/);
+  assert.equal(EVI.apagar(e.id, { motivo: 'pedido do responsável' }).apagado, e.id);
+});
+
+test('recado: o "próximo encontro" respeita o calendário da casa, não só o dia da semana', () => {
+  const REC2 = REC;
+  const antes = REC2.proximoEncontro('sabado', D.hoje(), 6);
+  D.marcarNoCalendario({ turmaId: 6, data: antes, tipo: 'sem_encontro', motivo: 'feriado de teste', educadorId: 2 });
+  const depois = REC2.proximoEncontro('sabado', D.hoje(), 6);
+  // ERA igual: a função lia só `diaLetivo` e anunciava o feriado como próximo
+  // encontro no texto que vai por WhatsApp para as famílias.
+  assert.notEqual(depois, antes, 'o recado anunciou o feriado como próximo encontro');
+  assert.ok(depois > antes);
+  // Sem turma, o comportamento antigo continua (compatibilidade com quem só tem o turno).
+  assert.equal(REC2.proximoEncontro('sabado', D.hoje()), antes);
+  run(`DELETE FROM calendario_excecao WHERE turma_id = 6 AND data = ?`, antes);
+});
+
+test('régua: "quantas faltas até sair da régua" — a leitura relativa, sem mudar a política', () => {
+  const r = D.reguaDaTurma(6);
+  for (const c of r.criancas) {
+    if (c.faixa === 'sem_base') { assert.equal(c.faltas_ate_abaixo, null); continue; }
+    assert.ok(Number.isInteger(c.faltas_ate_abaixo) && c.faltas_ate_abaixo >= 0);
+    if (c.faixa === 'abaixo') assert.equal(c.faltas_ate_abaixo, 0, 'já abaixo, mas diz que aguenta faltas');
+    else {
+      // Com N faltas a mais cai; com N-1 ainda não.
+      const pct = (k) => Math.round((c.presentes / (c.encontros + k)) * 100);
+      assert.ok(pct(c.faltas_ate_abaixo) < r.minima_pct);
+      assert.ok(c.faltas_ate_abaixo === 0 || pct(c.faltas_ate_abaixo - 1) >= r.minima_pct);
+    }
+  }
+  // A faixa percentual continua a da decisão 33: isto é acréscimo, não troca.
+  assert.equal(r.minima_pct, 75);
+});
+
+test('relato livre: o fecho de ciclo DETECTA a retenção vencida, e o descarte é de coordenação e só do que venceu', async () => {
+  const RLIV2 = RLIV;
+  const c = get(`SELECT c.id, c.nome FROM crianca c
+                  WHERE NOT EXISTS (SELECT 1 FROM matricula m WHERE m.crianca_id = c.id AND m.status = 'ativa')
+                  LIMIT 1`);
+  assert.ok(c, 'a seed deixou de ter criança fora da ativa');
+  run(`UPDATE matricula SET saida = '2023-03-01' WHERE crianca_id = ?`, c.id);
+  run(`INSERT INTO relato_crianca (crianca_id, educador_id, ciclo_id, texto, criado_em) VALUES (?, 2, NULL, 'x', '2023-01-01')`, c.id);
+  const aberto = get(`SELECT id FROM ciclo WHERE status = 'aberto'`);
+  assert.ok(aberto, 'nenhum ciclo aberto para fechar — o teste anterior fechou sem abrir o próximo?');
+  const r = D.fecharCiclo(aberto.id, 2, { abrirProximo: true });
+  const v = r.relatos_vencidos.find(x => x.crianca_id === c.id);
+  assert.ok(v, 'o fecho não detectou o relato vencido');
+  assert.equal(v.expira_em, '2025-03-01', 'o vencimento não é saída + ANOS_RETENCAO_RELATO');
+  // NÃO apagou: o texto continua até alguém decidir.
+  assert.equal(get(`SELECT COUNT(*) n FROM relato_crianca WHERE crianca_id = ?`, c.id).n, 1);
+  // O descarte recusa quem ainda está na ativa, recusa motivo vazio, e recusa
+  // retenção que não venceu — o servidor confere, a tela não decide.
+  const ativa = get(`SELECT crianca_id FROM matricula WHERE status = 'ativa' LIMIT 1`).crianca_id;
+  assert.throws(() => RLIV2.descartarRelatosVencidos(ativa, { motivo: 'retenção vencida', porUsuarioId: 2 }), /matrícula ativa/);
+  assert.throws(() => RLIV2.descartarRelatosVencidos(c.id, { motivo: '.', porUsuarioId: 2 }), /por extenso/);
+  run(`UPDATE matricula SET saida = ? WHERE crianca_id = ?`, D.hoje(), c.id);
+  assert.throws(() => RLIV2.descartarRelatosVencidos(c.id, { motivo: 'retenção vencida', porUsuarioId: 2 }), /só vence em/);
+  run(`UPDATE matricula SET saida = '2023-03-01' WHERE crianca_id = ?`, c.id);
+  const d = RLIV2.descartarRelatosVencidos(c.id, { motivo: 'retenção vencida, fecho do ciclo', porUsuarioId: 2 });
+  assert.equal(d.apagados, 1);
+  assert.equal(get(`SELECT COUNT(*) n FROM relato_crianca WHERE crianca_id = ?`, c.id).n, 0);
+});
+
+test('fecho de ciclo na tela: o modal de retenção vencida nasce DEPOIS do re-render, senão morre no mesmo tique', async () => {
+  const { readFileSync } = await import('node:fs');
+  const front = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  const ini = front.indexOf("if (a === 'fechar-ciclo')");
+  const bloco = front.slice(ini, front.indexOf('// ---- coordenacao ----', ini));
+  // `navegar()` remove todo `.veu` ao trocar a tela (é a limpeza de modais da
+  // navegação). Se ele vier DEPOIS do modal, o modal some antes de ser visto.
+  const iNavegar = bloco.indexOf('navegar();');
+  const iModal = bloco.indexOf('A retenção venceu para alguém');
+  assert.ok(iNavegar > -1 && iModal > -1);
+  assert.ok(iNavegar < iModal, 'navegar() voltou para depois do modal — ele vai sumir no mesmo tique');
+  assert.equal((bloco.match(/navegar\(\);/g) || []).length, 1, 'há um segundo navegar() que derruba o modal');
 });

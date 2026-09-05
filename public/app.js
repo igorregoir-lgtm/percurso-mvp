@@ -1159,7 +1159,9 @@ function cartaoRegua(r) {
       <div class="pilha" style="margin-top:10px">
         ${r.criancas.filter(c => c.faixa !== 'ok').map(c => `
           <button class="link" data-acao="ir" data-href="#/crianca/${c.id}">
-            <span><span>${esc(c.nome)}</span><span class="d">${c.pct == null ? '—' : c.pct + '%'} · ${c.presentes} de ${c.encontros} encontros</span></span>
+            <span><span>${esc(c.nome)}</span><span class="d">${c.pct == null ? '—' : c.pct + '%'} · ${c.presentes} de ${c.encontros} encontros${
+              c.faltas_ate_abaixo == null ? '' : c.faltas_ate_abaixo === 0 ? ' · já abaixo da régua'
+              : ` · ${c.faltas_ate_abaixo} falta${c.faltas_ate_abaixo === 1 ? '' : 's'} da régua`}</span></span>
             <span class="selo ${FAIXA[c.faixa][1]}">${FAIXA[c.faixa][0]}</span>
           </button>`).join('') || '<p class="sub">Toda a turma está na régua neste período.</p>'}
       </div>
@@ -1907,8 +1909,9 @@ async function telaSintese() {
     ${d.ciclo.status === 'aberto' ? `
     <div class="cartao compacto" style="margin-top:14px">
       <h2>Fechar o ciclo</h2>
-      <p class="sub">Fechar executa a retenção declarada na governança: o ciclo para de aceitar observação nova e
-        qualquer anotação de texto legada é apagada do banco. Abre o próximo ciclo em seguida.</p>
+      <p class="sub">Fechar para de aceitar observação nova, apaga a anotação de texto legada e <b>olha o
+        relógio da retenção</b>: se a prova em vídeo ou o relato livre de alguém venceu, você vê a lista com
+        nome e prazo — <b>nada é apagado sozinho</b>. Abre o próximo ciclo em seguida.</p>
       <div class="linha" style="margin-top:12px">
         <button class="btn secundario" data-acao="fechar-ciclo" data-id="${d.ciclo.id}">Fechar ${esc(d.ciclo.nome)} e abrir o próximo</button>
       </div>
@@ -2280,7 +2283,7 @@ function blocosDaFolha() {
     <div class="cartao">
       <div class="dado">
         <span class="k">Pediram ajuda</span>
-        <b id="ajuda" style="font-size:15px">${f.campos.pediram_ajuda}</b>
+        <b id="ajuda" style="font-size:15px">${f.campos.pediram_ajuda ?? '—'}</b>
       </div>
       <div role="group" aria-label="Quantas pediram ajuda" style="margin:-4px 0 4px">
         ${Array.from({ length: CHECKIN_ATALHOS + 1 }, (_, n) => `
@@ -2315,7 +2318,9 @@ async function carregarFolha(turmaId, data) {
       atividade: d.folha?.atividade ?? 'nao_identificada',
       area_tematica: d.folha?.area_tematica ?? 'nenhuma',
       marcadores_turma: d.folha?.marcadores ?? [],
-      pediram_ajuda: d.folha?.pediram_ajuda ?? 0,
+      // null = não informado (OPAR 05/09): o traço na tela. Zero é afirmação, e
+      // só entra quando a pessoa toca no 0.
+      pediram_ajuda: d.folha?.pediram_ajuda ?? null,
       conteudo_excluido: !!d.folha?.conteudo_excluido,
       procedimento: d.folha?.procedimento ?? (d.vivencia ? 'nao_identificado' : null),
       objetivo: d.folha?.objetivo ?? (d.vivencia ? 'nenhum' : null),
@@ -6970,7 +6975,55 @@ document.addEventListener('click', comErro(async (ev) => {
   if (a === 'fechar-ciclo') {
     const r = await post('/api/ciclo/fechar', { ciclo_id: Number(alvo.dataset.id), abrir_proximo: true });
     toast(`Ciclo fechado. ${r.notas_descartadas} anotação(ões) legada(s) descartada(s).`, 'bom');
+    // RE-RENDERIZA ANTES de abrir o modal: `navegar()` remove todo `.veu` ao
+    // trocar a tela, e a primeira versão montava o modal e o chamava em
+    // seguida — o modal nascia e morria no mesmo tique, e "0 em retenção
+    // vencida" passava por resultado. Visto no navegador, não no teste.
     navegar();
+    // O FECHO DETECTA, NÃO DESTRÓI (OPAR 05/09). Se algo venceu, a coordenação
+    // vê a lista com nome e prazo — e decide. Silêncio aqui seria a retenção
+    // declarada continuar sem ninguém olhar o relógio.
+    const provas = r.provas_vencidas ?? [], relatos = r.relatos_vencidos ?? [];
+    if (provas.length || relatos.length) {
+      const veu = document.createElement('div');
+      veu.className = 'veu';
+      veu.innerHTML = `
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rv">
+          <h2 id="rv">A retenção venceu para alguém</h2>
+          <p>O fecho de ciclo olha o relógio e diz. <b>Nada foi apagado</b>: destruir prova ou relato é
+            gesto de gente, com motivo e rastro.</p>
+          ${provas.length ? `<h3 style="margin-top:12px">Prova de consentimento em vídeo · ${provas.length}</h3>
+            <ul class="sub" style="margin:6px 0 0;padding-left:18px">${provas.map(v =>
+              `<li>${esc(v.nome)} (${esc(v.codigo)}) — venceu em ${dataBR(v.expira_em)}</li>`).join('')}</ul>
+            <p class="sub" style="margin-top:6px">Apagar: na ficha da criança, em Consentimentos, com o motivo.</p>` : ''}
+          ${relatos.length ? `<h3 style="margin-top:12px">Relato livre sobre a criança · ${relatos.length}</h3>
+            <ul class="sub" style="margin:6px 0 0;padding-left:18px">${relatos.map(v =>
+              `<li>${esc(v.nome)} (${esc(v.codigo)}) — ${v.relatos} relato(s), venceu em ${dataBR(v.expira_em)}</li>`).join('')}</ul>
+            <div class="pilha" style="margin-top:8px">${relatos.map(v =>
+              `<button class="btn pequeno fantasma" data-acao="descartar-relatos-vencidos" data-id="${v.crianca_id}"
+                 data-nome="${esc(v.nome)}">Descartar os relatos de ${esc(v.nome.split(' ')[0])}</button>`).join('')}</div>` : ''}
+          <div class="linha" style="margin-top:16px">
+            <button class="btn secundario cresce" data-acao="rv-fechar" type="button">Entendi</button>
+          </div>
+        </div>`;
+      document.body.appendChild(veu);
+      prenderFoco(veu);
+      veu.addEventListener('click', comErro(async (e) => {
+        const a3 = e.target.dataset?.acao;
+        if (a3 === 'rv-fechar' || e.target === veu) { veu.remove(); return; }
+        if (a3 !== 'descartar-relatos-vencidos') return;
+        modalCampo({
+          titulo: `Descartar os relatos de ${e.target.dataset.nome}`,
+          texto: 'A retenção venceu: a matrícula terminou há mais de dois anos. Isto apaga o texto para sempre e fica no log com o seu nome.',
+          rotulo: 'Motivo', dica: 'Ex.: retenção vencida, fecho do ciclo',
+          confirmar: 'Apagar de vez',
+        }, comErro(async (motivo) => {
+          const d = await post('/api/relato-crianca/descartar-vencidos', { crianca_id: e.target.dataset.id, motivo });
+          toast(`${d.apagados} relato(s) descartado(s).`, 'bom');
+          e.target.disabled = true; e.target.textContent = 'Descartados';
+        }));
+      }));
+    }
     return;
   }
 

@@ -61,6 +61,10 @@ export const PARAMS = {
   // quando o consentimento DEIXA de valer — prova de consentimento ativo nunca
   // vence, porque e' justamente quando o onus do Art. 8o, §1o esta' de pe'.
   ANOS_RETENCAO_PROVA: 5,
+  // Retencao do relato livre sobre a crianca (governanca `campo_livre`):
+  // "enquanto a matricula estiver ativa + 2 anos". Detectada no fecho de
+  // ciclo, como a prova; nunca executada sozinha.
+  ANOS_RETENCAO_RELATO: 2,
   PRESENCA_MINIMA_PCT: 75,
   PRESENCA_ATENCAO_PCT: 80,
   // Com menos encontros que isto no periodo, a regua nao se aplica (sem base).
@@ -1050,9 +1054,25 @@ export function fecharCiclo(cicloId, usuarioId, { abrirProximo = false } = {}) {
       .map(l => ({ ...l, vencida: l.expira_em <= hoje() }));
     for (const v of vencidas) run(`UPDATE consentimento_evidencia SET expira_em = ? WHERE id = ?`, v.expira_em, v.id);
 
+    // OS RELATOS LIVRES, LIDOS PELO MESMO RELOGIO. A retencao declarada e'
+    // "enquanto a matricula estiver ativa + N anos": relato de crianca que ja'
+    // saiu ha' mais de N anos venceu. `descartarRelatosDoCiclo` existia sem
+    // chamador — era retencao de aparencia. Agora ha' deteccao aqui e o
+    // descarte e' rota propria, de coordenacao, com log — nunca automatico.
+    const relatosVencidos = all(
+      `SELECT c.id AS crianca_id, c.nome, c.codigo, COUNT(r.id) AS relatos,
+              date(MAX(m.saida), '+${PARAMS.ANOS_RETENCAO_RELATO} years') AS expira_em
+         FROM relato_crianca r
+         JOIN crianca c ON c.id = r.crianca_id
+         JOIN matricula m ON m.crianca_id = c.id
+        WHERE NOT EXISTS (SELECT 1 FROM matricula a WHERE a.crianca_id = c.id AND a.status = 'ativa')
+        GROUP BY c.id
+       HAVING expira_em <= ?`, hoje());
+
     marcarAtividade(usuarioId, 'fecho_ciclo');
     return {
       ciclo: get(`SELECT * FROM ciclo WHERE id = ?`, cicloId), notas_descartadas: comTexto, proximo,
+      relatos_vencidos: relatosVencidos,
       // O que a coordenação tem de olhar, com nome e prazo. Vazio é o caso comum.
       provas_vencidas: vencidas.filter(v => v.vencida)
         .map(({ id, nome, codigo, expira_em }) => ({ id, nome, codigo, expira_em })),
@@ -2117,7 +2137,21 @@ export function reguaDaTurma(turmaId, { desde = null, ref = hoje() } = {}) {
     desde: inicio, ate: ref,
     minima_pct: PARAMS.PRESENCA_MINIMA_PCT, atencao_pct: PARAMS.PRESENCA_ATENCAO_PCT,
     minimo_encontros: PARAMS.REGUA_MINIMO_ENCONTROS,
-    criancas: criancas.map(c => ({ ...c, faixa_atencao_alcancavel: faixaAlcancavel(c.encontros) })),
+    // A LEITURA RELATIVA, ao lado da percentual (OPAR 05/09). "Quantas faltas
+    // ate' sair da regua" e' o que a coordenacao de fato pergunta — e nao
+    // depende da granularidade que apaga a faixa de atencao. Nao muda a
+    // politica: a faixa continua sendo a da decisao 33. Acrescenta o numero
+    // que responde a pergunta certa.
+    criancas: criancas.map(c => {
+      let faltasAteAbaixo = null;
+      if (c.faixa !== 'sem_base' && c.encontros) {
+        faltasAteAbaixo = 0;
+        while (faltasAteAbaixo < 60
+          && Math.round((c.presentes / (c.encontros + faltasAteAbaixo)) * 100) >= PARAMS.PRESENCA_MINIMA_PCT)
+          faltasAteAbaixo++;
+      }
+      return { ...c, faixa_atencao_alcancavel: faixaAlcancavel(c.encontros), faltas_ate_abaixo: faltasAteAbaixo };
+    }),
     resumo,
     sem_faixa_de_atencao: semFaixaDeAtencao.length,
     encontros_para_atencao: semFaixaDeAtencao.length

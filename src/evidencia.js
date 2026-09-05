@@ -149,8 +149,11 @@ export function reconciliar() {
 export function apagar(id, { motivo }) {
   const l = get(`SELECT * FROM consentimento_evidencia WHERE id = ?`, id);
   if (!l) throw erro(404, 'Essa gravação não está no sistema.');
-  if (!String(motivo ?? '').trim())
-    throw erro(422, 'Apagar a prova do consentimento exige o motivo — normalmente, o pedido do responsável.');
+  // "." passava: a checagem era so' "nao vazio". Um motivo que nao diz nada
+  // deixa o log de acesso com uma destruicao sem explicacao — que e' o que
+  // este campo existe para impedir.
+  if (String(motivo ?? '').trim().replace(/[^\p{L}\p{N}]/gu, '').length < 6)
+    throw erro(422, 'Apagar a prova do consentimento exige dizer o motivo por extenso — normalmente, o pedido do responsável.');
   rmSync(join(DIR, l.arquivo), { force: true });
   run(`DELETE FROM consentimento_evidencia WHERE id = ?`, id);
   return { apagado: id, crianca_id: l.crianca_id, campo: l.campo, motivo: String(motivo).trim() };
