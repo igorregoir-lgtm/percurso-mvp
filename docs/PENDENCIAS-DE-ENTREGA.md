@@ -12,6 +12,8 @@ marcado como pendente e **fica em branco até acontecer**. Nada nesta lista se f
 Executar na semana da entrega. Nenhum item deste bloco é automatizável por este repositório.
 
 - [ ] Criar a pasta no Google Drive com visibilidade **pública** ("qualquer pessoa com o link").
+- [ ] Subir o **protótipo canônico** — [`h6AnLVYLfpeVl2N4ie0Qzv`](https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv),
+      27 telas e quatro papéis (ver [`ARTEFATOS-VISUAIS.md`](ARTEFATOS-VISUAIS.md)).
 - [ ] Subir **todos os arquivos** da entrega: o repositório completo (código, `docs/`, protótipo
       navegável em `prototipo-figma/`), o vídeo regravado (ver §5) e o Pitch Deck (ver §3).
       Os GGUF em `models/` **não** sobem — são 4,3 GB baixáveis por `ai/scripts/setup-model.sh`
@@ -36,7 +38,7 @@ Executar na semana da entrega. Nenhum item deste bloco é automatizável por est
 - [ ] **Avaliar os notebooks doados** que estão parados como host do Percurso e do modelo local.
 - [x] **Telas novas no protótipo Figma** — *feito em 02/09/2026*. Em vez de acrescentar telas ao
       arquivo entregue, foi construído o **protótipo completo**: 27 telas, os quatro papéis, 402 ×
-      874 pt, 152 ligações, nenhuma tela sem entrada nem sem saída. Inclui as cinco que faltavam
+      874 pt, 153 ligações, nenhuma tela sem entrada nem sem saída. Inclui as cinco que faltavam
       (registro de vivência, folha à mão, relato, recado, parecer) e mais as da diretoria, que
       também não existiam. Índice e hierarquia dos três protótipos:
       [`ARTEFATOS-VISUAIS.md`](ARTEFATOS-VISUAIS.md). O arquivo entregue fica **congelado como
@@ -152,7 +154,9 @@ termo, formulário de registro) é entregável da Etapa H do plano
 ([`revisao/04-PLANO-COMPLEMENTACAO-IA.md`](revisao/04-PLANO-COMPLEMENTACAO-IA.md) §8); o campo de
 resultados fica **em branco** até a sessão acontecer — validação não se fabrica.
 
-- [ ] Agendar e executar a sessão com a educadora. **Pendente — humano.**
+- [ ] Agendar e executar a sessão com a **psicóloga** — o protocolo vivo é
+      [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md), refeito para ela em 02/09/2026 (a variante
+      pedagoga é a §3.4). **Pendente — humano.**
 - [ ] Registrar os resultados no formulário do protocolo. **Pendente — humano.**
 
 ---
@@ -160,7 +164,7 @@ resultados fica **em branco** até a sessão acontecer — validação não se f
 ## 5. Regravação do vídeo (GAP-12)
 
 O vídeo atual (`video/percurso-demonstracao.mp4`, 6m14s) foi gravado sobre a **v1** e não mostra
-captura por voz, copilot, calibração, SROI nem relatório do doador. O roteiro v2 completo está em
+captura por voz, copilot, calibração, SROI nem relatório do doador. O roteiro v3 completo está em
 [`ROTEIRO-DO-VIDEO.md`](ROTEIRO-DO-VIDEO.md), dimensionado para até 7 minutos.
 
 - [ ] Regravar o vídeo seguindo o **roteiro v3** ([`ROTEIRO-DO-VIDEO.md`](ROTEIRO-DO-VIDEO.md)),
@@ -178,7 +182,8 @@ captura por voz, copilot, calibração, SROI nem relatório do doador. O roteiro
 > divergência de formato. A decisão foi revertida por escolha do grupo: o guia diz que a entrega
 > **deve** ser feita em Figma, e negociar dispensa custava mais do que construir.
 
-**O protótipo:** https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL
+**O protótipo entregue na semana 5** (congelado como registro — o canônico hoje é outro, ver
+[`ARTEFATOS-VISUAIS.md`](ARTEFATOS-VISUAIS.md)): https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL
 
 Nove telas de 375×812 (`#/entrar`, `#/hoje`, `#/chamada`, `#/ciclo`, `#/observacao/:id`,
 `#/turma`, `#/consentimentos`, `#/painel`, `#/sintese`), **dois papéis com tela** (educadora e

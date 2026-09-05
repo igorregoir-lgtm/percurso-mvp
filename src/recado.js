@@ -26,7 +26,23 @@ export function recadoDaTurma(turmaId, data) {
   const ch = chamada(turmaId, data);
   const folha = folhaDe(enc.id);
   const vivencia = !turmaNaRubrica(turmaId);
-  const presentes = ch.criancas.filter(c => c.status === 'P').length;
+  // O recado deixou de ser sempre do dia (correcao 48ec1dd: o botao segue o
+  // ENCONTRO da folha, que pode ter dias). Duas consequencias, medidas na
+  // auditoria OPAR de 03/09/2026 e corrigidas aqui:
+  //
+  //  1. o texto dizia "Hoje:" e "Presenca de hoje:" sobre um encontro de dias
+  //     atras, e anunciava como "Proximo encontro" uma data JA PASSADA — medido:
+  //     turma 1, encontro de 27/08, lido em 03/09, dizia "Proximo encontro:
+  //     28/08/2026". Isso sai por WhatsApp para os responsaveis.
+  //  2. a contagem vinha do roster ATUAL (`criancasDaTurma`), nao das linhas de
+  //     presenca daquele encontro: matricula nova depois do encontro inflava o
+  //     denominador de um dia em que a crianca nem estava.
+  const doDia = data === hoje();
+  const pres = get(
+    `SELECT COUNT(*) AS t, SUM(CASE WHEN status='P' THEN 1 ELSE 0 END) AS p
+       FROM presenca WHERE encontro_id = ?`, enc.id);
+  const presentes = pres.p ?? 0;
+  const total = pres.t ?? 0;
   const mes = data.slice(0, 7);
   const m = get(
     `SELECT COUNT(*) AS t, SUM(CASE WHEN p.status='P' THEN 1 ELSE 0 END) AS p
@@ -38,21 +54,22 @@ export function recadoDaTurma(turmaId, data) {
     const fez = vivencia
       ? `${rotuloDe(PROCEDIMENTOS, folha.procedimento ?? 'nao_identificado')}${folha.objetivo && folha.objetivo !== 'nenhum' ? ` (objetivo: ${rotuloDe(OBJETIVOS, folha.objetivo).toLowerCase()})` : ''}`
       : `${rotuloDe(ATIVIDADES, folha.atividade)}${folha.area_tematica !== 'nenhuma' ? ` (${rotuloDe(AREAS, folha.area_tematica).toLowerCase()})` : ''}`;
-    linhas.push(`Hoje: ${fez}.`);
+    linhas.push(`${doDia ? 'Hoje' : `No encontro de ${porExtenso(data)}`}: ${fez}.`);
     if (folha.marcadores.length)
       linhas.push(`O grupo esteve ${folha.marcadores.map(x => rotuloDe(MARCADORES, x).toLowerCase()).join(', ')}.`);
   } else {
-    linhas.push('Hoje o encontro aconteceu; o registro da atividade ainda vai ser feito.');
+    linhas.push(`${doDia ? 'Hoje o encontro aconteceu' : `O encontro de ${porExtenso(data)} aconteceu`}; o registro da atividade ainda vai ser feito.`);
   }
-  linhas.push(`Presença de hoje: ${presentes} de ${ch.criancas.length} crianças.`);
+  linhas.push(`${doDia ? 'Presença de hoje' : 'Presença no encontro'}: ${presentes} de ${total} crianças.`);
   if (pctMes != null) linhas.push(`Presença da turma no mês: ${pctMes}%. A régua do Instituto continua 75%.`);
-  const prox = proximoEncontro(ch.turma.turno, data);
+  // a partir de HOJE quando o encontro e' antigo — senao o "proximo" ja passou
+  const prox = proximoEncontro(ch.turma.turno, data < hoje() ? hoje() : data);
   if (prox) linhas.push(`Próximo encontro: ${dataBR(prox)}.`);
   linhas.push('— Instituto Ebenézer');
   const texto = linhas.join('\n');
   return {
     turma: { id: ch.turma.id, nome: ch.turma.nome, turno: ch.turma.turno }, data, texto,
-    presentes, total: ch.criancas.length, presenca_mes_pct: pctMes, proximo_encontro: prox,
+    presentes, total, presenca_mes_pct: pctMes, proximo_encontro: prox,
     // Sem número: abre o WhatsApp para a pessoa escolher o grupo da turma.
     whatsapp_url: 'https://wa.me/?text=' + encodeURIComponent(texto),
     doutrina: 'O recado é da turma — o que já sai hoje para o grupo (atividade e presença em número). Quem envia é você, no grupo que já existe. Nenhuma criança é nomeada; a presença de cada uma é para dentro.',

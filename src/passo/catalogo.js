@@ -466,10 +466,12 @@ const COORDENACAO = [
 const PERGUNTAS_DIRETORIA = [
   ['contagem', 'Quantas crianças o instituto atende?', 'Quantas crianças o instituto atende?'],
   ['presenca', 'Como está a presença deste mês?', 'Como está a presença deste mês?'],
-  // A consulta NÃO pode começar por "quantas crianças": consultar() casa a
-  // primeira intenção da lista e 'contagem' tem o termo 'quantas crianc' —
-  // o chip prometia evasão e devolvia o inventário.
-  ['evasao', 'Quantas crianças estão em risco de sair?', 'Qual é o risco de evasão hoje?'],
+  // Até 03/09/2026 a consulta não podia começar por "quantas crianças": a
+  // genérica 'contagem' engolia o assunto, e o chip prometia evasão entregando
+  // o inventário. Corrigido em 82ae4fa (assunto vence fórmula), então o rótulo
+  // e a consulta voltam a ser a MESMA frase — o desvio era o bug, não o desenho.
+  // O teste 'as perguntas do Passo classificam na intenção que declaram' trava.
+  ['evasao', 'Quantas crianças estão em risco de sair?', 'Quantas crianças estão em risco de sair?'],
   ['cobertura', 'Como está a cobertura do registro?', 'Como está a cobertura do registro?'],
   ['exposicao', 'Que áreas de sonho estão em aberto?', 'Quais áreas do Laboratório de Sonhos estão em aberto?'],
   ['ciclo', 'Como está o ciclo de observação?', 'Como está o ciclo de observação?'],

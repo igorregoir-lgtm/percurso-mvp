@@ -495,15 +495,6 @@ rota(/^#\/hoje/, async () => {
   const folhaFeita = !!d.folha;
   // A folha e' do ENCONTRO: existe enquanto houver um encontro registrado,
   // mesmo que ele tenha sido no ultimo dia letivo e nao hoje.
-  // O recado segue a MESMA regra: e' do encontro de data_folha, nao da
-  // "chamada de hoje". Em dia nao letivo, data_folha aponta para o ultimo
-  // encontro (dataDaFolha); amarrar o botao a ch.registrada escondia a
-  // entrada exatamente quando a tela Hoje ainda mostra o cartao da folha.
-  const temRecado = !!d.data_folha && (
-    d.data_folha === d.hoje ? !!ch?.registrada : true
-  );
-  const hrefRecado = d.data_folha && d.data_folha !== d.hoje
-    ? `#/recado?data=${d.data_folha}` : '#/recado';
   const cartaoFolha = !d.data_folha ? '' : `
     <div class="cartao compacto">
       <div class="linha"><h2 class="cresce">${d.na_rubrica === false ? 'Registro da vivência' : 'Folha'} ${d.data_folha === d.hoje ? 'do dia' : `de ${dataBR(d.data_folha)}`}</h2>
@@ -515,7 +506,7 @@ rota(/^#\/hoje/, async () => {
         <button class="btn largo" data-acao="ir" data-href="#/voz">${folhaFeita ? 'Contar de novo' : 'Contar como foi'}</button>
         <button class="btn largo secundario" data-acao="ir" data-href="#/folha">Preencher à mão</button>
         ${folhaFeita && d.na_rubrica === false ? `<button class="btn largo ${d.folha.relato_liberado ? 'fantasma' : 'secundario'}" data-acao="ir" data-href="#/relato">${d.folha.relato_liberado ? 'Relato liberado' : 'Revisar e liberar o relato'}</button>` : ''}
-        ${temRecado ? `<button class="btn largo fantasma" data-acao="ir" data-href="${hrefRecado}">Recado para os responsáveis</button>` : ''}
+        ${(d.recados ?? []).map(r => `<button class="btn largo fantasma" data-acao="ir" data-href="#/recado?turma_id=${r.turma_id}&data=${r.data}">Recado para os responsáveis${d.recados.length > 1 ? ` · ${esc(r.turma)}` : ''}</button>`).join('')}
       </div>
     </div>`;
 
@@ -3822,7 +3813,11 @@ document.addEventListener('click', comErro(async (ev) => {
 const PASSO_ROTAS_POR_PAPEL = {
   educador: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/pauta', '#/ciclo', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
   profissional: ['#/hoje', '#/chamada', '#/voz', '#/folha', '#/relato', '#/recado', '#/turma', '#/criancas', '#/alertas', '#/copilot'],
-  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/pessoas', '#/arquivo', '#/criancas', '#/alertas', '#/relato', '#/copilot'],
+  // '#/consulta' entrou em 03/09/2026: `exigeGestao` autoriza coordenação E
+  // diretoria (src/api.js), e o painel dela já oferece o botão 'Perguntar à
+  // base'. Sem a rota aqui, uma sugestão do Passo para essa tela era engolida
+  // com um `return` mudo — sem navegação e sem aviso.
+  coordenacao: ['#/painel', '#/scores', '#/safras', '#/sintese', '#/consentimentos', '#/importar', '#/pessoas', '#/arquivo', '#/criancas', '#/alertas', '#/relato', '#/consulta', '#/copilot'],
   diretoria: ['#/relatorio', '#/impacto', '#/consulta'],
 };
 

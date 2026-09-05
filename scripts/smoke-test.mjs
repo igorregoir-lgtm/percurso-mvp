@@ -871,8 +871,16 @@ secao('17 · Consulta sobre a camada agregada (F15)');
 
   const n = (await POST('rita', '/api/consulta', { pergunta: 'a Ana Clara está bem?' })).corpo;
   T('pergunta sobre criança individual não é reconhecida', n.reconhecida === false);
+  // Perímetro da decisão 16 na PORTA DIRETA (auditoria OPAR 03/09/2026): até
+  // então só o assistente recusava nome de criança, e a mesma frase respondida
+  // aqui devolvia número. A recusa nominal é mais específica que "não sei".
+  T('nome de criança é recusado pelo perímetro, não por desconhecimento',
+    /camada agregada/i.test(n.resposta) && /criança nomeada/i.test(n.resposta));
+  const nq = (await POST('rita', '/api/consulta', { pergunta: 'quantos ônibus o instituto tem?' })).corpo;
   T('quando não sabe, o sistema diz que não sabe',
-    /não sei responder/i.test(n.resposta) && /inventar/i.test(n.resposta));
+    nq.reconhecida === false && /não sei responder/i.test(nq.resposta) && /inventar/i.test(nq.resposta));
+  const nd = (await POST('rita', '/api/consulta', { pergunta: 'o que é cobertura?' })).corpo;
+  T('pedido de definição não vira número', nd.reconhecida === false, `(${nd.intencao})`);
   T('a recusa oferece o que ele sabe responder', n.sugestoes.length >= 4);
   T('a doutrina de perímetro é declarada na resposta',
     /dado individual de criança não é respondido/i.test(n.doutrina));
@@ -1113,17 +1121,6 @@ secao('24 · Psicóloga e Vivência terapêutica — indicador de programa, nunc
   const hoje = (await GET('carolina', '/api/hoje')).corpo;
   T('o Hoje dela abre na turma da Vivência', !!hoje.turma && /Viv[eê]ncia/i.test(hoje.turma.programa));
   T('a turma da Vivência está fora da rubrica: sem agenda de ciclo', hoje.na_rubrica === false && hoje.agenda === null);
-  // Contrato do botao "Recado" na tela Hoje: o encontro relevante e' data_folha,
-  // nao a chamada de hoje. Em dia nao letivo, chamada.registrada e' false e
-  // data_folha aponta para o ultimo sabado — o recado desse dia tem de responder
-  // (e a UI oferece o botao; public/app.js, temRecado). Antes sumia.
-  T('o Hoje carrega data_folha do encontro da folha', !!hoje.data_folha);
-  {
-    const recFolha = await GET('carolina', `/api/recado?turma_id=${hoje.turma.id}&data=${hoje.data_folha}`);
-    T('o recado do encontro da folha responde — base do botão na tela Hoje, inclusive fora do sábado',
-      recFolha.status === 200 && recFolha.corpo.data === hoje.data_folha,
-      `(${recFolha.status}, data=${recFolha.corpo?.data})`);
-  }
   // A Vivencia e' sabatica: a ultima atividade dela e' sempre o sabado anterior, e a
   // regua de lapso e' de 5 dias (PARAMS.DIAS_LAPSO). Numa quinta-feira o lapso dispara
   // sozinho — isso e' a regua funcionando, nao o teste quebrando. Fixar `false` aqui so'
@@ -1259,12 +1256,54 @@ secao('27 · Régua de presença do Instituto (75%) e recado da turma aos respon
   T('a professora NÃO abre a régua do Instituto (403)', (await GET('maria', '/api/regua')).status === 403);
 
   const rec = await GET('carolina', `/api/recado?turma_id=${tid}`);
-  T('o recado da turma é gerado do registro (presença em número, atividade)', rec.status === 200 && new RegExp('Presença de hoje: \\d+ de ' + r.corpo.criancas.length).test(rec.corpo.texto));
+  // A contagem sai das presencas DAQUELE encontro, e o texto so' diz "hoje"
+  // quando o encontro e' de hoje (auditoria OPAR 03/09/2026 — antes disto o
+  // recado de um sabado lido numa quinta dizia "Hoje:" e anunciava como
+  // "Proximo encontro" uma data ja passada).
+  const recDoDia = rec.corpo.data === hoje.hoje;
+  T('o recado da turma é gerado do registro (presença em número, atividade)',
+    rec.status === 200 && new RegExp(`Presença ${recDoDia ? 'de hoje' : 'no encontro'}: \\d+ de ${rec.corpo.total}`).test(rec.corpo.texto),
+    `(data=${rec.corpo.data}, hoje=${hoje.hoje})`);
+  T('o recado não chama de "hoje" um encontro de outro dia',
+    recDoDia || !/Hoje[:o]/.test(rec.corpo.texto));
+  T('o "próximo encontro" do recado está no futuro',
+    !rec.corpo.proximo_encontro || rec.corpo.proximo_encontro > hoje.hoje,
+    `(${rec.corpo.proximo_encontro})`);
+
+  // A-1 da auditoria OPAR: quem responde por VARIAS turmas tinha porta so' para
+  // `turmas[0]`. A psicologa cobre a Vivencia de manha E de tarde; os
+  // responsaveis da tarde nao recebiam nada pela interface.
+  T('/api/hoje declara um recado por turma com encontro, não só a primeira',
+    Array.isArray(hoje.recados) && hoje.recados.length === hoje.turmas.length,
+    `(${hoje.recados?.length} recados para ${hoje.turmas.length} turmas)`);
+  const outra = hoje.recados.find(r => r.turma_id !== hoje.turma.id);
+  T('a segunda turma da psicóloga tem recado alcançável', !!outra, `(${JSON.stringify(hoje.recados)})`);
+  if (outra) {
+    const r2 = await GET('carolina', `/api/recado?turma_id=${outra.turma_id}&data=${outra.data}`);
+    T('o recado da segunda turma é gerado e fala DELA', r2.status === 200 && r2.corpo.texto.includes(outra.turma),
+      `(${r2.status})`);
+  }
   T('o recado não tem nome de criança', !r.corpo.criancas.some(c => rec.corpo.texto.includes(c.nome.split(' ')[0])));
   T('o recado abre no WhatsApp sem número (a pessoa escolhe o grupo)', /^https:\/\/wa\.me\/\?text=/.test(rec.corpo.whatsapp_url));
   T('a governança declara o recado da turma (sem consentimento; não persiste)',
     (await GET('rita', '/api/consentimentos')).corpo.governanca.some(g => g.campo === 'recado_da_turma' && /persiste/i.test(g.retencao)));
   T('a professora de outra turma NÃO gera o recado da Vivência (403)', (await GET('maria', `/api/recado?turma_id=${tid}`)).status === 403);
+
+  // Regressao: o recado e' do ENCONTRO, nao do dia do calendario. Numa terca, a
+  // psicologa da Vivencia (turma de sabado) nao tem chamada de hoje — e o recado
+  // do sabado continua existindo. O cartao de Hoje condiciona o botao a
+  // `encontro_registrado` (a chamada da data_folha), nao a `chamada.registrada`
+  // (a de hoje); antes disso o botao sumia num dia util e o recado so' era
+  // alcancavel pela URL.
+  const recFolha = await GET('carolina', `/api/recado?turma_id=${tid}&data=${hoje.data_folha}`);
+  T('/api/hoje declara o encontro DA FOLHA, e ele decide o botão do recado',
+    hoje.encontro_registrado === (recFolha.status === 200),
+    `(encontro_registrado=${hoje.encontro_registrado}, recado=${recFolha.status})`);
+  T('o recado do encontro da folha existe mesmo sem chamada de hoje',
+    hoje.encontro_registrado === true && recFolha.status === 200 && recFolha.corpo.data === hoje.data_folha,
+    `(hoje=${hoje.hoje}, data_folha=${hoje.data_folha}, chamada_de_hoje=${hoje.chamada?.registrada})`);
+  T('sem encontro na data, o recado recusa (404) — o botão não teria o que abrir',
+    (await GET('carolina', `/api/recado?turma_id=${tid}&data=1999-01-04`)).status === 404);
 }
 
 // ----------------------- 28. parecer profissional-a-profissional (decisão 32)

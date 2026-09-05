@@ -1,3 +1,6 @@
+Percurso — evidência de teste
+Gerado em 2026-09-03 08:24 · commit 60c0cf3
+
 
 Percurso — testes do fluxo principal
 Alvo: http://localhost:3000
@@ -280,7 +283,9 @@ Alvo: http://localhost:3000
   ✓ o sistema responde todas as perguntas que ele mesmo sugere
   ✓ cada sugestão cai numa intenção diferente
   ✓ pergunta sobre criança individual não é reconhecida
+  ✓ nome de criança é recusado pelo perímetro, não por desconhecimento
   ✓ quando não sabe, o sistema diz que não sabe
+  ✓ pedido de definição não vira número
   ✓ a recusa oferece o que ele sabe responder
   ✓ a doutrina de perímetro é declarada na resposta
   ✓ pergunta vazia é recusada (422)
@@ -358,8 +363,6 @@ Alvo: http://localhost:3000
   ✓ a Vivência tem matrícula própria (24) e não muda as crianças únicas
   ✓ o Hoje dela abre na turma da Vivência
   ✓ a turma da Vivência está fora da rubrica: sem agenda de ciclo
-  ✓ o Hoje carrega data_folha do encontro da folha
-  ✓ o recado do encontro da folha responde — base do botão na tela Hoje, inclusive fora do sábado
   ✓ a retomada dela conta a partir do último sábado (a Vivência é sabática)
   ✓ o lapso dela segue a régua de 5 dias, sem exceção para a Vivência
   ✓ pedir a agenda do ciclo para a Vivência é recusado com o motivo (422)
@@ -413,10 +416,15 @@ Alvo: http://localhost:3000
   ✓ a coordenação também
   ✓ a professora NÃO abre a régua do Instituto (403)
   ✓ o recado da turma é gerado do registro (presença em número, atividade)
+  ✓ o recado não chama de "hoje" um encontro de outro dia
+  ✓ o "próximo encontro" do recado está no futuro
   ✓ o recado não tem nome de criança
   ✓ o recado abre no WhatsApp sem número (a pessoa escolhe o grupo)
   ✓ a governança declara o recado da turma (sem consentimento; não persiste)
   ✓ a professora de outra turma NÃO gera o recado da Vivência (403)
+  ✓ /api/hoje declara o encontro DA FOLHA, e ele decide o botão do recado
+  ✓ o recado do encontro da folha existe mesmo sem chamada de hoje
+  ✓ sem encontro na data, o recado recusa (404) — o botão não teria o que abrir
 
 28 · Parecer a profissional parceiro — por código, sob consentimento, liberado
   ✓ há criança só da turma 1 para o cenário
@@ -434,5 +442,10 @@ Alvo: http://localhost:3000
   ✓ o histórico de pareceres da criança fica na ficha
   ✓ a governança declara o parecer com consentimento específico
 
-373 passaram · 0 falharam
+378 passaram · 0 falharam
 
+
+--- unitários ---
+ℹ tests 165
+ℹ pass 165
+ℹ fail 0

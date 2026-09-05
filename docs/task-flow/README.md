@@ -14,13 +14,13 @@ Artefato do **Grupo 06** para o exercício de task flow. Sai da **jornada de usu
 > **US-6 — Como psicóloga da Vivência, quero contar em 40 segundos como foi o encontro, para que o
 > relatório no padrão do conselho exista sem eu ter que escrever à noite.**
 
-Ela **está** nas listas canônicas desde 02/09/2026: [`../LEAN-INCEPTION.md`](../LEAN-INCEPTION.md) §5
-(item 6, com a procedência declarada) e [`../ARTEFATO-SEMANA-5.md`](../ARTEFATO-SEMANA-5.md) §3.
-As cinco primeiras são de **pedagoga** ou coordenação; a sexta chegou pelo campo — a visita de
-29/08/2026 mostrou que quem escreve o relatório é a psicóloga, e é ela quem nomeia o registro como
-a dor (*"o maior desafio aqui é registrar o que você fez, né?"*). A história existe no código desde
-a **decisão 31** de [`../DECISOES-TECNICAS.md`](../DECISOES-TECNICAS.md); este exercício desenha o
-fluxo que a sessão de validação cronometra.
+Ela **não estava** nas cinco user stories de [`../LEAN-INCEPTION.md`](../LEAN-INCEPTION.md) §5 nem em
+[`../ARTEFATO-SEMANA-5.md`](../ARTEFATO-SEMANA-5.md) §3 quando este exercício foi escrito — **foi
+promovida às duas em 02/09/2026**, e hoje é a US-6. Aquelas cinco são de **pedagoga**, e a
+visita de 29/08/2026 derrubou essa premissa: quem escreve o relatório é a psicóloga, e é ela quem
+nomeia o registro como a dor (*"o maior desafio aqui é registrar o que você fez, né?"*). A história
+existe no código desde a **decisão 31** de [`../DECISOES-TECNICAS.md`](../DECISOES-TECNICAS.md); o
+que faltava era ela estar escrita como história. Este exercício escreve.
 
 **Tarefa principal:** registrar o encontro de hoje falando, e sair com o relato do procedimento
 liberado.
@@ -36,7 +36,7 @@ início → #/entrar → #/hoje → #/voz → #/confirmar → #/hoje → #/relat
 ```
 
 Os seis passos, com o tempo esperado, estão no PNG. **O passo 05 é o achado:** ao confirmar a folha,
-`public/app.js:4016` faz `location.hash = '#/hoje'`. O relato **não abre sozinho** — ela precisa
+`public/app.js:4031` faz `location.hash = '#/hoje'`. O relato **não abre sozinho** — ela precisa
 achar o botão "Revisar e liberar o relato" no cartão do Hoje. O desenho supunha continuidade; o
 código devolve para a tela inicial. Está marcado em âmbar no fluxo, com limiar próprio de
 observação (20 s).

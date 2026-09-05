@@ -1,20 +1,31 @@
 # Handoff — 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
 
+
 > **Sessão de revisão do repositório (03/09/2026).** Varredura em busca de erros e lacunas —
 > relatório em [`docs/revisao/14-REVISAO-REPOSITORIO.md`](revisao/14-REVISAO-REPOSITORIO.md).
-> Bug corrigido: o botão do recado na tela Hoje seguia a chamada de *hoje* e sumia em dia não
-> letivo (Vivência sabática); agora segue `data_folha`. Docs vivos desalinhados (US-6 no
-> task-flow, título das stories, evidências 364→373) remedidos. Gates: **164 · 373 · 6 · 24**.
-> Armadilha de ambiente: o Node 22 do Cloud Agent não tem FTS5 em `node:sqlite` — use o 24 do
-> `.nvmrc` (o do CI) para `test:rag` / `test:ia`.
+> O bug do recado em dia não letivo já tinha sido corrigido em `main` (`48ec1dd`) e evoluído
+> para um botão por turma; esta branch chegou em paralelo com a mesma correção. O que permanece
+> dela: o relatório 14, a coerência de docs (US-6 no task-flow, título das stories) e a nota de
+> ambiente (Node 22 do Cloud Agent sem FTS5 em `node:sqlite` — use o 24 do `.nvmrc` para
+> `test:rag` / `test:ia`).
+>
+> **Auditoria OPAR desta sessão:** `~/.claude/AUDITORIA-OPAR-sessao-2026-09-03.md` — três eixos
+> adversariais, **45 achados, 44 confirmados e 1 refutado**, 44 corrigidos em `b657846` (infra),
+> `60c0cf3` (domínio) e `f481bec` (docs). Três itens ficaram **abertos por decisão** e estão
+> nomeados lá — e **os três foram fechados depois do relatório**: o recado passou a ter um botão
+> por turma, o `revisao/09` ganhou nota dizendo que suas referências sem caminho são datadas, e o
+> vocabulário do classificador ganhou **critério de parada escrito no código** (só entra radical
+> inequívoco no conjunto fechado, e cada adição roda a bateria de 27 casos). **Nenhum item aberto.**
+>
+> **Sessão de 02–03/09/2026 — o que mudou.** De `1322a77` até este commit — **dezenove até
+> aqui**; a faixa é o que vale, o número envelhece a cada commit novo. Todos em
 
-> **Sessão de 02–03/09/2026 — o que mudou.** Dezesseis commits, de `1322a77` a este, todos em
 > `main` e em `pos-visita-ebenezer-e-jornada-v2` (as duas apontam para o mesmo commit). Nada de
 > arquitetura mudou: a sessão foi de **coerência, cobertura visual e um bug de classificação**.
 >
 > **1. O protocolo de validação passou para a psicóloga.** As seis tarefas eram de pedagoga e duas
 > delas são **inexecutáveis** por ela — a turma da Vivência está fora da rubrica e `#/ciclo`
-> responde 422 (`src/api.js:293`). Refeitas a partir do task flow do Exercício 03
+> responde 422 (`src/api.js:308`). Refeitas a partir do task flow do Exercício 03
 > (`docs/task-flow/`); a versão pedagoga virou a §3.4 de `VALIDACAO-USUARIO.md`. Nasceu
 > `scripts/preparar-sessao.mjs`: sem ele a sessão começa com o trabalho já feito, porque a seed
 > entrega o último sábado registrado. Com `--lapso` ele destrava o Protocolo do Lapso, que até
@@ -22,7 +33,7 @@
 > encontros).
 >
 > **2. Dois protótipos Figma, num arquivo só** — [`h6AnLVYLfpeVl2N4ie0Qzv`](https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv).
-> Página *Protótipo completo · 4 papéis*: **27 telas, 152 ligações**, nenhuma tela sem entrada nem
+> Página *Protótipo completo · 4 papéis*: **27 telas, 153 ligações**, nenhuma tela sem entrada nem
 > sem saída — é o **canônico**, e fecha a última pendência de artefato que não dependia de
 > terceiros. Página *Protótipo · sessão de validação*: 12 telas, uma faixa por tarefa. O protótipo
 > entregue na semana 5 (`HBBd4…`) ficou **congelado como registro**: ele mostra a rubrica de cinco
@@ -59,9 +70,11 @@
 >
 > **5. Roteiro do vídeo v3.** Tinha 13 cenas e nenhuma da psicóloga. Agora tem o bloco dela com
 > cinco cenas, mais a consulta, **dentro dos mesmos 7m00** — o que foi cortado está declarado em
-> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; hoje são **373 · 164**.
+
+> tabela no topo. A cena de fecho mandava ler **"242 · 63"** na câmera; hoje são **381 · 167**.
 >
-> **Gates: 164 unitários · 373 smoke · 6 rag · 24 ia-stub.**
+> **Gates: 167 unitários · 381 smoke · 6 rag · 24 ia-stub.**
+
 >
 > **Armadilhas novas — as do Figma custaram a maior parte do tempo:**
 > (1) **`SF Pro` aparece em `listAvailableFontsAsync` mas renderiza largura ZERO** nesta conta; o
@@ -87,7 +100,11 @@
 > de sair?"*, sem a palavra "crianças" — exatamente a formulação que desviava do termo defeituoso.
 > Teste que passa pelo caminho que ninguém usa não prova o caminho que todos usam.
 >
-> (11) **Citação `arquivo:linha` envelhece em silêncio.** O botão do recado era citado como
+> (11) **Citação `arquivo:linha` envelhece em silêncio — agora com teste.** Desde 03/09/2026 o
+> unitário *"as citações arquivo:linha da documentação apontam para o que prometem"* amarra cada
+> uma ao CONTEÚDO esperado e recusa citação nova sem âncora. Renumerar sem conferir passou a
+> quebrar o teste, que diz qual saiu do lugar. **Ao mover código, rode `npm run test:unit` antes de
+> concluir que a documentação está certa.** O histórico do problema: O botão do recado era citado como
 > `public/app.js:508` em três documentos; a linha é a **509**. Varri todas as **18** citações dos
 > docs e corrigi todas — inclusive as cinco de `docs/revisao/09-PLANO-PASSO-PROATIVO.md`, por
 > decisão sua. Duas delas **não eram erro de numeração**, e é o achado que vale guardar:
@@ -101,14 +118,44 @@
 > ARQUITETURA, DECISOES, METODOLOGIA, VALIDACAO, roteiro do vídeo) têm de ser remedidas. Varreduras
 > que refazem as duas conferências:
 > ```bash
+> # com caminho (as que a sessão corrigiu):
 > grep -rhoE '(src|public|scripts)/[a-z/-]+\.(js|mjs):[0-9]+' docs/*.md docs/*/*.md | sort -u
+> # SEM caminho — o regex acima não pega, e é onde mora mais erro:
+> grep -rhoE '\b[a-z-]+\.(js|mjs):[0-9]+' docs/*.md docs/*/*.md | sort -u
 > ```
 >
-> **Sessão paralela — não mexer.** `claude/focused-cerf-1530ff`, no worktree
-> `.claude/worktrees/focused-cerf-1530ff`, tem trabalho **não commitado** (correção da entrada do
-> recado na tela Hoje: o botão depende da chamada de hoje, `public/app.js:509`, e some em dia não
-> letivo). Rebase com árvore suja destrói trabalho em andamento. Conferido com
-> `git apply --check --3way`: o diff dela **aplica limpo** sobre `main`.
+> (12) **Rodada de smoke ABORTADA envenena a próxima.** A armadilha (4) do bloco de 02/09 diz que
+> a seção 21 troca a professora da turma 1 — mas o que custa tempo é a consequência, que não estava
+> escrita: o smoke **muta o banco enquanto roda**, então uma rodada interrompida no meio (erro,
+> `pkill`, servidor órfão) deixa a turma 1 com **"Íris Camargo"** no lugar da Maria. A rodada
+> seguinte quebra na **seção 2**, em `hoje.turma.id`, com `turma` nulo — e o sintoma aponta para o
+> lugar errado: parece defeito de sessão ou de permissão, e é resíduo da rodada anterior.
+> **Sempre `node scripts/reset.mjs` imediatamente antes do smoke, em comando sequencial** — não em
+> cadeia com `&`, que backgrounda o `&&` inteiro e faz o reset correr junto com o que vem depois.
+> Diagnóstico em uma linha:
+> ```bash
+> node -e "import('./src/db.js').then(m=>{m.getDb();console.log(m.get('SELECT e.nome FROM turma t JOIN educador e ON e.id=t.educador_id WHERE t.id=1'))})"
+> ```
+> Se não devolver **Maria Silvia**, o banco está sujo — resete antes de investigar qualquer coisa.
+>
+> **A sessão paralela foi fechada — `48ec1dd`, já em `main`.** `claude/focused-cerf-1530ff` tinha
+> trabalho **não commitado** e parado havia 3h30, sem processo ativo: a correção do botão do recado
+> na tela Hoje, que era o único elemento do cartão preso à chamada **de hoje** e sumia em dia não
+> letivo. A branch não tinha commit próprio — o "rebase" foi mover o ponteiro 17 commits à frente
+> com o trabalho em cima (`stash` → `rebase` → `pop`, com backup do diff antes e comparação do
+> conteúdo depois: 38 linhas adicionadas, 1 removida, nenhuma alterada). Gates do conjunto naquele
+> momento: **165 unitários · 374 smoke** — a auditoria OPAR que veio depois os levou a 167 · 381. O
+> commit declara a autoria: o conteúdo é da sessão paralela; esta revisou, verificou e commitou.
+>
+> **A correção derrubou uma ressalva em três documentos** — `VALIDACAO-USUARIO.md` §2 e a tarefa 6,
+> e a instrução 4 do roteiro do vídeo, que mandavam abrir `#/recado` pela URL. Todas atualizadas no
+> mesmo lote. **Achado corrigido é documentação a revisar**: a ressalva sobrevive ao defeito se
+> ninguém a procurar.
+>
+> **Lição de worktree:** rebase com árvore suja destrói trabalho em andamento. Antes de tocar numa
+> branch de outra sessão, confira se há processo vivo (`ps`) e há quanto tempo os arquivos não
+> mudam (`stat`) — e salve o diff num arquivo fora do worktree, que é o que torna a operação
+> reversível.
 
 
 > **Sessão de 02/09/2026 — o que mudou.** A visita ao Instituto (29/08) foi lida inteira (quatro

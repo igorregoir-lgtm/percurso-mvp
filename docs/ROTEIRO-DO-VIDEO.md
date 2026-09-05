@@ -35,10 +35,11 @@ para caber, e por quê:
    `ai/scripts/start-llama.sh` e iniciar com `AI_ENABLED=1 node server.js` (se o modelo não estiver
    baixado, `ai/scripts/setup-model.sh` antes). **Todo o resto funciona com `AI_ENABLED=false`** — e
    vale dizer isso na cena 18.
-4. **Cena 9 (recado):** abrir `#/recado` pela URL, e não pelo cartão da tela Hoje. O botão lá
-   depende da chamada **de hoje** (`public/app.js:509`) e some em dia não letivo — achado conhecido,
-   registrado em §2 de [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md), com correção em andamento.
-   Se a gravação for num sábado, o botão aparece e o caminho pela tela funciona.
+4. **Cena 9 (recado):** abrir pelo botão **"Recado para os responsáveis"** no cartão da folha, na
+   tela Hoje — o caminho que a psicóloga usaria. Funciona em qualquer dia desde `48ec1dd`
+   (03/09/2026), que ligou o botão ao **encontro da folha** e não à chamada de hoje
+   (`public/app.js:509`). Até ali ele sumia em dia não letivo e a cena tinha de abrir `#/recado`
+   pela URL; **essa instrução caiu.**
 5. Cenas dos papéis de campo (1–10): janela estreita (≈400 px) ou celular — as personas usam o
    produto em pé, dentro da sala. Cenas de gestão (11–16): janela normal.
 
@@ -152,7 +153,8 @@ dela; editar a folha depois de liberar derruba a liberação.
 
 ### 9 · Recado aos responsáveis + a régua de 75% — [0:20 · `#/recado`]
 
-**Ação:** abrir `#/recado`. Mostrar o texto pronto para colar e o botão do WhatsApp. Apontar a
+**Ação:** abrir pelo botão de recado no cartão da folha (ver a instrução 4 — abrir por URL caiu).
+Ela responde por duas turmas, então há **dois** botões, nomeados por turma; escolher o da manhã. Mostrar o texto pronto para colar e o botão do WhatsApp. Apontar a
 linha da presença do mês **contra a régua de 75%** do Instituto.
 
 **Fala:** o recado semanal por WhatsApp e a régua de 75% **já existem** na casa — são política e
@@ -256,8 +258,8 @@ só o Instituto tem. A tela mostra as premissas e diz isso, em vez de inventar a
 `data/percurso.db` — o backup é copiar um arquivo. Rodar as duas baterias e mostrar os totais:
 
 ```
-node scripts/smoke-test.mjs   → 373 passaram · 0 falharam
-node scripts/unit-test.mjs    → 164 passaram · 0 falharam
+node scripts/smoke-test.mjs   → 381 passaram · 0 falharam
+node scripts/unit-test.mjs    → 167 passaram · 0 falharam
 ```
 
 > **Conferir os números antes de gravar.** Eles mudam a cada bateria nova, e o roteiro anterior

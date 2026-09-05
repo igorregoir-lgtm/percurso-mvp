@@ -597,6 +597,80 @@ test('consultar: perguntar pelo gatilho do alerta é perguntar por evasão', () 
   assert.equal(R.consultar('quantas faltas a turma teve?').intencao, 'presenca');
 });
 
+test('as citações arquivo:linha da documentação apontam para o que prometem', async () => {
+  // Esta é a defesa contra o modo de falha que mais se repetiu na sessão de
+  // 02–03/09/2026: uma citação `arquivo:linha` num documento envelhece em
+  // SILÊNCIO a cada linha inserida acima dela. Foi corrigida quatro vezes em um
+  // dia — inclusive logo depois de um commit declarar "as 18 caem no símbolo
+  // certo", porque os commits seguintes moveram tudo de novo.
+  //
+  // A tabela abaixo amarra cada citação ao CONTEÚDO que o documento promete
+  // encontrar ali. Renumerar sem conferir passa a quebrar o teste, em vez de
+  // enganar quem lê. Quando o código se mover, corrija o número aqui e nos docs
+  // — o teste diz exatamente qual saiu do lugar.
+  const { readFileSync } = await import('node:fs');
+  const raiz = new URL('../', import.meta.url);
+  const ANCORAS = {
+    'public/app.js:423': /rota\(\/\^#\\\/hoje\//,
+    'public/app.js:508': /Revisar e liberar o relato|relato_liberado/,
+    'public/app.js:509': /recados|#\/recado/,
+    'public/app.js:1014': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:2202': /rota\(\/\^#\\\/scores\//,
+    'public/app.js:2406': /id="pergunta"/,
+    'public/app.js:4031': /location\.hash = '#\/hoje'/,
+    'src/api.js:308': /erro\(422.*rubrica por ciclo/,
+    'src/api.js:435': /exigeCoordenacao\(req\)/,
+    'src/api.js:889': /periodosSugeridos\(\)/,
+    'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
+    'src/assistente.js:112': /export const GUIA/,
+    'src/db.js:22': /export function getDb/,
+    'src/domain.js:141': /a folha e' do ENCONTRO|A folha e' do ENCONTRO/i,
+    'src/domain.js:937': /export function estadoDeRetomada/,
+    'src/relatorio.js:440': /export function periodosSugeridos/,
+    'src/relatorio.js:584': /const INTENCOES/,
+    'src/seed.js:74': /rubrica_socioemocional/,
+  };
+  const erradas = [];
+  for (const [ref, esperado] of Object.entries(ANCORAS)) {
+    const [arq, num] = ref.split(':');
+    const linha = readFileSync(new URL(arq, raiz), 'utf8').split('\n')[Number(num) - 1] ?? '';
+    if (!esperado.test(linha)) erradas.push(`${ref} deveria casar ${esperado} — está: ${linha.trim().slice(0, 60)}`);
+  }
+  assert.deepEqual(erradas, [], 'citação da documentação apontando para o lugar errado');
+
+  // e toda citação que aparece nos docs tem de estar nesta tabela: citação nova
+  // sem âncora volta a poder derivar em silêncio.
+  const docs = [
+    ...(await import('node:fs')).readdirSync(new URL('docs/', raiz)).filter(f => f.endsWith('.md')).map(f => 'docs/' + f),
+  ];
+  const vistas = new Set();
+  for (const d of docs)
+    for (const m of readFileSync(new URL(d, raiz), 'utf8').matchAll(/(?:src|public|scripts)\/[a-z/-]+\.(?:js|mjs):\d+/g))
+      vistas.add(m[0]);
+  const semAncora = [...vistas].filter(v => !(v in ANCORAS));
+  assert.deepEqual(semAncora, [], 'citação em docs/*.md sem âncora declarada no teste');
+});
+
+test('as perguntas do Passo classificam na intenção que declaram', async () => {
+  // `PERGUNTAS_DIRETORIA` (src/passo/catalogo.js) é uma TERCEIRA cópia manual
+  // das seis intenções, e nada a amarrava ao classificador: o chip anuncia um
+  // assunto e envia uma consulta, e se a consulta cair noutra intenção a
+  // diretoria recebe número de outra pergunta — sem erro, sem aviso.
+  // Achado E1 da auditoria OPAR de 03/09/2026.
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../src/passo/catalogo.js', import.meta.url), 'utf8');
+  const bloco = src.slice(src.indexOf('PERGUNTAS_DIRETORIA'));
+  const linhas = [...bloco.matchAll(/\['([a-z]+)', '([^']+)', '([^']+)'\]/g)].slice(0, 6);
+  assert.equal(linhas.length, 6, 'as seis perguntas da diretoria têm de estar declaradas');
+  for (const [, codigo, rotulo, consulta] of linhas) {
+    const r = R.consultar(consulta);
+    assert.equal(r.reconhecida, true, `o Passo oferece "${rotulo}" e a base não sabe responder`);
+    assert.equal(r.intencao, codigo, `o chip "${rotulo}" promete ${codigo} e a consulta cai em ${r.intencao}`);
+  }
+  // e as seis têm de ser seis assuntos diferentes, como as sugestões da tela
+  assert.equal(new Set(linhas.map(l => l[1])).size, 6);
+});
+
 test('consultar: a tela e a recusa oferecem a MESMA lista de perguntas', () => {
   // Os chips de `#/consulta` e a lista da recusa saem de R.SUGESTOES. Se um dia
   // divergirem, a base passa a ensinar duas linguagens para a mesma pergunta.
@@ -759,6 +833,26 @@ test('a INTERFACE não escreve à mão o que o revisor barra (rodada 2)', async 
   ];
   for (const re of proibidas)
     assert.doesNotMatch(front, re, `frase causal escrita à mão em public/app.js: ${re}`);
+});
+
+test('o botão do recado segue o ENCONTRO da folha, não o dia de hoje', async () => {
+  // O cartão da folha em #/hoje é montado do ENCONTRO (`data_folha`), que pode
+  // ser de outro dia. O botão do recado estava preso à chamada de HOJE
+  // (`ch?.registrada`): numa terça, a psicóloga da Vivência (turma de sábado)
+  // via o cartão inteiro do sábado registrado e nenhum botão de recado — o
+  // recado só sobrava pela URL. A data também vai no href, como #/relato faz.
+  const { readFileSync } = await import('node:fs');
+  const front = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  const botao = front.split('\n').find(l =>
+    l.includes('Recado para os responsáveis') && l.includes('data-acao="ir"'));
+  assert.ok(botao, 'o botão do recado sumiu do cartão da folha em public/app.js');
+  assert.doesNotMatch(botao, /ch\?\.registrada/, 'o botão não pode voltar a depender da chamada de HOJE');
+  // Achado A-1 da auditoria OPAR: quem responde por várias turmas tinha porta só
+  // para `turmas[0]`. Agora é um botão por turma COM ENCONTRO, e cada href leva
+  // a turma e a data daquele recado — não as da primeira turma.
+  assert.match(botao, /d\.recados/, 'o botão tem de iterar as turmas, não usar d.turma');
+  assert.match(botao, /turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}/);
+  assert.doesNotMatch(botao, /\$\{d\.turma\.id\}/, 'o href não pode fixar a primeira turma');
 });
 
 test('relatório: a supressão roda antes da redação e é declarada', async () => {
@@ -1974,7 +2068,20 @@ test('recado da turma: só agregado, nenhum nome, e um link de WhatsApp sem núm
   const enc = get(`SELECT * FROM encontro WHERE turma_id = 6 ORDER BY data DESC LIMIT 1`);
   const r = REC.recadoDaTurma(6, enc.data);
   assert.match(r.texto, /Recado da Vivência · Sábado manhã/);
-  assert.match(r.texto, new RegExp('Presença de hoje: \\d+ de ' + D.criancasDaTurma(6).length + ' crianças'));
+  // A contagem sai das linhas de PRESENCA daquele encontro, nao do roster ATUAL.
+  // Enquanto o recado era so' do dia os dois coincidiam; desde 48ec1dd ele pode
+  // ser de um encontro de dias atras, e uma matricula nova depois do encontro
+  // inflava o denominador de um dia em que a crianca nem estava. Auditoria OPAR
+  // de 03/09/2026: neste banco o roster tem 10 e o encontro tem 11 presencas.
+  const pres = get(`SELECT COUNT(*) AS t, SUM(CASE WHEN status='P' THEN 1 ELSE 0 END) AS p
+                      FROM presenca WHERE encontro_id = ?`, enc.id);
+  const doDia = enc.data === D.hoje();
+  assert.match(r.texto, new RegExp(`Presença ${doDia ? 'de hoje' : 'no encontro'}: ${pres.p} de ${pres.t} crianças`));
+  assert.equal(r.total, pres.t, 'o total do recado é o do encontro, não o do roster de hoje');
+  // e o texto nao pode chamar de "hoje" um encontro que nao e' de hoje
+  if (!doDia) assert.doesNotMatch(r.texto, /Hoje[:o]/, 'encontro antigo não pode ser anunciado como "Hoje"');
+  // o "proximo encontro" tem de ser FUTURO — anunciava data passada antes disto
+  assert.ok(r.proximo_encontro > D.hoje(), `próximo encontro no passado: ${r.proximo_encontro}`);
   assert.match(r.texto, /Instituto Ebenézer/);
   const nomes = all(`SELECT nome FROM crianca`).map(c => c.nome.split(' ')[0]);
   for (const n of new Set(nomes)) assert.ok(!new RegExp('\\b' + n + '\\b').test(r.texto), `nome ${n} no recado`);
