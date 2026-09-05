@@ -1,4 +1,48 @@
-# Handoff — 04/09/2026, 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
+# Handoff — 05/09, 04/09, 03/09, 02/09/2026 (pós-visita) e 25/08/2026
+
+> ## Sessão de 05/09/2026 — auditoria OPAR: fazer o que não depende de ninguém
+>
+> Pedido: *"faça tudo que não precisa de uma pessoa e que está pendente. Faça em OPAR."* Sete
+> dívidas estavam classificadas como trabalho pendente. Relatório completo em
+> `~/.claude/AUDITORIA-OPAR-sessao-2026-09-05.md`.
+>
+> **Duas caíram na observação, antes de qualquer código:** medir o whisper é impossível daqui
+> (`whisper-cli` não instalado, `models/` inexistente — o `whisper` do PATH é outra implementação),
+> e o certificado HTTPS depende de domínio. As duas viraram item nomeado.
+>
+> **O que mais vale guardar: a dívida declarada pode estar errada, e duas estavam.**
+>
+> 1. **O extrator.** A dívida dizia que *"umas seis"* ficava em branco. Medido: sempre devolveu 6.
+>    O defeito era o oposto e pior — ele **inventava 1** quando não entendia. *"Todas participaram
+>    do começo ao fim"*, numa turma de 24, entrava na planilha socioemocional como **uma** criança.
+>    *"Conflito nenhum"* virava **um conflito**. *"Dezesseis pediram ajuda"* virava **6**, porque a
+>    alternação casava o sufixo. Tudo isso contra a doutrina escrita no próprio arquivo.
+> 2. **A porta C.** A dívida mandava construir "encontro agendado + data retroativa". A data
+>    retroativa já funcionava; faltava a tela deixar escolher. E a metade cara — agendar — ficou de
+>    fora com razão medida: encontro sem presença entra em **cinco denominadores**, e um deles
+>    atravessa a fronteira do Instituto (o relatório do doador publica `COUNT(*) FROM encontro`).
+>
+> **Verificar antes de agir mudou o que foi construído, não só a ordem.** É o ponto do método.
+>
+> **Dois falsos positivos em ~30 achados, e os dois instrutivos:** o auditor do extrator testou os
+> regexes **isolados** e não viu o portão de confiança que os precede; e eu julguei um 403 ausente
+> consultando um banco já mutado pelo smoke — o portão estava certo, minha asserção é que estava
+> errada.
+>
+> **O resto do que entrou:** a prova do consentimento ganhou relógio (vigência congelada, revogação
+> com data própria, fecho de ciclo como **detector** que marca e nomeia mas nunca apaga, e a
+> reconciliação de órfãos no boot — que achou 4 arquivos para 2 linhas na primeira execução); o
+> telefone do responsável passou a ser validado contra DDDs que existem e **conferido** antes do
+> primeiro envio, com a primeira mensagem sendo um desafio **sem nome de criança**; e a régua passou
+> a dizer quando a faixa de atenção é **aritmeticamente impossível** — medido: 11 de 12 crianças.
+>
+> **Uma contradição de LGPD, encontrada e corrigida:** a decisão 40 declarava a retenção do relato
+> da criança como "descarte no fim do ciclo"; o banco e a tela declaram "matrícula ativa + 2 anos".
+> Retenções **diferentes para o mesmo campo**, no artefato que existe para impedir exatamente isso.
+>
+> **Gates: 512 smoke · 215 unitários · 6 RAG · 24 ia-stub · 19 áudio-stub.** 32 tabelas, 117 rotas.
+>
+
 
 > ## Sessão de 04/09/2026 (madrugada) — a segunda rodada de WhatsApp e Instagram (dec. 50)
 >
