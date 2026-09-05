@@ -19,7 +19,7 @@
 // o acesso. Ao contrário do áudio de transcrição (src/transcricao.js), este
 // arquivo EXISTE PARA FICAR: apagá-lo é apagar a prova.
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync, statSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync, statSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { all, get, run } from './db.js';
@@ -111,6 +111,34 @@ export function bytesDe(id) {
   if (!existsSync(caminho))
     throw erro(410, 'A linha existe, mas o arquivo do vídeo não está mais nesta máquina. Isso é perda de prova — registre de novo.');
   return { buffer: readFileSync(caminho), mime: l.mime, bytes: statSync(caminho).size, linha: porId(id) };
+}
+
+/**
+ * RECONCILIAÇÃO no boot (OPAR 05/09/2026) — a camada que faltava.
+ *
+ * `src/transcricao.js` tem três camadas contra arquivo órfão; aqui havia UMA
+ * (o rollback do INSERT). E a diferença entre os dois casos decide o que fazer
+ * ao achar um órfão: lá o arquivo é lixo por construção e some; **aqui é prova
+ * desgarrada, e some seria a pior resposta possível.** Então esta função CONTA
+ * e RELATA — nunca apaga.
+ *
+ * Dois desencontros possíveis, e os dois importam:
+ *  · arquivo sem linha — sobra de um `npm run seed` sobre base já usada, que
+ *    limpa a tabela e não toca no disco. Fica lá, sem dono e sem prazo;
+ *  · linha sem arquivo — perda de prova já consumada, e a única que o produto
+ *    consegue apontar antes de alguém tentar assistir.
+ */
+export function reconciliar() {
+  if (!existsSync(DIR)) return { arquivos: 0, linhas: 0, sem_linha: [], sem_arquivo: [] };
+  const noDisco = new Set(readdirSync(DIR).filter(f => !f.startsWith('.')));
+  const linhas = all(`SELECT id, arquivo, crianca_id FROM consentimento_evidencia`);
+  const registrados = new Set(linhas.map(l => l.arquivo));
+  return {
+    arquivos: noDisco.size,
+    linhas: linhas.length,
+    sem_linha: [...noDisco].filter(f => !registrados.has(f)),
+    sem_arquivo: linhas.filter(l => !noDisco.has(l.arquivo)).map(l => ({ id: l.id, crianca_id: l.crianca_id })),
+  };
 }
 
 /**

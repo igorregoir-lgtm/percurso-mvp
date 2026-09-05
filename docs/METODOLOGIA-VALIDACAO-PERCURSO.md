@@ -191,7 +191,7 @@ falha), e bloqueio explicado como protocolo. Este protocolo mede os seis de uma 
 
 **Preparação.** `node scripts/preparar-sessao.mjs --lapso` empurra a última atividade da
 profissional para **9 dias atrás** — acima do gatilho da retomada, que desde 04/09/2026 conta ENCONTROS DA TURMA (`PARAMS.ENCONTROS_LAPSO`, decisão 37) e não dias de calendário — numa turma de sábado, use 15 ou mais
-sem culpa em `#/hoje`. A retomada lê a tabela `atividade` (`src/domain.js:1040`), não os encontros:
+sem culpa em `#/hoje`. A retomada lê a tabela `atividade` (`src/domain.js:1094`), não os encontros:
 mexer só nos encontros não dispara o lapso. O script imprime o estado; conferir antes de começar.
 
 **Provocação longa**, enunciado literal:

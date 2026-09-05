@@ -262,7 +262,7 @@ implementadas** (F1) — as duas últimas da tabela; as outras quatro seguem em 
 
 | O que falta | Por quê | O que exige |
 |---|---|---|
-| **Calendário de encontros** | ela, a coordenação ou a direção marcam quando são os encontros, e a partir daí o sistema sabe o que vem pela frente | entidade de encontro agendado e tela de calendário para os três papéis; hoje a folha nasce do encontro do dia e não há agenda futura (`src/domain.js:154`) |
+| **Calendário de encontros** | ela, a coordenação ou a direção marcam quando são os encontros, e a partir daí o sistema sabe o que vem pela frente | entidade de encontro agendado e tela de calendário para os três papéis; hoje a folha nasce do encontro do dia e não há agenda futura (`src/domain.js:159`) |
 | **Aviso antes de cada encontro** | o lembrete precisa chegar quando ainda dá para apertar "gravar", não depois | notificação da PWA com regra de antecedência; hoje o produto não emite nenhuma notificação |
 | **O encontro nunca fecha** | registro atrasado precisa entrar com a data do encontro, não a de hoje | modelo de dados aceitar data retroativa + marca de "registrado depois"; o encontro em aberto continua aparecendo até ser registrado |
 | **A fala preenche os seis indicadores** | a rubrica é o instrumento da casa e não pode continuar dependendo de digitação | hoje os seis indicadores são respondidos à mão, criança por criança (~3 min cada, `#/crianca/:id?ver=observacao`), e o extrator de `src/voz.js` só preenche a folha do dia e o check-in de grupo — falta extrair a escala 1–4 por indicador, com o mesmo gate de confirmação humana |

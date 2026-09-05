@@ -636,13 +636,13 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
     'public/app.js:6291': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
     'src/api.js:425': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:837': /'POST \/api\/consentimento'/,
-    'src/api.js:1350': /periodosSugeridos\(\)/,
+    'src/api.js:846': /'POST \/api\/consentimento'/,
+    'src/api.js:1359': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:113': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
-    'src/domain.js:154': /a folha e' do ENCONTRO|A folha e' do ENCONTRO/i,
-    'src/domain.js:1040': /export function estadoDeRetomada/,
+    'src/domain.js:159': /a folha e' do ENCONTRO|A folha e' do ENCONTRO/i,
+    'src/domain.js:1094': /export function estadoDeRetomada/,
     'src/relatorio.js:440': /export function periodosSugeridos/,
     'src/relatorio.js:584': /const INTENCOES/,
     'src/seed.js:74': /rubrica_socioemocional/,
@@ -3184,4 +3184,82 @@ test('extrator: o portão de confiança continua sendo a primeira defesa', () =>
   assert.ok(curta.confianca < D.PARAMS.CONFIANCA_MINIMA);
   assert.equal(curta.checkin.participaram_inteiro, null);
   assert.equal(curta.pediram_ajuda, 0);
+});
+
+// ===========================================================================
+// OPAR 05/09/2026 — a retenção da prova do consentimento (decisão 42).
+// ===========================================================================
+test('consentimento: a vigência é congelada — revogar não empurra o relógio', () => {
+  const c = get(`SELECT id FROM crianca WHERE ativo = 1 ORDER BY id DESC LIMIT 1`);
+  const ler = () => get(`SELECT status, data_registro, revogado_em FROM consentimento
+                          WHERE crianca_id = ? AND campo = 'campo_livre'`, c.id);
+  D.registrarConsentimento(c.id, 'campo_livre', 'ativo', 'Mãe');
+  const inicio = ler().data_registro;
+  assert.ok(inicio, 'a vigência não começou');
+  // ERA AQUI O DEFEITO: cada mudança de status reescrevia `data_registro` com
+  // hoje(). Revogar em 2026 um consentimento de 2021 movia o vencimento de
+  // 2026 para 2031 — quatro anos A MAIS, causados pelo gesto que deveria
+  // encurtar o prazo.
+  D.registrarConsentimento(c.id, 'campo_livre', 'revogado', null);
+  assert.equal(ler().data_registro, inicio, 'revogar moveu o início da vigência');
+  assert.equal(ler().revogado_em, D.hoje());
+  D.registrarConsentimento(c.id, 'campo_livre', 'pendente', null);
+  assert.equal(ler().data_registro, inicio, 'passar a pendente moveu o início da vigência');
+  // Reativar limpa a revogação: o consentimento volta a valer, e a prova dele
+  // volta a ser prova viva.
+  D.registrarConsentimento(c.id, 'campo_livre', 'ativo', 'Mãe');
+  assert.equal(ler().revogado_em, null);
+  assert.equal(ler().data_registro, inicio);
+});
+
+test('fecho de ciclo: detecta prova vencida, NUNCA apaga, e nunca toca prova viva', () => {
+  const viva = get(`SELECT crianca_id FROM consentimento
+                     WHERE campo = 'rubrica_socioemocional' AND status = 'ativo' LIMIT 1`).crianca_id;
+  const morta = get(`SELECT crianca_id FROM consentimento
+                      WHERE campo = 'rubrica_socioemocional' AND crianca_id <> ? LIMIT 1`, viva).crianca_id;
+  const guarda = (id, b) => EVI.guardar(Buffer.alloc(64, b), { criancaId: id, campo: 'consentimento_em_video',
+    mime: 'video/mp4', responsavel: 'Responsável', registradoPor: 2 });
+  const eViva = guarda(viva, 1), eMorta = guarda(morta, 2);
+  D.registrarConsentimento(morta, 'rubrica_socioemocional', 'revogado', null);
+  run(`UPDATE consentimento SET revogado_em = '2019-01-10'
+        WHERE crianca_id = ? AND campo = 'rubrica_socioemocional'`, morta);
+
+  const ciclo = get(`SELECT id FROM ciclo WHERE status = 'aberto'`);
+  const r = D.fecharCiclo(ciclo.id, 2, {});
+  // Detecta e NOMEIA — a coordenação precisa saber de quem é a prova vencida.
+  assert.ok(r.provas_vencidas.some(v => v.id === eMorta.id), 'a prova vencida não foi detectada');
+  assert.equal(r.provas_vencidas.find(v => v.id === eMorta.id).expira_em, '2024-01-10',
+    'o vencimento não é revogação + ANOS_RETENCAO_PROVA');
+  // NÃO apaga: o arquivo e a linha continuam. Destruir prova é gesto humano
+  // com motivo (Art. 18, VI), e o disco não participa da transação.
+  assert.equal(EVI.daCrianca(morta).length, 1, 'o fecho de ciclo apagou a prova');
+  assert.doesNotThrow(() => EVI.bytesDe(eMorta.id), 'os bytes sumiram');
+  // Prova de consentimento ATIVO nunca é marcada, qualquer que seja a data:
+  // é exatamente quando ela precisa existir (LGPD Art. 8º, §1º).
+  assert.equal(get(`SELECT expira_em FROM consentimento_evidencia WHERE id = ?`, eViva.id).expira_em, null);
+  assert.ok(!r.provas_vencidas.some(v => v.id === eViva.id));
+});
+
+test('evidência: a reconciliação do boot conta os dois desencontros e não apaga nenhum', async () => {
+  const { rmSync, writeFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const c = get(`SELECT id FROM crianca WHERE ativo = 1 LIMIT 1`);
+  const e = EVI.guardar(Buffer.alloc(32, 9), { criancaId: c.id, campo: 'consentimento_em_video',
+    mime: 'video/mp4', responsavel: 'Responsável', registradoPor: 2 });
+
+  // Desencontro 1 — LINHA SEM ARQUIVO: perda de prova já consumada. É a única
+  // que o produto consegue apontar ANTES de alguém tentar assistir e levar 410.
+  const linha = get(`SELECT arquivo FROM consentimento_evidencia WHERE id = ?`, e.id);
+  rmSync(join(EVI.DIR, linha.arquivo), { force: true });
+  // Desencontro 2 — ARQUIVO SEM LINHA: sobra de um `npm run seed` sobre base já
+  // usada, que limpa a tabela e não toca no disco. Fica sem dono e sem prazo.
+  writeFileSync(join(EVI.DIR, 'orfao-de-teste.mp4'), Buffer.alloc(8));
+
+  const r = EVI.reconciliar();
+  assert.ok(r.sem_arquivo.some(x => x.id === e.id), 'linha sem arquivo passou batida');
+  assert.ok(r.sem_linha.includes('orfao-de-teste.mp4'), 'arquivo sem linha passou batido');
+  // E NÃO apaga nenhum dos dois: aqui o órfão é prova desgarrada, ao contrário
+  // do áudio temporário (src/transcricao.js), onde o órfão é lixo por construção.
+  assert.ok(EVI.reconciliar().sem_linha.includes('orfao-de-teste.mp4'), 'a reconciliação apagou o órfão');
+  rmSync(join(EVI.DIR, 'orfao-de-teste.mp4'), { force: true });
 });

@@ -18,6 +18,7 @@ import { join, extname, normalize, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { networkInterfaces } from 'node:os';
 import { getDb, get } from './src/db.js';
+import * as EVI from './src/evidencia.js';
 import { rotas, usuarioDa } from './src/api.js';
 import { varrerOrfaos } from './src/transcricao.js';
 import { invalidarSinais } from './src/aurora/sinais.js';
@@ -175,6 +176,19 @@ const servidor = HTTPS
 // processo NO MEIO de uma transcricao — o `finally` do modulo nao roda se o
 // processo morre, e sem esta linha o arquivo ficaria em disco para sempre.
 const orfaos = varrerOrfaos();
+
+// A prova do consentimento nao e' varrida: e' RECONCILIADA (OPAR 05/09/2026).
+// Arquivo de audio orfao e' lixo e some; arquivo de video orfao e' prova
+// desgarrada, e apagar seria a pior resposta. O boot conta e avisa; decidir e'
+// de gente.
+try {
+  const r = EVI.reconciliar();
+  if (r.sem_linha.length || r.sem_arquivo.length) {
+    console.warn(`  [consentimento] ${r.sem_linha.length} arquivo(s) sem linha e `
+      + `${r.sem_arquivo.length} linha(s) sem arquivo em data/consentimento/. `
+      + `Nada foi apagado — isso e' prova, e a decisao e' da coordenacao.`);
+  }
+} catch { /* diretorio ainda nao existe: nada a reconciliar */ }
 if (orfaos.apagados) console.log(`  ${orfaos.apagados} áudio(s) órfão(s) de execução anterior apagado(s).`);
 
 // Primeira execucao: banco vazio ganha os dados sinteticos automaticamente.

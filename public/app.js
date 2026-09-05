@@ -5226,7 +5226,7 @@ function modalConsentimento({ id, nome }) {
  *  33% um arquivo de megabytes e esbarraria no teto de corpo do servidor. */
 async function enviarEvidencia(blob, { id, responsavel, duracao }) {
   const q = new URLSearchParams({
-    crianca_id: String(id), campo: 'rubrica_socioemocional',
+    crianca_id: String(id), campo: 'consentimento_em_video',
     mime: blob.type || 'video/webm', responsavel,
     ...(duracao ? { duracao: String(duracao) } : {}),
   });

@@ -1408,6 +1408,27 @@ turma** (o servidor filtra; grupo de outra turma responde 403 no registro), um t
 WhatsApp com o texto escrito, e a marca "já recebeu este recado hoje". A pergunta *"e quem
 cadastra os canais e etc?"* foi o que fez o buraco aparecer — o `etc.` era a professora.
 
+**A retenção da prova, e por que ela DETECTA em vez de executar (OPAR 05/09/2026).** A auditoria
+achou três defeitos altos nesta peça, todos verificados à mão antes da correção:
+
+1. **Ver o vídeo ficava no log; destruir o vídeo, não.** `GET /api/consentimento/video` passava pelo
+   portão de acesso individual e o `DELETE` só exigia coordenação. Para uma peça que existe por causa
+   do ônus da prova, o rastro estava exatamente ao contrário. Agora o DELETE lê a linha antes, para
+   saber de quem é a prova, e registra o acesso antes de o arquivo sumir.
+2. **A linha de governança que declara os 5 anos não governava nada.** O front catalogava toda
+   evidência como `rubrica_socioemocional`, cuja retenção declarada é outra ("enquanto ativa + 2
+   anos"). `consentimento_em_video` existia só como texto de tela.
+3. **Revogar empurrava o relógio para frente.** `data_registro` era reescrita a cada mudança de
+   status: revogar em 2026 um consentimento de 2021 movia o vencimento de 2026 para 2031 — quatro
+   anos a mais, causados pelo gesto que deveria encurtar o prazo. A vigência passou a ser congelada
+   e a revogação ganhou data própria.
+
+**E o fecho de ciclo virou DETECTOR, não executor** — marca `expira_em`, devolve `provas_vencidas`
+com nome e prazo, e não apaga nada. Três razões: o disco não participa da transação (um rollback
+devolveria a linha e não os bytes, que é o desfecho que o próprio `evidencia.js` chama de "perda de
+prova"); destruir prova tem de ter dono e motivo (Art. 18, VI); e **prova de consentimento ativo
+nunca entra na lista, qualquer que seja a data** — é exatamente quando ela precisa existir.
+
 **O que continua fora, e por quê:** postar no Instagram por API (conta Business, token, revisão da
 Meta — infraestrutura que a casa não opera); e o *deep link* `instagram://story-camera`, que entrou
 só no celular e só como atalho — no notebook não existe, e prometer o que não abre é o defeito que
@@ -1430,8 +1451,9 @@ esta rodada veio consertar.
 | PoC do copilot com pedagogos não realizada | Bloqueia `AI_ENABLED=1` em operação real | Antes de ligar a IA para educadoras (protocolo pronto em `POC-COPILOT.md`) |
 | 20 consultas do rag-test de autoria interna | Gate C não congelado | Validação por pedagogo (registrada em `POC-COPILOT.md`) |
 | Anonimização não cobre apelido/paráfrase | Risco residual declarado na UI | Reavaliar com a PoC; orientação de uso é a mitigação |
-| Vídeo de consentimento sem política de retenção automática | O arquivo fica até alguém apagar com motivo; o fecho de ciclo não o alcança | Ligar ao `fecharCiclo` quando a retenção declarada (consentimento + 5 anos) vencer pela primeira vez |
 | Share target não funciona no iOS nem sem HTTPS | Metade dos aparelhos do Instituto cai no seletor de arquivo | Nada a fazer no produto: depende do Safari e do certificado. O caminho manual está declarado na tela |
+| Retenção da prova em vídeo é DETECTADA, não executada | O fecho de ciclo marca `expira_em` e nomeia as provas vencidas; apagar continua sendo gesto humano com motivo | Deliberado (OPAR 05/09): o disco não participa da transação — um rollback devolveria a linha e não os bytes —, e destruir prova do Art. 8º §1º tem de ter dono e rastro |
+| Órfãos em `data/consentimento/` são reportados, não varridos | O boot conta arquivo sem linha e linha sem arquivo e avisa; não apaga | Deliberado: ao contrário do áudio temporário, aqui o órfão é prova desgarrada. Quem decide é a coordenação |
 | A faixa "atenção" da régua pode ser aritmeticamente inalcançável | A faixa tem 5 pontos (75–79%) e o denominador é o nº de encontros na janela: com 10 encontros só existem múltiplos de 10, então ninguém pode estar "em atenção" numa turma de sábado no começo do semestre | Descoberto em 05/09/2026, quando a virada do dia derrubou o gate que dizia "a seed força as duas faixas". Não é erro de cálculo — é granularidade. Decidir com a coordenação se a faixa vira intervalo relativo (ex.: "1 falta da régua") em vez de percentual, que é o que resolve de verdade |
 | O passe morre com o servidor | Reiniciar o processo apaga os passes em trânsito (memória) | Deliberado: é trânsito de dez minutos, e a pessoa monta de novo com um toque. Só vira banco se a operação mostrar reinícios frequentes |
 | QR só até a versão 10 (213 bytes) | Um `wa.me/?text=` com o recado inteiro não cabe num QR; o passe resolve levando a fila, não o texto | Estender as tabelas até a v40 se algum dia houver conteúdo curto que precise ir por QR e passe de 213 bytes |
@@ -1443,7 +1465,7 @@ esta rodada veio consertar.
 | Políticas A-06/A-11 propostas, não validadas | Pendência de governança | Validação da coordenação (decisão 23) |
 | Mapeamento 1–4 → 0–2 da planilha é provisório | A exportação pode divergir do que a psicóloga faria à mão | Aval da psicóloga sobre as 6 rubricas e o mapeamento (decisão 34) |
 | Template do relato do procedimento é provisório | Pode não bater com o padrão que o conselho pede a ela | Quando o modelo prometido na visita chegar (decisão 31) |
-| Extrator lê contagens por padrão lexical | Fala fora do padrão ("umas seis") fica em branco | Medir a taxa de correção do check-in na operação; Modo A por modelo continua opt-in |
+| Extrator lê contagens por padrão lexical | ~~"umas seis" fica em branco~~ **A premissa estava errada (OPAR 05/09): "umas seis" sempre devolveu 6; o defeito era o extrator gravar 1 quando não entendia — corrigido.** O que resta é medir a taxa de correção na operação | Medição em campo; Modo A por modelo continua opt-in |
 | Neutralização do perímetro por lista fechada | Sintagma novo do procedimento volta a ser barrado | Ampliar `NEUTRALIZAVEIS_VIVENCIA` com a psicóloga, nunca por inferência |
 | Velocidade do whisper na máquina do Instituto nunca medida | A porta B (encontro inteiro) pode levar tempo que ninguém dimensionou; "~6× tempo real" não diz a direção | Medir com áudio de ~10 min no notebook mais fraco e escrever o número em `METODOLOGIA-VALIDACAO-PERCURSO.md` §5.3 (decisão 35) |
 | Capturar ainda depende de um encontro já existir | `#/registrar` redireciona para `#/registrar?passo=mao` sem encontro e `src/voz.js` devolve 404 — a porta C (áudio de três semanas atrás) esbarra nisso | Frente do calendário (encontro agendado + data retroativa), que é pré-requisito declarado da porta C |

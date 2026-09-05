@@ -36,7 +36,7 @@ existem no MVP** — as duas portas marcadas `a construir` no artefato e mais qu
 
 | Falta | Estado hoje |
 |---|---|
-| Calendário de encontros | a folha nasce do encontro do dia; não há agenda futura (`src/domain.js:154`) |
+| Calendário de encontros | a folha nasce do encontro do dia; não há agenda futura (`src/domain.js:159`) |
 | Aviso antes de cada encontro | o produto não emite nenhuma notificação |
 | Encontro que nunca fecha | não há data retroativa nem marca de "registrado depois" |
 | A fala preencher os seis indicadores | a rubrica é respondida à mão, criança por criança (~3 min cada, `#/observacao/:id`); `src/voz.js` só preenche a folha do dia e o check-in de grupo |

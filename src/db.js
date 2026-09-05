@@ -273,7 +273,12 @@ const ESQUEMA_SQL = `
     campo         TEXT NOT NULL REFERENCES governanca_campo(campo),
     status        TEXT NOT NULL CHECK (status IN ('ativo','pendente','revogado')),
     responsavel   TEXT,
+    -- data_registro e' o inicio da VIGENCIA, e por isso e' congelada: so' e'
+    -- escrita quando o consentimento passa a valer. A versao anterior a
+    -- reescrevia a cada mudanca de status, entao REVOGAR empurrava o relogio
+    -- para frente — o gesto que deveria encurtar o prazo o esticava em anos.
     data_registro TEXT,
+    revogado_em   TEXT,
     UNIQUE (crianca_id, campo)
   );
 
@@ -332,7 +337,11 @@ const ESQUEMA_SQL = `
     duracao_s     INTEGER,
     responsavel   TEXT NOT NULL,
     registrado_por INTEGER NOT NULL REFERENCES educador(id),
-    criado_em     TEXT NOT NULL
+    criado_em     TEXT NOT NULL,
+    -- Quando a retencao declarada vence. Escrita pelo fecho de ciclo, que e'
+    -- DETECTOR e nunca executor: marcar e' dele, apagar continua sendo gesto
+    -- humano com motivo. NULL = prova viva, e prova viva nunca e' marcada.
+    expira_em     TEXT
   );
   CREATE INDEX IF NOT EXISTS ix_evidencia_crianca ON consentimento_evidencia (crianca_id, campo);
 

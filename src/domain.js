@@ -56,6 +56,11 @@ export const PARAMS = {
   // A regua de presenca do Instituto: 75% e' o minimo para permanecer no
   // programa e entrar no grupo de beneficios; abaixo de 80% a casa ja' marca
   // "atencao — os pais tem que regular". E' politica existente, absorvida.
+  // Retencao da prova do consentimento (decisao 42, governanca `consentimento_em_video`):
+  // "enquanto o consentimento valer + 5 anos". O relogio so' comeca a correr
+  // quando o consentimento DEIXA de valer — prova de consentimento ativo nunca
+  // vence, porque e' justamente quando o onus do Art. 8o, §1o esta' de pe'.
+  ANOS_RETENCAO_PROVA: 5,
   PRESENCA_MINIMA_PCT: 75,
   PRESENCA_ATENCAO_PCT: 80,
   // Com menos encontros que isto no periodo, a regua nao se aplica (sem base).
@@ -393,12 +398,26 @@ export function registrarConsentimento(criancaId, campo, status, responsavel) {
     throw erro(422, 'Para ativar o consentimento é preciso registrar quem é o responsável que consentiu.');
   }
   if (!get(`SELECT id FROM crianca WHERE id = ?`, criancaId)) throw erro(404, 'Criança não encontrada.');
-  run(`INSERT INTO consentimento (crianca_id, campo, status, responsavel, data_registro)
-       VALUES (?,?,?,?,?)
+  // A VIGENCIA E' CONGELADA. `data_registro` marca quando o consentimento passou
+  // a valer e nao se move mais: e' o relogio da retencao declarada ("enquanto
+  // valer + 5 anos"). Antes ela era reescrita a cada mudanca de status, e
+  // revogar em 2026 um consentimento de 2021 empurrava o vencimento de 2026
+  // para 2031 — quatro anos a mais, causados pelo gesto que deveria encurtar.
+  run(`INSERT INTO consentimento (crianca_id, campo, status, responsavel, data_registro, revogado_em)
+       VALUES (?,?,?,?,?,?)
        ON CONFLICT(crianca_id, campo) DO UPDATE SET
-         status = excluded.status, responsavel = excluded.responsavel,
-         data_registro = excluded.data_registro`,
-      criancaId, campo, status, (responsavel || '').trim() || null, hoje());
+         status = excluded.status,
+         responsavel = excluded.responsavel,
+         data_registro = CASE
+           WHEN excluded.status = 'ativo' AND consentimento.data_registro IS NULL
+             THEN excluded.data_registro
+           ELSE consentimento.data_registro END,
+         revogado_em = CASE
+           WHEN excluded.status = 'revogado' THEN COALESCE(consentimento.revogado_em, excluded.data_registro)
+           WHEN excluded.status = 'ativo'    THEN NULL
+           ELSE consentimento.revogado_em END`,
+      criancaId, campo, status, (responsavel || '').trim() || null, hoje(),
+      status === 'revogado' ? hoje() : null);
   return consentimentoDe(criancaId, campo);
 }
 
@@ -1001,8 +1020,43 @@ export function fecharCiclo(cicloId, usuarioId, { abrirProximo = false } = {}) {
           `Ciclo ${ordem} · ${mes}`, Number(inicio.slice(0, 4)), ordem, inicio, fim);
       proximo = get(`SELECT * FROM ciclo WHERE ano = ? AND ordem = ?`, Number(inicio.slice(0, 4)), ordem);
     }
+    // A RETENCAO DA PROVA EM VIDEO, LIDA — NAO EXECUTADA (decisao 42 · OPAR 05/09).
+    //
+    // O fecho de ciclo e' o unico momento em que alguem da coordenacao olha o
+    // relogio do produto, entao e' aqui que a retencao declarada e' conferida.
+    // Mas ele MARCA e RELATA; nunca apaga. Tres razoes, todas medidas:
+    //
+    //  1. apagar prova de consentimento e' irreversivel e o disco nao participa
+    //     da transacao — um rollback devolveria a linha e nao os bytes, que e' o
+    //     desfecho que `evidencia.js` ja' chama pelo nome: "perda de prova";
+    //  2. o gesto tem dono. Apagar continua sendo `EVI.apagar` com motivo, por
+    //     uma pessoa, com rastro — como a revogacao do Art. 18, VI exige;
+    //  3. prova de consentimento ATIVO nunca entra na lista, qualquer que seja
+    //     a data: e' exatamente quando ela precisa existir.
+    const vencidas = all(
+      `SELECT ev.id, ev.crianca_id, c.nome, c.codigo,
+              date(COALESCE(co.revogado_em, co.data_registro, ev.criado_em),
+                   '+${PARAMS.ANOS_RETENCAO_PROVA} years') AS expira_em
+         FROM consentimento_evidencia ev
+         JOIN crianca c ON c.id = ev.crianca_id
+         -- O JOIN E' EM rubrica_socioemocional, E NAO E' ENGANO. A evidencia e'
+         -- catalogada como consentimento_em_video (a linha de governanca que
+         -- declara os 5 anos), mas esse campo tem exige_consentimento = 0 e
+         -- portanto NUNCA tem linha em consentimento. O consentimento cuja
+         -- vigencia governa o video e' o que o video PROVA — o da rubrica.
+         LEFT JOIN consentimento co
+                ON co.crianca_id = ev.crianca_id AND co.campo = 'rubrica_socioemocional'
+        WHERE COALESCE(co.status, 'pendente') <> 'ativo'`)
+      .map(l => ({ ...l, vencida: l.expira_em <= hoje() }));
+    for (const v of vencidas) run(`UPDATE consentimento_evidencia SET expira_em = ? WHERE id = ?`, v.expira_em, v.id);
+
     marcarAtividade(usuarioId, 'fecho_ciclo');
-    return { ciclo: get(`SELECT * FROM ciclo WHERE id = ?`, cicloId), notas_descartadas: comTexto, proximo };
+    return {
+      ciclo: get(`SELECT * FROM ciclo WHERE id = ?`, cicloId), notas_descartadas: comTexto, proximo,
+      // O que a coordenação tem de olhar, com nome e prazo. Vazio é o caso comum.
+      provas_vencidas: vencidas.filter(v => v.vencida)
+        .map(({ id, nome, codigo, expira_em }) => ({ id, nome, codigo, expira_em })),
+    };
   });
 }
 

@@ -150,7 +150,7 @@ qualquer coisa acima disso na sessão é sinal, não ruído do cenário.
 > está escrito acima como limiar (os 20 s da tarefa 4) e como aviso (a tarefa 6 em dia não letivo).
 
 > **Por que a tarefa 5 termina num bloqueio.** Ela não é usabilidade: é o teste de **H3**. A
-> psicóloga não pode registrar o consentimento — só a coordenação (`src/api.js:837`), e a tela diz
+> psicóloga não pode registrar o consentimento — só a coordenação (`src/api.js:846`), e a tela diz
 > isso a ela (`public/app.js:1419`). O sucesso da tarefa é ela entender **por que não sai**, não
 > conseguir emitir. E o destino é literal do campo: *"que daí seria entre profissionais, que é mais
 > rico ainda"*.

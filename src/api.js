@@ -829,9 +829,18 @@ export const rotas = {
     return { _arquivo: buffer, _mime: mime };
   },
 
+  // DESTRUIR A PROVA PASSA PELO MESMO PORTAO QUE ASSISTIR A ELA (OPAR 05/09).
+  // Antes, `GET /api/consentimento/video` registrava quem assistiu e este
+  // DELETE nao registrava nada: **ver ficava no log, destruir nao.** Para uma
+  // peca que existe por causa do onus da prova, era o rastro exatamente ao
+  // contrario. Agora a leitura da linha vem antes, para saber de QUEM e' a
+  // prova, e o acesso e' registrado antes de o arquivo sumir.
   'DELETE /api/consentimento/evidencia': (req, body) => {
     exigeCoordenacao(req);
-    return EVI.apagar(num(body.id, 'id'), { motivo: body.motivo });
+    const id = num(body.id, 'id');
+    const linha = EVI.porId(id);
+    exigeAcessoCrianca(req, linha.crianca_id, 'consentimento_video');
+    return EVI.apagar(id, { motivo: body.motivo });
   },
 
   'POST /api/consentimento': (req, body) => {
