@@ -352,7 +352,7 @@ models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh b
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
 scripts/smoke-test.mjs    504 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     198 testes unitários das regras críticas (banco temporário)
+scripts/unit-test.mjs     205 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
 scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)
