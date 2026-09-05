@@ -1347,6 +1347,57 @@ onde virar é botão que não faz nada.
 
 ---
 
+### 50. A segunda rodada de WhatsApp e Instagram — onde a primeira quebrava sem avisar (04/09/2026, noite)
+
+**Origem:** *"veja se não há nada que não possa ser melhorado ou desenvolvido, principalmente na
+integração com o Instagram e o WhatsApp. Seja criativo… explore alternativas ainda não usualmente
+exploradas."*
+
+**O diagnóstico veio antes da criatividade.** A fila da decisão 47 tinha cinco pontos em que
+falhava em silêncio — cada um descoberto olhando para onde a coordenação de fato está, e não para
+onde o código foi testado:
+
+| Onde quebrava | Por quê | O que entrou |
+|---|---|---|
+| **O clipboard** | `navigator.clipboard` não existe fora de HTTPS — e a rede local do Instituto é http. A fila inteira dependia dele | O texto vai **dentro do link**: `wa.me/?text=…` abre o WhatsApp já com a mensagem escrita; só falta escolher o grupo. E o copiar ganhou o caminho antigo (`execCommand`) como reserva |
+| **O notebook** | Sem WhatsApp e sem `navigator.share`, a coordenação montava a fila e não tinha para onde ir | O **passe**: a fila fica dez minutos no servidor sob um id aleatório, e um QR leva o celular direto a ela |
+| **O responsável que digita link** | Para o Jardim Ângela, "entre no grupo pelo link" é barreira | A **folha da turma**: QR de cada grupo e do Instagram, para imprimir e colar na parede |
+| **Mandar duas vezes** | Nada impedia o mesmo recado sair duas vezes no mesmo sábado | O servidor diz quem **já recebeu este conteúdo hoje**; a tela desmarca esses por padrão, com o motivo escrito. Não proíbe — repetir pode ser intencional |
+| **Só quadrado** | Story (vertical) e carrossel têm mais alcance no Instagram, e ambos cabem no `navigator.share` | Três formas do mesmo card: feed, story e carrossel de três imagens; e o **texto alternativo** para quem não vê a imagem |
+
+**A peça que destrava três desses é um codificador de QR escrito à mão** (`public/qr.js`), e ele
+merece a decisão por si: a regra 1 (sem npm) continua de pé, e o algoritmo é aberto (ISO/IEC 18004)
+— modo byte, correção M, versões 1 a 10, máscara por penalidade como a norma manda. **Foi
+verificado com um leitor real, não com o próprio código:** o `BarcodeDetector` do navegador
+(Apple Vision) decodificou 22 casos de v1 a v10, byte a byte, com acentos. E foi ele que pegou o
+único defeito: a v7 falhava porque o sincronismo era desenhado antes do padrão de alinhamento que
+fica *em cima* dele. Um teste que só conferisse a matriz contra o próprio codificador passaria
+verde.
+
+**O passe é trânsito, não registro** — por isso mora em memória, dura dez minutos, vale por uma
+leitura e nunca leva a imagem (170 KB em base64 não é trânsito; o celular refaz o card em meio
+segundo do mesmo agregado). Um QR fotografado por cima do ombro não abre nada para quem não tem
+sessão de gestão. O que fica registrado é o **disparo**, quando acontece, como sempre.
+
+**Um defeito da rodada anterior que só apareceu agora, e vale registrar:** a referência do
+disparo era calculada em dois lugares com duas formas (`turma 6 · data` ao perguntar quem já
+recebeu; `Vivência · Sábado manhã · data` ao registrar). A trava de duplicidade **nunca casava** —
+passava verde e não protegia ninguém. Passou a ter uma fonte, e "hoje" passou a ser a meia-noite
+**local** de quem manda, porque um envio às 21h de sábado em São Paulo já é domingo em UTC.
+
+**O que a criatividade encontrou de legítimo para "um envio, todos os responsáveis":** não é
+código — é o próprio WhatsApp. Uma **Comunidade** tem um grupo de avisos que alcança todos os
+membros de todos os grupos de uma vez. A tela passou a dizer isso, e o produto aceita esse grupo
+como canal de público "Responsáveis da turma", sem turma. É o único caminho dentro dos Termos, e
+a pesquisa de WhatsApp já o listava sem que ninguém o tivesse ligado ao pedido.
+
+**O que continua fora, e por quê:** postar no Instagram por API (conta Business, token, revisão da
+Meta — infraestrutura que a casa não opera); e o *deep link* `instagram://story-camera`, que entrou
+só no celular e só como atalho — no notebook não existe, e prometer o que não abre é o defeito que
+esta rodada veio consertar.
+
+---
+
 ---
 
 ## Dívidas técnicas conhecidas
@@ -1364,6 +1415,8 @@ onde virar é botão que não faz nada.
 | Anonimização não cobre apelido/paráfrase | Risco residual declarado na UI | Reavaliar com a PoC; orientação de uso é a mitigação |
 | Vídeo de consentimento sem política de retenção automática | O arquivo fica até alguém apagar com motivo; o fecho de ciclo não o alcança | Ligar ao `fecharCiclo` quando a retenção declarada (consentimento + 5 anos) vencer pela primeira vez |
 | Share target não funciona no iOS nem sem HTTPS | Metade dos aparelhos do Instituto cai no seletor de arquivo | Nada a fazer no produto: depende do Safari e do certificado. O caminho manual está declarado na tela |
+| O passe morre com o servidor | Reiniciar o processo apaga os passes em trânsito (memória) | Deliberado: é trânsito de dez minutos, e a pessoa monta de novo com um toque. Só vira banco se a operação mostrar reinícios frequentes |
+| QR só até a versão 10 (213 bytes) | Um `wa.me/?text=` com o recado inteiro não cabe num QR; o passe resolve levando a fila, não o texto | Estender as tabelas até a v40 se algum dia houver conteúdo curto que precise ir por QR e passe de 213 bytes |
 | Postar no Instagram continua manual | O card sai pronto, mas quem publica é a pessoa | Graph API exige conta Business, token de servidor e revisão de aplicativo na Meta — infraestrutura que a casa não opera (decisão 48) |
 | Envio a grupo de WhatsApp continua com um toque por grupo | O que a Meta permite; o resto viola os Termos | Só muda se a Meta abrir a API de grupos existentes, ou se a diretoria aceitar o Degrau 2 da pesquisa, que não recomendo |
 | O disparo marca "enviado" no CLIQUE, não na entrega | Quem abre o grupo e desiste fica marcado como enviado | Não há como saber: o navegador não avisa quando a pessoa volta do WhatsApp. O botão "Desfazer" é a mitigação, e está na tela |

@@ -79,6 +79,14 @@ Consentimento de matrícula genérico "não se sustenta" para imagem (ConJur). A
 
 ## 5. Recomendação para o Percurso — três degraus
 
+> **Segunda rodada, na noite de 04/09/2026 (decisão 50):** o texto passou a ir **dentro do link**
+> (`wa.me/?text=`), o que tira o clipboard — que não existe em http — do caminho crítico; a fila
+> ganhou um **passe por QR** do notebook para o celular; e a **folha da turma** imprime o QR de
+> cada grupo para colar na parede. E o achado que esta pesquisa já continha sem ligar ao pedido:
+> o único "um envio, todos os responsáveis" dentro dos Termos é o **grupo de avisos de uma
+> Comunidade** (linha 4 da tabela do §1) — o produto passou a dizer isso na tela e a aceitar esse
+> grupo como canal.
+>
 > **O Degrau 0 foi executado em 04/09/2026** (decisões 47 e 48). Os três itens que faltavam abaixo —
 > Web Share com arquivo, pacotes distintos por público e consulta à governança — estão no produto, em
 > `#/divulgar`: os grupos viraram cadastro (`canal`), o público virou trava de servidor, o texto é

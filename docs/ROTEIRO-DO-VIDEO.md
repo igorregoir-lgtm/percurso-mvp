@@ -38,7 +38,7 @@ para caber, e por quê:
 4. **Cena 9 (recado):** abrir pelo botão **"Recado para os responsáveis"** no cartão da folha, na
    tela Hoje — o caminho que a psicóloga usaria. Funciona em qualquer dia desde `48ec1dd`
    (03/09/2026), que ligou o botão ao **encontro da folha** e não à chamada de hoje
-   (`public/app.js:613`). Até ali ele sumia em dia não letivo e a cena tinha de abrir `#/sai-daqui?aba=recado`
+   (`public/app.js:614`). Até ali ele sumia em dia não letivo e a cena tinha de abrir `#/sai-daqui?aba=recado`
    pela URL; **essa instrução caiu.**
 5. Cenas dos papéis de campo (1–10): janela estreita (≈400 px) ou celular — as personas usam o
    produto em pé, dentro da sala. Cenas de gestão (11–16): janela normal.
@@ -268,8 +268,8 @@ só o Instituto tem. A tela mostra as premissas e diz isso, em vez de inventar a
 `data/percurso.db` — o backup é copiar um arquivo. Rodar as duas baterias e mostrar os totais:
 
 ```
-node scripts/smoke-test.mjs   → 489 passaram · 0 falharam
-node scripts/unit-test.mjs    → 199 passaram · 0 falharam
+node scripts/smoke-test.mjs   → 500 passaram · 0 falharam
+node scripts/unit-test.mjs    → 204 passaram · 0 falharam
 ```
 
 > **Conferir os números antes de gravar.** Eles mudam a cada bateria nova, e o roteiro anterior

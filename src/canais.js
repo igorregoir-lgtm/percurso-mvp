@@ -26,6 +26,7 @@
 //   2. o texto é montado UMA vez e copiado UMA vez;
 //   3. a fila lembra onde ela parou, e o que já saiu fica registrado.
 // Sobra um toque por grupo — que é o toque que a Meta exige, e só ele.
+import { randomBytes } from 'node:crypto';
 import { all, get, run } from './db.js';
 import { erro, hoje, textoObrigatorio } from './domain.js';
 
@@ -179,4 +180,84 @@ export function disparosRecentes(limite = 20) {
        FROM disparo d JOIN canal c ON c.id = d.canal_id
        LEFT JOIN educador e ON e.id = d.por
       ORDER BY d.em DESC, d.id DESC LIMIT ?`, limite);
+}
+
+// ---------------------------------------------------------------------------
+// O QUE JÁ SAIU HOJE (decisão 50). O erro mais comum de quem manda no sábado
+// corrido não é mandar para o grupo errado — é mandar DUAS vezes para o certo.
+// O servidor sabe, porque o disparo fica registrado; a tela desmarca esses
+// canais por padrão e diz por quê. Não proíbe: repetir pode ser intencional.
+// ---------------------------------------------------------------------------
+export function jaRecebeuHoje(conteudo, referencia, { desde = null } = {}) {
+  // `desde` vem do cliente: a meia-noite LOCAL de quem manda, em ISO. O
+  // servidor guarda `em` em UTC e não sabe o fuso do celular; sem isso, um
+  // envio às 21h de sábado em São Paulo seria "ontem" às 21h01.
+  const ini = desde && !Number.isNaN(Date.parse(desde))
+    ? new Date(desde).toISOString()
+    : new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+  return all(
+    `SELECT DISTINCT canal_id FROM disparo
+      WHERE conteudo = ? AND COALESCE(referencia, '') = COALESCE(?, '') AND em >= ?`,
+    conteudo, referencia ?? null, ini).map(l => l.canal_id);
+}
+
+// ---------------------------------------------------------------------------
+// O PASSE PARA O CELULAR (decisão 50). A fila é montada onde a coordenação
+// está — muitas vezes no notebook, onde não há WhatsApp nem `navigator.share`.
+// O passe guarda a fila no servidor por dez minutos, sob um id aleatório, e o
+// QR leva o celular direto a ela: sem e-mail, sem cabo, sem digitar.
+//
+// POR QUE EM MEMÓRIA, E NÃO NO BANCO. É trânsito, não registro: some sozinho,
+// é de uso único, e não deve sobreviver a um reinício — se o servidor caiu no
+// meio, a pessoa monta de novo (custa um toque). O que fica registrado é o
+// DISPARO, quando acontece, como sempre.
+// ---------------------------------------------------------------------------
+const PASSES = new Map();
+const PASSE_TTL_MS = 10 * 60 * 1000;
+const PASSE_TETO_BYTES = 64 * 1024;
+
+function limparPasses() {
+  const agora = Date.now();
+  for (const [id, p] of PASSES) if (p.expira <= agora) PASSES.delete(id);
+}
+
+export function criarPasse(fila, { porUsuarioId }) {
+  limparPasses();
+  const corpo = JSON.stringify(fila ?? null);
+  if (!fila || typeof fila !== 'object' || !Array.isArray(fila.canais) || !fila.canais.length)
+    throw erro(422, 'Não há fila para passar — monte o envio primeiro.');
+  if (Buffer.byteLength(corpo, 'utf8') > PASSE_TETO_BYTES)
+    throw erro(413, 'A fila é grande demais para passar por QR. Tire a imagem e passe só o texto.');
+  // Nunca a imagem do card: 170 KB em base64 não é trânsito, é peso — e o
+  // celular refaz o card em meio segundo do mesmo agregado.
+  const enxuta = { ...fila, imagem: null };
+  const id = randomBytes(12).toString('base64url');
+  PASSES.set(id, { fila: enxuta, por: porUsuarioId, expira: Date.now() + PASSE_TTL_MS });
+  return { id, expira_em_s: PASSE_TTL_MS / 1000 };
+}
+
+/** Uso único: quem lê, consome. Um QR fotografado por cima do ombro vale por
+ *  dez minutos e por uma leitura — e só para quem tem sessão de gestão. */
+export function consumirPasse(id) {
+  limparPasses();
+  const p = PASSES.get(String(id ?? ''));
+  if (!p) throw erro(404, 'Este passe não existe mais: passes duram dez minutos e valem por uma leitura. Monte o envio de novo.');
+  PASSES.delete(id);
+  return p.fila;
+}
+
+// ---------------------------------------------------------------------------
+// FORMATAÇÃO PARA O WHATSAPP. O WhatsApp entende *negrito*, _itálico_ e
+// ~riscado~. O texto do recado chega cru; a primeira linha vira negrito e a
+// assinatura vira itálico. Só isso — formatação a mais vira ruído no celular
+// de quem lê no ônibus.
+// ---------------------------------------------------------------------------
+export function formatarParaWhatsApp(texto) {
+  const linhas = String(texto ?? '').split('\n');
+  if (!linhas.length || !linhas[0].trim()) return String(texto ?? '');
+  const primeira = linhas[0].trim();
+  linhas[0] = /^\*.*\*$/.test(primeira) ? primeira : `*${primeira}*`;
+  const ultima = linhas.length - 1;
+  if (/^—\s*\S/.test(linhas[ultima].trim())) linhas[ultima] = `_${linhas[ultima].trim()}_`;
+  return linhas.join('\n');
 }

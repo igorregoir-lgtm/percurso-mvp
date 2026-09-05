@@ -74,7 +74,7 @@ navegador (public/ — HTML+CSS+JS puro, hash routing, sem build)
     ▼
 server.js        HTTP puro (node:http) — estáticos + despacho de /api/*
     ▼
-src/api.js       113 rotas — sessão por perfil; RBAC educadora / coordenação /
+src/api.js       116 rotas — sessão por perfil; RBAC educadora / coordenação /
     │            diretoria (a diretoria não abre registro individual)
     ▼
     ├── src/domain.js     núcleo: elegibilidade, perímetro, alertas, safras,
@@ -91,6 +91,9 @@ data/percurso.db local ou /var/data/percurso.db no Render
                    (WAL; disco persistente; backup externo obrigatório)
 
 src/seed.js      dados 100% sintéticos, PRNG com semente fixa (regra 1 do bloco 6)
+public/qr.js     codificador de QR sem biblioteca (decisao 50): ISO 18004,
+                 byte/M, v1–v10, mascara por penalidade; verificado com o
+                 BarcodeDetector do navegador, nao com o proprio codigo
 src/canais.js    grupos de WhatsApp e perfil de Instagram (decisao 47) — o
                  publico do canal e' TRAVA: decide o que pode ser montado para
                  ele, e a recusa e' do servidor, nao do botao
@@ -112,7 +115,7 @@ data/audio-temp/    unico lugar onde audio toca disco, e sempre de passagem
 public/audio.js     conversao para WAV 16 kHz no NAVEGADOR (evita o ffmpeg) e
                     gravacao em blocos fechados de 5 min (evita 1 GB de Float32)
 
-scripts/         reset.mjs · smoke-test.mjs (489 asserções) · unit-test.mjs (199) · preparar-sessao.mjs
+scripts/         reset.mjs · smoke-test.mjs (500 asserções) · unit-test.mjs (204) · preparar-sessao.mjs
                  rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
                  audio-stub-test.mjs (ciclo de vida do áudio, sem modelo) · reancorar.mjs
                  whisper-stub.mjs · ai-stub.mjs (imitam a interface, não o comportamento)

@@ -1787,5 +1787,38 @@ secao('30 · Canais de WhatsApp e Instagram (decisões 47 e 48)');
     (await GET('maria', '/api/divulgar/card?periodo=2026-07-01..2026-12-31')).status === 403);
 }
 
+
+// -------------------------------- 31. decisão 50: passe, duplicidade e formato
+secao('31 · Passe para o celular, envio duplicado e o texto no link (decisão 50)');
+{
+  const canais = (await GET('rita', '/api/divulgar')).corpo.canais;
+  const grupo = canais.find(c => c.publico === 'pais');
+  const fila = { tipo: 'recado', rotulo: 'smoke', texto: 'x', imagem: 'data:image/png;base64,AAAA',
+    referencia: 'smoke-passe', canais: [{ id: grupo.id, nome: grupo.nome, feito: false }] };
+  const passe = await POST('rita', '/api/divulgar/passe', { fila });
+  T('a coordenação cria o passe (id aleatório, dez minutos)', passe.status === 200 && passe.corpo.id?.length >= 12 && passe.corpo.expira_em_s === 600);
+  T('a professora NÃO cria passe (403)', (await POST('maria', '/api/divulgar/passe', { fila })).status === 403);
+  T('a professora NÃO consome passe (403)', (await GET('maria', `/api/divulgar/passe?id=${passe.corpo.id}`)).status === 403);
+  const lido = await GET('solange', `/api/divulgar/passe?id=${passe.corpo.id}`);
+  T('a diretoria consome o passe — sem a imagem, com a fila inteira', lido.status === 200 && lido.corpo.fila.imagem === null && lido.corpo.fila.canais[0].id === grupo.id);
+  T('o passe vale por UMA leitura (404 na segunda)', (await GET('rita', `/api/divulgar/passe?id=${passe.corpo.id}`)).status === 404);
+  T('passe sem fila é recusado (422)', (await POST('rita', '/api/divulgar/passe', { fila: { canais: [] } })).status === 422);
+
+  const meiaNoite = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+  const antes = await GET('rita', `/api/divulgar/ja-recebeu?conteudo=recado&referencia=${encodeURIComponent('smoke-dup')}&desde=${encodeURIComponent(meiaNoite)}`);
+  T('antes de sair, ninguém "já recebeu"', antes.status === 200 && antes.corpo.canal_ids.length === 0);
+  await POST('rita', '/api/disparo', { canal_id: grupo.id, conteudo: 'recado', referencia: 'smoke-dup' });
+  const depois = await GET('rita', `/api/divulgar/ja-recebeu?conteudo=recado&referencia=${encodeURIComponent('smoke-dup')}&desde=${encodeURIComponent(meiaNoite)}`);
+  T('depois do disparo, o servidor diz quem já recebeu este conteúdo hoje', depois.corpo.canal_ids.includes(grupo.id));
+  T('outra referência não conta como duplicado',
+    !(await GET('rita', `/api/divulgar/ja-recebeu?conteudo=recado&referencia=outra&desde=${encodeURIComponent(meiaNoite)}`)).corpo.canal_ids.includes(grupo.id));
+
+  const rec = (await GET('rita', '/api/divulgar')).corpo.recados[0];
+  const recado = await GET('rita', `/api/recado?turma_id=${rec.turma_id}&data=${rec.data}`);
+  T('o recado sai também formatado para o WhatsApp (primeira linha em negrito)',
+    recado.status === 200 && recado.corpo.texto_whatsapp?.startsWith('*') && recado.corpo.texto === recado.corpo.texto.replace(/^\*/, ''));
+  T('a assinatura do recado vai em itálico', /_— Instituto Ebenézer_$/.test(recado.corpo.texto_whatsapp.trim()));
+}
+
 console.log(`\n\x1b[1m${ok} passaram · ${falhas} falharam\x1b[0m\n`);
 process.exit(falhas ? 1 : 0);

@@ -116,9 +116,14 @@ entra por incentivo fiscal cobra prestação de contas, e prestação de contas 
    responsável consentindo** (decisão 42): "a coordenação digitou o nome" é afirmação, o vídeo é
    prova — e o ônus dela é do controlador (LGPD Art. 8º, §1º). O vídeo é opcional; sem ele o
    consentimento vale igual, e a tela passa a dizer quais têm prova e quais só têm a palavra.
-6. **`#/painel?aba=sintese`** — gera a síntese do ciclo em template fechado (números vêm de SQL, nunca de
+6. **`#/divulgar`** — o que sai do Instituto para fora (decisões 47, 48 e 50): escolhe o recado
+   ou o card, marca os grupos (o servidor já desmarcou quem recebeu hoje), e cada botão abre o
+   WhatsApp **com o texto escrito**. No notebook, um QR passa a fila para o celular. A **folha da
+   turma** imprime o QR de cada grupo para a parede — é assim que o responsável entra, não
+   digitando link. O botão único para todos os grupos **não existe**, e a tela diz por quê.
+7. **`#/painel?aba=sintese`** — gera a síntese do ciclo em template fechado (números vêm de SQL, nunca de
    modelo), passa pelo revisor de sobre-alegação e **aprova ou devolve** — a aprovação é dela.
-7. **Fecho do ciclo** — fecha o ciclo, a retenção declarada é executada e o próximo abre.
+8. **Fecho do ciclo** — fecha o ciclo, a retenção declarada é executada e o próximo abre.
 
 **Aurora opcional (v3, se `AI_ENABLED=1`):** a mesma sala **Refletir** para preparar conversas
 de calibração — e, no painel, a leitura de divergência entre educadoras por dimensão (pauta de

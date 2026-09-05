@@ -13,8 +13,8 @@
 // A VERSAO MUDA quando o SHELL muda. `audio.js` entrou aqui por necessidade, nao
 // por completude: `app.js` o IMPORTA no topo, e um modulo que falta derruba o
 // arquivo inteiro — o app nao abriria offline, em vez de abrir sem as portas.
-const VERSAO = 'percurso-v4';
-const SHELL = ['/', '/index.html', '/styles.css', '/app.js', '/fila.js', '/audio.js', '/manifest.json',
+const VERSAO = 'percurso-v5';
+const SHELL = ['/', '/index.html', '/styles.css', '/app.js', '/fila.js', '/audio.js', '/qr.js', '/manifest.json',
                '/icone.svg', '/icone-192.png', '/icone-512.png'];
 
 self.addEventListener('install', (e) => {

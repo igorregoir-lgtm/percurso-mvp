@@ -617,27 +617,27 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
   const { readFileSync } = await import('node:fs');
   const raiz = new URL('../', import.meta.url);
   const ANCORAS = {
-    'public/app.js:515': /rota\(\/\^#\\\/hoje\//,
-    'public/app.js:612': /Revisar e liberar o relato|relato_liberado/,
+    'public/app.js:516': /rota\(\/\^#\\\/hoje\//,
+    'public/app.js:613': /Revisar e liberar o relato|relato_liberado/,
     // Regex ESTREITA de proposito: /recados|#\/recado/ casava em quatro linhas,
     // e a reancorar.mjs nao tinha como decidir qual. Ancora que casa em varios
     // lugares nao ancora nada.
     // O botão do recado. O destino virou `#/sai-daqui?aba=recado` na F2, mas o
     // que a âncora guarda é o mesmo: ele leva a TURMA e a DATA do encontro.
-    'public/app.js:613': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
-    'public/app.js:1418': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:614': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
+    'public/app.js:1419': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:3216': /async function telaScores\(\)/,
-    'public/app.js:3450': /id="pergunta"/,
+    'public/app.js:3217': /async function telaScores\(\)/,
+    'public/app.js:3451': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:5958': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'public/app.js:6175': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
     'src/api.js:425': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:807': /'POST \/api\/consentimento'/,
-    'src/api.js:1314': /periodosSugeridos\(\)/,
+    'src/api.js:826': /'POST \/api\/consentimento'/,
+    'src/api.js:1338': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:113': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
@@ -2976,4 +2976,112 @@ test('[hidden] vence toda regra de display — a classe inteira, não o remendo'
   // E o remendo antigo não deve voltar: um seletor por elemento é a forma de
   // esquecer o próximo.
   assert.ok(!css.includes('nav.barra-nav[hidden]'), 'o remendo por elemento voltou');
+});
+
+// ===========================================================================
+// DECISÃO 50 — o QR sem biblioteca, o passe para o celular, a trava de envio
+// duplicado e a formatação para o WhatsApp.
+// ===========================================================================
+const QR = await import('../public/qr.js');
+
+test('QR: escolhe a menor versão que cabe, recusa o que não cabe, e a matriz tem a forma da norma', () => {
+  // Um link de convite cabe na v3; o passe (URL + id) na v4; e o teto é dito,
+  // não estourado em silêncio.
+  const convite = QR.codificarQR('https://chat.whatsapp.com/EXEMPLOvivmanha1');
+  assert.equal(convite.versao, 3); assert.equal(convite.tamanho, 29);
+  assert.equal(QR.codificarQR('P'.repeat(14)).versao, 1);
+  assert.equal(QR.codificarQR('P'.repeat(15)).versao, 2);
+  assert.equal(QR.codificarQR('P'.repeat(213)).versao, 10);
+  assert.throws(() => QR.codificarQR('P'.repeat(214)), /vai até 213/);
+  // Os três localizadores (7×7 com anel e miolo) estão onde a norma manda.
+  const m = convite.modulos, N = convite.tamanho;
+  const localizador = (r, c) => {
+    for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) {
+      const borda = i === 0 || i === 6 || j === 0 || j === 6;
+      const miolo = i >= 2 && i <= 4 && j >= 2 && j <= 4;
+      if (m[r + i][c + j] !== ((borda || miolo) ? 1 : 0)) return false;
+    }
+    return true;
+  };
+  assert.ok(localizador(0, 0) && localizador(0, N - 7) && localizador(N - 7, 0), 'localizador fora do lugar');
+  // Sincronismo alternado entre os localizadores, e o módulo escuro fixo.
+  for (let i = 8; i < N - 8; i++) { assert.equal(m[6][i], i % 2 === 0 ? 1 : 0); assert.equal(m[i][6], i % 2 === 0 ? 1 : 0); }
+  assert.equal(m[N - 8][8], 1);
+  // A partir da v7 há alinhamento SOBRE o sincronismo — foi o defeito que o
+  // leitor real pegou (decodificava até a v6, falhava na v7). Aqui: o centro
+  // do padrão (6,22) da v7 tem de ser escuro, e o anel em volta claro.
+  const v7 = QR.codificarQR('P'.repeat(110)); assert.equal(v7.versao, 7);
+  assert.equal(v7.modulos[6][22], 1); assert.equal(v7.modulos[6][21], 0); assert.equal(v7.modulos[5][22], 0);
+  // UTF-8 inteiro, não Latin-1: "ã" e "—" sobrevivem ao comprimento em bytes.
+  assert.equal(QR.codificarQR('ã—ç').versao, 1);
+  // E a proporção de escuros fica perto de 50%: máscara mal aplicada derruba isso.
+  const escuros = m.flat().reduce((s, v) => s + v, 0);
+  assert.ok(Math.abs(escuros / (N * N) - 0.5) < 0.1, `proporção de escuros ${escuros / (N * N)}`);
+  // O SVG e' auto-suficiente e imprimível.
+  assert.match(QR.svgQR('x'), /^<svg [^>]*shape-rendering="crispEdges"/);
+});
+
+test('WhatsApp: a primeira linha vira negrito, a assinatura itálico, e o resto fica como está', () => {
+  const t = 'Recado da turma — sábado\n\nPresença: 9 de 12.\n— Instituto Ebenézer';
+  assert.equal(CAN.formatarParaWhatsApp(t), '*Recado da turma — sábado*\n\nPresença: 9 de 12.\n_— Instituto Ebenézer_');
+  assert.equal(CAN.formatarParaWhatsApp('*já em negrito*\nx'), '*já em negrito*\nx');
+  assert.equal(CAN.formatarParaWhatsApp(''), '');
+  // O boletim leva a formatação dentro do link — o responsável abre o WhatsApp
+  // com o cabeçalho em negrito, sem que ninguém precise editar nada.
+  const c = get(`SELECT id FROM crianca WHERE responsavel_contato IS NOT NULL LIMIT 1`);
+  const b = BOL.boletimDaCrianca(c.id);
+  assert.ok(decodeURIComponent(b.whatsapp_url.split('text=')[1]).startsWith('*Instituto Ebenézer'));
+});
+
+test('passe para o celular: dez minutos, uma leitura, sem a imagem, só com fila de verdade', () => {
+  const fila = { tipo: 'recado', rotulo: 'x', texto: 't', imagem: 'data:image/png;base64,AAAA',
+    canais: [{ id: 1, nome: 'a', feito: true }, { id: 2, nome: 'b', feito: false }] };
+  const p = CAN.criarPasse(fila, { porUsuarioId: 2 });
+  assert.equal(typeof p.id, 'string'); assert.ok(p.id.length >= 12); assert.equal(p.expira_em_s, 600);
+  const lida = CAN.consumirPasse(p.id);
+  assert.equal(lida.imagem, null, 'a imagem viajou pelo passe — 170 KB em base64 não é trânsito');
+  assert.deepEqual(lida.canais.map(c => c.feito), [true, false], 'o estado da fila se perdeu no passe');
+  assert.throws(() => CAN.consumirPasse(p.id), /não existe mais/);          // uso único
+  assert.throws(() => CAN.consumirPasse('nunca-existiu'), /não existe mais/);
+  assert.throws(() => CAN.criarPasse({ canais: [] }, { porUsuarioId: 2 }), /monte o envio primeiro/);
+  assert.throws(() => CAN.criarPasse(null, { porUsuarioId: 2 }), /monte o envio primeiro/);
+  assert.throws(() => CAN.criarPasse({ canais: [{ id: 1 }], texto: 'x'.repeat(70 * 1024) }, { porUsuarioId: 2 }), /grande demais/);
+});
+
+test('envio duplicado: o servidor sabe quem já recebeu ESTE conteúdo desde a meia-noite local', () => {
+  const c = CAN.criarCanal({ tipo: 'whatsapp', nome: 'Teste · duplicado', publico: 'pais',
+    destino: 'https://chat.whatsapp.com/TESTEdup00001' });
+  const outro = CAN.criarCanal({ tipo: 'whatsapp', nome: 'Teste · outro', publico: 'pais',
+    destino: 'https://chat.whatsapp.com/TESTEdup00002' });
+  const meiaNoite = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+  assert.deepEqual(CAN.jaRecebeuHoje('recado', 'Turma X · 2026-09-04', { desde: meiaNoite }), []);
+  CAN.registrarDisparo({ canalId: c.id, conteudo: 'recado', referencia: 'Turma X · 2026-09-04', porUsuarioId: 2 });
+  assert.deepEqual(CAN.jaRecebeuHoje('recado', 'Turma X · 2026-09-04', { desde: meiaNoite }), [c.id]);
+  // Outra referência (outro dia de encontro) não conta; outro canal também não.
+  assert.deepEqual(CAN.jaRecebeuHoje('recado', 'Turma X · 2026-09-05', { desde: meiaNoite }), []);
+  assert.ok(!CAN.jaRecebeuHoje('recado', 'Turma X · 2026-09-04', { desde: meiaNoite }).includes(outro.id));
+  // Um `desde` de amanhã (fuso trocado, relógio errado) não derruba a consulta.
+  const amanha = new Date(Date.now() + 86_400_000).toISOString();
+  assert.deepEqual(CAN.jaRecebeuHoje('recado', 'Turma X · 2026-09-04', { desde: amanha }), []);
+  assert.deepEqual(CAN.jaRecebeuHoje('recado', 'Turma X · 2026-09-04', { desde: 'lixo' }), [c.id]);
+});
+
+test('a fila não depende mais do clipboard: o texto vai dentro do link, e o QR entra no shell offline', async () => {
+  const { readFileSync } = await import('node:fs');
+  const front = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  const sw = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../public/styles.css', import.meta.url), 'utf8');
+  assert.match(front, /https:\/\/wa\.me\/\?text=\$\{encodeURIComponent\(t\)\}/);
+  // O copiar tem o caminho antigo como reserva — é o que funciona em http na rede local.
+  assert.match(front, /execCommand\('copy'\)/);
+  // A referência do disparo tem UMA fonte (o defeito de ontem era duas).
+  assert.equal((front.match(/referencia = `\$\{r\.turma\.nome\}/g) || []).length, 0);
+  assert.match(front, /const referenciaDe = /);
+  // "Hoje" é o dia de quem manda: meia-noite LOCAL, não UTC.
+  assert.match(front, /const inicioDeHojeIso = /);
+  assert.match(sw, /'\/qr\.js'/);
+  assert.match(css, /@media print\{[\s\S]*body > :not\(main\)\{display:none !important\}/);
+  // O gerador do QR continua sem dependência (decisão 1).
+  const qr = readFileSync(new URL('../public/qr.js', import.meta.url), 'utf8');
+  assert.ok(!/^import /m.test(qr), 'qr.js passou a importar alguma coisa');
 });

@@ -26,6 +26,7 @@
 // Quem quiser dar o resto dá pessoalmente. O boletim não fecha essa porta; ele
 // só não a abre sozinha, num aplicativo de mensagem.
 import { get } from './db.js';
+import { formatarParaWhatsApp } from './canais.js';
 import * as D from './domain.js';
 import { ROTULO_EVOLUCAO } from './planilha.js';
 
@@ -104,7 +105,7 @@ export function boletimDaCrianca(criancaId) {
     contato_legivel: c.responsavel_contato ? D.contatoLegivel(c.responsavel_contato) : null,
     texto,
     whatsapp_url: c.responsavel_contato
-      ? `https://wa.me/${c.responsavel_contato}?text=${encodeURIComponent(texto)}`
+      ? `https://wa.me/${c.responsavel_contato}?text=${encodeURIComponent(formatarParaWhatsApp(texto))}`
       : null,
     // O que ficou de fora, dito na tela — para quem envia saber que ficou, e
     // por quê. Silêncio aqui viraria "o sistema não tinha o dado".

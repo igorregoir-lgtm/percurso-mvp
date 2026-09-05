@@ -8,7 +8,7 @@
 
 | # | Artefato | Onde | Estado | Para que serve |
 |---|---|---|---|---|
-| **1** | **Protótipo v3 — 13 rotas em 21 telas, 4 papéis, 402 × 874 pt** | [`JMejpNsHkckqeSP8KE1PTh`](https://www.figma.com/design/JMejpNsHkckqeSP8KE1PTh) · página *Protótipo v3 · 4 papéis* | **canônico** | O produto **como ele vai ficar**: 28 rotas fundidas em 12, captura por áudio em primeiro, botões de um toque, a Aurora como porta. Navegável: **116 elementos com ação**, nenhuma tela sem entrada e nenhuma sem saída. Desenhado 03/09/2026, **antes** do código que o implementa; as três telas de 04/09 (turmas, boletim e prova em vídeo) vieram **depois**, e isso está declarado abaixo |
+| **1** | **Protótipo v3 — 13 rotas em 22 telas, 4 papéis, 402 × 874 pt** | [`JMejpNsHkckqeSP8KE1PTh`](https://www.figma.com/design/JMejpNsHkckqeSP8KE1PTh) · página *Protótipo v3 · 4 papéis* | **canônico** | O produto **como ele vai ficar**: 28 rotas fundidas em 12, captura por áudio em primeiro, botões de um toque, a Aurora como porta. Navegável: **123 elementos com ação**, nenhuma tela sem entrada e nenhuma sem saída. Desenhado 03/09/2026, **antes** do código que o implementa; as três telas de 04/09 (turmas, boletim e prova em vídeo) vieram **depois**, e isso está declarado abaixo |
 | 2 | Protótipo navegável de 02/09 — 27 telas, 4 papéis | [`h6AnLVYLfpeVl2N4ie0Qzv`](https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv) | **registro histórico** | O produto **como ele era** antes da rodada de simplificação. Serve de antes-e-depois; não é mais o alvo |
 | 3 | Protótipo entregue na semana 5 — 9 telas, 375 × 812 pt | [`HBBd4GyVRjd7C3WgJ4jnpL`](https://www.figma.com/design/HBBd4GyVRjd7C3WgJ4jnpL) | **congelado — registro histórico** | O que foi entregue em 04/09/2026. **Não atualizar**: o valor dele é ser o que foi entregue |
 | 4 | Protótipo HTML pré-visita | [`prototipo-figma/`](../prototipo-figma/) | congelado | A etapa em que o protótipo era HTML, antes de CFL-03 |
@@ -52,7 +52,7 @@ aberto**, que é onde a fusão de superfícies da F6 se vê.
 
 - **A dor dela** — `#/entrar` → Carolina → `#/hoje` → *Falar agora* → `#/registrar` capturando →
   *Terminei* → `#/registrar` conferindo → *Confirmar e guardar* → **`#/sai-daqui`**. Este último
-  passo era o conserto do **passo 05** do task flow, feito em 04/09/2026: `public/app.js:5958` passou a abrir o relato e
+  passo era o conserto do **passo 05** do task flow, feito em 04/09/2026: `public/app.js:6175` passou a abrir o relato e
   o relato não abre sozinho. No v3, confirmar a folha abre o relato.
 - **A segunda turma** — `#/hoje` → chip *Sábado tarde* → `#/hoje` da tarde. Hoje esse caminho não
   existe: `GET /api/hoje` monta tudo a partir de `turmas[0]`.
@@ -157,6 +157,13 @@ mostra a origem de cada campo; e existe seletor de turma.
 >
 > A decisão 49 (virar a câmera) não tem tela própria: acontece dentro do modal de consentimento, que
 > o protótipo desenha em `#/consentimentos — a prova do consentimento em vídeo`.
+>
+> **04/09/2026, madrugada — a 22ª tela (decisão 50):** `#/divulgar?folha=1`, a **folha da turma**,
+> com o QR de cada grupo e do Instagram para colar na parede, e o cartão do **passe para o
+> celular**. Os QRs do protótipo são grade desenhada — o produto gera os de verdade em
+> `public/qr.js`, verificados com leitor real. As outras peças da decisão 50 (texto dentro do link,
+> "já recebeu hoje", story e carrossel) mudam botões e estados das duas telas de `#/divulgar` já
+> existentes, não criam tela.
 
 > **Ressalva de leitura, registrada em 03/09/2026.** O conector do Figma expõe apenas **uma página
 > por arquivo**, e no `h6AnLVYLfpeVl2N4ie0Qzv` a página exposta é o `Leia-me` — cujo texto manda

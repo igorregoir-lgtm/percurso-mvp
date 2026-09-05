@@ -1,5 +1,44 @@
 # Handoff — 04/09/2026, 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
 
+> ## Sessão de 04/09/2026 (madrugada) — a segunda rodada de WhatsApp e Instagram (dec. 50)
+>
+> Pedido: *"veja se não há nada que não possa ser melhorado… seja criativo… alternativas ainda
+> não usualmente exploradas"*. **A criatividade veio depois do diagnóstico**, e o diagnóstico foi
+> olhar para onde a coordenação de fato está: rede local em http, notebook sem WhatsApp, responsável
+> que não digita link, sábado corrido em que se manda duas vezes.
+>
+> **A peça que destravou três coisas de uma vez foi um codificador de QR escrito à mão**
+> (`public/qr.js`, ISO 18004, sem biblioteca — decisão 1 intacta). O que vale guardar é **como foi
+> verificado**: com o `BarcodeDetector` do navegador, um leitor real, e não contra o próprio código.
+> Foi o leitor que pegou o único defeito — a v7 falhava porque eu desenhava o sincronismo antes do
+> padrão de alinhamento que fica em cima dele. Um teste que só conferisse a matriz contra o
+> codificador teria passado verde para sempre.
+>
+> **O que entrou:** o texto **dentro do link** (`wa.me/?text=`, o WhatsApp abre com a mensagem
+> escrita — o clipboard, que não existe em http, saiu do caminho crítico); o **passe por QR** do
+> notebook para o celular (dez minutos, uma leitura, sem a imagem); a **folha da turma** com QR de
+> cada grupo para colar na parede; a **trava de envio duplicado** ("já recebeu isto hoje",
+> desmarcado por padrão); story, carrossel e texto alternativo no card do Instagram; negrito e
+> itálico do WhatsApp no recado e no boletim.
+>
+> **Um defeito meu de ontem que só apareceu hoje:** a referência do disparo era montada de duas
+> formas em dois lugares, e a trava de duplicidade **nunca casava** — verde na tela, inútil na
+> prática. Virou uma fonte só. E "hoje" era UTC: um envio às 21h de sábado em São Paulo já era
+> domingo. Virou meia-noite local, mandada pelo cliente.
+>
+> **A alternativa legítima para "um envio, todos"** não é código: é a **Comunidade** do WhatsApp,
+> cujo grupo de avisos alcança todos os grupos de uma vez. Estava na pesquisa desde o começo, sem
+> ninguém ligar ao pedido. Agora a tela diz.
+>
+> **Os grafos foram atualizados:** o canônico do produto (raiz `Inteli - Artefato Modulo III/`,
+> 608 → 1.552 nós — mas ele segue o `main`, que está **39 commits atrás** deste branch) e o do
+> repositório no branch (`graphify-out/` no worktree, 1.773 nós, agora no `.gitignore`). Quem for
+> fundir o branch: rode `graphify update .` na raiz do produto depois.
+>
+> **Gates: 500 smoke · 204 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.** 31 tabelas, 116 rotas.
+>
+
+
 > ## Sessão de 04/09/2026 (noite) — WhatsApp, Instagram e a câmera que vira
 >
 > Três pedidos, e o segundo é o mais importante **porque metade dele não é possível**.

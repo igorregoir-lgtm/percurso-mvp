@@ -2,6 +2,7 @@
 // A ordem das telas segue a jornada da persona: hoje -> chamada -> ciclo -> turma.
 import { criarFila } from './fila.js';
 import { paraWav16k, iniciarGravacao, gravarVideoConsentimento, abrirCamera, encerrarStream, temDuasCameras, podeGravar, juntarBlocos, TETO_ARQUIVO_BYTES, BLOCO_SEGUNDOS } from './audio.js';
+import { desenharQR, svgQR } from './qr.js';
 
 const app     = document.getElementById('app');
 const navEl   = document.getElementById('nav');
@@ -3506,8 +3507,8 @@ const cabecalhoPessoas = (ativa) => `
     </div>`;
 
 // ======================================================================
-// DIVULGAR (decisões 47 e 48) — os grupos cadastrados, a fila de envio e o
-// card do Instagram.
+// DIVULGAR (decisões 47, 48 e 50) — os grupos cadastrados, a fila de envio, o
+// card do Instagram, a folha da turma e o passe para o celular.
 //
 // O PEDIDO E O QUE DELE É POSSÍVEL. Em 04/09/2026: *"ao clicar um botão não
 // precise ficar depois clicando em cada grupo do WhatsApp, mas que os grupos já
@@ -3520,10 +3521,24 @@ const cabecalhoPessoas = (ativa) => `
 // violam os Termos, com o número como preço possível — e o número é o único
 // canal do Instituto com as famílias.
 //
-// A metade que existe é onde estava o tempo dela, e é toda entregue aqui: os
-// grupos ficam cadastrados, o texto é montado e copiado UMA vez, a fila lembra
-// onde ela parou, e o que já saiu fica registrado. Sobra um toque por grupo —
-// que é o toque que a Meta exige, e só ele.
+// A metade que existe é onde estava o tempo dela: os grupos ficam cadastrados,
+// o texto é montado UMA vez, a fila lembra onde ela parou, e o que saiu fica
+// registrado. Sobra um toque por grupo — o que a Meta exige, e só ele.
+//
+// O QUE A SEGUNDA RODADA (decisão 50) TIROU DO CAMINHO — cada item era um
+// lugar em que a fila de ontem quebrava sem avisar:
+//   · o clipboard: `navigator.clipboard` não existe fora de HTTPS, e a fila
+//     inteira dependia dele. Agora o texto vai DENTRO do link (`wa.me/?text=`),
+//     e o WhatsApp abre já com a mensagem escrita — só falta escolher o grupo;
+//   · o notebook: sem WhatsApp e sem `navigator.share`, a coordenação montava
+//     a fila e não tinha para onde ir. O PASSE guarda a fila dez minutos no
+//     servidor e um QR leva o celular direto a ela;
+//   · o responsável que digita link: para entrar no grupo da turma, escaneia a
+//     FOLHA DA TURMA colada na parede — QR gerado aqui, sem biblioteca;
+//   · mandar duas vezes: o servidor diz quem já recebeu este conteúdo hoje, e
+//     a tela desmarca esses por padrão;
+//   · o Instagram só em quadrado: agora story (vertical) e carrossel (três
+//     imagens de uma vez pela folha de compartilhar), com texto alternativo.
 // ======================================================================
 const CHAVE_DIVULGACAO = 'percurso_fila_divulgacao';
 
@@ -3534,9 +3549,39 @@ const lerDivulgacao = () => { try { return JSON.parse(localStorage.getItem(CHAVE
 const gravarDivulgacao = (f) => { try { localStorage.setItem(CHAVE_DIVULGACAO, JSON.stringify(f)); } catch { /* aba anônima */ } };
 const limparDivulgacao = () => { try { localStorage.removeItem(CHAVE_DIVULGACAO); } catch { /* idem */ } };
 
+const NO_CELULAR = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+/** Copiar que não depende de HTTPS: tenta a API moderna e, sem ela, cai no
+ *  caminho antigo (textarea + execCommand), que funciona em http na rede
+ *  local — que é exatamente onde a API moderna não existe. */
+async function copiarTexto(t) {
+  try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(t); return true; } } catch { /* cai abaixo */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = t; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, t.length);
+    const ok = document.execCommand('copy'); ta.remove(); return ok;
+  } catch { return false; }
+}
+
+const linkWhatsAppComTexto = (t) => `https://wa.me/?text=${encodeURIComponent(t)}`;
+
 rota(/^#\/divulgar(?=$|[?&])/, async () => {
+  const q = new URLSearchParams(location.hash.split('?')[1] || '');
   const d = await api('/api/divulgar');
+  // Chegou pelo QR do notebook: o passe vira a fila local, e o hash limpa para
+  // o recarregar da página não tentar consumir um passe já consumido.
+  if (q.get('passe')) {
+    try {
+      const r = await api(`/api/divulgar/passe?id=${encodeURIComponent(q.get('passe'))}`);
+      if (r.fila?.tipo === 'card' && r.fila.card) r.fila.imagem = await desenharCard(r.fila.card, r.fila.formato || 'feed');
+      gravarDivulgacao(r.fila);
+      toast('A fila chegou do outro aparelho.', 'bom');
+    } catch (e) { toast(e.message, 'ruim'); }
+    history.replaceState(null, '', '#/divulgar');
+  }
   ctx.divulgar = { ...d, fila: lerDivulgacao() };
+  if (q.get('folha') === '1') return pintarFolhaDaTurma();
   pintarDivulgar();
 });
 
@@ -3549,8 +3594,8 @@ function pintarDivulgar() {
   app.innerHTML = `
     <p class="kicker">Coordenação · o que sai do Instituto</p>
     <h1>Divulgar</h1>
-    <p class="sub">Os grupos já estão aqui. Você escolhe o que vai, marca para quem, e o texto sai
-      pronto e copiado — resta abrir cada grupo e colar.</p>
+    <p class="sub">Os grupos já estão aqui. Você escolhe o que vai, marca para quem, e o WhatsApp abre
+      com o texto escrito — resta escolher o grupo e enviar.</p>
 
     ${fila ? blocoFila(fila, d) : blocoMontar(d, PUB)}
 
@@ -3567,6 +3612,10 @@ function pintarDivulgar() {
           </div>
           ${c.observacao ? `<p class="sub" style="margin:0">${esc(c.observacao)}</p>` : ''}
         </div>`).join('') || '<p class="vazio">Nenhum canal cadastrado ainda.</p>'}
+      </div>
+      <div class="linha" style="margin-top:12px;gap:8px">
+        <button class="btn pequeno secundario" data-acao="ir" data-href="#/divulgar?folha=1">Folha da turma para imprimir</button>
+        <span class="sub">QR de cada grupo e do Instagram: cola na parede, o responsável escaneia e entra.</span>
       </div>
       ${podeCadastrar ? `<details style="margin-top:12px">
         <summary style="cursor:pointer;font-size:13px;color:var(--tinta-fraca)">Cadastrar um grupo ou perfil</summary>
@@ -3604,8 +3653,10 @@ function pintarDivulgar() {
     <p class="rodape">Por que não um botão só: nenhum site consegue postar num grupo de WhatsApp já
       existente. A API oficial da Meta só cria grupos novos de até 8 pessoas, e as bibliotecas que
       postam em grupo violam os Termos — o preço possível é o número do Instituto, que é o único canal
-      com as famílias. O que dá para tirar do caminho, o Percurso tirou: montar o texto, lembrar quais
-      grupos existem, decidir o que pode ir para cada um e não perder a conta.</p>`;
+      com as famílias. O que dá para tirar do caminho, o Percurso tirou. <b>O único caminho legítimo
+      para "um envio, todos os responsáveis" é do próprio WhatsApp:</b> transformar os grupos numa
+      <b>Comunidade</b>, cujo grupo de avisos alcança todos os membros de todos os grupos de uma vez —
+      cadastre esse grupo de avisos aqui como público "Responsáveis da turma", sem turma.</p>`;
 
   const tipo = document.getElementById('cn-tipo');
   const publico = document.getElementById('cn-publico');
@@ -3629,8 +3680,10 @@ function blocoMontar(d, PUB) {
       rotulo: `Recado · ${r.turma}`, detalhe: dataBR(r.data) })),
     ...d.publicados.map(p => ({ chave: `carta:${p.tipo}:${p.periodo}`, tipo: 'carta',
       rotulo: p.rotulo, detalhe: `publicado em ${dataBR((p.publicado_em || '').slice(0, 10))}` })),
-    { chave: 'card:periodo', tipo: 'card', rotulo: 'Card do período (imagem)',
-      detalhe: 'para o Instagram e para os apoiadores' },
+    { chave: 'card:feed', tipo: 'card', rotulo: 'Card do período · quadrado',
+      detalhe: 'feed do Instagram e grupos de apoiadores' },
+    { chave: 'card:story', tipo: 'card', rotulo: 'Card do período · story',
+      detalhe: 'vertical, para o story do Instagram' },
   ];
   return `
     <div class="cartao" style="margin-top:16px">
@@ -3655,23 +3708,35 @@ function blocoMontar(d, PUB) {
 function blocoFila(fila, d) {
   const feitos = fila.canais.filter(c => c.feito).length;
   const proximo = fila.canais.find(c => !c.feito);
+  const textoLink = fila.texto_whatsapp || fila.texto;
   return `
     <div class="cartao" style="margin-top:16px">
       <div class="linha"><h2 class="cresce">${esc(fila.rotulo)}</h2>
         <span class="selo ${feitos === fila.canais.length ? 'ok' : 'pend'}">${feitos} de ${fila.canais.length}</span></div>
       ${barra(Math.round((feitos / fila.canais.length) * 100), feitos === fila.canais.length)}
-      ${fila.imagem ? `<img src="${fila.imagem}" alt="Card do período" style="width:100%;border-radius:10px;margin-top:12px">` : `
+      ${fila.imagem ? `<img src="${fila.imagem}" alt="${esc(fila.alt || 'Card do período')}" style="width:100%;border-radius:10px;margin-top:12px;${fila.formato === 'story' ? 'max-height:480px;object-fit:contain;background:#000' : ''}">` : `
         <div class="cartao" style="margin-top:12px;background:var(--fundo)">
           <pre id="div-texto" style="white-space:pre-wrap;font:inherit;line-height:1.55;margin:0">${esc(fila.texto)}</pre>
         </div>`}
       <div class="pilha" style="margin-top:12px">
-        <button class="btn largo secundario" data-acao="div-copiar">${fila.imagem ? 'Copiar a legenda' : 'Copiar o texto de novo'}</button>
-        ${fila.imagem ? '<button class="btn largo fantasma" data-acao="div-baixar">Baixar a imagem</button>' : ''}
-        <button class="btn largo fantasma" data-acao="div-compartilhar">Compartilhar pelo celular</button>
+        ${fila.imagem ? `
+          <button class="btn largo secundario" data-acao="div-compartilhar">Compartilhar pelo celular</button>
+          <button class="btn largo fantasma" data-acao="div-carrossel">Compartilhar como carrossel (3 imagens)</button>
+          <div class="linha" style="gap:8px">
+            <button class="btn pequeno fantasma cresce" data-acao="div-baixar">Baixar a imagem</button>
+            <button class="btn pequeno fantasma cresce" data-acao="div-copiar-imagem">Copiar a imagem</button>
+            <button class="btn pequeno fantasma cresce" data-acao="div-copiar">Copiar a legenda</button>
+          </div>
+          <details><summary style="cursor:pointer;font-size:13px;color:var(--tinta-fraca)">Texto alternativo (acessibilidade)</summary>
+            <p class="sub" style="margin-top:6px">${esc(fila.alt || '')}</p>
+            <button class="btn pequeno fantasma" data-acao="div-copiar-alt" style="margin-top:6px">Copiar o texto alternativo</button>
+          </details>` : `
+          <button class="btn largo fantasma" data-acao="div-copiar">Copiar o texto</button>`}
+        ${NO_CELULAR ? '' : `<button class="btn largo fantasma" data-acao="div-passe">Passar para o celular (QR)</button>`}
       </div>
       <p class="sub" style="margin-top:10px">${fila.imagem
-        ? 'O texto já está copiado. Baixe a imagem, abra o perfil e cole a legenda.'
-        : 'O texto já está copiado. Abra cada grupo e cole — o Percurso marca aqui quais já foram.'}</p>
+        ? 'No celular, "Compartilhar" abre a folha do sistema com a imagem e a legenda — o Instagram e o WhatsApp aparecem lá. No notebook, baixe a imagem ou passe para o celular.'
+        : 'Cada botão abaixo abre o WhatsApp já com o texto escrito: escolha o grupo e envie. O Percurso marca aqui quais já foram.'}</p>
     </div>
 
     <div class="cartao compacto" style="margin-top:14px">
@@ -3681,13 +3746,20 @@ function blocoFila(fila, d) {
             proximo && proximo.id === c.id ? ';border-color:var(--vermelho)' : ''}">
           <div class="linha">
             <div class="cresce"><div class="nome">${esc(c.nome)}</div>
-              <div class="meta">${c.feito ? 'já enviado' : proximo && proximo.id === c.id ? 'o próximo' : 'na fila'}</div></div>
+              <div class="meta">${c.feito ? 'já enviado' : proximo && proximo.id === c.id ? 'o próximo' : 'na fila'}${
+                c.ja_hoje ? ' · <b>já recebeu isto hoje</b>' : ''}</div></div>
             <span class="selo ${c.feito ? 'ok' : 'pend'}">${c.feito ? '✓' : fila.canais.indexOf(c) + 1}</span>
           </div>
-          <div class="linha" style="gap:8px">
-            <a class="btn pequeno ${c.feito ? 'fantasma' : ''} cresce" href="${c.endereco}" target="_blank"
-              rel="noopener" data-acao="div-abrir" data-id="${c.id}" style="text-align:center">${
-              c.tipo === 'instagram' ? 'Abrir o perfil' : 'Abrir o grupo'}</a>
+          <div class="linha" style="gap:8px;flex-wrap:wrap">
+            ${c.tipo === 'instagram' ? `
+              <a class="btn pequeno ${c.feito ? 'fantasma' : ''} cresce" href="${esc(c.endereco)}" target="_blank" rel="noopener"
+                data-acao="div-abrir" data-id="${c.id}" data-instagram="${esc(c.endereco.replace('https://instagram.com/', ''))}"
+                style="text-align:center">Abrir o perfil</a>
+              ${NO_CELULAR && fila.imagem ? `<a class="btn pequeno fantasma" href="instagram://story-camera" data-acao="div-abrir" data-id="${c.id}">Abrir a câmera do story</a>` : ''}` : `
+              <a class="btn pequeno ${c.feito ? 'fantasma' : ''} cresce" href="${linkWhatsAppComTexto(textoLink)}" target="_blank" rel="noopener"
+                data-acao="div-abrir" data-id="${c.id}" style="text-align:center">Abrir com o texto pronto</a>
+              <a class="btn pequeno fantasma" href="${esc(c.endereco)}" target="_blank" rel="noopener"
+                data-acao="div-abrir" data-id="${c.id}">Abrir o grupo</a>`}
             ${c.feito ? `<button class="btn pequeno fantasma" data-acao="div-desfazer" data-id="${c.id}">Desfazer</button>` : ''}
           </div>
         </div>`).join('')}
@@ -3696,6 +3768,49 @@ function blocoFila(fila, d) {
         <button class="btn pequeno fantasma cresce" data-acao="div-encerrar">${
           feitos === fila.canais.length ? 'Terminei' : 'Cancelar este envio'}</button>
       </div>
+    </div>`;
+}
+
+// ----------------------------------------------------------------------
+// A FOLHA DA TURMA (decisão 50): QR de cada grupo e do Instagram, para
+// imprimir e colar na parede. É a porta de ENTRADA do responsável — a que
+// digitar um link nunca foi.
+// ----------------------------------------------------------------------
+function pintarFolhaDaTurma() {
+  const d = ctx.divulgar;
+  const PUB = Object.fromEntries(d.publicos.map(p => [p.id, p]));
+  const grupos = d.canais.filter(c => c.tipo === 'whatsapp' && c.publico === 'pais');
+  const outros = d.canais.filter(c => !(c.tipo === 'whatsapp' && c.publico === 'pais'));
+  const bloco = (c) => `
+    <div class="folha-item">
+      ${svgQR(c.endereco, { modulo: 5 })}
+      <div class="folha-texto">
+        <b>${esc(c.nome)}</b>
+        <span>${esc(PUB[c.publico]?.rotulo ?? c.publico)}${c.turma ? ` · ${esc(c.turma)}` : ''}</span>
+        <small>${c.tipo === 'instagram' ? 'Abra a câmera do celular e aponte: o Instagram abre no perfil.' : 'Abra a câmera do celular e aponte: o WhatsApp abre no grupo.'}</small>
+        <code>${esc(c.tipo === 'instagram' ? c.destino : c.endereco)}</code>
+      </div>
+    </div>`;
+  app.innerHTML = `
+    <div class="nao-imprime">
+      <p class="kicker">Coordenação · para colar na parede</p>
+      <h1>Folha da turma</h1>
+      <p class="sub">Imprima e cole onde os responsáveis passam. Quem aponta a câmera do celular para o
+        QR entra no grupo sem digitar nada. O QR é gerado aqui, sem serviço externo: o link não
+        passa por ninguém.</p>
+      <div class="linha" style="gap:8px;margin:12px 0">
+        <button class="btn secundario" data-acao="div-imprimir">Imprimir</button>
+        <button class="btn fantasma" data-acao="ir" data-href="#/divulgar">Voltar</button>
+      </div>
+    </div>
+    <div class="folha">
+      <div class="folha-cabecalho">
+        <b>Instituto Ebenézer</b>
+        <span>Os grupos de WhatsApp das turmas${outros.some(c => c.tipo === 'instagram') ? ' e o nosso Instagram' : ''}</span>
+      </div>
+      ${grupos.map(bloco).join('') || '<p class="vazio">Nenhum grupo de responsáveis cadastrado.</p>'}
+      ${outros.filter(c => c.tipo === 'instagram').map(bloco).join('')}
+      <p class="folha-rodape">No grupo vai só o recado da turma — presença em contagens, o que foi feito, o próximo encontro. Nunca o nome de uma criança ligado a um fato.</p>
     </div>`;
 }
 
@@ -3714,7 +3829,13 @@ async function escolherCanais(chave) {
   // turma) entram pré-marcados. Mandar o recado da Vivência para o grupo do
   // Reforço é o erro que a pressa do sábado produz.
   const turmaDoRecado = tipo === 'recado' ? Number(chave.split(':')[1]) : null;
-  const marcado = (c) => tipo !== 'recado' || c.turma_id == null || c.turma_id === turmaDoRecado;
+  const referencia = referenciaDe(chave);
+  // E o segundo erro da pressa: mandar duas vezes. O servidor sabe quem já
+  // recebeu isto hoje; esses vêm desmarcados, com o motivo escrito.
+  let jaHoje = [];
+  try { jaHoje = (await api(`/api/divulgar/ja-recebeu?conteudo=${tipo}&referencia=${encodeURIComponent(referencia ?? '')}&desde=${encodeURIComponent(inicioDeHojeIso())}`)).canal_ids; }
+  catch { /* sem rede: segue sem a trava, que é aviso e não proibição */ }
+  const marcado = (c) => !jaHoje.includes(c.id) && (tipo !== 'recado' || c.turma_id == null || c.turma_id === turmaDoRecado);
 
   const veu = document.createElement('div');
   veu.className = 'veu';
@@ -3728,7 +3849,7 @@ async function escolherCanais(chave) {
             style="width:auto;min-height:0;margin-right:10px">
           <div class="cresce"><div class="nome">${esc(c.nome)}</div>
             <div class="meta">${esc(d.publicos.find(p => p.id === c.publico)?.rotulo ?? c.publico)}${
-              c.turma ? ` · ${esc(c.turma)}` : ''}</div></div>
+              c.turma ? ` · ${esc(c.turma)}` : ''}${jaHoje.includes(c.id) ? ' · <b>já recebeu isto hoje</b>' : ''}</div></div>
         </label>`).join('')}
       </div>
       <p class="sub" id="dv-erro" style="color:var(--red);font-size:13px;margin-top:8px;display:none"></p>
@@ -3748,40 +3869,61 @@ async function escolherCanais(chave) {
     const erro = veu.querySelector('#dv-erro');
     if (!ids.length) { erro.textContent = 'Marque pelo menos um canal.'; erro.style.display = 'block'; return; }
     e.target.disabled = true;
-    try { await montarFila(chave, ids.map(id => elegiveis.find(c => c.id === id))); veu.remove(); }
+    try { await montarFila(chave, ids.map(id => ({ ...elegiveis.find(c => c.id === id), ja_hoje: jaHoje.includes(id) }))); veu.remove(); }
     catch (err) { e.target.disabled = false; erro.textContent = err.message; erro.style.display = 'block'; }
   }));
 }
 
+// A referência do disparo tem UMA fonte. Ontem ela era calculada em dois
+// lugares com duas formas ("turma 6 · data" ao perguntar quem já recebeu, e
+// "Vivência · Sábado manhã · data" ao registrar), e a trava de envio duplicado
+// nunca casava — passava verde na tela e não protegia ninguém.
+const referenciaDe = (chave) => {
+  const [tipo, a, b] = chave.split(':');
+  if (tipo === 'recado') {
+    const r = ctx.divulgar?.recados?.find(x => String(x.turma_id) === a && x.data === b);
+    return `${r?.turma ?? `turma ${a}`} · ${b}`;
+  }
+  if (tipo === 'carta') return b;
+  return periodoPadraoDoCard();
+};
+// Meia-noite LOCAL em ISO: "hoje" é o dia de quem manda, não o de Greenwich.
+// Um envio às 21h de sábado em São Paulo já é domingo em UTC.
+const inicioDeHojeIso = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.toISOString(); };
+
 async function montarFila(chave, canais) {
   const d = ctx.divulgar;
   const [tipo, a, b] = chave.split(':');
-  let texto = '', rotulo = '', imagem = null, periodo = null, referencia = null;
+  let texto = '', textoWhatsApp = '', rotulo = '', imagem = null, periodo = null, referencia = referenciaDe(chave);
+  let card = null, formato = null, alt = null;
 
   if (tipo === 'recado') {
     const r = await api(`/api/recado?turma_id=${a}&data=${b}`);
-    texto = r.texto; rotulo = `Recado · ${r.turma.nome}`; referencia = `${r.turma.nome} · ${b}`;
+    texto = r.texto; textoWhatsApp = r.texto_whatsapp || r.texto; rotulo = `Recado · ${r.turma.nome}`;
   } else if (tipo === 'carta') {
     const p = d.publicados.find(x => x.tipo === a && x.periodo === b);
     if (!p) throw new Error('Esse texto não está mais publicado.');
-    texto = p.texto; rotulo = p.rotulo; referencia = p.periodo;
+    texto = p.texto; textoWhatsApp = p.texto; rotulo = p.rotulo;
   } else {
-    const per = d.periodo_card || periodoPadraoDoCard();
-    const c = await api(`/api/divulgar/card?periodo=${per}`);
-    imagem = await desenharCard(c);
-    texto = c.legenda; rotulo = `Card · ${c.rotulo}`; periodo = per; referencia = per;
+    formato = a === 'story' ? 'story' : 'feed';
+    periodo = referencia;
+    card = await api(`/api/divulgar/card?periodo=${periodo}`);
+    imagem = await desenharCard(card, formato);
+    texto = card.legenda; textoWhatsApp = card.legenda;
+    rotulo = `Card · ${card.rotulo}${formato === 'story' ? ' · story' : ''}`;
+    alt = textoAlternativo(card);
   }
 
-  // O texto é copiado UMA vez, aqui. É a diferença entre "um toque por grupo" e
-  // "montar de novo a cada grupo", que era o custo real.
-  try { await navigator.clipboard.writeText(texto); } catch { /* sem permissão: o botão de copiar continua na tela */ }
+  // O texto é copiado UMA vez, aqui — e se o clipboard não existir (http na
+  // rede local), a fila não depende dele: o link já leva o texto dentro.
+  await copiarTexto(textoWhatsApp || texto);
 
-  const fila = { chave, tipo, rotulo, texto, imagem, periodo, referencia,
-    canais: canais.map(c => ({ id: c.id, nome: c.nome, tipo: c.tipo, endereco: c.endereco, feito: false })) };
+  const fila = { chave, tipo, rotulo, texto, texto_whatsapp: textoWhatsApp, imagem, periodo, referencia, card, formato, alt,
+    canais: canais.map(c => ({ id: c.id, nome: c.nome, tipo: c.tipo, endereco: c.endereco, feito: false, ja_hoje: !!c.ja_hoje })) };
   gravarDivulgacao(fila);
   ctx.divulgar.fila = fila;
   pintarDivulgar();
-  toast('Texto copiado. Agora é abrir cada grupo e colar.', 'bom');
+  toast(imagem ? 'Card pronto. Compartilhe, baixe ou passe para o celular.' : 'Pronto: cada botão abre o WhatsApp com o texto escrito.', 'bom');
 }
 
 const periodoPadraoDoCard = () => {
@@ -3789,6 +3931,13 @@ const periodoPadraoDoCard = () => {
   const ano = h.slice(0, 4);
   return Number(h.slice(5, 7)) <= 6 ? `${ano}-01-01..${ano}-06-30` : `${ano}-07-01..${ano}-12-31`;
 };
+
+/** Texto alternativo do card — a imagem lida em voz alta por quem não a vê.
+ *  Determinístico, do mesmo agregado; o Instagram aceita colar no campo "alt". */
+function textoAlternativo(c) {
+  return `Card do Instituto Ebenézer, ${c.rotulo}: ` + c.linhas.map(l => `${l.valor} ${l.rotulo}`).join('; ')
+    + `. ${c.ressalva} A leitura é de associação: fatores externos não foram isolados.`;
+}
 
 /** Marca que este canal já recebeu — e registra no servidor, que é o que dá
  *  resposta a "já mandei para os pais?" depois que a tela fechar. */
@@ -3803,26 +3952,57 @@ function marcarEnviado(id) {
   setTimeout(pintarDivulgar, 60);
 }
 
+const dataUrlParaArquivo = async (dataUrl, nome) => new File([await (await fetch(dataUrl)).blob()], nome, { type: 'image/png' });
+
 /** Web Share: no celular ele abre a folha do sistema, onde WhatsApp e Instagram
  *  aparecem. Continua sendo um toque por destino — mas com o arquivo junto, que
- *  o link de convite não leva. */
-async function compartilharDivulgacao() {
+ *  o link de convite não leva. `carrossel` manda três imagens de uma vez: o
+ *  Instagram as recebe como um post único de várias páginas. */
+async function compartilharDivulgacao({ carrossel = false } = {}) {
   const f = ctx.divulgar?.fila;
   if (!f) return;
   try {
     if (f.imagem && navigator.canShare) {
-      const blob = await (await fetch(f.imagem)).blob();
-      const arq = new File([blob], `percurso-${f.periodo || 'card'}.png`, { type: 'image/png' });
-      if (navigator.canShare({ files: [arq] })) {
-        await navigator.share({ files: [arq], text: f.texto, title: f.rotulo });
+      const arquivos = carrossel && f.card
+        ? await Promise.all((await desenharCarrossel(f.card)).map((u, i) => dataUrlParaArquivo(u, `percurso-${f.periodo}-${i + 1}.png`)))
+        : [await dataUrlParaArquivo(f.imagem, `percurso-${f.periodo || 'card'}.png`)];
+      if (navigator.canShare({ files: arquivos })) {
+        await navigator.share({ files: arquivos, text: f.texto, title: f.rotulo });
         return;
       }
     }
-    if (navigator.share) { await navigator.share({ text: f.texto, title: f.rotulo }); return; }
-    toast('Este navegador não abre a folha de compartilhar. Use "Copiar" e cole no aplicativo.');
+    if (navigator.share) { await navigator.share({ text: f.texto_whatsapp || f.texto, title: f.rotulo }); return; }
+    toast('Este navegador não abre a folha de compartilhar. Use "Passar para o celular" ou baixe a imagem.');
   } catch (e) {
     if (e?.name !== 'AbortError') toast('O compartilhamento foi cancelado ou não é suportado aqui.');
   }
+}
+
+/** O passe: a fila vai para o servidor por dez minutos e volta num QR. */
+async function passarParaCelular() {
+  const f = ctx.divulgar?.fila;
+  if (!f) return;
+  const r = await post('/api/divulgar/passe', { fila: { ...f, imagem: null } });
+  const url = `${location.origin}/#/divulgar?passe=${r.id}`;
+  const veu = document.createElement('div');
+  veu.className = 'veu';
+  veu.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pq">
+      <h2 id="pq">Passar para o celular</h2>
+      <p>Aponte a câmera do celular. Ele abre o Percurso já nesta fila — entre com a sua senha e
+        continue de lá. Vale por ${Math.round(r.expira_em_s / 60)} minutos e por uma leitura.</p>
+      <div style="display:flex;justify-content:center;margin:14px 0"><canvas id="passe-qr" aria-label="QR do passe"></canvas></div>
+      <p class="sub" style="word-break:break-all;font-size:12px">${esc(url)}</p>
+      <div class="linha" style="margin-top:14px">
+        <button class="btn secundario cresce" data-acao="passe-fechar" type="button">Fechar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(veu);
+  prenderFoco(veu);
+  desenharQR(veu.querySelector('#passe-qr'), url, { escala: 5 });
+  veu.addEventListener('click', (e) => {
+    if (e.target.dataset?.acao === 'passe-fechar' || e.target === veu) veu.remove();
+  });
 }
 
 // ----------------------------------------------------------------------
@@ -3832,49 +4012,86 @@ async function compartilharDivulgacao() {
 // decisão 1 continua de pé. E o conteúdo é o mesmo agregado que já passou pela
 // supressão de célula pequena e pelo revisor de sobre-alegação: o que não pode
 // sair no relatório também não sai aqui.
+//
+// Três formas do mesmo card (decisão 50): quadrado (feed), vertical (story) e
+// carrossel — três quadrados, um número em cada, que o Instagram junta num
+// post de várias páginas quando chegam juntos pela folha de compartilhar.
 // ----------------------------------------------------------------------
-async function desenharCard(c) {
-  const L = 1080;
+const CARD_CORES = { fundo: '#F4EFE5', faixa: '#B0392C', tinta: '#2E2A24', fraca: '#8B8478', ouro: '#E6A400', miolo: '#6B4410' };
+const fonteCard = (px, peso = '400') => `${peso} ${px}px ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+
+function girassol(g, x, y, r) {
+  g.fillStyle = CARD_CORES.ouro; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+  g.fillStyle = CARD_CORES.miolo; g.beginPath(); g.arc(x, y, r * 0.43, 0, Math.PI * 2); g.fill();
+}
+
+async function desenharCard(c, formato = 'feed') {
+  const L = 1080, A = formato === 'story' ? 1920 : 1080;
   const cv = document.createElement('canvas');
-  cv.width = L; cv.height = L;
+  cv.width = L; cv.height = A;
   const g = cv.getContext('2d');
+  g.fillStyle = CARD_CORES.fundo; g.fillRect(0, 0, L, A);
+  g.fillStyle = CARD_CORES.faixa; g.fillRect(0, 0, L, 14);
 
-  g.fillStyle = '#F4EFE5'; g.fillRect(0, 0, L, L);
-  g.fillStyle = '#B0392C'; g.fillRect(0, 0, L, 14);
+  // No story a zona de cima e a de baixo ficam sob a interface do Instagram
+  // (nome do perfil, caixa de resposta): o conteúdo começa mais abaixo e os
+  // números crescem, porque a peça é vista de longe e em movimento.
+  const topo = formato === 'story' ? 330 : 130;
+  const esc = formato === 'story' ? 1.25 : 1;
+  g.fillStyle = CARD_CORES.fraca; g.font = fonteCard(30 * esc, '600');
+  g.fillText('INSTITUTO EBENÉZER · JARDIM ÂNGELA', 84, topo);
+  g.fillStyle = CARD_CORES.tinta; g.font = fonteCard(46 * esc, '700');
+  g.fillText(c.rotulo, 84, topo + 66 * esc);
 
-  const fonte = (px, peso = '400') => `${peso} ${px}px ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
-
-  g.fillStyle = '#8B8478'; g.font = fonte(30, '600');
-  g.fillText('INSTITUTO EBENÉZER · JARDIM ÂNGELA', 84, 130);
-  g.fillStyle = '#2E2A24'; g.font = fonte(46, '700');
-  g.fillText(esc(c.rotulo).replace(/&[a-z]+;/g, ''), 84, 196);
-
-  let y = 320;
+  let y = topo + 190 * esc;
   for (const linha of c.linhas) {
-    g.fillStyle = '#B0392C'; g.font = fonte(104, '700');
+    g.fillStyle = CARD_CORES.faixa; g.font = fonteCard(104 * esc, '700');
     g.fillText(linha.valor, 84, y);
     const largura = g.measureText(linha.valor).width;
-    g.fillStyle = '#2E2A24'; g.font = fonte(36, '400');
+    g.fillStyle = CARD_CORES.tinta; g.font = fonteCard(36 * esc, '400');
     g.fillText(linha.rotulo, 84 + largura + 24, y - 8);
-    y += 148;
+    y += 148 * esc;
   }
 
   // A ressalva metodológica vai NA IMAGEM, não só na legenda: legenda se corta,
   // imagem é o que circula quando alguém salva e reenvia.
-  g.fillStyle = '#8B8478'; g.font = fonte(27, '400');
+  g.fillStyle = CARD_CORES.fraca; g.font = fonteCard(27 * esc, '400');
   let ly = y + 30;
-  for (const l of quebrar(g, c.ressalva, L - 168)) { g.fillText(l, 84, ly); ly += 38; }
-  g.fillStyle = '#8B8478'; g.font = fonte(25, '400');
+  for (const l of quebrar(g, c.ressalva, L - 168)) { g.fillText(l, 84, ly); ly += 38 * esc; }
+  g.font = fonteCard(25 * esc, '400');
   for (const l of quebrar(g, 'A leitura é de associação: fatores externos não foram isolados.', L - 168)) {
-    g.fillText(l, 84, ly + 14); ly += 36;
+    g.fillText(l, 84, ly + 14); ly += 36 * esc;
   }
-
-  g.fillStyle = '#E6A400';
-  g.beginPath(); g.arc(L - 132, L - 132, 46, 0, Math.PI * 2); g.fill();
-  g.fillStyle = '#6B4410';
-  g.beginPath(); g.arc(L - 132, L - 132, 20, 0, Math.PI * 2); g.fill();
-
+  girassol(g, L - 132, A - 132, 46);
   return cv.toDataURL('image/png');
+}
+
+/** Três quadrados, um número em cada — a versão em carrossel do mesmo card. */
+async function desenharCarrossel(c) {
+  const L = 1080;
+  const saida = [];
+  c.linhas.forEach((linha, i) => {
+    const cv = document.createElement('canvas');
+    cv.width = L; cv.height = L;
+    const g = cv.getContext('2d');
+    g.fillStyle = CARD_CORES.fundo; g.fillRect(0, 0, L, L);
+    g.fillStyle = CARD_CORES.faixa; g.fillRect(0, 0, L, 14);
+    g.fillStyle = CARD_CORES.fraca; g.font = fonteCard(30, '600');
+    g.fillText(`INSTITUTO EBENÉZER · ${i + 1} DE ${c.linhas.length}`, 84, 130);
+    g.fillStyle = CARD_CORES.tinta; g.font = fonteCard(40, '700');
+    g.fillText(c.rotulo, 84, 196);
+    g.fillStyle = CARD_CORES.faixa; g.font = fonteCard(260, '700');
+    g.fillText(linha.valor, 84, 560);
+    g.fillStyle = CARD_CORES.tinta; g.font = fonteCard(52, '400');
+    let y = 660;
+    for (const l of quebrar(g, linha.rotulo, L - 168)) { g.fillText(l, 84, y); y += 64; }
+    g.fillStyle = CARD_CORES.fraca; g.font = fonteCard(26, '400');
+    let ly = L - 190;
+    for (const l of quebrar(g, i === c.linhas.length - 1 ? c.ressalva : 'Nenhuma criança aparece sozinha: só agregado, com supressão de grupos pequenos.', L - 260)) { g.fillText(l, 84, ly); ly += 36; }
+    girassol(g, L - 132, L - 132, 46);
+    saida.push(cv.toDataURL('image/png'));
+  });
+  return saida;
 }
 
 function quebrar(g, texto, largura) {
@@ -6061,35 +6278,55 @@ document.addEventListener('click', comErro(async (ev) => {
     finally { alvo.disabled = false; }
     return;
   }
-  // ---- Divulgar (decisões 47 e 48) ---------------------------------------
-  if (a === 'div-conteudo') {
-    await escolherCanais(alvo.dataset.chave);
+  // ---- Divulgar (decisões 47, 48 e 50) -------------------------------------
+  if (a === 'div-conteudo') { await escolherCanais(alvo.dataset.chave); return; }
+  if (a === 'div-copiar') {
+    const f = ctx.divulgar?.fila;
+    const ok = await copiarTexto(f?.texto_whatsapp || f?.texto || '');
+    toast(ok ? 'Copiado.' : 'Não deu para copiar automaticamente — selecione o texto e copie.', ok ? 'bom' : '');
     return;
   }
-  if (a === 'div-copiar') {
-    const t = ctx.divulgar?.fila?.texto ?? '';
-    try { await navigator.clipboard.writeText(t); toast('Copiado. Agora é colar em cada grupo.', 'bom'); }
-    catch { toast('Não deu para copiar automaticamente — selecione o texto e copie.'); }
+  if (a === 'div-copiar-alt') {
+    const ok = await copiarTexto(ctx.divulgar?.fila?.alt || '');
+    toast(ok ? 'Texto alternativo copiado. No Instagram: Configurações avançadas → Escrever texto alternativo.' : 'Não deu para copiar.', ok ? 'bom' : '');
+    return;
+  }
+  if (a === 'div-copiar-imagem') {
+    const f = ctx.divulgar?.fila;
+    if (!f?.imagem) return;
+    try {
+      const blob = await (await fetch(f.imagem)).blob();
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      toast('Imagem copiada. Cole numa conversa ou no editor do post.', 'bom');
+    } catch { toast('Este navegador não copia imagem — use "Baixar a imagem".'); }
     return;
   }
   if (a === 'div-baixar') {
     const f = ctx.divulgar?.fila;
     if (!f?.imagem) return;
     const link = document.createElement('a');
-    link.href = f.imagem; link.download = `percurso-${f.periodo || 'card'}.png`;
+    link.href = f.imagem; link.download = `percurso-${f.periodo || 'card'}${f.formato === 'story' ? '-story' : ''}.png`;
     link.click();
     toast('Imagem baixada. Abra o Instagram e escolha ela.', 'bom');
     return;
   }
-  if (a === 'div-compartilhar') {
-    await compartilharDivulgacao();
-    return;
-  }
+  if (a === 'div-compartilhar') { await compartilharDivulgacao(); return; }
+  if (a === 'div-carrossel') { await compartilharDivulgacao({ carrossel: true }); return; }
+  if (a === 'div-passe') { await passarParaCelular(); return; }
+  if (a === 'div-imprimir') { window.print(); return; }
   if (a === 'div-abrir') {
-    // NÃO impede a navegação: o <a> abre o grupo numa aba nova, e aqui só
-    // marcamos que este foi. Marcar no clique (e não "ao voltar") é o único
-    // caminho honesto — o navegador não avisa quando ela volta do WhatsApp.
+    // NÃO impede a navegação: o <a> abre o destino, e aqui só marcamos que este
+    // foi. Marcar no clique (e não "ao voltar") é o único caminho honesto — o
+    // navegador não avisa quando ela volta do WhatsApp. No celular, o perfil do
+    // Instagram abre no aplicativo, com o site como reserva se ele não estiver.
     marcarEnviado(Number(alvo.dataset.id));
+    if (NO_CELULAR && alvo.dataset.instagram) {
+      ev.preventDefault();
+      const site = alvo.href;
+      const t = setTimeout(() => window.open(site, '_blank', 'noopener'), 900);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) clearTimeout(t); }, { once: true });
+      location.href = `instagram://user?username=${alvo.dataset.instagram}`;
+    }
     return;
   }
   if (a === 'div-desfazer') {

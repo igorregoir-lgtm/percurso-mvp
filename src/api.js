@@ -721,6 +721,25 @@ export const rotas = {
     };
   },
 
+  // Quem JÁ recebeu este conteúdo hoje — para a tela desmarcar por padrão e
+  // dizer por quê. Não proíbe: repetir pode ser intencional.
+  'GET /api/divulgar/ja-recebeu': (req, _b, q) => {
+    exigeGestao(req);
+    return { canal_ids: CAN.jaRecebeuHoje(String(q.get('conteudo') ?? ''), q.get('referencia'), { desde: q.get('desde') }) };
+  },
+
+  // O PASSE PARA O CELULAR (decisão 50): a fila montada no notebook vira um
+  // id de dez minutos, de uso único, que o QR leva ao celular. Só gestão cria
+  // e só gestão consome — o QR, sozinho, não abre nada para quem não tem sessão.
+  'POST /api/divulgar/passe': (req, body) => {
+    const u = exigeGestao(req);
+    return CAN.criarPasse(body.fila, { porUsuarioId: u.id });
+  },
+  'GET /api/divulgar/passe': (req, _b, q) => {
+    exigeGestao(req);
+    return { fila: CAN.consumirPasse(q.get('id')) };
+  },
+
   'POST /api/canais': (req, body) => {
     exigeCoordenacao(req);
     return CAN.criarCanal({
@@ -1179,7 +1198,12 @@ export const rotas = {
   'GET /api/recado': (req, _b, q) => {
     const turmaId = num(q.get('turma_id'), 'turma_id');
     exigeAcessoTurma(req, turmaId);
-    return REC.recadoDaTurma(turmaId, q.get('data') || D.dataDaFolha(turmaId));
+    const r = REC.recadoDaTurma(turmaId, q.get('data') || D.dataDaFolha(turmaId));
+    // O mesmo texto, com a primeira linha em negrito e a assinatura em itálico:
+    // o WhatsApp entende *asteriscos*, e e' assim que o recado chega legível
+    // no celular de quem lê no ônibus. O `texto` cru continua, para quem cola
+    // em outro lugar.
+    return { ...r, texto_whatsapp: CAN.formatarParaWhatsApp(r.texto) };
   },
 
   // ---- Parecer profissional-a-profissional (decisao 32) --------------------
