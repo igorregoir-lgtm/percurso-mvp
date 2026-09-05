@@ -104,6 +104,33 @@ const wav = (segundos) => {
     e.habilitada === true && e.modelo_presente === true && e.pendentes === 0);
 }
 
+const { all } = await import('../src/db.js');
+
+// 7 · a medicao da velocidade (OPAR 05/09/2026) -------------------------------
+// A divida pedia um benchmark de bancada que nunca aconteceu. O produto passa a
+// medir a si mesmo em operacao — e o que ele guarda tem de ser SO' maquina.
+{
+  const antes = TRANSC.velocidadeObservada().medicoes;
+  const r = await TRANSC.transcrever(wav(3));
+  T('a transcricao devolve a duracao do audio e o fator observado',
+    Number.isFinite(r.audio_s) && r.audio_s > 0 && Number.isFinite(r.fator));
+  TRANSC.registrarMedicao({ audio_s: r.audio_s, ms: r.ms });
+  const v = TRANSC.velocidadeObservada();
+  T('a medicao entra e a velocidade passa a ser observada, nao estimada',
+    v.medicoes === antes + 1 && v.fator_mediano != null && v.segundos_por_minuto != null);
+  // O QUE NAO PODE ESTAR LA'. Metrica de maquina nao e' dado de pessoa: se a
+  // linha guardasse texto, encontro ou educador, viraria registro de quem falou
+  // quanto — e a promessa de que a transcricao nao persiste seria falsa.
+  const colunas = all(`SELECT * FROM transcricao_medida LIMIT 1`)[0] ?? {};
+  const proibidas = Object.keys(colunas).filter(k =>
+    /texto|transcri[cç]|educador|crianca|encontro|turma|folha/i.test(k) && k !== 'criado_em');
+  T('a medicao nao guarda texto, pessoa nem encontro', proibidas.length === 0, proibidas.join(','));
+  T('a mediana ignora o outlier de timeout', (() => {
+    for (const [a2, m] of [[60, 30000], [60, 42000], [60, 600000]]) TRANSC.registrarMedicao({ audio_s: a2, ms: m });
+    return TRANSC.velocidadeObservada().fator_mediano < 2;
+  })());
+}
+
 rmSync(dirTemp, { recursive: true, force: true });
 console.log(`\n\x1b[1m${ok} passaram · ${falhas} falharam\x1b[0m`);
 process.exit(falhas ? 1 : 0);

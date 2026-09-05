@@ -311,6 +311,25 @@ const ESQUEMA_SQL = `
   -- A coluna destino guarda o LINK DE CONVITE do grupo (chat.whatsapp.com/...) ou o
   -- @perfil. Nao guarda telefone: grupo nao tem telefone, e o link e' publico
   -- para quem ja' esta' dentro.
+  -- QUANTO O WHISPER DEMORA, MEDIDO NA MAQUINA DELES (OPAR 05/09/2026).
+  -- A divida pedia um benchmark de bancada: alguem rodaria um audio de 10 min
+  -- no notebook mais fraco e escreveria o numero. Isso nunca aconteceu, e a
+  -- promessa da porta B ("deixe gravando o encontro inteiro") seguia sem numero.
+  -- O produto passa a medir a si mesmo, em operacao, e o numero vira mediana
+  -- observada em vez de estimativa.
+  --
+  -- NAO GUARDA TEXTO, NAO GUARDA PESSOA, NAO GUARDA ENCONTRO. Sao tres inteiros
+  -- e o nome do modelo: metrica de maquina, e nao dado de ninguem — se guardasse
+  -- o vinculo, viraria registro de quem falou quanto, e nao e' isso que se mede.
+  CREATE TABLE IF NOT EXISTS transcricao_medida (
+    id        INTEGER PRIMARY KEY,
+    audio_s   INTEGER NOT NULL,
+    ms        INTEGER NOT NULL,
+    modelo    TEXT,
+    threads   INTEGER,
+    criado_em TEXT NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS canal (
     id         INTEGER PRIMARY KEY,
     tipo       TEXT NOT NULL CHECK (tipo IN ('whatsapp','instagram')),

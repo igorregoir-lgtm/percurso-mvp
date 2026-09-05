@@ -385,10 +385,16 @@ export const rotas = {
   // volta seria pior que pedir para a pessoa tentar de novo.
   'POST /api/transcrever': async (req, corpo) => {
     exigeUsuario(req);
-    const { texto } = await TRANSC.transcrever(corpo);
+    const { texto, audio_s, ms, fator } = await TRANSC.transcrever(corpo);
     // A transcricao NAO e' persistida aqui: volta ao cliente, que a leva para o
     // extrator na confirmacao. Mesma doutrina da captura ao vivo.
-    return { texto, caracteres: texto.length };
+    //
+    // O QUE FICA E' A MEDICAO, e so' ela: quantos segundos de audio, quantos
+    // milissegundos de maquina. Sem texto, sem quem falou, sem encontro. E'
+    // assim que a divida "velocidade do whisper nunca medida" deixa de esperar
+    // um benchmark de bancada e passa a ser respondida pela propria operacao.
+    TRANSC.registrarMedicao({ audio_s, ms });
+    return { texto, caracteres: texto.length, audio_s, fator };
   },
 
   'GET /api/audio/status': (req) => { exigeUsuario(req); return TRANSC.estadoDoAudio(); },

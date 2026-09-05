@@ -2647,6 +2647,11 @@ function blocoPortas(st) {
       <p class="sub" style="margin-bottom:10px">Estas três também terminam no mesmo registro — o texto cai no campo acima e você confere antes de guardar.</p>
       <div class="pilha" id="portas-botoes">${botao('A')}${botao('C')}${botao('B')}</div>
       <div id="porta-painel"></div>
+      ${st.velocidade?.medicoes ? `<p class="sub" style="margin-top:10px">Nesta máquina, transcrever
+        um minuto de fala tem levado cerca de <b>${st.velocidade.segundos_por_minuto} segundos</b>
+        — mediana de ${st.velocidade.medicoes} transcrição(ões) já feitas aqui, não estimativa.</p>`
+        : `<p class="sub" style="margin-top:10px">Ainda não há medição de quanto o transcritor demora
+        nesta máquina. A primeira transcrição já responde isso, e o número aparece aqui.</p>`}
       <!-- SEM filtro estreito, e e' proposital (pedido do campo, 04/09/2026:
            "audio pode ser importado de qualquer lugar do celular"). Um accept so'
            de audio parece inofensivo e nao e': no iPhone ele fecha o navegador de

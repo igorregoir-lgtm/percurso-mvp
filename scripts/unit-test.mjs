@@ -627,17 +627,17 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     'public/app.js:614': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
     'public/app.js:1435': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:3323': /async function telaScores\(\)/,
-    'public/app.js:3557': /id="pergunta"/,
+    'public/app.js:3328': /async function telaScores\(\)/,
+    'public/app.js:3562': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:6369': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
-    'src/api.js:425': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:856': /'POST \/api\/consentimento'/,
-    'src/api.js:1369': /periodosSugeridos\(\)/,
+    'public/app.js:6374': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'src/api.js:431': /erro\(422.*rubrica por ciclo/,
+    'src/api.js:862': /'POST \/api\/consentimento'/,
+    'src/api.js:1375': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:113': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
