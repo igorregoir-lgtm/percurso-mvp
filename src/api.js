@@ -188,7 +188,7 @@ export const rotas = {
   'GET /api/sessao': (req) => ({
     usuario: usuarioDa(req),
     usuarios: all(
-      `SELECT id, nome, apelido, papel FROM educador WHERE arquivado_em IS NULL ORDER BY id`),
+      `SELECT id, nome, apelido, papel FROM educador WHERE arquivado_em IS NULL ORDER BY CASE WHEN papel = 'profissional' THEN 0 WHEN papel = 'educador' THEN 1 ELSE 2 END, id`),
   }),
 
   'POST /api/sessao': (req, body) => {

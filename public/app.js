@@ -3286,8 +3286,8 @@ function pintarPassoFab(visivel) {
   fab.className = 'passo-fab';
   fab.type = 'button';
   fab.dataset.acao = 'passo-abrir';
-  fab.setAttribute('aria-label', 'Abrir o Passo, guia do Percurso');
-  fab.innerHTML = '<span aria-hidden="true">❋</span>';
+  fab.setAttribute('aria-label', 'Abrir a Aurora 🌻, assistente do Percurso');
+  fab.innerHTML = '<span aria-hidden="true" style="font-size:22px;line-height:1;display:grid;place-items:center;">🌻</span>';
   document.body.appendChild(fab);
   // O balão aparece UMA vez por abertura do app (flag em memória — reabrir a
   // página traz o Passo se apresentando de novo) e some sozinho. Na primeira
@@ -3308,8 +3308,8 @@ function pintarPassoFab(visivel) {
     b.className = 'passo-bolha';
     b.dataset.acao = 'passo-abrir';
     b.textContent = primeira
-      ? 'Oi! Eu sou o Passo — toque aqui quando tiver uma dúvida sobre o app.'
-      : `${saudacao}! Eu sou o Passo — qualquer dúvida no caminho, toque aqui.`;
+      ? 'Oi! Eu sou a Aurora 🌻 — toque aqui quando tiver uma dúvida sobre o app.'
+      : `${saudacao}! Eu sou a Aurora 🌻 — qualquer dúvida no caminho, toque aqui.`;
     document.body.appendChild(b);
     setTimeout(() => b.remove(), 12000);
   }
@@ -3347,10 +3347,10 @@ function pintarPonto() {
     d.className = 'passo-ponto';
     d.setAttribute('aria-hidden', 'true');
     fab.appendChild(d);
-    fab.setAttribute('aria-label', 'Abrir o Passo — há algo que vale a pena ver');
+    fab.setAttribute('aria-label', 'Abrir a Aurora 🌻 — há algo que vale a pena ver');
   } else if (!passo.badge && tem) {
     tem.remove();
-    fab.setAttribute('aria-label', 'Abrir o Passo, guia do Percurso');
+    fab.setAttribute('aria-label', 'Abrir a Aurora 🌻, assistente do Percurso');
   }
 }
 
@@ -3379,21 +3379,21 @@ async function abrirPasso() {
     <div class="passo-sheet" role="dialog" aria-modal="true" aria-labelledby="passo-titulo">
       <div class="passo-cabeca">
         <div>
-          <h2 id="passo-titulo">Passo</h2>
-          <p class="sub" id="passo-sub">seu parceiro no Percurso</p>
+          <h2 id="passo-titulo">Aurora 🌻</h2>
+          <p class="sub" id="passo-sub">sua parceira no Percurso</p>
         </div>
         <div class="linha" style="gap:8px;flex-wrap:nowrap">
           <button type="button" class="passo-som" data-acao="passo-som" aria-pressed="${passo.som}"
-                  aria-label="${passo.som ? 'Desligar a voz do Passo' : 'Ligar a voz do Passo'}">voz</button>
-          <button type="button" class="passo-fechar" data-acao="passo-fechar" aria-label="Fechar o Passo">×</button>
+                  aria-label="${passo.som ? 'Desligar a voz da Aurora' : 'Ligar a voz da Aurora'}">voz</button>
+          <button type="button" class="passo-fechar" data-acao="passo-fechar" aria-label="Fechar a Aurora">×</button>
         </div>
       </div>
       <div class="passo-fio" id="passo-fio"></div>
       <p class="oculto-acessivel" id="passo-vivo" aria-live="polite"></p>
       <div class="passo-chips" id="passo-chips"></div>
       <div class="passo-entrada">
-        <textarea id="passo-texto" rows="1" maxlength="500" placeholder="Pergunte aqui…"
-                  aria-label="Sua pergunta para o Passo"></textarea>
+        <textarea id="passo-texto" rows="1" maxlength="500" placeholder="Pergunte à Aurora…"
+                  aria-label="Sua pergunta para a Aurora"></textarea>
         ${dit.botao}
         <button type="button" class="btn passo-enviar" data-acao="passo-enviar" ${passo.ocupado ? 'disabled' : ''}>Enviar</button>
       </div>
@@ -3404,7 +3404,7 @@ async function abrirPasso() {
   veu.addEventListener('click', (e) => { if (e.target === veu) fecharPasso(); });
   if (!passo.trocas.length) {
     passo.trocas.push({ quem: 'passo', semente: true, resposta:
-      'Oi! Eu sou o Passo, seu parceiro aqui no Percurso. Eu conheço as telas e as tarefas do app, e sei contar quantas coisas estão em aberto — nunca quem. Não abro a ficha de ninguém. Pergunte, por exemplo: "como faço a chamada?"' });
+      'Oi! Eu sou a Aurora 🌻, sua parceira aqui no Percurso. Eu conheço as telas e as tarefas do app, e sei contar quantas coisas estão em aberto — nunca quem. Não vejo o nome de nenhuma criança, nem quando você pergunta. Pergunte, por exemplo: "como faço a chamada?"' });
   }
   pintarPassoFio();
   const campo = document.getElementById('passo-texto');
