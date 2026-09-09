@@ -3,58 +3,246 @@
 <head>
   <meta charset="UTF-8">
   <title>Percurso · Artefato de Negócios (Semana 5 - Trilha B)</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Newsreader:ital,wght@0,600;1,400&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Newsreader:ital,wght@0,600;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #FBF8F3; color: #1F1D1A; padding: 40px 24px; line-height: 1.6; }
-    .container { max-width: 960px; margin: 0 auto; background: white; border: 1px solid #E8E2D5; border-radius: 16px; padding: 44px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-    h1 { font-family: 'Newsreader', Georgia, serif; font-size: 36px; color: #B23528; margin-bottom: 8px; }
-    .badge { display: inline-block; background: #B23528; color: white; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; margin-bottom: 16px; }
-    h2 { font-size: 22px; margin: 32px 0 14px; border-bottom: 2px solid #F4EFE6; padding-bottom: 8px; }
-    .card { background: #FBF8F3; border: 1px solid #E8E2D5; border-radius: 10px; padding: 20px; margin: 16px 0; }
+    :root {
+      --bg: #FBF8F3;
+      --card-bg: #FFFFFF;
+      --ink: #1F1D1A;
+      --ink-muted: #5C5549;
+      --line: #E8E2D5;
+      --line-subtle: #F0EBE0;
+      --accent-red: #B23528;
+      --accent-green: #2E6B47;
+      --accent-blue: #23527C;
+      --accent-amber: #9A6B15;
+      --accent-amber-bg: #FEF8EC;
+      --accent-blue-bg: #F2F7FC;
+      --accent-green-bg: #F0F7F2;
+    }
+    body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; background: var(--bg); color: var(--ink); padding: 40px 24px; line-height: 1.6; }
+    .container { max-width: 1040px; margin: 0 auto; background: var(--card-bg); border: 1px solid var(--line); border-radius: 16px; padding: 48px; box-shadow: 0 4px 24px rgba(0,0,0,0.04); }
+    h1 { font-family: 'Newsreader', Georgia, serif; font-size: 36px; color: var(--accent-red); margin: 8px 0 12px; letter-spacing: -0.02em; }
+    .badge { display: inline-block; background: var(--accent-red); color: white; padding: 4px 14px; border-radius: 99px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 12px; }
+    .badge-amber { background: var(--accent-amber); }
+    h2 { font-size: 22px; font-weight: 700; margin: 36px 0 16px; border-bottom: 2px solid var(--line-subtle); padding-bottom: 10px; color: var(--ink); display: flex; align-items: center; gap: 10px; }
+    h3 { font-size: 17px; font-weight: 700; color: var(--accent-blue); margin: 24px 0 10px; }
+    .card { background: #FAF7F2; border: 1px solid var(--line); border-radius: 12px; padding: 24px; margin: 18px 0; }
+    .card-highlight { background: var(--accent-amber-bg); border: 1.5px solid var(--accent-amber); border-radius: 12px; padding: 24px; margin: 18px 0; }
     table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
-    th { background: #F4EFE6; text-align: left; padding: 12px; border-bottom: 2px solid #D4CABE; }
-    td { padding: 12px; border-bottom: 1px solid #E8E2D5; }
-    .btn { display: inline-block; background: #23527C; color: white; padding: 10px 20px; border-radius: 99px; text-decoration: none; font-weight: 700; font-size: 13px; margin-top: 10px; }
+    th { background: #F4EFE6; text-align: left; padding: 12px 14px; border-bottom: 2px solid #D4CABE; font-weight: 700; color: var(--ink); }
+    td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .btn { display: inline-block; background: var(--accent-blue); color: white; padding: 10px 22px; border-radius: 99px; text-decoration: none; font-weight: 700; font-size: 13.5px; transition: all 0.2s ease; }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .tag-red { background: #FDF2F0; color: var(--accent-red); border: 1px solid #FACDC8; }
+    .tag-green { background: var(--accent-green-bg); color: var(--accent-green); border: 1px solid #C8E6D3; }
+    .tag-blue { background: var(--accent-blue-bg); color: var(--accent-blue); border: 1px solid #C7DCF0; }
+    .tag-amber { background: var(--accent-amber-bg); color: var(--accent-amber); border: 1px solid #F5DEB3; }
+    .formula-box { font-family: 'JetBrains Mono', monospace; font-size: 13px; background: #22201D; color: #F7F5F0; padding: 16px 20px; border-radius: 8px; line-height: 1.7; margin: 14px 0; }
   </style>
 </head>
 <body>
   <div class="container">
     <span class="badge">Inteli MBA IA & Dados · Módulo 3 · Semana 5</span>
-    <h1>Artefato de Negócios · Percurso</h1>
-    <p><strong>Trilha B:</strong> Monitoramento de Impacto Socioemocional — Instituto Social Ebenézer | <strong>Grupo 06</strong></p>
+    <span class="badge badge-amber">Trilha B · Grupo 06</span>
+    <h1>Artefato de Negócios · Sistema Percurso</h1>
+    <p style="font-size: 15px; color: var(--ink-muted); margin-bottom: 24px;">
+      <strong>Organização Parceira:</strong> Instituto Social Ebenézer | <strong>Território:</strong> Jardim Keralux / Jardim Ângela (São Paulo - SP)<br>
+      <strong>Tema:</strong> Monitoramento Longitudinal de Impacto Socioemocional, Prevenção da Violência e Governança Ética
+    </p>
     
-    <div style="margin: 20px 0; display: flex; gap: 10px;">
-      <a href="Dossie_Jornada_Semana5_TrilhaB.html" class="btn" style="background: #B23528;">Ver Dossiê Visual Completo com Prints ↗</a>
-      <a href="https://percurso-ebenezer.vercel.app" target="_blank" class="btn" style="background: #2E6B47;">Acessar MVP Online ↗</a>
+    <div style="margin: 20px 0; display: flex; gap: 12px; flex-wrap: wrap;">
+      <a href="Dossie_Jornada_Semana5_TrilhaB.html" class="btn" style="background: var(--accent-red);">📖 Ver Dossiê Visual Completo com Prints ↗</a>
+      <a href="Artefato_Tecnologia_UX_UI_Semana5_TrilhaB.html" class="btn" style="background: var(--accent-blue);">⚙️ Ver Artefato de Tecnologia & UX ↗</a>
+      <a href="https://percurso-ebenezer.vercel.app" target="_blank" class="btn" style="background: var(--accent-green);">⚡ Acessar MVP Funcional Online ↗</a>
     </div>
 
-    <h2>1. Proposta de Valor do MVP</h2>
+    <h2>1. Proposta de Valor do Produto</h2>
     <div class="card">
-      <p><strong>Para:</strong> A coordenação, educadores e psicóloga do Instituto Social Ebenézer.</p>
-      <p><strong>Que:</strong> Vivenciam a transformação socioemocional das crianças na favela do Jardim Keralux, mas não possuem como registrá-la nem comprová-la a quem financia o projeto.</p>
-      <p><strong>O Percurso é:</strong> Um sistema leve que transforma a observação em sala e as vivências em indicadores estruturados e relatórios no padrão do conselho profissional.</p>
-      <p><strong>Diferentemente de:</strong> Planilhas manuais isoladas e relatórios anuais puramente qualitativos.</p>
-      <p><strong>Nosso produto entrega:</strong> Comprovação de impacto real sem expor dados nominais de crianças, sem cobrança recorrente de licenças e mantido pela própria equipe local.</p>
+      <p><strong>Para:</strong> A <strong>Diretoria Executiva (Solange Ribeiro)</strong>, a <strong>Coordenação Geral (Rita Amaral)</strong>, as <strong>Educadoras Sociais (Maria Silvia)</strong> e a <strong>Psicóloga das Vivências (Carolina Duarte)</strong> do Instituto Social Ebenézer.</p>
+      <p><strong>Que:</strong> Atuam na linha de frente de territórios de altíssima vulnerabilidade social e violência urbana na periferia de São Paulo, transformando vidas através de reforço escolar e vivências terapêuticas, mas enfrentam o desafio crônico de comprovar retorno social sobre o investimento (SROI) e evolução pedagógica diante de conselhos fiscais, editais públicos e doadores corporativos (Lei Rouanet / ESG), sem dispor de tempo hábil para burocracias e sem poder expor dados nominais de crianças.</p>
+      <p><strong>O Percurso é:</strong> Um sistema leve e integrado de registro operacional, governança protetiva e motor determinístico de comprovação de impacto social.</p>
+      <p><strong>Diferentemente de:</strong> Planilhas manuais isoladas propensas a extravio, anotações de corredor não auditáveis ou afirmações promocionais de impacto sem lastro empírico.</p>
+      <p><strong>Nosso produto entrega:</strong>
+        <br>• <strong>Para a Linha de Frente (Educadora e Psicóloga):</strong> Registro de chamada em 1 toque (30s) e transcrição rápida de vivência por voz com descarte imediato do áudio na memória, eliminando a escrita manual noturna.
+        <br>• <strong>Para a Coordenação:</strong> Visão longitudinal de turmas, gestão ativa da régua dos 75% e bloqueio por padrão de dados sem consentimento formal (LGPD Art. 14).
+        <br>• <strong>Para a Diretoria:</strong> Relatórios de ciclo em PDF prontos em 1 clique e <strong>simulador determinístico de SROI com foco na prevenção da violência e evasão escolar</strong>, fundamentado em evidências de institutos de ponta (Insper, IPEA, FGV), garantindo blindagem jurídica e zero exposição de crianças.
+      </p>
     </div>
 
-    <h2>2. Lean Canvas Resumido (9 Blocos)</h2>
+    <h2>2. Lean Canvas Estratégico (9 Blocos)</h2>
     <table>
-      <tr><th>Bloco</th><th>Definição Estratégica</th></tr>
-      <tr><td><strong>Problema</strong></td><td>A evolução socioemocional acontece toda semana, mas não é registrada; educadores sem tempo hábil para relatórios; financiadores exigem métricas.</td></tr>
-      <tr><td><strong>Segmentos</strong></td><td>Educadoras do reforço escolar, psicóloga da vivência terapêutica, liderança comunitária e doadores institucionais.</td></tr>
-      <tr><td><strong>Proposta de Valor</strong></td><td>Comprovar a transformação socioemocional sem expor crianças, com custo zero de licenças e adoção fluida.</td></tr>
-      <tr><td><strong>Solução</strong></td><td>Rubrica com âncoras claras (~3 min por criança), captura por voz com descarte imediato do áudio e síntese automática de ciclo.</td></tr>
-      <tr><td><strong>Canais</strong></td><td>PWA instalado nos smartphones da equipe, recados via WhatsApp oficial e relatórios de ciclo em PDF.</td></tr>
-      <tr><td><strong>Custos</strong></td><td>R$ 0 recorrente para a ONG (Node.js nativo + SQLite local) e ~R$ 18/mês na Meta caso opte pela Cloud API oficial.</td></tr>
-      <tr><td><strong>Métricas</strong></td><td>% de crianças na régua &ge; 75%, tempo de preenchimento &le; 180s e índice de progressão nos ciclos de observação.</td></tr>
-      <tr><td><strong>Vantagem Injusta</strong></td><td>Desenhado sob medida com a equipe na favela, incorporando a régua de 75% e a planilha histórica do Instituto.</td></tr>
+      <thead>
+        <tr><th style="width: 22%;">Bloco Estratégico</th><th style="width: 78%;">Detalhamento com Validação Real no Ebenézer</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1. Problema</strong></td>
+          <td>
+            • Evolução socioemocional ocorre semanalmente, mas se perde na oralidade e em cadernos informais.<br>
+            • Risco severo de evasão escolar em crianças com presença &lt; 75% na comunidade.<br>
+            • Diretoria não possui dados auditáveis para renovar parcerias financeiras e provar impacto aos doadores.<br>
+            • Risco grave de vazamento de dados sensíveis de menores em situação de extrema vulnerabilidade.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>2. Segmentos de Clientes & Usuários</strong></td>
+          <td>
+            <strong>4 Papéis Reais Mapeados em Campo:</strong><br>
+            1. <em>Educadoras (Maria Silvia):</em> Foco em agilidade máxima e âncoras claras de observação em sala.<br>
+            2. <em>Psicóloga (Carolina Duarte):</em> Relato de vivência sabática no padrão do CRP sem identificação nominal.<br>
+            3. <em>Coordenação (Rita Amaral):</em> Busca ativa, alocação de voluntários e governança de consentimentos.<br>
+            4. <strong>Diretoria (Solange Ribeiro):</strong> Captação de recursos, prestação de contas ao conselho fiscal, relatórios para doadores institucionais e demonstração de SROI.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>3. Proposta de Valor Única</strong></td>
+          <td>
+            Fechamento de ponta a ponta: do registro de 30 segundos em sala de aula até a comprovação matemática de impacto social e custo social de violência evitado, com custo zero de licença para a ONG.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>4. Solução</strong></td>
+          <td>
+            • Rubrica padronizada de 6 dimensões com âncoras comportamentais objetivas.<br>
+            • Registro sabático por voz com descarte do arquivo de áudio logo após extração de contagens.<br>
+            • Alerta automatizado de ausências consecutivas e régua de 75% de presença.<br>
+            • Relatório do ciclo em 7 blocos com anonimização automática (supressão para n &lt; 5).<br>
+            • <strong>Motor SROI determinístico:</strong> cálculo de retorno social em 3 cenários sem uso de LLM para números.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>5. Canais</strong></td>
+          <td>
+            • PWA mobile nativo instalado nos smartphones dos educadores.<br>
+            • Relatórios de ciclo executivos exportáveis em PDF / impressão para conselho e doadores.<br>
+            • Recados de turma com resumo de presença disparados no WhatsApp oficial das famílias.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>6. Estrutura de Custos</strong></td>
+          <td>
+            • <strong>Infraestrutura Básica: R$ 0 / mês recorrente</strong> (arquitetura Node.js + SQLite local auto-hospedável em servidores gratuitos como Render/Vercel ou computador local do Instituto).<br>
+            • <strong>Canal WhatsApp (Opcional): ~R$ 18 / mês</strong> caso o Instituto decida utilizar a Meta Cloud API oficial.<br>
+            • <strong>Zero dependência de licenças proprietárias</strong> de terceiros (Salesforce, PowerBI ou Airtable).
+          </td>
+        </tr>
+        <tr>
+          <td><strong>7. Métricas-Chave</strong></td>
+          <td>
+            • % de crianças na faixa segura da régua (&ge; 75% de presença).<br>
+            • Tempo de registro por criança &le; 180 segundos.<br>
+            • Índice de completude dos ciclos longitudinais de observação.<br>
+            • <strong>Faixa de SROI apurada:</strong> indicador de retorno social estimado (R$ 2,36 a R$ 4,08 por R$ 1 investido em cenários exploratórios parametrizados).
+          </td>
+        </tr>
+        <tr>
+          <td><strong>8. Vantagem Injusta</strong></td>
+          <td>
+            Solução desenhada diretamente na favela em co-criação com fundadores e psicóloga, já aderente à planilha histórica do Instituto, com barreira arquitetural ética inquebrável (Decisão 16: Diretoria não acessa dados nominais).
+          </td>
+        </tr>
+      </tbody>
     </table>
 
-    <h2>3. Reconciliação dos Dados Demográficos (120 Crianças)</h2>
-    <p>O Instituto atende uma capacidade de 120 crianças (60 manhã / 60 tarde). Destas, 106 crianças são ativas em sala nas oficinas semanais e vivências aos sábados. As 14 crianças restantes representam casos em transição familiar, ausências frequentes ou risco de evasão, sendo monitoradas pelo sistema através da régua preventiva de 75% de presença para deflagração imediata de busca ativa.</p>
+    <h2>3. O Eixo Narrativo de Impacto: Prevenção da Violência e Criminalidade (SROI)</h2>
+    <div class="card-highlight">
+      <h3 style="color: var(--accent-amber); margin-top: 0;">Decisão Institucional: A Violência Urbana como Indicador Central de Apelo</h3>
+      <p>
+        O Instituto Social Ebenézer atua em um território historicamente assolado pela criminalidade e violência urbana na Zona Leste/Sul de São Paulo. A liderança do Instituto registrou formalmente durante a pesquisa que <strong>a prevenção da violência e o afastamento de jovens do crime organizado constituem o principal argumento de impacto e o maior catalisador de captação de recursos junto a parceiros mantenedores</strong>.
+      </p>
+      <p>
+        Para que a Diretoria possa demonstrar esse impacto sem recorrer a "achismos" ou a sobre-alegações levianas que seriam reprovadas em auditorias, o Percurso integra a metodologia SROI (<em>Social Return on Investment</em>) balizada em pesquisas e modelos econométricos brasileiros publicados por instituições de primeira linha:
+      </p>
 
-    <h2>4. Escopo do MVP</h2>
-    <p>O MVP implementa estritamente: (F1) Ficha viva com consentimento Art. 14 por padrão; (F2) Chamada diária em um toque; (F3) Rubrica socioemocional de 6 dimensões; (F4) Agenda longitudinal de ciclos; (F5) Painel agregado para captação de recursos; e (F6) Alerta preventivo de ausências seguidas. Ficam deliberadamente fora do MVP prontuários clínicos individuais e logins de família.</p>
+      <table style="background: white; border-radius: 8px; overflow: hidden; margin-top: 14px;">
+        <thead>
+          <tr>
+            <th>Proxy de Impacto</th>
+            <th>Valor Unitário / Referência</th>
+            <th>Fonte Oficial & Ano</th>
+            <th>Papel no Modelo do Ebenézer</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background: #FFFDF8;">
+            <td><strong>Violência dentro do Custo da Evasão</strong></td>
+            <td><strong style="color: var(--accent-red);">R$ 45.000 / jovem</strong><br><small>ao longo da vida</small></td>
+            <td>Insper + Fundação Roberto Marinho (2020)</td>
+            <td><span class="tag tag-red">Eixo Central</span> Componente de segurança pública evitado pelo fortalecimento do vínculo escolar.</td>
+          </tr>
+          <tr>
+            <td><strong>Não Conclusão da Educação Básica (Envelope Total)</strong></td>
+            <td><strong>R$ 372.000 / jovem</strong><br><small>ao longo da vida</small></td>
+            <td>Insper + Fundação Roberto Marinho (2020)</td>
+            <td><span class="tag tag-amber">Envelope</span> Custo social total (inclui renda, saúde e violência). Motor bloqueia dupla contagem.</td>
+          </tr>
+          <tr>
+            <td><strong>Remuneração e Produtividade Futura</strong></td>
+            <td><strong>R$ 159.000 / jovem</strong><br><small>ciclo produtivo até 69 anos</small></td>
+            <td>Insper + Fundação Roberto Marinho (2020)</td>
+            <td><span class="tag tag-blue">Componente</span> Renda individual gerada ao evitar a evasão precoce.</td>
+          </tr>
+          <tr>
+            <td><strong>Qualidade de Vida e Saúde Evitada</strong></td>
+            <td><strong>R$ 114.000 / jovem</strong><br><small>ao longo da vida</small></td>
+            <td>Insper + Fundação Roberto Marinho (2020)</td>
+            <td><span class="tag tag-blue">Componente</span> Monetização de 4,4 anos de vida saudável (referência OMS).</td>
+          </tr>
+          <tr>
+            <td><strong>Bem-Estar Perdido em Homicídios</strong></td>
+            <td><strong>R$ 50 bilhões / ano</strong><br><small>0,77% do PIB nacional</small></td>
+            <td>IPEA · Atlas da Violência (2023)</td>
+            <td><span class="tag tag-amber">Benchmark</span> Proxy macroeconômica nacional de perda associada a homicídios.</td>
+          </tr>
+          <tr>
+            <td><strong>Programa Brasileiro de Redução de Homicídios</strong></td>
+            <td><strong>R$ 2,36 por R$ 1 investido</strong><br><small>relação benefício-custo</small></td>
+            <td>FGV/RBE · Estado Presente (Controle Sintético)</td>
+            <td><span class="tag tag-green">Benchmark</span> Parâmetro de sensibilidade para intervenções sociais territoriais.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Fórmula do Motor Determinístico (src/sroi/calculator.js)</h3>
+      <div class="formula-box">
+benefício_t = N × efeito_incremental × proxy_R$ × (1 − deadweight) × (1 − atribuição)
+              × (1 − deslocamento) × (1 − drop-off)^(t−1) ÷ (1 + desconto)^t
+
+SROI = Σ benefícios_presentes ÷ investimento_total_do_horizonte
+      </div>
+      <p style="font-size: 13.5px; color: var(--ink-muted); margin-bottom: 0;">
+        <strong>Doutrina de Governança:</strong> O cálculo executa de forma 100% matemática, sem inteligência generativa inventando números. Os resultados são sempre reportados em <strong>3 cenários (Conservador, Base e Superior)</strong> e com a ressalva mandatória: <em>"Associação compatível, não causalidade comprovada. Fatores externos de comunidade não foram isolados."</em>
+      </p>
+    </div>
+
+    <h2>4. Reconciliação dos Dados Demográficos (120 Crianças)</h2>
+    <p>
+      O termo "120 crianças" do edital original representava, na realidade de campo, o teto físico de <strong>matrículas</strong> (60 crianças no turno matutino e 60 no vespertino). O Percurso implementou a distinção ontológica estrita entre <em>Criança Única</em> e <em>Matrícula em Programa</em>:
+    </p>
+    <ul>
+      <li><strong>106 Crianças Únicas Efetivas:</strong> Ativas no reforço escolar e nas atividades socioemocionais regulares.</li>
+      <li><strong>24 Matrículas nas Vivências de Sábado:</strong> Conduzidas pela psicóloga voluntária (2 turmas de 12 crianças), formadas por participantes já matriculados no contraturno.</li>
+      <li><strong>14 Crianças em Alerta de Evasão / Busca Ativa:</strong> Crianças que apresentavam faltas frequentes ou transições familiares delicadas, agora monitoradas preventivamente pela <strong>régua dos 75%</strong> para deflagração imediata de contato com os responsáveis.</li>
+    </ul>
+
+    <h2>5. Escopo e Módulos Entregues no MVP Funcional</h2>
+    <table>
+      <thead>
+        <tr><th>Módulo</th><th>Funcionalidade</th><th>Público Alvo</th><th>Status no MVP</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>F1 / F2</strong></td><td>Ficha com Consentimento LGPD Art. 14 e Chamada Diária em 1 Toque</td><td>Educadoras</td><td><span class="tag tag-green">Implementado</span></td></tr>
+        <tr><td><strong>F3 / F4</strong></td><td>Rubrica Socioemocional (6 Dimensões) com Ciclos Longitudinais</td><td>Educadoras</td><td><span class="tag tag-green">Implementado</span></td></tr>
+        <tr><td><strong>F6 / F7</strong></td><td>Alerta de Ausências (Régua 75%) e Registro de Vivência por Voz (Descarte de Áudio)</td><td>Educadora e Psicóloga</td><td><span class="tag tag-green">Implementado</span></td></tr>
+        <tr><td><strong>F8 / F9</strong></td><td>Painel Consolidado de Turmas e Governança de Consentimentos</td><td>Coordenação</td><td><span class="tag tag-green">Implementado</span></td></tr>
+        <tr><td><strong>F13 / F14</strong></td><td>Relatório do Ciclo do Doador com Supressão Automática (n &lt; 5)</td><td><strong>Diretoria (Solange)</strong></td><td><span class="tag tag-green">Implementado</span></td></tr>
+        <tr><td><strong>F15 / SROI</strong></td><td><strong>Simulador de Retorno Social (SROI) focado em Prevenção da Violência</strong></td><td><strong>Diretoria (Solange)</strong></td><td><span class="tag tag-green">Implementado</span></td></tr>
+        <tr><td><strong>Passo / Aurora</strong></td><td>Assistente Guiado de Navegação e Pergunta Agregada em Linguagem Natural</td><td>Todos os Papéis</td><td><span class="tag tag-green">Implementado</span></td></tr>
+      </tbody>
+    </table>
   </div>
 </body>
 </html>

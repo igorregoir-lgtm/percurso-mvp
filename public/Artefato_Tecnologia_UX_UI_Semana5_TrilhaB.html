@@ -3,65 +3,219 @@
 <head>
   <meta charset="UTF-8">
   <title>Percurso · Artefato de Tecnologia & UX/UI (Semana 5 - Trilha B)</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Newsreader:ital,wght@0,600;1,400&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Newsreader:ital,wght@0,600;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #FBF8F3; color: #1F1D1A; padding: 40px 24px; line-height: 1.6; }
-    .container { max-width: 960px; margin: 0 auto; background: white; border: 1px solid #E8E2D5; border-radius: 16px; padding: 44px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-    h1 { font-family: 'Newsreader', Georgia, serif; font-size: 36px; color: #23527C; margin-bottom: 8px; }
-    .badge { display: inline-block; background: #23527C; color: white; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; margin-bottom: 16px; }
-    h2 { font-size: 22px; margin: 32px 0 14px; border-bottom: 2px solid #F4EFE6; padding-bottom: 8px; }
-    .card { background: #FBF8F3; border: 1px solid #E8E2D5; border-radius: 10px; padding: 20px; margin: 16px 0; }
+    :root {
+      --bg: #FBF8F3;
+      --card-bg: #FFFFFF;
+      --ink: #1F1D1A;
+      --ink-muted: #5C5549;
+      --line: #E8E2D5;
+      --line-subtle: #F0EBE0;
+      --accent-red: #B23528;
+      --accent-green: #2E6B47;
+      --accent-blue: #23527C;
+      --accent-amber: #9A6B15;
+      --accent-amber-bg: #FEF8EC;
+      --accent-blue-bg: #F2F7FC;
+      --accent-green-bg: #F0F7F2;
+    }
+    body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; background: var(--bg); color: var(--ink); padding: 40px 24px; line-height: 1.6; }
+    .container { max-width: 1040px; margin: 0 auto; background: var(--card-bg); border: 1px solid var(--line); border-radius: 16px; padding: 48px; box-shadow: 0 4px 24px rgba(0,0,0,0.04); }
+    h1 { font-family: 'Newsreader', Georgia, serif; font-size: 36px; color: var(--accent-blue); margin: 8px 0 12px; letter-spacing: -0.02em; }
+    .badge { display: inline-block; background: var(--accent-blue); color: white; padding: 4px 14px; border-radius: 99px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 12px; }
+    .badge-amber { background: var(--accent-amber); }
+    h2 { font-size: 22px; font-weight: 700; margin: 36px 0 16px; border-bottom: 2px solid var(--line-subtle); padding-bottom: 10px; color: var(--ink); display: flex; align-items: center; gap: 10px; }
+    h3 { font-size: 17px; font-weight: 700; color: var(--accent-red); margin: 24px 0 10px; }
+    .card { background: #FAF7F2; border: 1px solid var(--line); border-radius: 12px; padding: 22px; margin: 16px 0; }
+    .card-persona { border-left: 5px solid var(--accent-blue); background: #FAF7F2; margin-bottom: 18px; border-radius: 0 12px 12px 0; padding: 20px 24px; }
+    .card-diretoria { border-left: 5px solid var(--accent-amber); background: var(--accent-amber-bg); }
     table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
-    th { background: #F4EFE6; text-align: left; padding: 12px; border-bottom: 2px solid #D4CABE; }
-    td { padding: 12px; border-bottom: 1px solid #E8E2D5; }
-    .btn { display: inline-block; background: #23527C; color: white; padding: 10px 20px; border-radius: 99px; text-decoration: none; font-weight: 700; font-size: 13px; margin-top: 10px; }
+    th { background: #F4EFE6; text-align: left; padding: 12px 14px; border-bottom: 2px solid #D4CABE; font-weight: 700; color: var(--ink); }
+    td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .btn { display: inline-block; background: var(--accent-blue); color: white; padding: 10px 22px; border-radius: 99px; text-decoration: none; font-weight: 700; font-size: 13.5px; transition: all 0.2s ease; }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .tag-red { background: #FDF2F0; color: var(--accent-red); border: 1px solid #FACDC8; }
+    .tag-green { background: var(--accent-green-bg); color: var(--accent-green); border: 1px solid #C8E6D3; }
+    .tag-blue { background: var(--accent-blue-bg); color: var(--accent-blue); border: 1px solid #C7DCF0; }
+    .tag-amber { background: var(--accent-amber-bg); color: var(--accent-amber); border: 1px solid #F5DEB3; }
+    code { font-family: 'JetBrains Mono', monospace; font-size: 13px; background: #EFE9DE; padding: 2px 6px; border-radius: 4px; color: #78261F; }
   </style>
 </head>
 <body>
   <div class="container">
     <span class="badge">Inteli MBA IA & Dados · Módulo 3 · Semana 5</span>
+    <span class="badge badge-amber">Trilha B · Grupo 06</span>
     <h1>Artefato de Tecnologia, UX & Arquitetura · Percurso</h1>
-    <p><strong>Trilha B:</strong> Monitoramento de Impacto Socioemocional — Instituto Social Ebenézer | <strong>Grupo 06</strong></p>
+    <p style="font-size: 15px; color: var(--ink-muted); margin-bottom: 24px;">
+      <strong>Projeto:</strong> Percurso — Monitoramento de Impacto Socioemocional e Governança de Dados<br>
+      <strong>Parceiro:</strong> Instituto Social Ebenézer | <strong>Local:</strong> Jardim Keralux / Jardim Ângela (São Paulo - SP)
+    </p>
 
-    <div style="margin: 20px 0; display: flex; gap: 10px;">
-      <a href="Dossie_Jornada_Semana5_TrilhaB.html" class="btn" style="background: #B23528;">Ver Dossiê Visual Completo com Prints ↗</a>
-      <a href="https://www.figma.com/proto/JMejpNsHkckqeSP8KE1PTh/Percurso-%E2%80%94-prot%C3%B3tipo-v3-%C2%B7-12-telas--4-pap%C3%A9is?node-id=9-2&p=f&t=T34yyWpc1jfmYeyG-0&scaling=min-zoom&content-scaling=fixed&page-id=2%3A20&starting-point-node-id=9%3A2" target="_blank" class="btn" style="background: #23527C;">Protótipo Canônico Figma (27 Telas) ↗</a>
+    <div style="margin: 20px 0; display: flex; gap: 12px; flex-wrap: wrap;">
+      <a href="Dossie_Jornada_Semana5_TrilhaB.html" class="btn" style="background: var(--accent-red);">📖 Ver Dossiê Visual Completo com Prints ↗</a>
+      <a href="Artefato_Negocios_Semana5_TrilhaB.html" class="btn" style="background: var(--accent-amber);">💼 Ver Artefato de Negócios ↗</a>
+      <a href="https://www.figma.com/proto/JMejpNsHkckqeSP8KE1PTh/Percurso-%E2%80%94-prot%C3%B3tipo-v3-%C2%B7-12-telas--4-pap%C3%A9is?node-id=9-2&p=f&t=T34yyWpc1jfmYeyG-0&scaling=min-zoom&content-scaling=fixed&page-id=2%3A20&starting-point-node-id=9%3A2" target="_blank" class="btn" style="background: var(--accent-blue);">🎨 Protótipo Canônico no Figma (27 Telas / 4 Papéis) ↗</a>
     </div>
 
-    <h2>1. Personas e Citações de Campo</h2>
+    <h2>1. Personas e Citações Reais de Campo (4 Papéis)</h2>
+    
+    <div class="card-persona">
+      <h3 style="margin-top: 0; color: var(--accent-red);">1. Maria Silvia (35 anos) · Educadora do Reforço Escolar (Faixa 1)</h3>
+      <p><em>"Eu não consigo transformar em dados os resultados do meu trabalho com as crianças."</em></p>
+      <p><strong>Desafio de Campo:</strong> Falta crônica de tempo hábil para relatórios escritos; interrupções no atendimento às turmas. <strong>Necessidade Decisiva:</strong> Registro da chamada e observações em menos de 1 minuto no próprio celular, mantendo sigilo estrito de dados nominais das crianças da favela.</p>
+    </div>
+
+    <div class="card-persona" style="border-left-color: var(--accent-green);">
+      <h3 style="margin-top: 0; color: var(--accent-green);">2. Carolina Duarte (39 anos) · Psicóloga Voluntária da Vivência (Faixa 2)</h3>
+      <p><em>"O maior desafio aqui é registrar o que você fez. Sair daqui no sábado à noite e preencher relatório técnico... não dá."</em></p>
+      <p><strong>Desafio de Campo:</strong> Atende turmas sabáticas de acolhimento emocional; tempo clínico 100% escasso. <strong>Necessidade Decisiva:</strong> Gravar áudio rápido de 40s após o encontro com transcrição automática e descarte do arquivo de voz, gerando o relatório formal exigido pelo Conselho Regional de Psicologia (CRP) sem nomes de crianças.</p>
+    </div>
+
+    <div class="card-persona">
+      <h3 style="margin-top: 0; color: var(--accent-blue);">3. Rita Amaral (42 anos) · Coordenação Pedagógica Geral (Faixa 3)</h3>
+      <p><em>"O Instituto vive de confiança e doações; precisamos saber exatamente quem está faltando para fazer busca ativa antes da evasão."</em></p>
+      <p><strong>Desafio de Campo:</strong> Planilhas manuais desconectadas e risco de perda de vínculo. <strong>Necessidade Decisiva:</strong> Painel de indicadores longitudinais, régua de presença de 75% e bloqueio sistêmico por padrão de campos sem consentimento assinado (LGPD Art. 14).</p>
+    </div>
+
+    <div class="card-persona card-diretoria">
+      <h3 style="margin-top: 0; color: var(--accent-amber);">4. Solange Ribeiro (52 anos) · Diretora Executiva / Captação & Governança (Faixa 4)</h3>
+      <p><em>"Diante de grandes financiadores e do conselho fiscal, não posso apresentar 'achismos' nem inflar números. Ao mesmo tempo, atuamos na periferia: nosso maior impacto é tirar os jovens da rota da violência urbana e da evasão escolar."</em></p>
+      <p><strong>Desafio de Campo:</strong> Dificuldade em comprovar retorno social em reuniões de captação (Lei Rouanet / ESG) e risco de auditoria caso sobre-alegue impacto causal. <strong>Necessidade Decisiva:</strong> Relatório consolidado em 7 blocos com supressão de células pequenas (n &lt; 5) e simulador determinístico de SROI com proxies de violência e evasão (Insper/IPEA/FGV), sob a blindagem da <strong>Decisão Técnica 16 (bloqueio 403 para fichas individuais de crianças)</strong>.</p>
+    </div>
+
+    <h2>2. Matriz Completa de User Stories & Rastreabilidade no Figma</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>História</th>
+          <th>Papel</th>
+          <th>Enunciado da Necessidade do Usuário</th>
+          <th>Tela no Figma / Rota</th>
+          <th>Critério de Validação Automatizada</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>US-1</strong></td>
+          <td><span class="tag tag-red">Educadora</span></td>
+          <td>Como educadora, quero registrar observações socioemocionais em minutos com âncoras comportamentais claras.</td>
+          <td><code>#/ciclo</code> &rarr; <code>#/observacao</code><br><small>Frame #7:51 (Faixa 1)</small></td>
+          <td>Smoke §4 (12 asserções) e §5b (cronômetro &le; 180s por avaliação).</td>
+        </tr>
+        <tr>
+          <td><strong>US-2</strong></td>
+          <td><span class="tag tag-red">Educadora</span></td>
+          <td>Como educadora, quero comparar a evolução entre ciclos para planejar atividades pedagógicas com dados reais.</td>
+          <td><code>#/turma</code><br><small>Frame #8:2 (Faixa 1)</small></td>
+          <td>Smoke §5 (dispersão estatística e evolução temporal de médias).</td>
+        </tr>
+        <tr>
+          <td><strong>US-3</strong></td>
+          <td><span class="tag tag-red">Educadora</span></td>
+          <td>Como educadora, quero alertas imediatos de ausências acumuladas para agir preventivamente na turma.</td>
+          <td><code>#/hoje</code><br><small>Frame #5:2 (Faixa 1)</small></td>
+          <td>Smoke §6 (disparo do alerta preventivo em 2 faltas consecutivas).</td>
+        </tr>
+        <tr>
+          <td><strong>US-4</strong></td>
+          <td><span class="tag tag-blue">Coordenação</span></td>
+          <td>Como coordenação, quero painel agregado de indicadores sem risco de expor a identidade de nenhuma criança.</td>
+          <td><code>#/painel</code> &rarr; <code>#/sintese</code><br><small>Frame #9:2 (Faixa 3)</small></td>
+          <td>Smoke §7 (supressão automática de células quando n &lt; 5).</td>
+        </tr>
+        <tr>
+          <td><strong>US-5</strong></td>
+          <td><span class="tag tag-blue">Coordenação</span></td>
+          <td>Como coordenação, quero bloqueio por padrão de coleta e visualização de campos sem termo de consentimento.</td>
+          <td><code>#/consentimentos</code><br><small>Frame #8:71 (Faixa 3)</small></td>
+          <td>Smoke §8 e §28 (bloqueio 403 e revogação em tempo real).</td>
+        </tr>
+        <tr>
+          <td><strong>US-6</strong></td>
+          <td><span class="tag tag-green">Psicóloga</span></td>
+          <td>Como psicóloga, quero gravar relato de 40s sobre a vivência para gerar minuta do CRP sem preenchimento manual noturno.</td>
+          <td><code>#/voz</code> &rarr; <code>#/relato</code><br><small>Frame #25:505 (Faixa 2)</small></td>
+          <td>Smoke §24 e §26 (extração de contagens e descarte do áudio).</td>
+        </tr>
+        <tr style="background: #FFFDF8;">
+          <td><strong>US-7</strong></td>
+          <td><span class="tag tag-amber">Diretoria</span></td>
+          <td><strong>Como diretora, quero gerar relatórios de ciclo consolidados em 7 blocos para doadores e conselho fiscal, sem exibir dados nominais.</strong></td>
+          <td><code>#/relatorio</code><br><small>Frame #26:802 (Faixa 4)</small></td>
+          <td>Smoke §25 e Testes Unitários de Relatório (revisor de sobre-alegação e bloqueio de dados individuais).</td>
+        </tr>
+        <tr style="background: #FFFDF8;">
+          <td><strong>US-8</strong></td>
+          <td><span class="tag tag-amber">Diretoria</span></td>
+          <td><strong>Como diretora, quero simular o retorno social sobre investimento (SROI) em 3 cenários exploratórios tendo a redução da violência e evasão como premissas transparentes.</strong></td>
+          <td><code>#/impacto</code><br><small>Frame #26:803 (Faixa 4)</small></td>
+          <td>Testes do motor determinístico (<code>src/sroi/calculator.js</code>), bloqueio de dupla contagem (422) e premissas Insper/IPEA/FGV.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. Jornada Comparativa AS-IS vs. TO-BE (Ganhos Reais de Eficiência)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Atividade Operacional</th>
+          <th>Processo Anterior (AS-IS)</th>
+          <th>Com o Sistema Percurso (TO-BE)</th>
+          <th>Ganho de Eficiência & Redução de Risco</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Presença Diária</strong></td>
+          <td>Lista física em papel sujeita a rasuras e digitação manual posterior.</td>
+          <td>1 toque por criança no celular via PWA offline-first (<code>#/chamada</code>).</td>
+          <td>Redução de 15 minutos para <strong>40 segundos</strong>.</td>
+        </tr>
+        <tr>
+          <td><strong>Registro de Vivência (Psicóloga)</strong></td>
+          <td>Horas preenchendo relatórios técnicos no computador tarde da noite.</td>
+          <td>Áudio de ~40s com transcrição e descarte imediato do áudio na memória (<code>#/voz</code>).</td>
+          <td>Eliminação total da escrita manual noturna.</td>
+        </tr>
+        <tr>
+          <td><strong>Gestão da Régua de 75%</strong></td>
+          <td>Percepção tardia do abandono escolar somente no final do semestre.</td>
+          <td>Régua automatizada com alerta visual para busca ativa imediata (<code>#/painel</code>).</td>
+          <td>Identificação precoce de 100% dos casos de risco.</td>
+        </tr>
+        <tr style="background: #FFFDF8;">
+          <td><strong>Prestação de Contas (Diretoria)</strong></td>
+          <td>Dias redigindo relatórios qualitativos subjetivos com dados dispersos.</td>
+          <td>Síntese de ciclo com agregação em 1 clique e supressão de dados nominais (<code>#/relatorio</code>).</td>
+          <td>Redução de 12 horas para <strong>2 minutos</strong> de geração.</td>
+        </tr>
+        <tr style="background: #FFFDF8;">
+          <td><strong>Demonstração de Impacto (Diretoria)</strong></td>
+          <td>Escolha perigosa entre omitir impacto ou inventar números sem base científica diante de doadores.</td>
+          <td>Simulador determinístico de SROI com 3 cenários e premissas de redução de violência do Insper/IPEA/FGV (<code>#/impacto</code>).</td>
+          <td><strong>Cálculo auditável e defensável</strong> perante conselhos fiscais e auditorias externas.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>4. Arquitetura de Governança e Blindagem Ética (Decisão 16)</h2>
     <div class="card">
-      <p><strong>Maria Silvia (35 anos, Pedagoga do Reforço Escolar):</strong> <em>"Não consigo transformar em dados os resultados do meu trabalho."</em> Dor: falta de tempo para redigir relatórios sem desviar o olhar das crianças na sala de aula. Necessidade decisiva: sigilo absoluto das crianças.</p>
-      <p><strong>Líder Wellington (48 anos, Fundador):</strong> <em>"O Instituto vive de confiança e doação; precisamos mostrar onde cada centavo toca a vida das crianças."</em> Opera sem equipe de tecnologia e implementou a régua dos 75% de frequência.</p>
-      <p><strong>Carolina Duarte (39 anos, Psicóloga Voluntária):</strong> <em>"O maior desafio aqui é registrar o que você fez. Sair daqui à noite e preencher relatório... não dá."</em> Realiza vivências de sábado e necessita de relatórios no padrão do CRP sem identificação de menores.</p>
+      <h3 style="color: var(--accent-blue); margin-top: 0;">Princípio da Menor Exposição de Dados (LGPD Art. 14 & ECA)</h3>
+      <p>
+        Uma das decisões mais estruturantes da arquitetura do Percurso é a <strong>Decisão Técnica 16: A Diretoria não abre registro individual de criança</strong>.
+      </p>
+      <ul>
+        <li><strong>Camada Agregada Exclusiva:</strong> Como o papel da Diretoria Executiva é prestar contas a financiadores e gerir a sustentabilidade institucional, ela não necessita acessar prontuários individuais, históricos familiares ou nomes de menores atendidos.</li>
+        <li><strong>Bloqueio Sistêmico (403 Forbidden):</strong> O servidor backend rejeita deterministicamente qualquer tentativa de acesso do perfil de diretoria às rotas <code>#/crianca/:id</code>, <code>#/folha</code> ou listagens nominais.</li>
+        <li><strong>Filtro no Copilot / Assistente:</strong> Caso a diretoria pergunte ao assistente sobre o nome de uma criança, o sistema recusa deterministicamente a resposta antes de acionar qualquer modelo de linguagem.</li>
+      </ul>
+      <p style="margin-bottom: 0; font-size: 13.5px; color: var(--ink-muted);">
+        <strong>Resultado:</strong> Segurança jurídica absoluta para o Instituto e blindagem das crianças da comunidade contra qualquer risco de exposição indevida em documentos institucionais.
+      </p>
     </div>
-
-    <h2>2. Matriz das User Stories & Frames do Figma</h2>
-    <table>
-      <tr><th>História</th><th>Enunciado do Usuário</th><th>Tela no Figma</th><th>Validação Automatizada</th></tr>
-      <tr><td><strong>US-1</strong></td><td>Como educadora, quero registrar observações em minutos com âncoras objetivas.</td><td><code>#/ciclo</code> &rarr; <code>#/observacao</code> (Frame #7:51)</td><td>Smoke §4 (12 asserções) e §5b (cronômetro &le; 180s).</td></tr>
-      <tr><td><strong>US-2</strong></td><td>Como educadora, quero comparar ciclos para planejar com base em dados.</td><td><code>#/turma</code> (Frame #8:2)</td><td>Smoke §5 (dispersão e evolução de médias).</td></tr>
-      <tr><td><strong>US-3</strong></td><td>Como educadora, quero alerta de ausências acumuladas para agir preventivamente.</td><td><code>#/hoje</code> (Frame #5:2)</td><td>Smoke §6 (disparo em 2 faltas consecutivas).</td></tr>
-      <tr><td><strong>US-4</strong></td><td>Como coordenação, quero painel agregado sem expor nenhuma criança.</td><td><code>#/painel</code> &rarr; <code>#/sintese</code> (Frame #9:2)</td><td>Smoke §7 (supressão automática de médias quando n &lt; 5).</td></tr>
-      <tr><td><strong>US-5</strong></td><td>Como coordenação, quero bloqueio por padrão de campos sem consentimento.</td><td><code>#/consentimentos</code> (Frame #8:71)</td><td>Smoke §8 (ativação e revogação em tempo real).</td></tr>
-      <tr><td><strong>US-6</strong></td><td>Como psicóloga, quero falar 40s sobre o dia para gerar o relatório do conselho.</td><td><code>#/voz</code> &rarr; <code>#/relato</code> (Frame #25:505)</td><td>Smoke §24 e §26 (relato por procedimento sem nomes).</td></tr>
-    </table>
-
-    <h2>3. Jornada AS-IS vs. TO-BE (Ganho de Tempo e Redução de Atrito)</h2>
-    <table>
-      <tr><th>Atividade</th><th>Processo Atual (AS-IS)</th><th>Com o Percurso (TO-BE)</th><th>Redução de Atrito</th></tr>
-      <tr><td>Presença</td><td>Lista de papel + digitação manual em planilha</td><td>1 toque por criança no PWA mobile</td><td>15 min &rarr; 40 segundos</td></tr>
-      <tr><td>Observação</td><td>Memória do educador / relatos soltos no corredor</td><td>Rubrica padronizada de 6 dimensões</td><td>Estruturação de 100% dos casos</td></tr>
-      <tr><td>Relato de Vivência</td><td>Horas preenchendo relatórios à noite</td><td>Áudio de ~40s com transcrição e descarte</td><td>Eliminação da escrita manual noturna</td></tr>
-      <tr><td>Prestação de Contas</td><td>Dias redigindo relatórios qualitativos subjetivos</td><td>Síntese de ciclo com agregação em 1 clique</td><td>12 horas &rarr; 5 minutos</td></tr>
-    </table>
-
-    <h2>4. Ata da Validação Presencial com Usuária Real (29/08/2026)</h2>
-    <p>A sessão com a psicóloga Carolina Duarte e o líder Wellington durante as vivências de sábado comprovou a fluidez da proposta: o teste de transformar os check-ins da vivência em um rascunho de relatório sem expor nomes de crianças gerou aprovação imediata (<em>"Amei isso!"</em> - Gravação 82, 57:20). O teste em campo resultou na criação da persona da psicóloga, na adoção das 6 dimensões reais da planilha e na automação da régua de 75%.</p>
-
-    <h2>5. Auditoria Ética (Bloco 6)</h2>
-    <p><strong>Privacidade:</strong> Dados 100% sintéticos (códigos C001..C106). Áudio descartado da memória após a transcrição local.<br>
-    <strong>Governança:</strong> Bloqueio mandatório de campos sem consentimento formal assinado pelo responsável (LGPD Art. 14).<br>
-    <strong>Sobrevivência:</strong> Custo zero pós-Semana 10. Roda em Node.js com SQLite local, sem dependência de TI ou servidores pagos.</p>
   </div>
 </body>
 </html>

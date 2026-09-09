@@ -2282,6 +2282,13 @@ def gerar_dossie():
               Em vez de telas burocráticas de parametrização, a tela <code>#/painel</code> concentra a régua de 75% e a exportação direta para a planilha Excel histórica que o Instituto já utiliza.
             </p>
           </div>
+
+          <div style="background: var(--card-alt); border: 1.5px solid var(--line); border-radius: 12px; padding: 18px;">
+            <div style="font-weight: 800; color: var(--accent-amber); font-size: 15px; margin-bottom: 8px;">4. Diretoria: Impacto, SROI & Prevenção da Violência</div>
+            <p style="font-size: 13.5px; color: var(--ink-muted); line-height: 1.55; margin: 0;">
+              Em vez de dias redigindo relatórios qualitativos com risco de auditoria, a Diretoria gera o relatório consolidado em 1 clique em <code>#/relatorio</code> e simula o SROI em <code>#/impacto</code> com proxies do Insper (R$ 45k/jovem em violência) em 3 cenários auditáveis.
+            </p>
+          </div>
         </div>
 
         <div style="margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--ink-muted);">
@@ -2446,9 +2453,10 @@ def gerar_dossie():
           <div class="canvas-block-title">2. Segmentos de Clientes</div>
           <div class="canvas-block-body">
             <ul>
-              <li><strong>Usuários Internos:</strong> Psicóloga voluntária e Pedagoga do reforço.</li>
-              <li><strong>Gestão Interna:</strong> Coordenação pedagógica e Líder comunitário.</li>
-              <li><strong>Clientes Finais de Impacto:</strong> Financiadores institucionais e doadores corporativos.</li>
+              <li><strong>Usuários Internos:</strong> Psicóloga voluntária (Carolina Duarte) e Pedagoga do reforço (Maria Silvia).</li>
+              <li><strong>Gestão Interna:</strong> Coordenação pedagógica (Rita Amaral) e Líder comunitário (Wellington).</li>
+              <li><strong>Diretoria Executiva (Solange Ribeiro):</strong> Prestação de contas ao conselho fiscal, captação via Lei Rouanet/ESG e simulação de SROI com dados auditáveis.</li>
+              <li><strong>Clientes Finais de Impacto:</strong> Financiadores corporativos e doadores institucionais.</li>
             </ul>
           </div>
         </div>
@@ -2518,6 +2526,137 @@ def gerar_dossie():
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- SEÇÃO 3 DO DOSSIÊ DE NEGÓCIOS: SROI & PREVENÇÃO DA VIOLÊNCIA -->
+      <h3 style="font-size: 20px; font-weight: 700; margin: 36px 0 16px; color: var(--accent-amber);">3. Demonstração de Impacto Social (SROI) com Foco na Redução da Violência Urbana</h3>
+      
+      <div style="background: var(--accent-amber-bg); border: 1.5px solid var(--accent-amber); border-radius: 14px; padding: 24px; margin-bottom: 24px;">
+        <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #8A6414; margin-bottom: 6px;">Eixo Central da Narrativa do Instituto Ebenézer</div>
+        <h4 style="font-size: 18px; font-weight: 800; color: var(--ink); margin: 0 0 12px;">Por que a Prevenção da Violência e Evasão Escolar é o Apelo Decisivo de Captação?</h4>
+        <p style="font-size: 14.5px; line-height: 1.65; color: var(--ink); margin: 0 0 14px;">
+          O Instituto Ebenézer atua em um território conflagrado da Zona Sul e Leste de São Paulo (Jardim Keralux / Jardim Ângela). A liderança e a diretoria registraram expressamente que <strong>a criminalidade e a violência urbana representam o maior custo social local e o principal catalisador para sensibilização e captação de recursos junto a doadores corporativos e mantenedores</strong>.
+        </p>
+        <p style="font-size: 14.5px; line-height: 1.65; color: var(--ink); margin: 0 0 14px;">
+          Para que a <strong>Diretoria (Solange Ribeiro)</strong> possa demonstrar esse impacto sem criar expectativas falsas ou incorrer em alegações causais imprudentes que seriam barradas por auditorias, o Percurso integra a metodologia SROI (<em>Social Return on Investment</em>) com referências econômicas brasileiras consagradas:
+        </p>
+
+        <div class="table-responsive" style="margin: 16px 0;">
+          <table class="data-table" style="font-size: 14px; background: white;">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Proxy Econômica / Social</th>
+                <th style="width: 20%;">Valor de Referência</th>
+                <th style="width: 25%;">Fonte Publicada</th>
+                <th style="width: 30%;">Aplicação no Percurso & Regra Ética</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background: #FFFDF8;">
+                <td><strong style="color: var(--accent-red);">Violência dentro do custo da evasão</strong></td>
+                <td><strong>R$ 45.000 / jovem</strong><br><small>ao longo da vida</small></td>
+                <td>Insper + Fundação Roberto Marinho (2020)</td>
+                <td><strong>Eixo Central da Narrativa:</strong> Parcela do custo social de segurança pública evitada pela retenção escolar.</td>
+              </tr>
+              <tr>
+                <td><strong>Não conclusão da educação básica (Envelope Total)</strong></td>
+                <td><strong>R$ 372.000 / jovem</strong><br><small>ao longo da vida</small></td>
+                <td>Insper + Fundação Roberto Marinho (2020)</td>
+                <td>Envelope abrangente (renda + saúde + violência). <strong>O motor bloqueia deterministicamente a soma (dupla contagem = erro 422).</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Remuneração e produtividade futura</strong></td>
+                <td><strong>R$ 159.000 / jovem</strong><br><small>ciclo produtivo até 69 anos</small></td>
+                <td>Insper + Fundação Roberto Marinho (2020)</td>
+                <td>Componente econômico da evasão; associado ao mercado de trabalho formal.</td>
+              </tr>
+              <tr>
+                <td><strong>Qualidade de vida e anos saudáveis</strong></td>
+                <td><strong>R$ 114.000 / jovem</strong><br><small>ao longo da vida</small></td>
+                <td>Insper + Fundação Roberto Marinho (2020)</td>
+                <td>Monetiza 4,4 anos de vida saudável (referência da Organização Mundial da Saúde).</td>
+              </tr>
+              <tr>
+                <td><strong>Custo de homicídios associados ao proibicionismo</strong></td>
+                <td><strong>R$ 50 bilhões / ano</strong><br><small>0,77% do PIB do Brasil</small></td>
+                <td>IPEA · Atlas da Violência (2023)</td>
+                <td>Benchmark macroeconômico nacional de perda associada à violência.</td>
+              </tr>
+              <tr>
+                <td><strong>Política brasileira de redução de homicídios</strong></td>
+                <td><strong>R$ 2,36 por R$ 1 investido</strong><br><small>relação benefício-custo</small></td>
+                <td>FGV/RBE · Estado Presente (Controle Sintético)</td>
+                <td>Benchmark de sensibilidade para programas de prevenção territorial da criminalidade.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="background: #24221F; color: #F4EFE6; padding: 16px 20px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6; margin: 16px 0;">
+          benefício_t = N × efeito_incremental × proxy_R$ × (1 − deadweight) × (1 − atribuição) × (1 − deslocamento) × (1 − drop-off)^(t−1) ÷ (1 + desconto)^t<br><br>
+          SROI = Σ benefícios_presentes ÷ investimento_total_do_horizonte
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 14px;">
+          <div style="background: white; border: 1px solid var(--line); border-radius: 10px; padding: 14px;">
+            <strong style="color: var(--accent-red); font-size: 14px;">Cenário Conservador</strong>
+            <p style="font-size: 13px; color: var(--ink-muted); margin: 6px 0 0;">
+              Efeito incremental: 5% · Deadweight: 50% · Atribuição: 50% · Desconto: 10% a.a.<br>
+              <em>Postura prudencial para editais públicos e auditorias rigorosas.</em>
+            </p>
+          </div>
+          <div style="background: white; border: 1.5px solid var(--accent-amber); border-radius: 10px; padding: 14px;">
+            <strong style="color: var(--accent-amber); font-size: 14px;">Cenário Base (Referência)</strong>
+            <p style="font-size: 13px; color: var(--ink-muted); margin: 6px 0 0;">
+              Efeito incremental: 10% · Deadweight: 40% · Atribuição: 40% · Desconto: 8% a.a.<br>
+              <em>Alinhado com a média das intervenções comunitárias brasileiras.</em>
+            </p>
+          </div>
+          <div style="background: white; border: 1px solid var(--line); border-radius: 10px; padding: 14px;">
+            <strong style="color: var(--accent-green); font-size: 14px;">Cenário Superior</strong>
+            <p style="font-size: 13px; color: var(--ink-muted); margin: 6px 0 0;">
+              Efeito incremental: 15% · Deadweight: 30% · Atribuição: 30% · Desconto: 6% a.a.<br>
+              <em>Condições ótimas de retenção escolar e engajamento familiar prolongado.</em>
+            </p>
+          </div>
+        </div>
+
+        <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(138,100,20,0.2); font-size: 13.5px; color: #5A4008; line-height: 1.6;">
+          <strong>Blindagem Ética & Decisão Técnica 16:</strong> 
+          A monetização é do <em>programa</em>, nunca um score individual atribuído à criança. 
+          Todos os relatórios gerados pela Diretoria exibem a ressalva mandatória: 
+          <em>"Associação compatível, não causalidade comprovada. Fatores externos de comunidade não foram isolados."</em> 
+          Além disso, o perfil da Diretoria é bloqueado deterministicamente (HTTP 403) de abrir fichas individuais ou visualizar nomes de crianças, resguardando integralmente o sigilo exigido pelo ECA e pela LGPD Art. 14.
+        </div>
+      </div>
+
+      <!-- CARDS VISUAIS DAS TELAS DA DIRETORIA NO FIGMA -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin: 20px 0 32px;">
+        <div style="background: white; border: 1.5px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+          <div style="background: #F4EFE6; padding: 10px 14px; font-weight: 700; font-size: 13.5px; color: var(--accent-amber); display: flex; justify-content: space-between;">
+            <span>Tela Canônica 26 · SROI e Impacto</span>
+            <code>#/impacto</code>
+          </div>
+          <div style="padding: 12px; background: #FAF7F2; text-align: center;">
+            <img src="figma_images/canonico_26_diretoria_sroi.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/canonico_26_diretoria_sroi.png';" alt="Tela Canônica SROI" style="max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);" loading="lazy">
+          </div>
+          <div style="padding: 12px 16px; font-size: 13px; color: var(--ink-muted); line-height: 1.5;">
+            Simulador determinístico com as 3 opções de proxy (Violência R$ 45k, Envelope R$ 372k e Componentes) e cálculo dos 3 cenários em tempo real.
+          </div>
+        </div>
+
+        <div style="background: white; border: 1.5px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+          <div style="background: #F4EFE6; padding: 10px 14px; font-weight: 700; font-size: 13.5px; color: var(--accent-amber); display: flex; justify-content: space-between;">
+            <span>Tela Protótipo v3 · Relatório do Ciclo</span>
+            <code>#/relatorio</code>
+          </div>
+          <div style="padding: 12px; background: #FAF7F2; text-align: center;">
+            <img src="figma_images/v3_05_relatorio_diretoria.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/v3_05_relatorio_diretoria.png';" alt="Tela Relatório Diretoria" style="max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);" loading="lazy">
+          </div>
+          <div style="padding: 12px 16px; font-size: 13px; color: var(--ink-muted); line-height: 1.5;">
+            Relatório executivo de 7 blocos em formato de impressão/PDF para conselho fiscal e patrocinadores institucionais com supressão de células pequenas.
+          </div>
+        </div>
       </div>
 
       <h3 style="font-size: 20px; font-weight: 700; margin: 32px 0 16px;">3. Escopo do MVP: O que entra vs. O que não entra</h3>
