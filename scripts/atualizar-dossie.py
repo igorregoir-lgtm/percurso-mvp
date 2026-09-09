@@ -1029,19 +1029,19 @@ def gerar_dossie():
       <div style="display: flex; flex-direction: column; gap: 14px;">
         <div class="artifact-image-wrap" style="padding: 10px; background: white;">
           <div style="font-size: 12px; font-weight: 700; color: #2E6B47; text-align: left; margin-bottom: 6px;">Faixa 2 · Psicóloga (Carolina Duarte) — 7.272 pt de largura</div>
-          <img src="figma_images/canonico_faixa2_psicologa.png" alt="Faixa 2 Psicóloga">
+          <img src="figma_images/canonico_faixa2_psicologa.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/canonico_faixa2_psicologa.png';" alt="Faixa 2 Psicóloga" loading="lazy">
         </div>
         <div class="artifact-image-wrap" style="padding: 10px; background: white;">
           <div style="font-size: 12px; font-weight: 700; color: #B23528; text-align: left; margin-bottom: 6px;">Faixa 1 · Educadora (Maria Silvia) — 8.196 pt de largura</div>
-          <img src="figma_images/canonico_faixa1_educadora.png" alt="Faixa 1 Educadora">
+          <img src="figma_images/canonico_faixa1_educadora.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/canonico_faixa1_educadora.png';" alt="Faixa 1 Educadora" loading="lazy">
         </div>
         <div class="artifact-image-wrap" style="padding: 10px; background: white;">
           <div style="font-size: 12px; font-weight: 700; color: #23527C; text-align: left; margin-bottom: 6px;">Faixa 3 · Coordenação (Rita Amaral) — 5.424 pt de largura</div>
-          <img src="figma_images/canonico_faixa3_coordenacao.png" alt="Faixa 3 Coordenação">
+          <img src="figma_images/canonico_faixa3_coordenacao.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/canonico_faixa3_coordenacao.png';" alt="Faixa 3 Coordenação" loading="lazy">
         </div>
         <div class="artifact-image-wrap" style="padding: 10px; background: white;">
           <div style="font-size: 12px; font-weight: 700; color: #8A6414; text-align: left; margin-bottom: 6px;">Faixa 4 · Diretoria (Solange Ribeiro) — 2.652 pt de largura</div>
-          <img src="figma_images/canonico_faixa4_diretoria.png" alt="Faixa 4 Diretoria">
+          <img src="figma_images/canonico_faixa4_diretoria.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/canonico_faixa4_diretoria.png';" alt="Faixa 4 Diretoria" loading="lazy">
         </div>
       </div>
     </section>
@@ -1080,7 +1080,7 @@ def gerar_dossie():
 
       <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; align-items: start; margin: 28px 0;">
         <div class="artifact-image-wrap">
-          <img src="figma_images/aurora_painel_aberto.png" alt="Aurora Painel Aberto Figma">
+          <img src="figma_images/aurora_painel_aberto.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/aurora_painel_aberto.png';" alt="Aurora Painel Aberto Figma" loading="lazy">
           <div style="padding: 10px; font-size: 12px; color: var(--ink-muted); background: white;">
             Frame #23:2 no Figma: <em>"Aurora — o painel aberto · a porta para o que saiu do menu"</em>
           </div>
@@ -1213,7 +1213,7 @@ def gerar_dossie():
           <div class="screens-grid">
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/discovery_01_organizacao.png" alt="Conheça a Organização">
+                <img src="figma_images/discovery_01_organizacao.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/discovery_01_organizacao.png';" alt="Conheça a Organização" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Seção 01</div>
@@ -1224,7 +1224,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/discovery_03_stakeholders.png" alt="Mapa de Stakeholders">
+                <img src="figma_images/discovery_03_stakeholders.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/discovery_03_stakeholders.png';" alt="Mapa de Stakeholders" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Seção 03</div>
@@ -1235,7 +1235,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/discovery_05_processo_asis.png" alt="Processo AS-IS">
+                <img src="figma_images/discovery_05_processo_asis.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/discovery_05_processo_asis.png';" alt="Processo AS-IS" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Seção 05</div>
@@ -1246,7 +1246,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/discovery_09_priorizacao.png" alt="Matriz de Priorização">
+                <img src="figma_images/discovery_09_priorizacao.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/discovery_09_priorizacao.png';" alt="Matriz de Priorização" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Seção 09</div>
@@ -1289,10 +1289,10 @@ def gerar_dossie():
 
           <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; align-items: start;">
             <div class="artifact-image-wrap">
-              <img src="figma_images/persona_maria_silvia.png" alt="Persona Maria Silvia">
+              <img src="figma_images/persona_maria_silvia.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/persona_maria_silvia.png';" alt="Persona Maria Silvia" loading="lazy">
             </div>
             <div class="artifact-image-wrap">
-              <img src="figma_images/personas_board_overview.png" alt="Visão Geral do Board de Personas">
+              <img src="figma_images/personas_board_overview.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/personas_board_overview.png';" alt="Visão Geral do Board de Personas" loading="lazy">
             </div>
           </div>
 
@@ -1336,7 +1336,7 @@ def gerar_dossie():
           </div>
 
           <div class="artifact-image-wrap" style="max-height: 520px; overflow-y: auto;">
-            <img src="figma_images/storyboard_maria.png" alt="Storyboard A Tarde da Maria">
+            <img src="figma_images/storyboard_maria.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/storyboard_maria.png';" alt="Storyboard A Tarde da Maria" loading="lazy">
           </div>
         </div>
         <div class="artifact-footer">
@@ -1375,7 +1375,7 @@ def gerar_dossie():
           </div>
 
           <div class="artifact-image-wrap">
-            <img src="figma_images/jornada_usuario_figjam.png" alt="Jornada de Usuário FigJam Grupo 06">
+            <img src="figma_images/jornada_usuario_figjam.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/jornada_usuario_figjam.png';" alt="Jornada de Usuário FigJam Grupo 06" loading="lazy">
           </div>
         </div>
         <div class="artifact-footer">
@@ -1411,7 +1411,7 @@ def gerar_dossie():
           </div>
 
           <div class="artifact-image-wrap">
-            <img src="figma_images/task_flow_percurso.png" alt="Task Flow do Percurso Grupo 06">
+            <img src="figma_images/task_flow_percurso.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/task_flow_percurso.png';" alt="Task Flow do Percurso Grupo 06" loading="lazy">
           </div>
         </div>
         <div class="artifact-footer">
@@ -1447,7 +1447,7 @@ def gerar_dossie():
           <div class="screens-grid">
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/exercicio_mcp_tela1.png" alt="Tela 1 Início">
+                <img src="figma_images/exercicio_mcp_tela1.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/exercicio_mcp_tela1.png';" alt="Tela 1 Início" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #1:2</div>
@@ -1458,7 +1458,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/exercicio_mcp_tela2.png" alt="Tela 2 Detalhe">
+                <img src="figma_images/exercicio_mcp_tela2.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/exercicio_mcp_tela2.png';" alt="Tela 2 Detalhe" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #1:11</div>
@@ -1469,7 +1469,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/exercicio_mcp_overlay.png" alt="Overlay Aviso">
+                <img src="figma_images/exercicio_mcp_overlay.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/exercicio_mcp_overlay.png';" alt="Overlay Aviso" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #2:12</div>
@@ -1513,7 +1513,7 @@ def gerar_dossie():
           <div class="screens-grid">
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/semana5_01_entrar.png" alt="Tela Entrar">
+                <img src="figma_images/semana5_01_entrar.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/semana5_01_entrar.png';" alt="Tela Entrar" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #2:2 · Ponto de Partida</div>
@@ -1524,7 +1524,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/semana5_02_hoje.png" alt="Tela Hoje">
+                <img src="figma_images/semana5_02_hoje.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/semana5_02_hoje.png';" alt="Tela Hoje" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #5:2 · US-3</div>
@@ -1535,7 +1535,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/semana5_03_chamada.png" alt="Tela Chamada">
+                <img src="figma_images/semana5_03_chamada.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/semana5_03_chamada.png';" alt="Tela Chamada" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #5:39 · F2</div>
@@ -1546,7 +1546,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/semana5_04_ciclo.png" alt="Tela Ciclo">
+                <img src="figma_images/semana5_04_ciclo.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/semana5_04_ciclo.png';" alt="Tela Ciclo" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #7:2 · US-1</div>
@@ -1557,7 +1557,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/semana5_05_observacao.png" alt="Tela Observação">
+                <img src="figma_images/semana5_05_observacao.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/semana5_05_observacao.png';" alt="Tela Observação" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #7:51 · US-1</div>
@@ -1568,7 +1568,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/semana5_06_turma.png" alt="Tela Turma">
+                <img src="figma_images/semana5_06_turma.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/semana5_06_turma.png';" alt="Tela Turma" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #8:2 · US-2</div>
@@ -1579,7 +1579,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/semana5_07_consentimentos.png" alt="Tela Consentimentos">
+                <img src="figma_images/semana5_07_consentimentos.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/semana5_07_consentimentos.png';" alt="Tela Consentimentos" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #8:71 · US-5</div>
@@ -1590,7 +1590,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/semana5_08_painel.png" alt="Tela Painel">
+                <img src="figma_images/semana5_08_painel.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/semana5_08_painel.png';" alt="Tela Painel" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #9:2 · US-4</div>
@@ -1601,7 +1601,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/semana5_09_sintese.png" alt="Tela Síntese">
+                <img src="figma_images/semana5_09_sintese.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/semana5_09_sintese.png';" alt="Tela Síntese" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #9:56 · US-4</div>
@@ -1651,7 +1651,7 @@ def gerar_dossie():
           <div class="screens-grid">
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/v3_01_psicologa_hoje.png" alt="Psicóloga Hoje">
+                <img src="figma_images/v3_01_psicologa_hoje.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/v3_01_psicologa_hoje.png';" alt="Psicóloga Hoje" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #3:2</div>
@@ -1662,7 +1662,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/v3_02_registrar_captura.png" alt="Registrar Captura">
+                <img src="figma_images/v3_02_registrar_captura.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/v3_02_registrar_captura.png';" alt="Registrar Captura" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #5:2</div>
@@ -1673,7 +1673,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/v3_03_sai_daqui_relato.png" alt="Sai Daqui Relato">
+                <img src="figma_images/v3_03_sai_daqui_relato.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/v3_03_sai_daqui_relato.png';" alt="Sai Daqui Relato" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #7:2</div>
@@ -1684,7 +1684,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/v3_04_painel_coordenacao.png" alt="Painel Coordenação">
+                <img src="figma_images/v3_04_painel_coordenacao.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/v3_04_painel_coordenacao.png';" alt="Painel Coordenação" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #10:2</div>
@@ -1695,7 +1695,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/v3_05_relatorio_diretoria.png" alt="Relatório Diretoria">
+                <img src="figma_images/v3_05_relatorio_diretoria.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/v3_05_relatorio_diretoria.png';" alt="Relatório Diretoria" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #10:53</div>
@@ -1706,7 +1706,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/v3_06_divulgar_whatsapp.png" alt="Divulgar WhatsApp">
+                <img src="figma_images/v3_06_divulgar_whatsapp.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/v3_06_divulgar_whatsapp.png';" alt="Divulgar WhatsApp" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #100:2 · Decisão 47</div>
@@ -1717,7 +1717,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/v3_07_divulgar_instagram.png" alt="Divulgar Instagram">
+                <img src="figma_images/v3_07_divulgar_instagram.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/v3_07_divulgar_instagram.png';" alt="Divulgar Instagram" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Frame #100:47 · Decisão 48</div>
@@ -1732,6 +1732,65 @@ def gerar_dossie():
           <a href="https://www.figma.com/proto/JMejpNsHkckqeSP8KE1PTh/Percurso-%E2%80%94-prot%C3%B3tipo-v3-%C2%B7-12-telas--4-pap%C3%A9is?node-id=12-2" target="_blank" class="figma-link-pill">
             Acessar no Figma ↗
           </a>
+        </div>
+      </div>
+
+      
+      <!-- DESTAQUE ARQUITETURAL: O ENXUGAMENTO RADICAL DE TELAS PÓS-VISITA (LEAN UX) -->
+      <div style="background: linear-gradient(135deg, #1A1A1A 0%, #2A2318 100%); color: #FBF8F3; border-radius: 16px; padding: 32px; margin: 36px 0; border: 2px solid #D4A017; box-shadow: 0 12px 36px rgba(0,0,0,0.15);">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <span style="font-size: 28px;">⚡</span>
+          <div>
+            <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #E8C15A;">Lição Central da Visita de Campo (29/08/2026)</div>
+            <h3 style="font-size: 22px; font-weight: 800; margin: 0; color: white;">O Enxugamento Radical de Telas: Da Teoria Acadêmica ao Lean UX Real</h3>
+          </div>
+        </div>
+        
+        <p style="font-size: 15px; line-height: 1.7; color: #E8E2D5; margin-bottom: 20px;">
+          Durante a fase inicial de exploração no Figma, desenhamos um mapa canônico exaustivo com <strong>27 telas e 153 conexões</strong>. 
+          O objetivo teórico era cobrir todas as bordas administrativas, múltiplos fluxos de coordenação e formulários individuais de avaliação socioemocional 
+          para cada criança (estimando cerca de 54 minutos por ciclo). 
+          <strong>Entretanto, a visita de campo de 29/08/2026 ao Instituto Ebenézer provocou um choque de realidade incontornável:</strong>
+        </p>
+
+        <div style="background: rgba(255,255,255,0.06); border-left: 4px solid #E8C15A; padding: 16px 20px; border-radius: 0 10px 10px 0; margin-bottom: 24px;">
+          <p style="font-size: 15px; font-style: italic; color: #FFF; margin: 0 0 6px;">
+            "Você depois tem que sair daqui, preencher relatório... Não dá, não dá! A gente não consegue meio que ter um registro pra conseguir mostrar pros investidores, mas parar aí pro notebook à noite não tem como."
+          </p>
+          <span style="font-size: 12.5px; color: #D4CABE;">— Falas literais da psicóloga e da liderança comunitária (Gravações 82, 83 e 84)</span>
+        </div>
+
+        <p style="font-size: 15px; line-height: 1.7; color: #E8E2D5; margin-bottom: 20px;">
+          Com apenas duas pessoas fixas e voluntários aos sábados, <strong>ninguém abriria 27 telas nem preencheria 20 formulários individuais</strong>. 
+          A arquitetura precisava ser cirurgicamente compactada. O número de telas operacionais necessárias para o ciclo diário foi <strong>drasticamente reduzido</strong>:
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px;">
+          <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 18px;">
+            <div style="font-weight: 700; color: #E8C15A; font-size: 15px; margin-bottom: 8px;">1. Educadora: De 9 Telas &rarr; 2 Toques no Celular</div>
+            <p style="font-size: 13.5px; color: #D4CABE; line-height: 1.55; margin: 0;">
+              Eliminamos formulários por criança. A chamada diária virou toque simples na tela <code>#/hoje</code> &rarr; <code>#/chamada</code> (apenas marcar quem faltou, concluído em 30 segundos).
+            </p>
+          </div>
+
+          <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 18px;">
+            <div style="font-weight: 700; color: #7BDCB5; font-size: 15px; margin-bottom: 8px;">2. Psicóloga: De Horas à Noite &rarr; 40s de Áudio</div>
+            <p style="font-size: 13.5px; color: #D4CABE; line-height: 1.55; margin: 0;">
+              Em vez de relatórios manuais morosos, a profissional aperta o microfone na tela <code>#/voz</code>, relata o encontro em 40s e o sistema gera o relato do CRP em <code>#/relato</code> com 1 clique para liberação.
+            </p>
+          </div>
+
+          <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 18px;">
+            <div style="font-weight: 700; color: #82C9FF; font-size: 15px; margin-bottom: 8px;">3. Coordenação: Painel Único & Planilha do Instituto</div>
+            <p style="font-size: 13.5px; color: #D4CABE; line-height: 1.55; margin: 0;">
+              Em vez de módulos burocráticos de configuração, a tela <code>#/painel</code> concentra a régua de 75% e a exportação direta para a planilha Excel histórica que a instituição já domina.
+            </p>
+          </div>
+        </div>
+
+        <div style="margin-top: 22px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.12); font-size: 13px; color: #D4CABE;">
+          <strong>Conclusão Epistemológica:</strong> As 27 telas do Figma permanecem como o <em>mapa holístico de governança, permissões e design system institucional</em>. 
+          Mas a entrega funcional do MVP implementa o <strong>fluxo essencial condensado em 3 a 4 telas mobile</strong>, provando que o melhor software social é aquele que <em>respeita a escassez de tempo de quem está na ponta</em>.
         </div>
       </div>
 
@@ -1761,7 +1820,7 @@ def gerar_dossie():
           <div class="screens-grid">
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/canonico_01_entrar.png" alt="Canônico 01 Entrar">
+                <img src="figma_images/canonico_01_entrar.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/canonico_01_entrar.png';" alt="Canônico 01 Entrar" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Canônico · Tela 01</div>
@@ -1772,7 +1831,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/canonico_05_educadora_observacao.png" alt="Canônico Observação">
+                <img src="figma_images/canonico_05_educadora_observacao.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/canonico_05_educadora_observacao.png';" alt="Canônico Observação" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Canônico · Tela 05</div>
@@ -1783,7 +1842,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/canonico_13_psicologa_voz.png" alt="Canônico Voz">
+                <img src="figma_images/canonico_13_psicologa_voz.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/canonico_13_psicologa_voz.png';" alt="Canônico Voz" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Canônico · Tela 13</div>
@@ -1794,7 +1853,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/canonico_16_psicologa_relato.png" alt="Canônico Relato">
+                <img src="figma_images/canonico_16_psicologa_relato.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/canonico_16_psicologa_relato.png';" alt="Canônico Relato" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Canônico · Tela 16</div>
@@ -1805,7 +1864,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/canonico_23_coordenacao_consentimentos.png" alt="Canônico Consentimentos">
+                <img src="figma_images/canonico_23_coordenacao_consentimentos.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/canonico_23_coordenacao_consentimentos.png';" alt="Canônico Consentimentos" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Canônico · Tela 23</div>
@@ -1816,7 +1875,7 @@ def gerar_dossie():
 
             <div class="screen-card">
               <div class="screen-card-img">
-                <img src="figma_images/canonico_26_diretoria_sroi.png" alt="Canônico SROI">
+                <img src="figma_images/canonico_26_diretoria_sroi.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/canonico_26_diretoria_sroi.png';" alt="Canônico SROI" loading="lazy">
               </div>
               <div class="screen-card-info">
                 <div class="screen-card-tag">Canônico · Tela 26</div>
@@ -2340,6 +2399,185 @@ def gerar_dossie():
         <div style="font-size: 13px; color: var(--ink-muted); margin-top: 8px;">
           Instância de produção ativa: <code>https://percurso-ebenezer.vercel.app</code>
         </div>
+      </div>
+    </section>
+
+    
+    <!-- SECTION: PONTOS EM ABERTO E DECISÕES TECNOLÓGICAS ESTRUTURAIS -->
+    <section class="section-block" id="decisoes-tecnologicas" style="border-left: 6px solid #23527C;">
+      <div class="section-header">
+        <div class="section-eyebrow" style="color: #23527C;">Próximos Passos & Arquitetura de Produção</div>
+        <h2 class="section-title">Principais Pontos em Aberto e Decisões Tecnológicas Estruturais</h2>
+        <p class="section-desc">
+          Trade-offs arquiteturais entre modelos locais (SLM) vs nuvem gerenciada, infraestrutura física vs PaaS externo, 
+          escalabilidade de banco de dados e sustentabilidade sem equipe de TI no Instituto Ebenézer.
+        </p>
+      </div>
+
+      <div class="prose">
+        <p>
+          O MVP funcional entregue na Semana 5 comprova a viabilidade do produto com 167 testes unitários e 381 testes de fumaça. 
+          Contudo, a evolução para implantação sustentável e contínua no Instituto Social Ebenézer exige o endereçamento formal 
+          de cinco decisões tecnológicas de longo prazo:
+        </p>
+      </div>
+
+      <!-- DECISÃO 1: SLM LOCAL VS CLOUD LLM -->
+      <div style="background: white; border: 1px solid var(--line); border-radius: 14px; padding: 24px; margin: 24px 0;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+          <h3 style="font-size: 18px; font-weight: 800; color: var(--ink); margin: 0;">
+            1. Modelo de IA: SLM Local (Small Language Model On-Premise) vs. Cloud LLM Gerenciado
+          </h3>
+          <span class="badge-tag badge-tobe" style="background: #E6EEF5; color: #23527C; border-color: #A3C1DA;">Decisão Aberta · Arquitetura Híbrida</span>
+        </div>
+
+        <p style="font-size: 14.5px; line-height: 1.65; color: var(--ink);">
+          A síntese textual dos relatos do conselho e a anonimização de termos livres exigem inferência de linguagem natural. Duas alternativas foram avaliadas:
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 16px 0;">
+          <div style="background: var(--card-alt); border-radius: 10px; padding: 16px; border: 1px solid var(--line);">
+            <div style="font-weight: 700; color: #2E6B47; margin-bottom: 8px;">Opção A: SLM Local (Ollama / Llama-3.2-3B / Phi-3.5)</div>
+            <ul style="font-size: 13.5px; color: var(--ink); padding-left: 18px; line-height: 1.6; margin: 0;">
+              <li><strong>Vantagens:</strong> Soberania absoluta dos dados (o texto não sai da máquina local); custo zero de tokens de API; conformidade direta com LGPD para dados ultrassensíveis; opera 100% offline se a internet da favela cair.</li>
+              <li><strong>Desvantagens:</strong> Exige hardware potente no local (Mac Mini com Apple Silicon ou PC com GPU &ge; 8GB VRAM); custo de aquisição inicial elevado para a ONG; risco de obsolescência e manutenção física; inferência lenta em máquinas legadas doadas.</li>
+            </ul>
+          </div>
+
+          <div style="background: var(--card-alt); border-radius: 10px; padding: 16px; border: 1px solid var(--line);">
+            <div style="font-weight: 700; color: #23527C; margin-bottom: 8px;">Opção B: Cloud LLM Gerenciado (Claude 3.5 Haiku / GPT-4o-mini)</div>
+            <ul style="font-size: 13.5px; color: var(--ink); padding-left: 18px; line-height: 1.6; margin: 0;">
+              <li><strong>Vantagens:</strong> Zero investimento em hardware; velocidade de resposta em &lt; 1 segundo; qualidade de redação e síntese substancialmente superior; manutenção e atualização de modelos 100% automáticas pela nuvem.</li>
+              <li><strong>Desvantagens:</strong> Dependência de conexão de internet; custo por token (embora residual, ~R$ 5 a 10/mês para o volume do Instituto); exige camada rigorosa de desidentificação/pseudonimização prévia no cliente antes do tráfego.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div style="background: var(--accent-green-bg); border-left: 4px solid var(--accent-green); padding: 14px 16px; border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--accent-green);">
+          <strong>Recomendação Técnica:</strong> O MVP implementou um <em>adaptador desacoplado (IA_ADAPTER)</em>. O núcleo de cálculo e relatórios opera de forma 100% determinística via código puro (Node.js/JavaScript), garantindo funcionamento sem qualquer IA. Quando a IA é ligada para aprimoramento de texto, a barreira de pseudonimização no cliente substitui nomes por códigos C001, C002 antes de qualquer requisição, permitindo o uso de APIs leves em nuvem com conformidade legal total.
+        </div>
+      </div>
+
+      <!-- DECISÃO 2: HOSPEDAGEM LOCAL VS NUVEM GERENCIADA (VERCEL / RENDER) -->
+      <div style="background: white; border: 1px solid var(--line); border-radius: 14px; padding: 24px; margin: 24px 0;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+          <h3 style="font-size: 18px; font-weight: 800; color: var(--ink); margin: 0;">
+            2. Hospedagem da Solução: Servidor Físico no Instituto vs. Plataforma em Nuvem (Vercel / Render)
+          </h3>
+          <span class="badge-tag badge-tobe" style="background: #E7F0EB; color: #2E6B47; border-color: #B5D5C2;">Recomendação Fechada · PaaS Nuvem</span>
+        </div>
+
+        <p style="font-size: 14.5px; line-height: 1.65; color: var(--ink);">
+          Um dos maiores riscos para a sustentabilidade de projetos de TI no terceiro setor é a <em>dependência de infraestrutura física local</em>. 
+          A visita de campo revelou que o Instituto Ebenézer opera em uma garagem adaptada no Jardim Ângela, <strong>sem técnico de TI residente, sem sala climatizada e com rede elétrica sujeita a oscilações e quedas frequentes</strong>.
+        </p>
+
+        <div class="table-responsive" style="margin: 16px 0;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Dimensão de Análise</th>
+                <th>Servidor Local Físico (Na sede do Instituto)</th>
+                <th>Hospedagem em Nuvem PaaS (Vercel / Render / Supabase)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Manutenção Operacional</strong></td>
+                <td><span class="badge-tag badge-asis">Altíssimo Risco</span><br>Qualquer pane no disco, poeira, vírus ou desligamento acidental trava a ONG até que um voluntário se desloque presencialmente.</td>
+                <td><span class="badge-tag badge-tobe">Manutenção Zero para a ONG</span><br>Servidores gerenciados 24/7 com reinício automático, monitoramento de saúde e suporte remoto transparente.</td>
+              </tr>
+              <tr>
+                <td><strong>Atualizações & Bugfixes</strong></td>
+                <td>Exige visita técnica presencial ou acesso remoto instável por AnyDesk/TeamViewer.</td>
+                <td>Deploy Contínuo (CI/CD via GitHub): qualquer correção de código sobe automaticamente em menos de 2 minutos.</td>
+              </tr>
+              <tr>
+                <td><strong>Disponibilidade & Uptime</strong></td>
+                <td>Vulnerável a quedas de energia no bairro e corte de conexão da operadora local.</td>
+                <td>99,99% de disponibilidade global com certificados HTTPS/SSL automatizados e CDN de borda.</td>
+              </tr>
+              <tr>
+                <td><strong>Backups de Segurança</strong></td>
+                <td>Geralmente negligenciados ou feitos em pendrives sujeitos a perda física ou corrupção.</td>
+                <td>Snapshots diários automatizados com redundância geográfica e retenção criptografada.</td>
+              </tr>
+              <tr>
+                <td><strong>Conformidade LGPD</strong></td>
+                <td>Falsa sensação de segurança: servidores físicos em mesas compartilhadas têm vulnerabilidade a acesso não autorizado.</td>
+                <td>Totalmente segura quando combinada com o <em>Privacy by Design</em> do Percurso (dados criptografados em repouso e sem PII nominal).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="background: var(--accent-blue-bg); border-left: 4px solid var(--accent-blue); padding: 14px 16px; border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--accent-blue);">
+          <strong>Decisão Estrutural Recomendada:</strong> Hospedar a aplicação em <strong>plataforma de nuvem gerenciada (Vercel ou Render)</strong>. 
+          Essa escolha elimina 100% da carga de manutenção técnica para a liderança da ONG (Maria Silvia e Wellington), 
+          permite que as educadoras acessem o sistema de seus próprios celulares via Web/PWA em qualquer lugar (inclusive em visitas domiciliares de busca ativa) 
+          e viabiliza suporte remoto contínuo pela equipe de engenharia do Inteli e futuros mantenedores.
+        </div>
+      </div>
+
+      <!-- DECISÃO 3: PERSISTÊNCIA E ESCALABILIDADE DO BANCO DE DADOS -->
+      <div style="background: white; border: 1px solid var(--line); border-radius: 14px; padding: 24px; margin: 24px 0;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+          <h3 style="font-size: 18px; font-weight: 800; color: var(--ink); margin: 0;">
+            3. Persistência de Dados: SQLite Embutido vs. PostgreSQL Gerenciado (Supabase / Render Postgres)
+          </h3>
+          <span class="badge-tag badge-tobe" style="background: #F8F1DE; color: #8A6414; border-color: #E2CD9C;">Evolução Pós-Semana 5</span>
+        </div>
+
+        <p style="font-size: 14.5px; line-height: 1.65; color: var(--ink);">
+          O MVP atual opera sobre SQLite nativo em arquivo único (<code>percurso.db</code>), o que garantiu portabilidade extrema e zero dependências para a Semana 5. 
+          Contudo, aos sábados pela manhã, quando duas ou mais profissionais (psicóloga da Vivência e educadora de reforço) realizam o fechamento de presença e check-in concorrentes, 
+          o SQLite pode apresentar limitações de concorrência de escrita (bloqueio <code>SQLITE_BUSY</code>).
+        </p>
+
+        <p style="font-size: 14px; line-height: 1.6; color: var(--ink-muted);">
+          <strong>Plano de Evolução:</strong> Manter o SQLite para ambientes locais de teste/desenvolvimento e configurar migração suave para 
+          <strong>PostgreSQL Serverless (Supabase ou Neon)</strong> no ambiente de produção hospedado, aproveitando o plano gratuito perene voltado a projetos sociais. 
+          A camada de acesso a dados em <code>src/db.js</code> foi projetada com queries SQL ANSI puras, minimizando o atrito de transição.
+        </p>
+      </div>
+
+      <!-- DECISÃO 4: TRANSCRIÇÃO DE ÁUDIO ASSÍNCRONA E WHISPER -->
+      <div style="background: white; border: 1px solid var(--line); border-radius: 14px; padding: 24px; margin: 24px 0;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+          <h3 style="font-size: 18px; font-weight: 800; color: var(--ink); margin: 0;">
+            4. Transcrição de Voz: Web Speech API vs. Whisper Local / API com Filtro de PII
+          </h3>
+          <span class="badge-tag badge-tobe" style="background: #F0EAF2; color: #5A3D68; border-color: #D3C2D8;">Evolução Funcional</span>
+        </div>
+
+        <p style="font-size: 14.5px; line-height: 1.65; color: var(--ink);">
+          A captura por voz no MVP utiliza a <code>SpeechRecognition</code> nativa do navegador (Web Speech API). 
+          Embora seja rápida e sem custo, ela requer que a psicóloga fale com o navegador aberto em tempo real. 
+          Na visita de campo, a psicóloga expressou o desejo de poder gravar o encontro ou enviar um áudio que ela já registrou no WhatsApp enquanto estava na sala.
+        </p>
+
+        <p style="font-size: 14px; line-height: 1.6; color: var(--ink-muted);">
+          <strong>Plano de Evolução:</strong> Implementar a rota assíncrona de ingestão de arquivo de áudio (<code>POST /api/voz/arquivo</code>), 
+          utilizando o modelo <em>Whisper-tiny</em> ou <em>Whisper API</em> protegido por um desidentificador léxico que suprime nomes próprios antes de qualquer processamento duradouro.
+        </p>
+      </div>
+
+      <!-- DECISÃO 5: AUTENTICAÇÃO E RBAC PARA PRODUÇÃO REAL -->
+      <div style="background: white; border: 1px solid var(--line); border-radius: 14px; padding: 24px; margin: 24px 0;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+          <h3 style="font-size: 18px; font-weight: 800; color: var(--ink); margin: 0;">
+            5. Gestão de Identidade & Acesso: Transição do Seletor Rápido para RBAC Seguro
+          </h3>
+          <span class="badge-tag badge-tobe" style="background: #F7EAE7; color: #B23528; border-color: #F1CAC4;">Segurança & Governança</span>
+        </div>
+
+        <p style="font-size: 14.5px; line-height: 1.65; color: var(--ink);">
+          Para efeitos de demonstração acadêmica e testes da banca avaliadora na Semana 5, o sistema implementou a tela <code>#/entrar</code> 
+          com seleção rápida em um clique entre as 4 personas (Carolina, Maria Silvia, Rita e Solange). 
+          Para a transição em produção real com dados autênticos da instituição, essa tela será substituída por 
+          <strong>Autenticação sem Senha (Magic Link por E-mail ou Passkeys/Biometria do Smartphone)</strong> e controle de acesso estrito baseado em papéis (RBAC), 
+          garantindo que cada profissional acesse estritamente suas turmas autorizadas.
+        </p>
       </div>
     </section>
 
