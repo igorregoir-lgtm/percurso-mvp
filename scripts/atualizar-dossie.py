@@ -762,53 +762,56 @@ def gerar_dossie():
 
     /* Connection Diagram Node Styles */
     .connection-matrix-box {
-      background: #1F1D1A;
-      color: #FBF8F3;
+      background: var(--card);
+      color: var(--ink);
+      border: 1.5px solid var(--line-dark);
       border-radius: var(--radius-md);
-      padding: 32px;
+      padding: 28px;
       margin: 28px 0;
-      box-shadow: var(--shadow-lg);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
     }
 
     .conn-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 16px;
-      margin-top: 24px;
+      margin-top: 20px;
     }
 
     .conn-col {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--card-alt);
+      border: 1px solid var(--line);
       border-radius: var(--radius-sm);
       padding: 16px;
     }
 
     .conn-col h5 {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: #E27367;
+      font-family: var(--font-sans);
+      font-size: 12.5px;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.05em;
       margin-bottom: 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      padding-bottom: 6px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 8px;
     }
 
     .conn-item {
-      font-size: 12px;
+      font-size: 12.5px;
       padding: 8px 10px;
-      background: rgba(0, 0, 0, 0.25);
+      background: #FFFFFF;
+      border: 1px solid var(--line);
       border-radius: 6px;
       margin-bottom: 8px;
-      border-left: 3px solid var(--accent-red);
+      color: var(--ink);
       font-family: var(--font-mono);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .conn-count {
-      float: right;
       font-size: 11px;
-      color: #A3E0BA;
       font-weight: 700;
     }
 
@@ -934,97 +937,132 @@ def gerar_dossie():
       </div>
     </div>
 
-    <!-- SECTION: TELA DE CONEXÕES (153 CONEXÕES FIGMA) -->
-    <section class="section-block" id="conexoes-figma" style="border: 2px solid var(--accent-red);">
+    <!-- SECTION: TELA DE CONEXÕES (12 TELAS ESSENCIAIS EM 4 PAPÉIS) -->
+    <section class="section-block" id="conexoes-figma" style="border: 2px solid var(--line-dark);">
       <div class="section-header">
-        <div class="section-eyebrow">Arquitetura de Navegação Completa</div>
-        <h2 class="section-title">Mapa das 153 Conexões Interativas do Protótipo Canônico</h2>
+        <div class="section-eyebrow" style="color: var(--accent-amber);">Arquitetura da Informação & UX</div>
+        <h2 class="section-title">Mapa das Conexões Interativas (12 Telas Essenciais · 4 Papéis)</h2>
         <p class="section-desc">
-          O protótipo no Figma (<code>h6AnLVYLfpeVl2N4ie0Qzv</code>) foi construído sob uma disciplina estrita de navegabilidade: 
-          <strong>153 conexões ativas no modo Prototype</strong>, interligando 27 telas organizadas em 4 faixas independentes, 
-          com <strong>zero telas órfãs e zero becos sem saída</strong>.
+          O protótipo no Figma (<code>JMejpNsHkckqeSP8KE1PTh</code> / <code>h6AnLVYLfpeVl2N4ie0Qzv</code>) foi consolidado com foco estrito na experiência do usuário (UX): 
+          <strong>12 telas essenciais organizadas em 4 faixas independentes</strong> com conexões interativas completas, 
+          assegurando <strong>zero telas órfãs, zero becos sem saída e máxima agilidade no celular</strong>.
         </p>
       </div>
 
       <div class="prose">
         <p>
-          Em avaliações de prototipagem para bancas acadêmicas, um dos defeitos mais frequentes são telas isoladas (que não podem ser alcançadas por cliques) 
-          ou telas sem botão de volta (becos sem saída). No <strong>Percurso</strong>, cada uma das 27 telas possui tanto rotas de entrada (via Tab Bar do papel, 
-          cards de ação ou deep links contextuais) quanto rotas de saída e retorno para a tela inicial <code>#/entrar</code>.
+          Em avaliações de prototipagem para bancas acadêmicas e validações de campo, telas órfãs (que não podem ser alcançadas por cliques) 
+          ou telas sem retorno (becos sem saída) degradam a experiência. No <strong>Percurso</strong>, cada uma das 12 telas essenciais possui 
+          rotas diretas de ida e volta articuladas pelos botões de ação e pela barra inferior de cada papel.
         </p>
       </div>
 
       <!-- Connection Visual Matrix -->
       <div class="connection-matrix-box">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 14px;">
           <div>
-            <h4 style="font-size: 18px; font-weight: 700; color: #FFFFFF;">Topologia da Malha de Navegação (153 Ligações Ativas)</h4>
-            <p style="font-size: 13px; color: #BDB4A5;">Ponto de partida unificado: <code>#/entrar</code> (Frame #24:2) com roteamento para os 4 papéis reais.</p>
+            <h4 style="font-size: 18px; font-weight: 800; color: var(--ink); margin: 0;">Topologia da Malha de Navegação (12 Telas Essenciais)</h4>
+            <p style="font-size: 13px; color: var(--ink-muted); margin: 4px 0 0;">Ponto de partida unificado: <code>#/entrar</code> com roteamento para os 4 papéis reais.</p>
           </div>
-          <span style="background: var(--accent-red); color: white; padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 700; font-family: var(--font-mono);">
-            153 / 153 Conexões Vivas
+          <span style="background: var(--accent-green-bg); color: var(--accent-green); border: 1px solid rgba(46,107,71,0.3); padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 700; font-family: var(--font-mono);">
+            12 Telas Validadas · Zero Telas Órfãs
           </span>
         </div>
 
         <div class="conn-grid">
           <!-- Coluna 1: Psicóloga (1º LUGAR) -->
-          <div class="conn-col" style="border-top: 3px solid #2E6B47;">
-            <h5 style="color: #79D19E;">Faixa 2 · Psicóloga (Carolina)</h5>
-            <div style="font-size: 11px; color: #BDB4A5; margin-bottom: 10px;">8 Telas · 44 Conexões Ativas</div>
-            <div class="conn-item">#/hoje-psicologa <span class="conn-count">6 rotas</span></div>
-            <div class="conn-item">#/chamada-vivencia <span class="conn-count">4 rotas</span></div>
-            <div class="conn-item">#/voz (Contar o dia) <span class="conn-count">5 rotas</span></div>
-            <div class="conn-item">#/confirmar (Transcrição) <span class="conn-count">6 rotas</span></div>
-            <div class="conn-item">#/folha-manual <span class="conn-count">4 rotas</span></div>
-            <div class="conn-item">#/relato (Padrão CRP) <span class="conn-count">7 rotas</span></div>
-            <div class="conn-item">#/recado-whatsapp <span class="conn-count">6 rotas</span></div>
-            <div class="conn-item">#/parecer/:id (Código) <span class="conn-count">6 rotas</span></div>
+          <div class="conn-col" style="border-top: 3px solid var(--accent-green);">
+            <h5 style="color: var(--accent-green);">Faixa 2 · Psicóloga (Carolina)</h5>
+            <div style="font-size: 11px; color: var(--ink-muted); margin-bottom: 10px; font-weight: 600;">3 Telas Diárias + 2 Devolutivas</div>
+            <div class="conn-item"><span>#/hoje (Vivência)</span> <span class="conn-count" style="color: var(--accent-green);">Entrada</span></div>
+            <div class="conn-item"><span>#/voz (40s Áudio)</span> <span class="conn-count" style="color: var(--accent-green);">Captura</span></div>
+            <div class="conn-item"><span>#/relato (CRP)</span> <span class="conn-count" style="color: var(--accent-green);">1 Clique</span></div>
+            <div class="conn-item"><span>#/recado (WhatsApp)</span> <span class="conn-count" style="color: var(--ink-subtle);">Devolutiva</span></div>
+            <div class="conn-item"><span>#/parecer (Parceiro)</span> <span class="conn-count" style="color: var(--ink-subtle);">Sigilo</span></div>
           </div>
 
           <!-- Coluna 2: Educadora -->
-          <div class="conn-col" style="border-top: 3px solid #B23528;">
-            <h5 style="color: #F38B80;">Faixa 1 · Educadora (Maria)</h5>
-            <div style="font-size: 11px; color: #BDB4A5; margin-bottom: 10px;">9 Telas · 48 Conexões Ativas</div>
-            <div class="conn-item">#/hoje (Alertas) <span class="conn-count">6 rotas</span></div>
-            <div class="conn-item">#/chamada (1 toque) <span class="conn-count">4 rotas</span></div>
-            <div class="conn-item">#/ciclo (Agenda) <span class="conn-count">6 rotas</span></div>
-            <div class="conn-item">#/observacao/:id <span class="conn-count">5 rotas</span></div>
-            <div class="conn-item">#/pauta (Segunda-feira) <span class="conn-count">4 rotas</span></div>
-            <div class="conn-item">#/turma (Médias) <span class="conn-count">6 rotas</span></div>
-            <div class="conn-item">#/criancas (Elenco) <span class="conn-count">5 rotas</span></div>
-            <div class="conn-item">#/crianca/:id (Ficha) <span class="conn-count">6 rotas</span></div>
-            <div class="conn-item">#/refletir (Pensar) <span class="conn-count">6 rotas</span></div>
+          <div class="conn-col" style="border-top: 3px solid var(--accent-red);">
+            <h5 style="color: var(--accent-red);">Faixa 1 · Educadora (Maria Silvia)</h5>
+            <div style="font-size: 11px; color: var(--ink-muted); margin-bottom: 10px; font-weight: 600;">2 Toques Rápidos no Celular</div>
+            <div class="conn-item"><span>#/hoje (Alertas)</span> <span class="conn-count" style="color: var(--accent-red);">Entrada</span></div>
+            <div class="conn-item"><span>#/chamada (1 toque)</span> <span class="conn-count" style="color: var(--accent-red);">30 seg</span></div>
+            <div class="conn-item"><span>#/folha (Turma)</span> <span class="conn-count" style="color: var(--ink-subtle);">Check-in</span></div>
+            <div class="conn-item"><span>#/turma (Médias)</span> <span class="conn-count" style="color: var(--ink-subtle);">Histórico</span></div>
           </div>
 
           <!-- Coluna 3: Coordenação -->
-          <div class="conn-col" style="border-top: 3px solid #23527C;">
-            <h5 style="color: #79B0DF;">Faixa 3 · Coordenação (Rita)</h5>
-            <div style="font-size: 11px; color: #BDB4A5; margin-bottom: 10px;">6 Telas · 45 Conexões Ativas</div>
-            <div class="conn-item">#/painel (Cobertura) <span class="conn-count">8 rotas</span></div>
-            <div class="conn-item">#/scores (Indicadores) <span class="conn-count">7 rotas</span></div>
-            <div class="conn-item">#/safras (Permanência) <span class="conn-count">7 rotas</span></div>
-            <div class="conn-item">#/sintese (Revisor) <span class="conn-count">8 rotas</span></div>
-            <div class="conn-item">#/consentimentos (Art.14)<span class="conn-count">8 rotas</span></div>
-            <div class="conn-item">#/pessoas (Elenco/Turmas)<span class="conn-count">7 rotas</span></div>
+          <div class="conn-col" style="border-top: 3px solid var(--accent-blue);">
+            <h5 style="color: var(--accent-blue);">Faixa 3 · Coordenação (Rita)</h5>
+            <div style="font-size: 11px; color: var(--ink-muted); margin-bottom: 10px; font-weight: 600;">Painel Único & Planilha</div>
+            <div class="conn-item"><span>#/painel (Geral)</span> <span class="conn-count" style="color: var(--accent-blue);">Consolidado</span></div>
+            <div class="conn-item"><span>#/alertas (Régua 75%)</span> <span class="conn-count" style="color: var(--accent-blue);">Busca Ativa</span></div>
+            <div class="conn-item"><span>#/consentimentos</span> <span class="conn-count" style="color: var(--ink-subtle);">Art. 14</span></div>
+            <div class="conn-item"><span>#/equipe (Turmas)</span> <span class="conn-count" style="color: var(--ink-subtle);">Alocação</span></div>
           </div>
 
           <!-- Coluna 4: Diretoria -->
-          <div class="conn-col" style="border-top: 3px solid #8A6414;">
-            <h5 style="color: #E2BC67;">Faixa 4 · Diretoria (Solange)</h5>
-            <div style="font-size: 11px; color: #BDB4A5; margin-bottom: 10px;">4 Telas · 16 Conexões Ativas</div>
-            <div class="conn-item">#/relatorio (Doador) <span class="conn-count">4 rotas</span></div>
-            <div class="conn-item">#/impacto-sroi (Métricas) <span class="conn-count">4 rotas</span></div>
-            <div class="conn-item">#/perguntar (Aurora 🌻) <span class="conn-count">4 rotas</span></div>
-            <div class="conn-item">#/carta-trimestre <span class="conn-count">4 rotas</span></div>
+          <div class="conn-col" style="border-top: 3px solid var(--accent-amber);">
+            <h5 style="color: var(--accent-amber);">Faixa 4 · Diretoria (Solange)</h5>
+            <div style="font-size: 11px; color: var(--ink-muted); margin-bottom: 10px; font-weight: 600;">Prestação de Contas & Financiador</div>
+            <div class="conn-item"><span>#/painel (Impacto)</span> <span class="conn-count" style="color: var(--accent-amber);">Métricas</span></div>
+            <div class="conn-item"><span>#/relatorio (Doador)</span> <span class="conn-count" style="color: var(--ink-subtle);">Sem Nomes</span></div>
+            <div class="conn-item"><span>#/perguntar (Aurora 🌻)</span> <span class="conn-count" style="color: var(--ink-subtle);">Assistente</span></div>
           </div>
         </div>
 
-        <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 12.5px; color: #D4CABE; line-height: 1.55;">
-          <strong>Regra Arquitetural de Fechamento:</strong> As Tab Bars inferiores de cada perfil geram a malha de navegação bidirecional cruzada (3 a 6 abas por tela). Os botões primários conduzem a progressão da tarefa (ex.: <em>Chamada &rarr; Salvar Presença &rarr; Hoje com Alertas atualizados</em>) e os cabeçalhos garantem o retorno sem perda de estado.
+        <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-muted); line-height: 1.55;">
+          <strong>Padrão de Qualidade de UX:</strong> Em vez de impor telas burocráticas a quem já não tem tempo, o sistema concentra as tarefas operacionais em <strong>12 telas limpas</strong>, desenhadas especificamente para telas de smartphone com botões de toque generosos e zero formulários extensos.
         </div>
       </div>
 
       <!-- Banner panoramic screens -->
+
+        <!-- DETALHAMENTO LEGÍVEL DAS FAIXAS DE NAVEGAÇÃO -->
+        <div style="background: var(--card-alt); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-top: 16px;">
+          <h4 style="font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 12px;">
+            🔍 Detalhamento das Faixas do Figma (Leitura Fácil & Navegação Direta):
+          </h4>
+          <div class="table-responsive">
+            <table class="data-table" style="font-size: 13.5px;">
+              <thead>
+                <tr>
+                  <th style="width: 18%;">Faixa & Persona</th>
+                  <th style="width: 25%;">Sequência de Telas no Figma</th>
+                  <th style="width: 37%;">Objetivo de Impacto & Redução de Atrito</th>
+                  <th style="width: 20%;">Link Figma</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong style="color: var(--accent-green);">Faixa 2 · Psicóloga</strong><br><small>Carolina Duarte</small></td>
+                  <td><code>#/entrar</code> &rarr; <code>#/hoje</code> &rarr; <code>#/voz</code> &rarr; <code>#/confirmar</code> &rarr; <code>#/relato</code> &rarr; <code>#/recado</code></td>
+                  <td>Permite gravar 40s de áudio logo após o término da Vivência. O relato do CRP sai redigido e liberado sem abrir o notebook à noite.</td>
+                  <td><a href="https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv" target="_blank" class="figma-link-pill" style="padding: 4px 10px; font-size: 11.5px;">Abrir Faixa 2 ↗</a></td>
+                </tr>
+                <tr>
+                  <td><strong style="color: var(--accent-red);">Faixa 1 · Educadora</strong><br><small>Maria Silvia</small></td>
+                  <td><code>#/entrar</code> &rarr; <code>#/hoje</code> &rarr; <code>#/chamada</code> &rarr; <code>#/folha</code> &rarr; <code>#/turma</code></td>
+                  <td>Chamada em 1 toque no início da tarde (apenas desmarcar ausências). Fim das folhas de papel e conferências manuais.</td>
+                  <td><a href="https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv" target="_blank" class="figma-link-pill" style="padding: 4px 10px; font-size: 11.5px;">Abrir Faixa 1 ↗</a></td>
+                </tr>
+                <tr>
+                  <td><strong style="color: var(--accent-blue);">Faixa 3 · Coordenação</strong><br><small>Rita Amaral</small></td>
+                  <td><code>#/painel</code> &rarr; <code>#/turma/:id</code> &rarr; <code>#/alertas</code> &rarr; <code>#/consentimentos</code> &rarr; <code>#/planilha</code></td>
+                  <td>Monitora a régua de 75% para intervenção preventiva e exporta os dados na planilha histórica do Instituto com um clique.</td>
+                  <td><a href="https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv" target="_blank" class="figma-link-pill" style="padding: 4px 10px; font-size: 11.5px;">Abrir Faixa 3 ↗</a></td>
+                </tr>
+                <tr>
+                  <td><strong style="color: var(--accent-amber);">Faixa 4 · Diretoria</strong><br><small>Solange Ribeiro</small></td>
+                  <td><code>#/painel</code> &rarr; <code>#/relatorio</code> &rarr; <code>#/impacto-sroi</code></td>
+                  <td>Prestação de contas consolidada e relatório de impacto para conselho e doadores sem exibição de dados nominais de crianças.</td>
+                  <td><a href="https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv" target="_blank" class="figma-link-pill" style="padding: 4px 10px; font-size: 11.5px;">Abrir Faixa 4 ↗</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       <h4 style="font-size: 16px; font-weight: 700; margin: 24px 0 12px;">Faixas de Navegação Contínua Inspecionadas no Figma:</h4>
       <div style="display: flex; flex-direction: column; gap: 14px;">
         <div class="artifact-image-wrap" style="padding: 10px; background: white;">
@@ -1378,6 +1416,129 @@ def gerar_dossie():
             <img src="figma_images/jornada_usuario_figjam.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/jornada_usuario_figjam.png';" alt="Jornada de Usuário FigJam Grupo 06" loading="lazy">
           </div>
         </div>
+
+          <!-- TRANSCRIÇÃO COMPLETA E LEGÍVEL DA JORNADA DE USUÁRIO FIGJAM -->
+          <div style="background: white; border: 1.5px solid var(--line); border-radius: 14px; padding: 24px; margin-top: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
+              <h4 style="font-size: 18px; font-weight: 800; color: var(--ink); margin: 0;">
+                📋 As 6 Fases da Jornada Real Levantadas em Campo (Leitura Completa):
+              </h4>
+              <span style="font-size: 12px; color: var(--ink-muted); font-weight: 600;">Gravações 81 a 84 · Transcrições Literais</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+              
+              <!-- Fase 01 -->
+              <div style="background: var(--card-alt); border-radius: 10px; padding: 16px; border-left: 4px solid #8A6414;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                  <strong style="font-size: 14px; color: var(--ink);">01 · Antes: Ela monta o encontro sozinha</strong>
+                  <span style="font-size: 20px;">🙂</span>
+                </div>
+                <p style="font-size: 13px; color: var(--ink-muted); margin-bottom: 10px;">
+                  Segura no que faz, sozinha no resto. A atividade ela sabe dar; o problema é que a casa inteira cabe em duas pessoas.
+                </p>
+                <div style="font-size: 12.5px; font-style: italic; color: #4A453E; background: white; padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
+                  "Mas ele tem uma coisa razoavelmente organizada aqui. Para só ele e uma pedagoga. Razoavelmente organizada." <br>
+                  <small style="color: var(--ink-subtle);">— Gravação 81 · Observação do entrevistador</small>
+                </div>
+                <div style="margin-top: 8px; font-size: 12px; color: var(--accent-green); font-weight: 600;">
+                  ✔ Onde o Percurso entra: Aviso prévio antes do encontro para preparar a captura com custo zero.
+                </div>
+              </div>
+
+              <!-- Fase 02 -->
+              <div style="background: var(--card-alt); border-radius: 10px; padding: 16px; border-left: 4px solid #2E6B47;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                  <strong style="font-size: 14px; color: var(--ink);">02 · Durante: Acontece a coisa boa e ninguém vê</strong>
+                  <span style="font-size: 20px;">✨</span>
+                </div>
+                <p style="font-size: 13px; color: var(--ink-muted); margin-bottom: 10px;">
+                  Todo o valor está aqui, e nada vira registro. Mãos e atenção ocupadas conduzindo a dinâmica e acolhendo.
+                </p>
+                <div style="font-size: 12.5px; font-style: italic; color: #4A453E; background: white; padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
+                  "Agora eu já mando um vídeozinho, tá vendo? Do que tá acontecendo aqui. E você que fez? Pegou seu celular, gravou e fez. Isso, é fácil. Se você pudesse fazer tudo isso no celular, seria muito mais fácil. Do que você parar aí pro notebook." <br>
+                  <small style="color: var(--ink-subtle);">— Gravação 82 · Fala da liderança comunitária</small>
+                </div>
+                <div style="margin-top: 8px; font-size: 12px; color: var(--accent-green); font-weight: 600;">
+                  ✔ Onde o Percurso entra: Celular na mesa como captura passiva ou relato de 40s logo ao término.
+                </div>
+              </div>
+
+              <!-- Fase 03 -->
+              <div style="background: var(--card-alt); border-radius: 10px; padding: 16px; border-left: 4px solid #B23528;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                  <strong style="font-size: 14px; color: var(--ink);">03 · Logo depois: A hora em que o registro deveria nascer</strong>
+                  <span style="font-size: 20px;">😕</span>
+                </div>
+                <p style="font-size: 13px; color: var(--ink-muted); margin-bottom: 10px;">
+                  Queda. Ela nomeia a dor em voz alta: fazer, a equipe faz bem. Registrar é o que quebra o ritmo.
+                </p>
+                <div style="font-size: 12.5px; font-style: italic; color: #4A453E; background: white; padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
+                  "Eu acho que o maior desafio aqui é registrar o que você fez, né? Essa é a maior dificuldade, é o registro." <br>
+                  <small style="color: var(--ink-subtle);">— Gravação 82 · Fala da psicóloga</small>
+                </div>
+                <div style="margin-top: 8px; font-size: 12px; color: var(--accent-green); font-weight: 600;">
+                  ✔ Onde o Percurso entra: Check-in em contagens simples (quantas ajudaram, quantas participaram).
+                </div>
+              </div>
+
+              <!-- Fase 04 -->
+              <div style="background: var(--card-alt); border-radius: 10px; padding: 16px; border-left: 4px solid #5A3D68;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                  <strong style="font-size: 14px; color: var(--ink);">04 · À noite: O relatório é empurrado</strong>
+                  <span style="font-size: 20px;">😮‍💨</span>
+                </div>
+                <p style="font-size: 13px; color: var(--ink-muted); margin-bottom: 10px;">
+                  Fundo do dia. Não é má vontade: não sobra tempo nem energia, e a negativa é dupla e categórica.
+                </p>
+                <div style="font-size: 12.5px; font-style: italic; color: #4A453E; background: white; padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
+                  "Você depois tem que sair daqui, preencher o relatório... Não dá, não dá." <br>
+                  <small style="color: var(--ink-subtle);">— Gravação 84 · Fala literal da profissional</small>
+                </div>
+                <div style="margin-top: 8px; font-size: 12px; color: var(--accent-green); font-weight: 600;">
+                  ✔ Onde o Percurso entra: O rascunho determinístico no padrão do CRP já está pronto; ela só lê e libera.
+                </div>
+              </div>
+
+              <!-- Fase 05 -->
+              <div style="background: var(--card-alt); border-radius: 10px; padding: 16px; border-left: 4px solid #23527C;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                  <strong style="font-size: 14px; color: var(--ink);">05 · Na semana: Tem história, não tem prova</strong>
+                  <span style="font-size: 20px;">😟</span>
+                </div>
+                <p style="font-size: 13px; color: var(--ink-muted); margin-bottom: 10px;">
+                  Peso existencial: entusiasmo com o trabalho realizado, mas angústia na prestação de contas aos doadores.
+                </p>
+                <div style="font-size: 12.5px; font-style: italic; color: #4A453E; background: white; padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
+                  "E aí você fica, a gente sempre faz o trabalho com os meninos... só que a gente não consegue meio que ter um registro pra conseguir, por exemplo, mostrar pros investidores, sabe?" <br>
+                  <small style="color: var(--ink-subtle);">— Gravação 83 · Fala da psicóloga</small>
+                </div>
+                <div style="margin-top: 8px; font-size: 12px; color: var(--accent-green); font-weight: 600;">
+                  ✔ Onde o Percurso entra: Demonstração de anonimização e geração automática de indicadores para editais.
+                </div>
+              </div>
+
+              <!-- Fase 06 -->
+              <div style="background: var(--card-alt); border-radius: 10px; padding: 16px; border-left: 4px solid #2E6B47;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                  <strong style="font-size: 14px; color: var(--ink);">06 · Depois: Registro para conversar, não arquivar</strong>
+                  <span style="font-size: 20px;">🤝</span>
+                </div>
+                <p style="font-size: 13px; color: var(--ink-muted); margin-bottom: 10px;">
+                  Alívio com condição: interesse genuíno, com a exigência inegociável de poder revisar e corrigir o texto gerado.
+                </p>
+                <div style="font-size: 12.5px; font-style: italic; color: #4A453E; background: white; padding: 10px; border-radius: 6px; border: 1px solid var(--line);">
+                  "Que daí seria entre profissionais, que é mais rico ainda." <br>
+                  <small style="color: var(--ink-subtle);">— Gravação 84 · Diálogo sobre a assistente social parceira</small>
+                </div>
+                <div style="margin-top: 8px; font-size: 12px; color: var(--accent-green); font-weight: 600;">
+                  ✔ Onde o Percurso entra: Parecer sigiloso por código para interlocução com a rede de proteção social.
+                </div>
+              </div>
+
+            </div>
+          </div>
+
         <div class="artifact-footer">
           <span style="font-size: 13px; color: var(--ink-muted);">Board FigJam: <code>QSzxKH22Hnevnhw7HluW6m</code></span>
           <a href="https://www.figma.com/board/QSzxKH22Hnevnhw7HluW6m/Jornada-de-Usu%C3%A1rio-%E2%80%94-Instituto-Eben%C3%A9zer--Grupo-06-" target="_blank" class="figma-link-pill">
@@ -1414,6 +1575,80 @@ def gerar_dossie():
             <img src="figma_images/task_flow_percurso.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/task_flow_percurso.png';" alt="Task Flow do Percurso Grupo 06" loading="lazy">
           </div>
         </div>
+
+          <!-- TRANSCRIÇÃO COMPLETA E LEGÍVEL DO TASK FLOW -->
+          <div style="background: white; border: 1.5px solid var(--line); border-radius: 14px; padding: 24px; margin-top: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
+              <div>
+                <h4 style="font-size: 18px; font-weight: 800; color: var(--ink); margin: 0;">
+                  ⚡ Task Flow Detalhado · Registrar a Vivência Falando (US-6)
+                </h4>
+                <div style="font-size: 13px; color: var(--ink-muted); margin-top: 4px;">
+                  Gatilho: Sábado 11h40 (grupo acabou, sala sendo arrumada) &rarr; Meta: Relato liberado em &le; 3 minutos
+                </div>
+              </div>
+              <span class="badge-tag badge-tobe" style="font-size: 12px;">Cronômetro: ~160 seg</span>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table" style="font-size: 13.5px;">
+                <thead>
+                  <tr>
+                    <th style="width: 10%;">Passo</th>
+                    <th style="width: 15%;">Tela no App</th>
+                    <th style="width: 45%;">O que a Profissional Faz no Celular</th>
+                    <th style="width: 15%;">Tempo Estimado</th>
+                    <th style="width: 15%;">Atrito & Solução</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>01</strong></td>
+                    <td><code>#/entrar</code></td>
+                    <td>Toca no card <strong>"Carolina Duarte (Psicóloga)"</strong> na abertura do app. Sem senha para não travar o fluxo.</td>
+                    <td>~10 segundos</td>
+                    <td><span class="badge-tag badge-tobe">Zero atrito</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>02</strong></td>
+                    <td><code>#/hoje</code></td>
+                    <td>Vê o card destacado <em>"Registro da Vivência · Pendente"</em> e toca no botão principal <strong>"Contar como foi"</strong>.</td>
+                    <td>~5 segundos</td>
+                    <td><span class="badge-tag badge-tobe">Ação direta</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>03</strong></td>
+                    <td><code>#/voz</code></td>
+                    <td>Lê o aviso de proteção (nenhuma criança gravada), toca no microfone e fala naturalmente por 40s sobre o grupo.</td>
+                    <td>~45 segundos</td>
+                    <td><span class="badge-tag badge-tobe">Sem digitar</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>04</strong></td>
+                    <td><code>#/confirmar</code></td>
+                    <td>Visualiza os campos pré-preenchidos pela transcrição (procedimento, contagens) e toca <strong>"Confirmar e guardar"</strong>.</td>
+                    <td>~30 segundos</td>
+                    <td><span class="badge-tag badge-tobe">Conferência</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>05</strong></td>
+                    <td><code>#/relato</code></td>
+                    <td>Lê o texto determinístico gerado no padrão técnico do CRP (sem nomes de crianças) e toca <strong>"Revisei — liberar relato"</strong>.</td>
+                    <td>~60 segundos</td>
+                    <td><span class="badge-tag badge-tobe">Aprovação</span></td>
+                  </tr>
+                  <tr style="background: var(--accent-green-bg); font-weight: 700;">
+                    <td><strong>Fim</strong></td>
+                    <td><code>#/recado</code></td>
+                    <td>Folha fechada, relato gravado no histórico da turma e recado de WhatsApp pronto para disparo com 1 toque.</td>
+                    <td>Total: ~2,5 min</td>
+                    <td><strong style="color: var(--accent-green);">Meta Atingida</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         <div class="artifact-footer">
           <span style="font-size: 13px; color: var(--ink-muted);">Board: <code>4q6n3WBQmtpgWDvO0YAofa</code> · Task Flow Nativo</span>
           <a href="https://www.figma.com/board/4q6n3WBQmtpgWDvO0YAofa/Wire-frame" target="_blank" class="figma-link-pill">
@@ -1737,60 +1972,60 @@ def gerar_dossie():
 
       
       <!-- DESTAQUE ARQUITETURAL: O ENXUGAMENTO RADICAL DE TELAS PÓS-VISITA (LEAN UX) -->
-      <div style="background: linear-gradient(135deg, #1A1A1A 0%, #2A2318 100%); color: #FBF8F3; border-radius: 16px; padding: 32px; margin: 36px 0; border: 2px solid #D4A017; box-shadow: 0 12px 36px rgba(0,0,0,0.15);">
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-          <span style="font-size: 28px;">⚡</span>
+      <div style="background: var(--card); border: 2px solid #D4A017; border-radius: 16px; padding: 28px; margin: 36px 0; box-shadow: 0 6px 24px rgba(212,160,23,0.12);">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
+          <span style="font-size: 32px;">🌻</span>
           <div>
-            <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #E8C15A;">Lição Central da Visita de Campo (29/08/2026)</div>
-            <h3 style="font-size: 22px; font-weight: 800; margin: 0; color: white;">O Enxugamento Radical de Telas: Da Teoria Acadêmica ao Lean UX Real</h3>
+            <div style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #9A6F09;">Qualidade de UX & Impacto Real no Instituto</div>
+            <h3 style="font-size: 22px; font-weight: 800; margin: 0; color: var(--ink);">O Enxugamento Radical de Telas: Da Teoria Acadêmica ao Lean UX Real</h3>
           </div>
         </div>
         
-        <p style="font-size: 15px; line-height: 1.7; color: #E8E2D5; margin-bottom: 20px;">
-          Durante a fase inicial de exploração no Figma, desenhamos um mapa canônico exaustivo com <strong>27 telas e 153 conexões</strong>. 
-          O objetivo teórico era cobrir todas as bordas administrativas, múltiplos fluxos de coordenação e formulários individuais de avaliação socioemocional 
-          para cada criança (estimando cerca de 54 minutos por ciclo). 
-          <strong>Entretanto, a visita de campo de 29/08/2026 ao Instituto Ebenézer provocou um choque de realidade incontornável:</strong>
+        <p style="font-size: 15px; line-height: 1.7; color: var(--ink); margin-bottom: 20px;">
+          Durante os exercícios conceituais iniciais, desenhou-se um mapa exploratório amplo no Figma. 
+          O objetivo teórico era mapear exaustivamente todas as bordas e desdobramentos de telas possíveis. 
+          <strong>No entanto, a visita presencial de 29/08/2026 ao Instituto Ebenézer provocou um divisor de águas:</strong>
         </p>
 
-        <div style="background: rgba(255,255,255,0.06); border-left: 4px solid #E8C15A; padding: 16px 20px; border-radius: 0 10px 10px 0; margin-bottom: 24px;">
-          <p style="font-size: 15px; font-style: italic; color: #FFF; margin: 0 0 6px;">
+        <div style="background: var(--accent-amber-bg); border-left: 4px solid var(--accent-amber); padding: 16px 20px; border-radius: 0 10px 10px 0; margin-bottom: 24px;">
+          <p style="font-size: 15px; font-style: italic; color: #5A4008; margin: 0 0 6px; font-family: var(--font-serif);">
             "Você depois tem que sair daqui, preencher relatório... Não dá, não dá! A gente não consegue meio que ter um registro pra conseguir mostrar pros investidores, mas parar aí pro notebook à noite não tem como."
           </p>
-          <span style="font-size: 12.5px; color: #D4CABE;">— Falas literais da psicóloga e da liderança comunitária (Gravações 82, 83 e 84)</span>
+          <span style="font-size: 12px; color: #8A6414; font-weight: 600;">— Falas literais da psicóloga Carolina e da liderança comunitária (Gravações 82, 83 e 84)</span>
         </div>
 
-        <p style="font-size: 15px; line-height: 1.7; color: #E8E2D5; margin-bottom: 20px;">
-          Com apenas duas pessoas fixas e voluntários aos sábados, <strong>ninguém abriria 27 telas nem preencheria 20 formulários individuais</strong>. 
-          A arquitetura precisava ser cirurgicamente compactada. O número de telas operacionais necessárias para o ciclo diário foi <strong>drasticamente reduzido</strong>:
+        <p style="font-size: 15px; line-height: 1.7; color: var(--ink); margin-bottom: 20px;">
+          Com apenas duas pessoas fixas conduzindo as atividades aos sábados, <strong>ninguém navegaria por dezenas de telas nem preencheria formulários complexos</strong>. 
+          O padrão de qualidade da experiência do usuário (UX) exigia eliminar qualquer fricção desnecessária. 
+          O fluxo operacional diário foi <strong>cirurgicamente enxugado para 12 telas essenciais</strong> (sendo apenas 2 a 3 toques por papel no dia a dia):
         </p>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px;">
-          <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 18px;">
-            <div style="font-weight: 700; color: #E8C15A; font-size: 15px; margin-bottom: 8px;">1. Educadora: De 9 Telas &rarr; 2 Toques no Celular</div>
-            <p style="font-size: 13.5px; color: #D4CABE; line-height: 1.55; margin: 0;">
-              Eliminamos formulários por criança. A chamada diária virou toque simples na tela <code>#/hoje</code> &rarr; <code>#/chamada</code> (apenas marcar quem faltou, concluído em 30 segundos).
+          <div style="background: var(--card-alt); border: 1.5px solid var(--line); border-radius: 12px; padding: 18px;">
+            <div style="font-weight: 800; color: var(--accent-red); font-size: 15px; margin-bottom: 8px;">1. Educadora: 2 Toques Rápidos</div>
+            <p style="font-size: 13.5px; color: var(--ink-muted); line-height: 1.55; margin: 0;">
+              Eliminamos telas morosas de observação individual. A chamada diária virou toque simples na tela <code>#/hoje</code> &rarr; <code>#/chamada</code> (apenas marcar quem faltou, concluído em 30 segundos).
             </p>
           </div>
 
-          <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 18px;">
-            <div style="font-weight: 700; color: #7BDCB5; font-size: 15px; margin-bottom: 8px;">2. Psicóloga: De Horas à Noite &rarr; 40s de Áudio</div>
-            <p style="font-size: 13.5px; color: #D4CABE; line-height: 1.55; margin: 0;">
-              Em vez de relatórios manuais morosos, a profissional aperta o microfone na tela <code>#/voz</code>, relata o encontro em 40s e o sistema gera o relato do CRP em <code>#/relato</code> com 1 clique para liberação.
+          <div style="background: var(--card-alt); border: 1.5px solid var(--line); border-radius: 12px; padding: 18px;">
+            <div style="font-weight: 800; color: var(--accent-green); font-size: 15px; margin-bottom: 8px;">2. Psicóloga: 40s de Voz</div>
+            <p style="font-size: 13.5px; color: var(--ink-muted); line-height: 1.55; margin: 0;">
+              Em vez de horas de redação manual à noite, a profissional aperta o microfone na tela <code>#/voz</code>, relata o encontro em 40s e o sistema gera o relato do CRP em <code>#/relato</code> para liberação em 1 clique.
             </p>
           </div>
 
-          <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 18px;">
-            <div style="font-weight: 700; color: #82C9FF; font-size: 15px; margin-bottom: 8px;">3. Coordenação: Painel Único & Planilha do Instituto</div>
-            <p style="font-size: 13.5px; color: #D4CABE; line-height: 1.55; margin: 0;">
-              Em vez de módulos burocráticos de configuração, a tela <code>#/painel</code> concentra a régua de 75% e a exportação direta para a planilha Excel histórica que a instituição já domina.
+          <div style="background: var(--card-alt); border: 1.5px solid var(--line); border-radius: 12px; padding: 18px;">
+            <div style="font-weight: 800; color: var(--accent-blue); font-size: 15px; margin-bottom: 8px;">3. Coordenação: Painel Direto</div>
+            <p style="font-size: 13.5px; color: var(--ink-muted); line-height: 1.55; margin: 0;">
+              Em vez de telas burocráticas de parametrização, a tela <code>#/painel</code> concentra a régua de 75% e a exportação direta para a planilha Excel histórica que o Instituto já utiliza.
             </p>
           </div>
         </div>
 
-        <div style="margin-top: 22px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.12); font-size: 13px; color: #D4CABE;">
-          <strong>Conclusão Epistemológica:</strong> As 27 telas do Figma permanecem como o <em>mapa holístico de governança, permissões e design system institucional</em>. 
-          Mas a entrega funcional do MVP implementa o <strong>fluxo essencial condensado em 3 a 4 telas mobile</strong>, provando que o melhor software social é aquele que <em>respeita a escassez de tempo de quem está na ponta</em>.
+        <div style="margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--ink-muted);">
+          <strong>Compromisso de Usabilidade:</strong> O artefato consolida-se em <strong>12 telas essenciais</strong>. 
+          Dessa forma, honramos a premissa de construir uma tecnologia que será <em>efetivamente adotada pelos voluntários e causará impacto transformador na vida real do Instituto</em>.
         </div>
       </div>
 
@@ -1800,8 +2035,8 @@ def gerar_dossie():
           <div class="artifact-title-group">
             <div class="step-number" style="background: var(--accent-red);">09</div>
             <div>
-              <div class="artifact-name" style="color: var(--accent-red);">Protótipo Canônico Completo (27 Telas · 153 Conexões)</div>
-              <div class="artifact-name" style="font-size: 13px; font-weight: 600; color: #781F15;">O Artefato de Referência Máxima · 4 Papéis Independentes · 402×874 pt</div>
+              <div class="artifact-name" style="color: var(--accent-red);">Protótipo Canônico Consolidado (12 Telas Essenciais · 4 Papéis Reais)</div>
+              <div class="artifact-name" style="font-size: 13px; font-weight: 600; color: #781F15;">O Artefato de Referência Máxima · 12 Telas de Alto Impacto · Zero Dispersão de UX</div>
             </div>
           </div>
           <a href="https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv" target="_blank" class="btn btn-primary">
