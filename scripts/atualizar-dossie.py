@@ -991,7 +991,7 @@ def gerar_dossie():
             </p>
           </div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <a href="https://www.figma.com/proto/h6AnLVYLfpeVl2N4ie0Qzv/Percurso-%C2%B7-Semana-5-%C2%B7-Trilha-B?node-id=0-1" target="_blank" class="figma-link-pill" style="background: var(--accent-blue); color: white; border-color: var(--accent-blue); font-size: 13px; padding: 8px 16px;">
+            <a href="https://www.figma.com/proto/JMejpNsHkckqeSP8KE1PTh/Percurso-%E2%80%94-prot%C3%B3tipo-v3-%C2%B7-12-telas--4-pap%C3%A9is?node-id=9-2&p=f&t=T34yyWpc1jfmYeyG-0&scaling=min-zoom&content-scaling=fixed&page-id=2%3A20&starting-point-node-id=9%3A2" target="_blank" class="figma-link-pill" style="background: var(--accent-blue); color: white; border-color: var(--accent-blue); font-size: 13px; padding: 8px 16px;">
               Navegar no Protótipo Real ↗
             </a>
             <a href="figma_images/conexoes_malha_figma.png" target="_blank" class="figma-link-pill" style="font-size: 13px; padding: 8px 16px;">
@@ -2087,7 +2087,7 @@ def gerar_dossie():
               <div class="artifact-name" style="font-size: 13px; font-weight: 500; color: var(--ink-muted);">A Inclusão da Psicóloga, Telas de Vivência e Divulgação WhatsApp/Instagram</div>
             </div>
           </div>
-          <a href="https://www.figma.com/proto/JMejpNsHkckqeSP8KE1PTh/Percurso-%E2%80%94-prot%C3%B3tipo-v3-%C2%B7-12-telas--4-pap%C3%A9is?node-id=12-2" target="_blank" class="figma-link-pill">
+          <a href="https://www.figma.com/proto/JMejpNsHkckqeSP8KE1PTh/Percurso-%E2%80%94-prot%C3%B3tipo-v3-%C2%B7-12-telas--4-pap%C3%A9is?node-id=9-2&p=f&t=T34yyWpc1jfmYeyG-0&scaling=min-zoom&content-scaling=fixed&page-id=2%3A20&starting-point-node-id=9%3A2" target="_blank" class="figma-link-pill">
             Navegar Protótipo v3 ↗
           </a>
         </div>
@@ -2182,7 +2182,7 @@ def gerar_dossie():
         </div>
         <div class="artifact-footer">
           <span style="font-size: 13px; color: var(--ink-muted);">Arquivo: <code>JMejpNsHkckqeSP8KE1PTh</code></span>
-          <a href="https://www.figma.com/proto/JMejpNsHkckqeSP8KE1PTh/Percurso-%E2%80%94-prot%C3%B3tipo-v3-%C2%B7-12-telas--4-pap%C3%A9is?node-id=12-2" target="_blank" class="figma-link-pill">
+          <a href="https://www.figma.com/proto/JMejpNsHkckqeSP8KE1PTh/Percurso-%E2%80%94-prot%C3%B3tipo-v3-%C2%B7-12-telas--4-pap%C3%A9is?node-id=9-2&p=f&t=T34yyWpc1jfmYeyG-0&scaling=min-zoom&content-scaling=fixed&page-id=2%3A20&starting-point-node-id=9%3A2" target="_blank" class="figma-link-pill">
             Acessar no Figma ↗
           </a>
         </div>
