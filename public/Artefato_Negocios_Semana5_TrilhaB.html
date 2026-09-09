@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Percurso · Artefato de Negócios (Semana 5 - Trilha B)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Newsreader:ital,wght@0,600;1,400&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #FBF8F3; color: #1F1D1A; padding: 40px 24px; line-height: 1.6; }
+    .container { max-width: 960px; margin: 0 auto; background: white; border: 1px solid #E8E2D5; border-radius: 16px; padding: 44px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+    h1 { font-family: 'Newsreader', Georgia, serif; font-size: 36px; color: #B23528; margin-bottom: 8px; }
+    .badge { display: inline-block; background: #B23528; color: white; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; margin-bottom: 16px; }
+    h2 { font-size: 22px; margin: 32px 0 14px; border-bottom: 2px solid #F4EFE6; padding-bottom: 8px; }
+    .card { background: #FBF8F3; border: 1px solid #E8E2D5; border-radius: 10px; padding: 20px; margin: 16px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+    th { background: #F4EFE6; text-align: left; padding: 12px; border-bottom: 2px solid #D4CABE; }
+    td { padding: 12px; border-bottom: 1px solid #E8E2D5; }
+    .btn { display: inline-block; background: #23527C; color: white; padding: 10px 20px; border-radius: 99px; text-decoration: none; font-weight: 700; font-size: 13px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <span class="badge">Inteli MBA IA & Dados · Módulo 3 · Semana 5</span>
+    <h1>Artefato de Negócios · Percurso</h1>
+    <p><strong>Trilha B:</strong> Monitoramento de Impacto Socioemocional — Instituto Social Ebenézer | <strong>Grupo 06</strong></p>
+    
+    <div style="margin: 20px 0; display: flex; gap: 10px;">
+      <a href="Dossie_Jornada_Semana5_TrilhaB.html" class="btn" style="background: #B23528;">Ver Dossiê Visual Completo com Prints ↗</a>
+      <a href="https://percurso-ebenezer.vercel.app" target="_blank" class="btn" style="background: #2E6B47;">Acessar MVP Online ↗</a>
+    </div>
+
+    <h2>1. Proposta de Valor do MVP</h2>
+    <div class="card">
+      <p><strong>Para:</strong> A coordenação, educadores e psicóloga do Instituto Social Ebenézer.</p>
+      <p><strong>Que:</strong> Vivenciam a transformação socioemocional das crianças na favela do Jardim Keralux, mas não possuem como registrá-la nem comprová-la a quem financia o projeto.</p>
+      <p><strong>O Percurso é:</strong> Um sistema leve que transforma a observação em sala e as vivências em indicadores estruturados e relatórios no padrão do conselho profissional.</p>
+      <p><strong>Diferentemente de:</strong> Planilhas manuais isoladas e relatórios anuais puramente qualitativos.</p>
+      <p><strong>Nosso produto entrega:</strong> Comprovação de impacto real sem expor dados nominais de crianças, sem cobrança recorrente de licenças e mantido pela própria equipe local.</p>
+    </div>
+
+    <h2>2. Lean Canvas Resumido (9 Blocos)</h2>
+    <table>
+      <tr><th>Bloco</th><th>Definição Estratégica</th></tr>
+      <tr><td><strong>Problema</strong></td><td>A evolução socioemocional acontece toda semana, mas não é registrada; educadores sem tempo hábil para relatórios; financiadores exigem métricas.</td></tr>
+      <tr><td><strong>Segmentos</strong></td><td>Educadoras do reforço escolar, psicóloga da vivência terapêutica, liderança comunitária e doadores institucionais.</td></tr>
+      <tr><td><strong>Proposta de Valor</strong></td><td>Comprovar a transformação socioemocional sem expor crianças, com custo zero de licenças e adoção fluida.</td></tr>
+      <tr><td><strong>Solução</strong></td><td>Rubrica com âncoras claras (~3 min por criança), captura por voz com descarte imediato do áudio e síntese automática de ciclo.</td></tr>
+      <tr><td><strong>Canais</strong></td><td>PWA instalado nos smartphones da equipe, recados via WhatsApp oficial e relatórios de ciclo em PDF.</td></tr>
+      <tr><td><strong>Custos</strong></td><td>R$ 0 recorrente para a ONG (Node.js nativo + SQLite local) e ~R$ 18/mês na Meta caso opte pela Cloud API oficial.</td></tr>
+      <tr><td><strong>Métricas</strong></td><td>% de crianças na régua &ge; 75%, tempo de preenchimento &le; 180s e índice de progressão nos ciclos de observação.</td></tr>
+      <tr><td><strong>Vantagem Injusta</strong></td><td>Desenhado sob medida com a equipe na favela, incorporando a régua de 75% e a planilha histórica do Instituto.</td></tr>
+    </table>
+
+    <h2>3. Reconciliação dos Dados Demográficos (120 Crianças)</h2>
+    <p>O Instituto atende uma capacidade de 120 crianças (60 manhã / 60 tarde). Destas, 106 crianças são ativas em sala nas oficinas semanais e vivências aos sábados. As 14 crianças restantes representam casos em transição familiar, ausências frequentes ou risco de evasão, sendo monitoradas pelo sistema através da régua preventiva de 75% de presença para deflagração imediata de busca ativa.</p>
+
+    <h2>4. Escopo do MVP</h2>
+    <p>O MVP implementa estritamente: (F1) Ficha viva com consentimento Art. 14 por padrão; (F2) Chamada diária em um toque; (F3) Rubrica socioemocional de 6 dimensões; (F4) Agenda longitudinal de ciclos; (F5) Painel agregado para captação de recursos; e (F6) Alerta preventivo de ausências seguidas. Ficam deliberadamente fora do MVP prontuários clínicos individuais e logins de família.</p>
+  </div>
+</body>
+</html>
