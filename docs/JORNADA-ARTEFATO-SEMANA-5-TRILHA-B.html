@@ -972,20 +972,25 @@
             <a href="https://www.figma.com/proto/JMejpNsHkckqeSP8KE1PTh/Percurso-%E2%80%94-prot%C3%B3tipo-v3-%C2%B7-12-telas--4-pap%C3%A9is?node-id=9-2&p=f&t=T34yyWpc1jfmYeyG-0&scaling=min-zoom&content-scaling=fixed&page-id=2%3A20&starting-point-node-id=9%3A2" target="_blank" class="figma-link-pill" style="background: var(--accent-blue); color: white; border-color: var(--accent-blue); font-size: 13px; padding: 8px 16px;">
               Navegar no Protótipo Real ↗
             </a>
-            <a href="figma_images/conexoes_malha_figma.png" target="_blank" class="figma-link-pill" style="font-size: 13px; padding: 8px 16px;">
-              🔍 Ver Imagem em Tela Cheia
+            <a href="figma_images/conexoes_malha_figma.png" target="_blank" onclick="event.preventDefault(); openMalhaModal();" class="figma-link-pill" style="font-size: 13px; padding: 8px 16px; cursor: pointer;" title="Abrir visualizador interativo em tela cheia com zoom HD">
+              🔍 Ver Imagem em Tela Cheia (Zoom HD)
             </a>
           </div>
         </div>
 
         <!-- Scrollable Pan Viewer for Connections -->
-        <div style="background: #FAF7F2; border: 1.5px solid var(--line-dark); border-radius: 12px; padding: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 13px; color: var(--ink-muted); font-weight: 600;">
-            <span>↔ Arraste horizontalmente para inspecionar todas as conexões da esquerda à direita</span>
-            <span style="font-family: var(--font-mono); font-size: 11.5px; background: white; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--line);">Largura Nativa · Alta Definição</span>
+        <div id="inlinePanContainer" style="background: #FAF7F2; border: 1.5px solid var(--line-dark); border-radius: 12px; padding: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; cursor: grab; user-select: none;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 13px; color: var(--ink-muted); font-weight: 600; flex-wrap: wrap; gap: 8px;">
+            <span>↔ Arraste horizontalmente para inspecionar as 20 telas (ou clique na imagem para ampliar em Ultra-HD)</span>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <button type="button" onclick="scrollInlinePan(-500)" style="border: 1px solid var(--line); background: white; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--ink); font-weight: 600;">◀ Esquerda</button>
+              <button type="button" onclick="scrollInlinePan(500)" style="border: 1px solid var(--line); background: white; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--ink); font-weight: 600;">Direita ▶</button>
+              <button type="button" onclick="openMalhaModal()" style="border: 1px solid var(--accent-blue); background: var(--accent-blue-bg); color: var(--accent-blue); border-radius: 6px; padding: 4px 12px; font-size: 12px; font-weight: 700; cursor: pointer;">🔍 Zoom Tela Cheia</button>
+              <span style="font-family: var(--font-mono); font-size: 11.5px; background: white; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line);">7.168 × 1.050 px · Ultra-HD</span>
+            </div>
           </div>
-          <div style="min-width: 1400px; text-align: center;">
-            <img src="figma_images/conexoes_malha_figma.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/conexoes_malha_figma.png';" alt="Malha de Conexões Interativas no Figma" style="width: 100%; height: auto; display: block; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);" loading="lazy">
+          <div style="min-width: 2400px; text-align: center;">
+            <img src="figma_images/conexoes_malha_figma.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/conexoes_malha_figma.png';" alt="Malha de Conexões Interativas no Figma" style="width: 100%; height: auto; display: block; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); cursor: zoom-in;" loading="lazy" onclick="openMalhaModal()" title="Clique para expandir no visualizador interativo em tela cheia com zoom HD">
           </div>
         </div>
 
@@ -3021,5 +3026,187 @@
 
   </main>
 
+  <!-- MODAL INTERATIVO EM TELA CHEIA PARA A MALHA DE CONEXÕES FIGMA (ULTRA-HD) -->
+  <div id="malhaModal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(15, 23, 42, 0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); flex-direction: column; opacity: 0; transition: opacity 0.2s ease-in-out;">
+    <!-- Barra Superior -->
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: rgba(30, 41, 59, 0.96); border-bottom: 1px solid rgba(255,255,255,0.12); color: white; flex-wrap: wrap; gap: 10px; z-index: 2;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 20px;">🔗</span>
+        <div>
+          <h4 style="margin: 0; font-size: 15.5px; font-weight: 700; color: #F8FAFC;">Malha Completa de Conexões Interativas · Modo Prototype Figma</h4>
+          <span style="font-size: 12px; color: #94A3B8;">Resolução Ultra-HD Nativa (7.168 × 1.050 px) · 20 Pranchetas Conectadas · Zero Telas Órfãs</span>
+        </div>
+      </div>
+      
+      <!-- Controles de Navegação e Zoom -->
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <!-- Botões de Zoom -->
+        <div style="display: inline-flex; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; overflow: hidden; background: rgba(255,255,255,0.08);">
+          <button type="button" onclick="zoomMalha(-0.2)" style="background: transparent; border: none; color: white; padding: 6px 12px; cursor: pointer; font-size: 15px; font-weight: bold;" title="Diminuir Zoom">－</button>
+          <span id="malhaZoomLevel" style="padding: 6px 10px; font-size: 12px; font-family: monospace; color: #CBD5E1; border-left: 1px solid rgba(255,255,255,0.15); border-right: 1px solid rgba(255,255,255,0.15); min-width: 48px; text-align: center;">100%</span>
+          <button type="button" onclick="zoomMalha(0.2)" style="background: transparent; border: none; color: white; padding: 6px 12px; cursor: pointer; font-size: 15px; font-weight: bold;" title="Aumentar Zoom">＋</button>
+          <button type="button" onclick="resetMalhaZoom()" style="background: transparent; border: none; color: white; padding: 6px 10px; cursor: pointer; font-size: 12px; border-left: 1px solid rgba(255,255,255,0.15);" title="Ajustar à Tela">Ajustar</button>
+        </div>
+
+        <!-- Atalhos Rápidos para Telas Principais -->
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <span style="font-size: 11.5px; color: #94A3B8; margin-right: 2px;">Ir para:</span>
+          <button type="button" onclick="scrollMalhaTo(0.22)" style="background: #0284C7; color: white; border: none; border-radius: 6px; padding: 5px 9px; font-size: 11.5px; font-weight: 700; cursor: pointer;" title="Ponto de partida">#/entrar</button>
+          <button type="button" onclick="scrollMalhaTo(0.0)" style="background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 6px; padding: 5px 9px; font-size: 11.5px; cursor: pointer;">Psicóloga</button>
+          <button type="button" onclick="scrollMalhaTo(0.27)" style="background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 6px; padding: 5px 9px; font-size: 11.5px; cursor: pointer;">Educadora</button>
+          <button type="button" onclick="scrollMalhaTo(0.33)" style="background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 6px; padding: 5px 9px; font-size: 11.5px; cursor: pointer;">Coordenação</button>
+          <button type="button" onclick="scrollMalhaTo(0.38)" style="background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 6px; padding: 5px 9px; font-size: 11.5px; cursor: pointer;">Diretoria</button>
+          <button type="button" onclick="scrollMalhaTo(0.72)" style="background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 6px; padding: 5px 9px; font-size: 11.5px; cursor: pointer;">Aurora 🌻</button>
+        </div>
+
+        <!-- Links Externos -->
+        <a href="https://www.figma.com/proto/JMejpNsHkckqeSP8KE1PTh/Percurso-%E2%80%94-prot%C3%B3tipo-v3-%C2%B7-12-telas--4-pap%C3%A9is?node-id=9-2&p=f&t=T34yyWpc1jfmYeyG-0&scaling=min-zoom&content-scaling=fixed&page-id=2%3A20&starting-point-node-id=9%3A2" target="_blank" style="background: #2563EB; color: white; text-decoration: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+          Figma Real ↗
+        </a>
+        <a href="figma_images/conexoes_malha_figma.png" target="_blank" style="background: rgba(255,255,255,0.12); color: white; text-decoration: none; border-radius: 6px; padding: 6px 10px; font-size: 12px;" title="Abrir PNG bruto de 7.168px em nova aba">
+          PNG HD ↗
+        </a>
+        <button type="button" onclick="closeMalhaModal()" style="background: rgba(239, 68, 68, 0.85); color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 14px; font-weight: bold; cursor: pointer;" title="Fechar visualizador (ESC)">✕</button>
+      </div>
+    </div>
+
+    <!-- Área de Visualização com Pan e Zoom -->
+    <div id="malhaModalBody" style="flex: 1; overflow: auto; display: flex; align-items: center; justify-content: flex-start; padding: 24px; cursor: grab; -webkit-overflow-scrolling: touch; user-select: none;">
+      <div id="malhaImgWrapper" style="display: inline-block; transform-origin: 0 50%; transition: transform 0.12s ease-out; margin: auto;">
+        <img id="malhaModalImg" src="figma_images/conexoes_malha_figma.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/conexoes_malha_figma.png';" alt="Malha de Conexões Ultra-HD" style="display: block; max-height: 82vh; width: auto; min-width: 2800px; border-radius: 10px; box-shadow: 0 25px 60px rgba(0,0,0,0.55); pointer-events: none;">
+      </div>
+    </div>
+
+    <!-- Rodapé com Dicas -->
+    <div style="background: rgba(15, 23, 42, 0.9); padding: 8px 20px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: #94A3B8; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+      <span>💡 <strong>Navegação:</strong> Clique e arraste para explorar da esquerda à direita · Roda do mouse amplia/reduz · Pressione <code>ESC</code> para sair</span>
+      <span style="font-family: monospace; color: #38BDF8;">Percurso v3 · Modo Prototype · Trilha B</span>
+    </div>
+  </div>
+
+  <script>
+    // --- LÓGICA DO MODAL ULTRA-HD DE CONEXÕES FIGMA ---
+    let currentMalhaZoom = 1.0;
+    const modal = document.getElementById('malhaModal');
+    const modalBody = document.getElementById('malhaModalBody');
+    const imgWrapper = document.getElementById('malhaImgWrapper');
+    const zoomText = document.getElementById('malhaZoomLevel');
+    const inlinePan = document.getElementById('inlinePanContainer');
+
+    function openMalhaModal() {
+      if (!modal) return;
+      modal.style.display = 'flex';
+      setTimeout(() => { modal.style.opacity = '1'; }, 10);
+      document.body.style.overflow = 'hidden';
+      // Posiciona inicialmente em torno da entrada (#/entrar ~22%)
+      setTimeout(() => { scrollMalhaTo(0.22); }, 50);
+    }
+
+    function closeMalhaModal() {
+      if (!modal) return;
+      modal.style.opacity = '0';
+      setTimeout(() => {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+      }, 220);
+    }
+
+    function zoomMalha(delta) {
+      currentMalhaZoom = Math.min(2.5, Math.max(0.4, currentMalhaZoom + delta));
+      applyMalhaZoom();
+    }
+
+    function resetMalhaZoom() {
+      currentMalhaZoom = 1.0;
+      applyMalhaZoom();
+    }
+
+    function applyMalhaZoom() {
+      if (imgWrapper) {
+        imgWrapper.style.transform = "scale(" + currentMalhaZoom + ")";
+      }
+      if (zoomText) {
+        zoomText.textContent = Math.round(currentMalhaZoom * 100) + "%";
+      }
+    }
+
+    function scrollMalhaTo(ratio) {
+      if (!modalBody) return;
+      const maxScroll = modalBody.scrollWidth - modalBody.clientWidth;
+      modalBody.scrollTo({ left: maxScroll * ratio, behavior: 'smooth' });
+    }
+
+    function scrollInlinePan(delta) {
+      if (inlinePan) {
+        inlinePan.scrollBy({ left: delta, behavior: 'smooth' });
+      }
+    }
+
+    // Suporte a Pan com Arrastar (Drag to Scroll) no Modal
+    let isDown = false;
+    let startX, scrollLeft;
+
+    if (modalBody) {
+      modalBody.addEventListener('mousedown', (e) => {
+        isDown = true;
+        modalBody.style.cursor = 'grabbing';
+        startX = e.pageX - modalBody.offsetLeft;
+        scrollLeft = modalBody.scrollLeft;
+      });
+      window.addEventListener('mouseup', () => {
+        isDown = false;
+        if (modalBody) modalBody.style.cursor = 'grab';
+      });
+      modalBody.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - modalBody.offsetLeft;
+        const walk = (x - startX) * 1.5;
+        modalBody.scrollLeft = scrollLeft - walk;
+      });
+
+      // Zoom via roda do mouse dentro do modal
+      modalBody.addEventListener('wheel', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          zoomMalha(e.deltaY < 0 ? 0.15 : -0.15);
+        }
+      }, { passive: false });
+    }
+
+    // Suporte a Pan com Arrastar no Inline Viewer
+    let isInlineDown = false;
+    let inlineStartX, inlineScrollLeft;
+    if (inlinePan) {
+      inlinePan.addEventListener('mousedown', (e) => {
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+        isInlineDown = true;
+        inlinePan.style.cursor = 'grabbing';
+        inlineStartX = e.pageX - inlinePan.offsetLeft;
+        inlineScrollLeft = inlinePan.scrollLeft;
+      });
+      window.addEventListener('mouseup', () => {
+        isInlineDown = false;
+        if (inlinePan) inlinePan.style.cursor = 'grab';
+      });
+      inlinePan.addEventListener('mousemove', (e) => {
+        if (!isInlineDown) return;
+        e.preventDefault();
+        const x = e.pageX - inlinePan.offsetLeft;
+        const walk = (x - inlineStartX) * 1.5;
+        inlinePan.scrollLeft = inlineScrollLeft - walk;
+      });
+    }
+
+    // Atalhos de teclado (ESC para fechar, +/- para zoom)
+    window.addEventListener('keydown', (e) => {
+      if (modal && modal.style.display === 'flex') {
+        if (e.key === 'Escape') closeMalhaModal();
+        if (e.key === '+' || e.key === '=') zoomMalha(0.15);
+        if (e.key === '-' || e.key === '_') zoomMalha(-0.15);
+        if (e.key === '0') resetMalhaZoom();
+      }
+    });
+  </script>
 </body>
 </html>
