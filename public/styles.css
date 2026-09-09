@@ -567,16 +567,19 @@ nav.barra-nav a[aria-current="page"]{color:var(--red)}
    Toasts e o respiro do body sobem junto: nada fica escondido atrás do botão. */
 body{padding-bottom:calc(124px + env(safe-area-inset-bottom))}
 .toasts{bottom:calc(168px + env(safe-area-inset-bottom))}
-.passo-fab{
+/* O GIRASSOL DA AURORA: FAB canônico do Figma (nó #22:2)
+   FUNDO BRANCO PURO (#FFFFFF), borda suave (#E6DFD0) e sombra sutil.
+   O girassol dourado (#E6A400) com miolo marrom (#6B4410) precisa de fundo claro para contrastar. */
+.passo-fab, .aurora-fab{
   position:fixed; right:16px; bottom:calc(98px + env(safe-area-inset-bottom));
-  z-index:60; width:54px; height:54px; border-radius:50%;
-  background:var(--ink); color:var(--bg); border:1px solid var(--ink);
-  font-size:22px; line-height:1; display:flex; align-items:center; justify-content:center;
-  box-shadow:0 6px 18px rgba(46,42,36,.28); cursor:pointer;
+  z-index:60; width:58px; height:58px; border-radius:50%;
+  background:#FFFFFF !important; color:var(--ink); border:1.5px solid #E6DFD0 !important;
+  font-size:24px; line-height:1; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 18px rgba(46,42,36,.14) !important; cursor:pointer;
   -webkit-tap-highlight-color:transparent; touch-action:manipulation;
   transition:transform .24s cubic-bezier(.34,1.56,.64,1);
 }
-.passo-fab:active{transform:scale(.92); transition-duration:60ms}
+.passo-fab:active, .aurora-fab:active{transform:scale(.92); transition-duration:60ms}
 .passo-bolha{
   position:fixed; right:16px; bottom:calc(162px + env(safe-area-inset-bottom));
   z-index:60; max-width:232px; background:var(--card); color:var(--ink);
@@ -635,9 +638,9 @@ body{padding-bottom:calc(124px + env(safe-area-inset-bottom))}
 /* ---------- Passo proativo: sugestões tipadas, ponto e resumo ---------- */
 /* Um PONTO, nunca um número: contador ao lado do ❋ lê como caixa de entrada em
    dívida; ponto lê como aviso — e some quando o motivo esfria, não no clique. */
-.passo-ponto{
-  position:absolute; top:7px; right:7px; width:9px; height:9px; border-radius:50%;
-  background:var(--atencao); box-shadow:0 0 0 2px var(--ink);
+.passo-ponto, .aurora-ponto{
+  position:absolute; top:7px; right:7px; width:10px; height:10px; border-radius:50%;
+  background:#B0392C; box-shadow:0 0 0 2px #FFFFFF;
 }
 .passo-resumo{
   margin:0 2px 4px; padding:9px 12px; font-size:14.5px; line-height:1.5;

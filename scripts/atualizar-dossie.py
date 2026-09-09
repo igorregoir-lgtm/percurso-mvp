@@ -1263,11 +1263,49 @@ def gerar_dossie():
         </p>
       </div>
 
+      <!-- Card em Destaque: O Logo Oficial da Aurora (Fundo Branco Puro #FFFFFF) -->
+      <div style="background: white; border: 1.5px solid #D4A017; border-radius: 14px; padding: 22px; margin: 24px 0; box-shadow: 0 4px 18px rgba(212,160,23,0.08);">
+        <div style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+          <div style="background: #FAF7F2; border: 1.5px solid #E6DFD0; border-radius: 16px; padding: 18px 24px; text-align: center; min-width: 170px;">
+            <img src="figma_images/aurora_fab_logo.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/aurora_fab_logo.png';" alt="FAB Oficial da Aurora no Figma" style="width: 85px; height: auto; display: inline-block; filter: drop-shadow(0 4px 12px rgba(46,42,36,0.12));">
+            <div style="font-size: 11.5px; font-weight: 700; color: #6B4410; margin-top: 8px;">Figma Nó #22:2</div>
+            <div style="font-size: 10.5px; color: var(--ink-muted);">Fundo Branco Puro</div>
+          </div>
+          
+          <div style="flex: 1; min-width: 280px;">
+            <div style="display: inline-block; background: #FFF4D9; color: #9A6F09; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 4px; margin-bottom: 6px;">
+              Identidade Canônica &bull; Contrato Visual Figma
+            </div>
+            <h3 style="font-size: 19px; font-weight: 700; color: var(--ink); margin: 0 0 6px;">O Botão Flutuante (FAB) da Aurora: 100% Fundo Branco</h3>
+            <p style="font-size: 14px; color: var(--ink-muted); line-height: 1.55; margin: 0 0 10px;">
+              O botão oficial da Aurora possui <strong>fundo branco puro (<code>#FFFFFF</code>)</strong> e contorno suave (<code>#E6DFD0</code>). 
+              Diferente do antigo "Passo" (que usava um asterisco claro sobre fundo escuro <code>var(--ink)</code>), a Aurora adota o fundo branco 
+              para que o <strong>Girassol dourado (<code>#E6A400</code>)</strong> com miolo marrom (<code>#6B4410</code>) resplandeça com máxima nitidez e calidez, 
+              sem competir com cores escuras.
+            </p>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; background: #FFFFFF; border: 1px solid #E6DFD0; padding: 4px 10px; border-radius: 6px; color: var(--ink);">
+                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #FFFFFF; border: 1px solid #CCC;"></span> Fundo: <code>#FFFFFF</code>
+              </span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; background: #FFFFFF; border: 1px solid #E6DFD0; padding: 4px 10px; border-radius: 6px; color: var(--ink);">
+                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #E6A400;"></span> Pétalas: <code>#E6A400</code>
+              </span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; background: #FFFFFF; border: 1px solid #E6DFD0; padding: 4px 10px; border-radius: 6px; color: var(--ink);">
+                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #6B4410;"></span> Miolo: <code>#6B4410</code>
+              </span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; background: #FFFFFF; border: 1px solid #E6DFD0; padding: 4px 10px; border-radius: 6px; color: var(--ink);">
+                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #B0392C; box-shadow: 0 0 0 1.5px #FFFFFF;"></span> Ponto Aviso: <code>#B0392C</code> (Anel Branco)
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; align-items: start; margin: 28px 0;">
         <div class="artifact-image-wrap">
           <img src="figma_images/aurora_painel_aberto.png" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/igorregoir-lgtm/percurso-mvp/main/public/figma_images/aurora_painel_aberto.png';" alt="Aurora Painel Aberto Figma" loading="lazy">
           <div style="padding: 10px; font-size: 12px; color: var(--ink-muted); background: white;">
-            Frame #23:2 no Figma: <em>"Aurora — o painel aberto · a porta para o que saiu do menu"</em>
+            Frame #23:2 no Figma: <em>"Aurora — o painel aberto · a porta para o que saiu do menu"</em> (Sem topo escuro)
           </div>
         </div>
 
@@ -1284,7 +1322,7 @@ def gerar_dossie():
           <div style="background: white; border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 12px;">
             <strong style="color: #9A6F09;">2. O Girassol no FAB (Floating Action Button):</strong>
             <p style="font-size: 13.5px; color: #333; margin-top: 4px;">
-              O botão flutuante com o girassol (🌻) exibe um ponto sutil de atenção apenas quando há uma pendência real do dia (ex.: chamada não realizada ou ciclo por fechar).
+              O botão flutuante com o girassol (🌻) sobre fundo branco puro exibe um ponto sutil de atenção com anel protetor branco apenas quando há uma pendência real do dia (ex.: chamada não realizada ou ciclo por fechar).
             </p>
           </div>
 
