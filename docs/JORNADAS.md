@@ -77,7 +77,7 @@ pedagógica continua dela; situação de risco escala para o caminho humano.
 | O que ela via passa a existir como dado, com data e comparação | Registrar é trabalho novo: ~3 min por observação e ~40 s por folha do dia — se isso não couber na rotina, o produto falha, e só a sessão de validação mede isso |
 | Devolução concreta: pauta de segunda, trajetória da turma | O extrator lexical entende menos variação de fala que um LLM; ela vai corrigir campos. A taxa de correção está instrumentada e o limite declarado é 40% (decisão 13) |
 | Alerta de ausência tira o "agir sob demanda" | O aviso de conteúdo sensível interrompe a fala dela e devolve encaminhamento humano — certo por proteção, mas é fricção real |
-| Proteção por controle de acesso: senha por pessoa, escopo de turma, consentimento e rastro (decisões 38–40) | O texto livre sobre criança agora existe no banco: o que impede o vazamento deixou de ser a ausência do campo. Troca consciente, declarada na decisão 40 |
+| Proteção por controle de acesso: escopo de turma, consentimento e rastro (decisões 38–40; a senha por pessoa saiu na 51) | O texto livre sobre criança agora existe no banco: o que impede o vazamento deixou de ser a ausência do campo. Troca consciente, declarada na decisão 40 |
 
 ---
 

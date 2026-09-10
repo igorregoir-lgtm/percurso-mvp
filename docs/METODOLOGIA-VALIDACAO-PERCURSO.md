@@ -46,7 +46,7 @@ rubrica. Enquanto ninguém real passar pelo fluxo, isso é hipótese.
 > **Quem é "ninguém real" mudou (02/09/2026).** Até a visita, a participante prevista era a
 > **pedagoga**. O campo mostrou que quem tem a dor do registro e escreve o relatório é a
 > **psicóloga**, e que a turma dela está fora da rubrica por decisão de projeto (decisão 31) — o
-> que torna a agenda do ciclo e a observação por criança inexecutáveis para ela (`src/api.js:431`).
+> que torna a agenda do ciclo e a observação por criança inexecutáveis para ela (`src/api.js:388`).
 > O protocolo em [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md) foi refeito em cima disso; a
 > variante pedagoga sobrevive lá na §3.4, para turma dentro da rubrica. Este documento acompanha:
 > o que muda é **em quem** cada hipótese é medida e **com qual tarefa**, não os limiares.
@@ -170,7 +170,7 @@ protocolo, nunca erro dela" chegou até a cabeça de quem usa. Se ela explicar c
 produto está gerando culpa — e culpa é o combustível do abandono medido em M5.
 
 **A tarefa 4 mede uma costura, não uma tela.** Confirmar a folha devolve a usuária a `#/hoje`
-(`public/app.js:6389`); desde 04/09/2026 o relato **abre sozinho** na Vivência, logo depois de confirmar a folha. O limiar de 20 s existe para separar "ela não
+(`public/app.js:6297`); desde 04/09/2026 o relato **abre sozinho** na Vivência, logo depois de confirmar a folha. O limiar de 20 s existe para separar "ela não
 entendeu o relatório" de "o produto soltou a mão dela no meio da tarefa" — são achados diferentes,
 com correções diferentes.
 

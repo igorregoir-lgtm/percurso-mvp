@@ -93,10 +93,10 @@ const COOKIE = 'percurso_uid';
 export function usuarioDa(req) {
   const raw = req.headers.cookie || '';
   const m = raw.split(';').map(s => s.trim()).find(s => s.startsWith(COOKIE + '='));
-  // O COOKIE DEIXOU DE SER O ID (decisão 39). Era `percurso_uid=5` — qualquer
-  // pessoa trocava o número no navegador e virava a psicóloga. Agora é um token
-  // opaco de 32 bytes que só o servidor sabe a quem pertence, e que a troca de
-  // senha e o arquivamento derrubam.
+  // O COOKIE NÃO É O ID. Era `percurso_uid=5` — qualquer pessoa trocava o
+  // número no navegador e virava a psicóloga. É um token opaco de 32 bytes que
+  // só o servidor sabe a quem pertence. A decisão 51 tirou a senha e MANTEVE
+  // isto: sem senha, o token é a única coisa que separa entrar de forjar.
   const token = m ? m.slice(COOKIE.length + 1) : null;
   const id = AUTH.educadorDoToken(token);
   if (!id) return null;
@@ -104,12 +104,7 @@ export function usuarioDa(req) {
   // arquivar alguém precisa valer AGORA. Este é o ponto único onde isso é
   // verdade para todas as rotas — pôr a checagem só no login deixaria a sessão
   // aberta em pé.
-  const u = get(`SELECT * FROM educador WHERE id = ? AND arquivado_em IS NULL`, id) ?? null;
-  // O HASH NUNCA SAI DAQUI. `SELECT *` o traz junto, e `GET /api/sessao`
-  // devolve este objeto inteiro ao navegador — sem esta linha, a autenticação
-  // publicaria o que ela existe para proteger.
-  if (u) delete u.senha_hash;
-  return u;
+  return get(`SELECT * FROM educador WHERE id = ? AND arquivado_em IS NULL`, id) ?? null;
 }
 
 function exigeUsuario(req) {
@@ -214,41 +209,24 @@ const cicloCorrente = () =>
 export const rotas = {
   'GET /api/sessao': (req) => ({
     usuario: usuarioDa(req),
-    // `primeiro_acesso` diz à tela qual formulário mostrar. NÃO é vazamento:
-    // saber que fulana ainda não definiu senha não ajuda quem não está na LAN, e
-    // esconder isso obrigaria a pessoa a adivinhar em qual campo digitar.
+    // A lista é a tela de entrada inteira: escolher quem está usando É entrar
+    // (decisão 51). Não há mais `primeiro_acesso` — não há senha a criar.
     usuarios: all(
-      `SELECT id, nome, apelido, papel, (senha_hash IS NULL) AS primeiro_acesso
+      `SELECT id, nome, apelido, papel
          FROM educador WHERE arquivado_em IS NULL ORDER BY id`),
   }),
 
-  // Autenticação (decisão 39). Antes, entrar era escolher um perfil numa lista.
-  'POST /api/sessao': async (req, body) => {
+  // Entrar é escolher quem está usando (decisão 51, que revoga a senha da 39).
+  // O que continua valendo: a pessoa tem de existir e não estar arquivada, e a
+  // sessão sai com TOKEN OPACO — o cookie nunca volta a ser o id.
+  'POST /api/sessao': (req, body) => {
     const u = get(`SELECT * FROM educador WHERE id = ?`, num(body.educador_id, 'educador_id'));
     if (!u) throw D.erro(404, 'Usuário não encontrado.');
     if (u.arquivado_em)
       throw D.erro(403, `${u.nome} está no arquivo desde ${D.dataBR(u.arquivado_em)} e não entra no Percurso. A coordenação pode trazer de volta.`);
 
-    const espera = AUTH.bloqueioDe(u.id);
-    if (espera) throw D.erro(429, `Muitas tentativas. Tente de novo em ${espera} segundo(s).`, { causa: 'bloqueado', espera });
-
-    // PRIMEIRO ACESSO. Não há senha semeada: senha em seed é senha publicada.
-    // Quem chega primeiro define a dela — e o limite disso está declarado na
-    // decisão 39: com dado real, a coordenação define todas antes de entregar o
-    // endereço.
-    if (!u.senha_hash) {
-      if (body.senha == null)
-        throw D.erro(401, `${u.apelido} ainda não tem senha. Crie uma agora — ela vale só neste Instituto.`, { causa: 'primeiro_acesso' });
-      await AUTH.definirSenha(u.id, body.senha);
-    } else if (!(await AUTH.confere(body.senha ?? '', u.senha_hash))) {
-      AUTH.contarErro(u.id);
-      throw D.erro(401, 'Senha incorreta.', { causa: 'senha' });
-    }
-
-    AUTH.limparErros(u.id);
     const token = AUTH.abrirSessao(u.id);
     const seguro = req.socket?.encrypted ? ' Secure;' : '';
-    delete u.senha_hash; delete u.senha_definida_em;
     return { usuario: u, _cookie: `${COOKIE}=${token}; Path=/; Max-Age=43200; HttpOnly;${seguro} SameSite=Lax` };
   },
 
@@ -257,27 +235,6 @@ export const rotas = {
     const m = raw.split(';').map(s => s.trim()).find(s => s.startsWith(COOKIE + '='));
     AUTH.encerrarSessao(m ? m.slice(COOKIE.length + 1) : null);
     return { ok: true, _cookie: `${COOKIE}=; Path=/; Max-Age=0; SameSite=Lax` };
-  },
-
-  // Trocar a própria senha. Exige a atual: sem isso, um navegador deixado
-  // aberto na sala vira uma conta tomada.
-  'POST /api/senha': async (req, body) => {
-    const u = exigeUsuario(req);
-    const atual = get(`SELECT senha_hash FROM educador WHERE id = ?`, u.id)?.senha_hash;
-    if (!(await AUTH.confere(body.senha_atual ?? '', atual)))
-      throw D.erro(401, 'A senha atual não confere.');
-    await AUTH.definirSenha(u.id, body.senha_nova);
-    return { ok: true, aviso: 'Senha trocada. Entre de novo — as sessões abertas caíram.' };
-  },
-
-  // A coordenação devolve alguém ao primeiro acesso. É o caminho de
-  // recuperação: não existe "esqueci a senha" num produto que não manda e-mail.
-  'POST /api/senha/redefinir': (req, body) => {
-    exigeCoordenacao(req);
-    const alvo = get(`SELECT id, nome FROM educador WHERE id = ?`, num(body.educador_id, 'educador_id'));
-    if (!alvo) throw D.erro(404, 'Usuário não encontrado.');
-    AUTH.redefinirParaPrimeiroAcesso(alvo.id);
-    return { ok: true, aviso: `${alvo.nome} volta ao primeiro acesso e define uma senha nova ao entrar.` };
   },
 
   // ---- Educadora ---------------------------------------------------------

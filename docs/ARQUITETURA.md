@@ -102,9 +102,9 @@ src/evidencia.js prova do consentimento em video (decisao 42) — arquivo em
                  o OPOSTO de transcricao.js: aqui apagar e' apagar a prova
 src/boletim.js   boletim de UMA crianca para quem responde por ela (decisao 43)
                  — nao persiste; monta do que ja' esta' registrado, como o recado
-src/auth.js      senha (scrypt do node:crypto) + sessao com token OPACO
-                 (decisao 39) — o cookie deixou de ser o id; sessoes em memoria,
-                 revogaveis; freio de tentativa por pessoa
+src/auth.js      sessao com token OPACO (o que restou da decisao 39 depois da
+                 51) — o cookie nao e' o id; sessoes em memoria, revogaveis.
+                 NAO ha senha: entrar e' escolher quem esta' usando
 src/auditoria.js rastro de leitura de dado individual (decisao 38)
 
 src/transcricao.js  audio longo -> texto pelo whisper.cpp do sistema (decisao 35)
@@ -216,7 +216,7 @@ aceitáveis apenas porque o dado é sintético.
 
 | Ordem | Item | Desenho proposto |
 |---|---|---|
-| 2.1 | Autenticação real | Senha por educador (hash + sal, `node:crypto`), sessão em cookie assinado; sem provedor externo — mantém zero dependência |
+| 2.1 | Autenticação real | **Voltou a ser pendência com a decisão 51**, que removeu a senha. O desenho é o que a decisão 39 já tinha implementado: senha por educador (scrypt do `node:crypto`) sobre o token opaco que ficou de pé. É pré-requisito de dado real e do campo livre de relato (F7) |
 | 2.2 | Transporte cifrado | Operação em rede local do Instituto com TLS (certificado próprio) ou túnel gerenciado; se sair da rede local, HTTPS obrigatório |
 | 2.3 | Trilha de auditoria | Tabela `auditoria` (quem, o quê, quando) alimentada pela camada de API; a tabela `atividade` já é o embrião |
 | 2.4 | Backup automatizado | Cópia diária dos três arquivos WAL para segunda mídia + teste de restauração mensal documentado; hoje o backup é manual por cópia |

@@ -129,8 +129,9 @@ ai/scripts/demo-celular.sh
 
 Sobe modelo + Percurso + túnel HTTPS temporário e imprime a URL `trycloudflare.com` com QR code —
 iPhone e Android abrem, instalam como app e **a voz funciona** (HTTPS ✓). `Ctrl+C` derruba tudo e
-a URL deixa de existir. Ferramenta de demonstração (decisão 25): pública, efêmera, sem senha —
-só com os dados sintéticos. Requisitos na máquina que apresenta: `brew install cloudflared qrencode`.
+a URL deixa de existir. Ferramenta de demonstração (decisão 25): pública e efêmera — e, **desde a
+decisão 51, sem senha nenhuma**, o que significa que qualquer pessoa com a URL entra como qualquer
+perfil, inclusive coordenação. Só com os dados sintéticos, e feche o túnel ao terminar. Requisitos na máquina que apresenta: `brew install cloudflared qrencode`.
 
 Para instalar o Percurso em OUTRO computador (o do Instituto), o passo a passo sem jargão está em
 [`docs/MANUAL-DE-INSTALACAO.md`](docs/MANUAL-DE-INSTALACAO.md) — inclui o início automático no
@@ -193,11 +194,12 @@ equivalentes: **Render é o deploy de operação; Vercel é vitrine.**
 
 ## Quem entra e o que vê
 
-**Cada pessoa entra com a própria senha** (decisão 39, 04/09/2026). Não há senha semeada: quem
-ainda não tem cria a dela na primeira entrada, e a coordenação devolve qualquer pessoa ao primeiro
-acesso quando alguém esquece — não existe "esqueci a senha" num produto que não manda e-mail. O
-cookie é um token opaco, não o id: até 04/09 bastava trocar o número no navegador para virar outra
-pessoa. Na tela inicial escolhe-se o perfil e digita-se a senha:
+**Não há senha** (decisão 51, 07/09/2026): escolher o perfil na tela inicial já entra. O que isso
+custa está dito na própria decisão — **quem alcança o endereço entra como qualquer perfil da lista**,
+e por isso o produto só roda com dado sintético até que a autenticação volte. O que ficou de pé da
+decisão 39 é o **cookie como token opaco**, não o id: sem ele bastaria trocar o número no navegador
+para virar outra pessoa. Continuam controlando o que cada uma vê o papel, o escopo de turma, o
+consentimento e o rastro de acesso. Na tela inicial escolhe-se o perfil:
 
 | Perfil | Papel | Vê |
 |---|---|---|

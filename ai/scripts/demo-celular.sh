@@ -78,14 +78,13 @@ for i in $(seq 1 30); do
 done
 echo "  app pronto."
 
-# ---- 2b. FECHAR A JANELA DE PRIMEIRO ACESSO ---------------------------------
-# A autenticacao (decisao 39) nao semeia senha: `NULL` = "crie a sua ao entrar".
-# Na rede local isso e' o custo aceito. Numa URL PUBLICA, nao — quem achasse o
-# endereco primeiro reivindicaria a conta. A propria decisao 39 nomeia a
-# mitigacao ("a coordenacao define todas as senhas antes de entregar o
-# endereco"); aqui ela deixa de ser conselho e vira passo do script.
-SENHA_DEMO="${SENHA_DEMO:-percurso demonstracao}"
-node "$RAIZ/scripts/senhas-demo.mjs" --senha "$SENHA_DEMO" | sed 's/^/  /'
+# ---- 2b. NAO HA MAIS SENHA A DEFINIR ----------------------------------------
+# A decisao 51 removeu a senha: entrar e' escolher um perfil na lista. Em LAN
+# com dado sintetico e' o custo aceito. NUMA URL PUBLICA NAO E': o passo que
+# antes fechava a janela de primeiro acesso nao existe mais, e nao ha nada a
+# fechar no lugar dele. Quem receber o endereco entra como qualquer perfil —
+# inclusive coordenacao e diretoria. E' por isso que o aviso do fim mudou de
+# tom, e por que este script so' pode rodar com dado sintetico.
 
 
 # ---- 3. túnel HTTPS temporário ----------------------------------------------
@@ -120,10 +119,9 @@ echo
 echo "  🎙  A voz funciona no celular (HTTPS ✓). Entre como Maria e toque em"
 echo "     Hoje → Contar como foi. O copilot está em Refletir$( [ "$IA" = "1" ] && echo " (IA ligada)" || echo " (IA DESLIGADA nesta execução)")."
 echo
-echo "  🔑 Senha de todos os perfis nesta demonstração:"
-echo "     $SENHA_DEMO"
-echo "     (definida agora, não vem da semente. Cada pessoa troca a dela no"
-echo "      cabeçalho, em \"senha\".)"
+echo "  🔓 NÃO HÁ SENHA (decisão 51). Quem abrir esta URL entra como qualquer"
+echo "     perfil da lista — inclusive coordenação e diretoria."
+echo "     Só use com dado sintético, e feche o túnel ao terminar."
 echo
 echo "  ⚠  URL pública e efêmera, dados 100% sintéticos."
 echo "     Feche com Ctrl+C — o túnel morre e a URL deixa de existir."

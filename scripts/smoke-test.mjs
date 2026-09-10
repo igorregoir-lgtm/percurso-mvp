@@ -29,11 +29,10 @@ const GET = (quem, c) => req(quem, c);
 const POST = (quem, c, b) => req(quem, c, { method: 'POST', body: JSON.stringify(b || {}) });
 const DELETE = (quem, c, b) => req(quem, c, { method: 'DELETE', body: JSON.stringify(b || {}) });
 
-// AUTENTICAÇÃO (decisão 39). A seed não semeia senha — senha em seed é senha
-// publicada. Então o PRIMEIRO login de cada pessoa CRIA a senha dela, e é esse
-// o caminho que a bateria exercita: o mesmo que a educadora percorre.
-const SENHA = 'roda de conversa';
-const ENTRAR = (quem, id, senha = SENHA) => POST(quem, '/api/sessao', { educador_id: id, senha });
+// SESSÃO (decisão 51, que revogou a senha da 39). Entrar é escolher quem está
+// usando: o corpo leva só o id, e a resposta traz o token opaco no cookie. É o
+// mesmo caminho que a educadora percorre na tela.
+const ENTRAR = (quem, id) => POST(quem, '/api/sessao', { educador_id: id });
 
 console.log('\n\x1b[1mPercurso — testes do fluxo principal\x1b[0m');
 console.log(`Alvo: ${BASE}\n`);
@@ -432,73 +431,55 @@ secao('9c · As faltas ditas na fala viram sugestão, nunca presunção (F6)');
 }
 
 // ============================================================================
-secao('0b · Autenticação (decisão 39)');
+secao('0b · Sessão sem senha (decisão 51)');
 {
-  // O que a autenticação PROMETE, item por item. Antes desta decisão, entrar
-  // era escolher um perfil numa lista e o cookie era o próprio id.
+  // O que a decisão 51 PROMETE, item por item. Ela removeu a senha da 39 e
+  // MANTEVE o token opaco: sem prova de identidade, o token passa a ser a única
+  // coisa que separa entrar de forjar — então é ele que esta seção cerca.
   // A seção cria a PRÓPRIA pessoa: usar um id da seed amarraria o teste ao
   // tamanho da semente, e usar um id alto amarraria à ordem das seções.
-  const criada = await POST('rita', '/api/equipe', { nome: 'Teste de Senha', papel: 'educador' });
+  const criada = await POST('rita', '/api/equipe', { nome: 'Teste de Sessão', papel: 'educador' });
   T('a coordenação cria a pessoa deste teste', criada.status === 200, `(${criada.status})`);
   const NOVA = criada.corpo?.pessoa?.id;
 
-  const semSenha = await POST('novato', '/api/sessao', { educador_id: NOVA });
-  T('sem senha e sem senha definida, a resposta é primeiro acesso (401)',
-    semSenha.status === 401 && semSenha.corpo.causa === 'primeiro_acesso', `(${semSenha.status})`);
+  const entrou = await ENTRAR('novato', NOVA);
+  T('escolher o perfil entra, sem senha nenhuma no corpo', entrou.status === 200, `(${entrou.status})`);
+  T('e a sessão vale na requisição seguinte', (await GET('novato', '/api/hoje')).status === 200);
 
-  const curta = await POST('novato', '/api/sessao', { educador_id: NOVA, senha: 'abc' });
-  T('senha curta demais é recusada (422), com o motivo', curta.status === 422 && /8 caracteres/.test(curta.corpo.erro));
+  const comSenha = await POST('novato2', '/api/sessao', { educador_id: NOVA, senha: 'sobra de cliente antigo' });
+  T('um cliente velho que ainda mande senha entra assim mesmo — o campo é ignorado',
+    comSenha.status === 200, `(${comSenha.status})`);
 
-  const criou = await ENTRAR('novato', NOVA);
-  T('o primeiro acesso cria a senha e entra', criou.status === 200);
+  const inexistente = await POST('x', '/api/sessao', { educador_id: 999999 });
+  T('id que não existe é 404', inexistente.status === 404, `(${inexistente.status})`);
 
-  const errada = await POST('x2', '/api/sessao', { educador_id: NOVA, senha: 'outra coisa' });
-  T('senha errada é 401, e a causa diz que é senha', errada.status === 401 && errada.corpo.causa === 'senha');
-
-  const denovo = await ENTRAR('novato2', NOVA);
-  T('a senha criada continua valendo na entrada seguinte', denovo.status === 200);
-
-  // O COOKIE DEIXOU DE SER O ID. Este é o teste que mais importa: com o cookie
-  // antigo, trocar o número no navegador bastava para virar outra pessoa.
+  // O COOKIE NÃO É O ID. Este é o teste que mais importa, e o que mais importa
+  // AGORA: era a outra metade da decisão 39, e é a metade que ficou de pé.
   const forjado = await fetch(`${BASE}/api/hoje`, { headers: { cookie: 'percurso_uid=1' } });
   T('cookie forjado com o id não abre sessão (401)', forjado.status === 401, `(${forjado.status})`);
   const tokenChutado = await fetch(`${BASE}/api/hoje`, { headers: { cookie: 'percurso_uid=aaaaaaaaaaaaaaaaaaaaaaaa' } });
   T('token inventado também não (401)', tokenChutado.status === 401, `(${tokenChutado.status})`);
 
-  // O hash nunca sai: `SELECT *` o traz, e GET /api/sessao devolve o usuário.
+  // Não sobrou resíduo de senha em lugar nenhum do que vai ao navegador.
   const eu = (await GET('novato', '/api/sessao')).corpo;
-  T('o hash da senha NUNCA chega ao navegador',
-    !JSON.stringify(eu).includes('scrypt') && !('senha_hash' in (eu.usuario ?? {})));
-  T('mas a lista diz quem ainda está no primeiro acesso, para a tela saber o que pedir',
-    eu.usuarios.every(u => 'primeiro_acesso' in u));
+  const cru = JSON.stringify(eu);
+  T('nada de senha chega ao navegador — nem hash, nem primeiro acesso',
+    !cru.includes('scrypt') && !cru.includes('senha') && !cru.includes('primeiro_acesso'));
+  T('a lista de quem pode entrar continua vindo', Array.isArray(eu.usuarios) && eu.usuarios.length > 0);
 
-  // Freio de tentativa: scrypt protege o BANCO, não o formulário.
-  let bloqueou = false;
-  for (let i = 0; i < 8; i++) {
-    const r = await POST('x3', '/api/sessao', { educador_id: NOVA, senha: `chute ${i}` });
-    if (r.status === 429) { bloqueou = true; break; }
-  }
-  T('tentativas seguidas travam a conta por um tempo (429)', bloqueou);
+  // As rotas de senha SUMIRAM — não ficaram respondendo 401 por engano.
+  const troca = await POST('novato', '/api/senha', { senha_atual: 'a', senha_nova: 'b' });
+  T('POST /api/senha não existe mais (404)', troca.status === 404, `(${troca.status})`);
+  const redefine = await POST('rita', '/api/senha/redefinir', { educador_id: NOVA });
+  T('POST /api/senha/redefinir não existe mais (404)', redefine.status === 404, `(${redefine.status})`);
 
-  // Recuperação: a coordenação devolve ao primeiro acesso. Não há e-mail.
-  const porEducadora = await POST('maria', '/api/senha/redefinir', { educador_id: NOVA });
-  T('educadora NÃO redefine a senha de ninguém (403)', porEducadora.status === 403, `(${porEducadora.status})`);
-  const reset = await POST('rita', '/api/senha/redefinir', { educador_id: NOVA });
-  T('a coordenação devolve alguém ao primeiro acesso', reset.status === 200);
-  const depoisDoReset = await POST('novato3', '/api/sessao', { educador_id: NOVA });
-  T('e a pessoa volta a ser pedida a criar senha',
-    depoisDoReset.status === 401 && depoisDoReset.corpo.causa === 'primeiro_acesso');
-  T('o reset derruba a sessão que estava aberta',
-    (await GET('novato', '/api/hoje')).status === 401);
-
-  // Trocar a própria senha exige a atual.
-  await ENTRAR('novato4', NOVA, 'senha nova daqui');
-  const trocaSemAtual = await POST('novato4', '/api/senha', { senha_atual: 'errada', senha_nova: 'outra senha longa' });
-  T('trocar a senha sem a atual é recusado (401)', trocaSemAtual.status === 401, `(${trocaSemAtual.status})`);
-  const troca = await POST('novato4', '/api/senha', { senha_atual: 'senha nova daqui', senha_nova: 'terceira senha' });
-  T('com a atual, a troca acontece', troca.status === 200);
-  T('e a troca derruba as sessões abertas — inclusive a de quem trocou',
-    (await GET('novato4', '/api/hoje')).status === 401);
+  // Arquivar continua fechando a porta da ENTRADA: é o único controle de acesso
+  // que sobra ali, e sem senha ele carrega sozinho o peso que dividia com ela.
+  // (Que a sessão JÁ ABERTA também cai é a §22, e continua valendo.)
+  const arq = await POST('rita', '/api/equipe/arquivar', { id: NOVA });
+  T('a coordenação arquiva a pessoa deste teste', arq.status === 200, `(${arq.status})`);
+  const arquivada = await ENTRAR('novato3', NOVA);
+  T('quem está no arquivo não entra (403)', arquivada.status === 403, `(${arquivada.status})`);
 }
 
 // ============================================================================

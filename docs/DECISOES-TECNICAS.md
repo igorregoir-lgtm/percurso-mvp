@@ -987,6 +987,10 @@ essa é decisão de quem responde pelo Instituto — não do código.
 
 ### 39. Cada pessoa entra com a própria senha — e o cookie deixa de ser o id
 
+> **REVOGADA EM PARTE pela decisão 51 (07/09/2026).** A senha saiu; o token opaco de sessão
+> ficou. O registro abaixo continua aqui porque descreve por que as duas peças foram desenhadas
+> juntas — e é o que explica por que a 51 não desfez as duas.
+
 **Origem:** era a **dívida nº 1** do produto e o **último bloqueio** do campo livre de relato (F7).
 Até 04/09/2026, "entrar" era escolher um perfil numa lista: identificação, não autenticação.
 
@@ -1526,3 +1530,45 @@ esta rodada veio consertar.
 | ~~Velocidade do whisper nunca medida~~ **— o produto passou a medir a si mesmo (OPAR 05/09)** | A porta B prometia um tempo que ninguém dimensionou | Feito: cada transcrição registra duração do áudio e milissegundos de máquina (sem texto, sem pessoa, sem encontro), e a tela mostra a **mediana observada** — "transcrever um minuto tem levado ~N segundos nesta máquina". O benchmark de bancada deixou de ser necessário; o número nasce da operação, no notebook deles |
 | ~~Capturar depende de um encontro já existir~~ **— paga em 05/09/2026 (OPAR)** | Era o beco da porta C | Feito, e menor do que a dívida dizia: a chamada já aceitava data retroativa. Faltava `#/registrar` deixar escolher a data e, sem encontro, levar à chamada daquele dia |
 | Encontro agendado (agenda futura) continua fora | Não dá para pré-lançar o semestre | Deliberado (OPAR 05/09): encontro sem presença entra em cinco denominadores — cobertura do registro, número de encontros do relatório do doador, chamadas em aberto, estado do registro e contagem por educador. Antes de agendar, «existe encontro» tem de deixar de significar «a chamada foi feita» em sete lugares |
+
+---
+
+### 51. A senha sai; o token opaco fica (07/09/2026)
+
+**Origem:** pedido direto do dono do produto — *"exclua a necessidade de senha"* —, feito depois de
+a tela de entrada travar uma sessão de inspeção do próprio artefato. A decisão 39 tinha oito dias.
+
+**O que foi removido.** `scrypt`, o hash no banco, o primeiro acesso, o freio de tentativa, a troca
+de senha no cabeçalho e a redefinição pela coordenação em Pessoas. As colunas `senha_hash` e
+`senha_definida_em` saíram do esquema; as rotas `POST /api/senha` e `POST /api/senha/redefinir`
+deixaram de existir (respondem 404, e há teste que cobra isso). `scripts/senhas-demo.mjs` foi
+apagado. Entrar volta a ser escolher quem está usando, como na **decisão 8**.
+
+**O que foi mantido, e por quê.** A 39 trouxe DUAS peças, e elas não são a mesma coisa. A senha era
+prova de identidade; o **token opaco de 32 bytes** é o que impede forjar sessão. O cookie antigo era
+`percurso_uid=5` — trocar o número no navegador bastava para virar a psicóloga. Tirar a senha não
+pede de volta esse buraco, e voltar a ele seria trocar um pedido de simplificação por uma
+regressão que ninguém pediu. Então: sem senha, com token. Os dois testes que provam isso —
+cookie forjado com id e token inventado — continuam na §0b da bateria, agora como a coisa mais
+importante que ela verifica.
+
+**O que isto custa, declarado.** Não há mais prova de identidade: **quem alcança o endereço entra
+como qualquer perfil da lista**, inclusive coordenação e diretoria. Numa LAN com dado sintético é o
+custo aceito, e é o mesmo regime que valeu até 04/09/2026. Duas consequências concretas:
+
+1. **A dívida nº 1 volta a existir.** O campo livre de relato (F7) tinha a autenticação como
+   *último* bloqueio; ele volta a depender dela. Antes de dado real, esta decisão precisa ser
+   revista — não é um detalhe de conforto, é a condição que a 39 existia para criar.
+2. **`ai/scripts/demo-celular.sh` ficou mais perigoso.** Ele abre um túnel HTTPS público. O passo
+   que fechava a janela de primeiro acesso não existe mais, e não há nada a pôr no lugar: o aviso
+   final do script passou a dizer, com todas as letras, que qualquer pessoa com a URL entra como
+   qualquer perfil.
+
+**O que continua controlando acesso.** O papel (educadora não abre painel de coordenação), o escopo
+por turma, o arquivamento — quem está no arquivo não entra, e a sessão aberta cai no mesmo instante
+— e o rastro de acesso a dado individual da decisão 38. Nenhum deles foi tocado.
+
+**Verificado:** 222 asserções unitárias e 512 da bateria HTTP, com banco recém-semeado. Inclui, na
+§0b: entrar sem senha; um cliente antigo que ainda mande `senha` no corpo entra assim mesmo (o campo
+é ignorado, não recusado); cookie forjado e token inventado seguem em 401; nenhuma string de senha
+ou `primeiro_acesso` chega ao navegador; e as duas rotas de senha respondem 404.

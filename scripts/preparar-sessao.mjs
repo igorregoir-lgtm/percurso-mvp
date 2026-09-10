@@ -210,9 +210,8 @@ if (!diaLetivo(turma.turno, hoje())) {
 
 console.log('\nNa tela Hoje a data acima aparece em "Datas ainda sem chamada".');
 console.log('A sequência da sessão é a real: chamada (recria o encontro) → registro por voz → relato → recado.');
-console.log('A participante entra por "Entrar", escolhe o perfil da psicóloga e DEFINE UMA SENHA');
-console.log('  (decisão 39: não há senha semeada; a primeira entrada cria a dela). Se ela já tiver');
-console.log('  entrado antes e não lembrar, a coordenação usa "Redefinir a senha" em Pessoas.');
+console.log('A participante entra por "Entrar" e escolhe o perfil da psicóloga — não há senha');
+console.log('  (decisão 51). Escolher o nome na lista já abre a sessão dela.');
 console.log('Para desfazer: node scripts/reset.mjs');
 console.log('O smoke test NÃO roda sobre um banco preparado: rode `node scripts/reset.mjs` antes de `npm test`.');
 

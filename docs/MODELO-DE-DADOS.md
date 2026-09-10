@@ -143,21 +143,18 @@ em agosto"*; virar uma segunda cópia do prontuário seria exatamente o risco qu
 reduzir. A gravação mora em `exigeAcessoCrianca`, o portão único: espalhá-la por rota garantiria que
 a próxima rota esqueceria.
 
-## Autenticação (decisão 39)
+## Sessão (decisão 51, que revogou a senha da 39)
 
-Duas colunas em `educador`, e nenhuma tabela nova:
+**Nenhuma coluna.** A decisão 39 tinha posto `senha_hash` e `senha_definida_em` em `educador`; a 51
+tirou as duas do esquema. O banco não guarda nada sobre entrar.
 
-```sql
-senha_hash        TEXT,   -- scrypt$N$r$p$sal$chave — NULL significa PRIMEIRO ACESSO
-senha_definida_em TEXT
-```
+As sessões nunca moraram no banco, e continuam fora dele: **token opaco de 32 bytes em memória**,
+revogável, que cai quando a pessoa é arquivada ou o servidor reinicia. É o que separa entrar de
+forjar — o cookie não é o id.
 
-**Os parâmetros do scrypt ficam no hash, não só no código.** Subir o custo depois não pode
-invalidar a senha de quem já entrou: o hash antigo continua conferível pelos parâmetros dele.
-
-**`NULL` é primeiro acesso, e não há senha semeada** — senha em seed é senha publicada. As sessões
-não moram no banco: são token opaco em memória, revogável, e caem quando a pessoa troca a senha, é
-arquivada ou tem a senha redefinida pela coordenação.
+**O que isto custa está na decisão 51:** sem senha, quem alcança o endereço entra como qualquer
+perfil. O que ainda protege dado individual é o papel, o escopo de turma, o consentimento e o rastro
+de acesso da decisão 38.
 
 ## O campo livre de relato (decisão 40)
 
