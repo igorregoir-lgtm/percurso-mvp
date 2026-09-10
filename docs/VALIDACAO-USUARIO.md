@@ -14,8 +14,8 @@
 > que quem tem a dor do registro, quem escreve o relatório e quem foi improvisada na demo ao vivo é
 > a **psicóloga** — e que a turma dela, a Vivência terapêutica, está **fora da rubrica** por
 > decisão de projeto ([decisão 31](DECISOES-TECNICAS.md)). Consequência dura: as antigas tarefas 4
-> e 5 (agenda do ciclo, observação com âncoras) **não são executáveis por ela** — `#/ciclo` responde
-> 422 para a turma dela, por construção (`src/api.js:309`). Não dava para trocar a persona e manter
+> e 5 (agenda do ciclo, observação com âncoras) **não são executáveis por ela** — `#/hoje?detalhe=ciclo` responde
+> 422 para a turma dela, por construção (`src/api.js:388`). Não dava para trocar a persona e manter
 > a lista. As seis tarefas foram refeitas do zero, a partir do task flow do
 > [Exercício 03](task-flow/README.md) e dos três destinos do registro que a jornada v2 nomeia:
 > o relatório do conselho, o recado aos pais e a prova para quem financia.
@@ -33,14 +33,14 @@ avaliação acadêmica". A exigência vem da semana 5, está admitida como pende
 [`TESTES.md`](TESTES.md) ("a validação com usuário real é a etapa seguinte") e aparece como item
 1.3 do Horizonte 1 em [`ARQUITETURA.md`](ARQUITETURA.md).
 
-O motivo é simples. O MVP tem 381 asserções de fluxo e 167 testes unitários — mas teste
+O motivo é simples. O MVP tem 443 asserções de fluxo e 179 testes unitários — mas teste
 automatizado prova que o sistema faz o que o código diz, não que a profissional consegue usá-lo.
 Desde a visita, o produto está ancorado em duas frases dela, literais:
 
 > *"Eu acho que o maior desafio aqui é registrar o que você fez, né? Essa é a maior dificuldade, é
 > o registro."* · *"Você depois tem que sair daqui, preencher o relatório… Não dá, não dá."*
 
-E em promessas verificáveis só por observação: **40 segundos de fala que viram registro**, o
+E em promessas verificáveis só por observação: **uma fala curta que vira registro**, o
 **relatório no padrão do conselho sem escrever à noite**, e o **custo total do gatilho ao relato
 liberado dentro de ~3 minutos**. Enquanto nenhuma profissional real passou pelo fluxo com o
 aparelho na própria mão, essas promessas são hipótese, não evidência. Este protocolo existe para
@@ -88,7 +88,7 @@ node scripts/reset.mjs && node scripts/preparar-sessao.mjs --lapso && node serve
   > elemento do cartão preso à chamada **de hoje**, então sumia em dia não letivo e o recado só era
   > alcançável pela URL. O protocolo mandava registrar isso como "não — entrada ausente na tela
   > Hoje". Corrigido em `48ec1dd`: o botão passou a seguir o **encontro da folha**
-  > (`public/app.js:539`), como o resto do cartão. **A ressalva não vale mais** — se a tarefa 6
+  > (`public/app.js:640`), como o resto do cartão. **A ressalva não vale mais** — se a tarefa 6
   > falhar agora, é achado de verdade, não defeito conhecido.
 
 **Regras do facilitador.**
@@ -125,10 +125,10 @@ reconhecer sucesso; não é dita a ela.
 |---|---|---|---|---|
 | 1 | Voltar depois de um tempo fora | "Faz nove dias que você não entra aqui. A semana foi corrida, aconteceu de tudo. Entre e me diga o que você faria agora." | `#/entrar` → perfil da psicóloga → `#/hoje` com a retomada | Ela **age antes de se justificar**, em menos de 30 s. Esta tarefa é a Provocação Longa do Protocolo do Lapso — ver §3.3 |
 | 2 | A chamada do sábado que ficou | "Sábado passado ficou sem chamada. Estas duas crianças faltaram." *(o facilitador escolhe dois nomes do seed antes da sessão e os mostra num papel)* | `#/hoje` → "Datas ainda sem chamada" → `#/chamada?data=…` | Chamada salva com as duas faltas **na data do sábado**, não na de hoje. Tempo contra o limiar de 2 min |
-| 3 | Registrar o encontro | "O grupo acabou agora. Registre este encontro no sistema, do jeito que for mais rápido para você." *(entregar o cartão de cenário abaixo)* | `#/hoje` → `#/voz` (≈40 s) → `#/confirmar` | Folha confirmada. **Não contar campos à mão** — o sistema conta: ver §5, medida específica |
-| 4 | O relatório do conselho | "Terminou o que você precisava fazer hoje, ou ficou faltando alguma coisa?" | `#/hoje` → `#/relato` → "Revisei — liberar o relato" | Relato liberado. **Cronometrar do "Confirmar e guardar" até ela achar o caminho** — acima de 20 s ou com ajuda é achado de navegação, não de compreensão |
-| 5 | A pergunta da assistente social | "A assistente social do projeto parceiro te pergunta como está uma criança que ela acompanha. Responda pelo sistema." | `#/criancas` → `#/crianca/:id` → cartão "Parecer a profissional parceiro", **bloqueado** | Ela chega ao parecer **e explica o bloqueio com as próprias palavras**. Anotar a explicação literal: se ela ler como erro dela, o produto está gerando culpa |
-| 6 | O recado dos responsáveis | "Antes de sair, resolva o recado que você mandaria hoje no grupo dos responsáveis." | `#/hoje` → o botão de recado **da turma da sessão** → `#/recado` → copiar / abrir no WhatsApp. Ela
+| 3 | Registrar o encontro | "O grupo acabou agora. Registre este encontro no sistema, do jeito que for mais rápido para você." *(entregar o cartão de cenário abaixo)* | `#/hoje` → `#/registrar` (≈40 s) → `#/registrar?passo=confirmar` | Folha confirmada. **Não contar campos à mão** — o sistema conta: ver §5, medida específica |
+| 4 | O relatório do conselho | "Terminou o que você precisava fazer hoje, ou ficou faltando alguma coisa?" | `#/hoje` → `#/sai-daqui?aba=relato` → "Revisei — liberar o relato" | Relato liberado. **Cronometrar do "Confirmar e guardar" até ela achar o caminho** — acima de 20 s ou com ajuda é achado de navegação, não de compreensão |
+| 5 | A pergunta da assistente social | "A assistente social do projeto parceiro te pergunta como está uma criança que ela acompanha. Responda pelo sistema." | `#/crianca` → `#/crianca/:id` → cartão "Parecer a profissional parceiro", **bloqueado** | Ela chega ao parecer **e explica o bloqueio com as próprias palavras**. Anotar a explicação literal: se ela ler como erro dela, o produto está gerando culpa |
+| 6 | O recado dos responsáveis | "Antes de sair, resolva o recado que você mandaria hoje no grupo dos responsáveis." | `#/hoje` → o botão de recado **da turma da sessão** → `#/sai-daqui?aba=recado` → copiar / abrir no WhatsApp. Ela
 responde por duas turmas, então o cartão traz **dois** botões, nomeados: "Recado · Vivência · Sábado
 manhã" e "· Sábado tarde". **Escolher a turma certa faz parte da tarefa** — anotar se ela hesita | Recado copiado ou aberto. Anotar **se ela edita antes de mandar e o que edita** — é o que ela faz hoje à mão, grupo por turma |
 
@@ -150,8 +150,8 @@ qualquer coisa acima disso na sessão é sinal, não ruído do cenário.
 > está escrito acima como limiar (os 20 s da tarefa 4) e como aviso (a tarefa 6 em dia não letivo).
 
 > **Por que a tarefa 5 termina num bloqueio.** Ela não é usabilidade: é o teste de **H3**. A
-> psicóloga não pode registrar o consentimento — só a coordenação (`src/api.js:476`), e a tela diz
-> isso a ela (`public/app.js:1044`). O sucesso da tarefa é ela entender **por que não sai**, não
+> psicóloga não pode registrar o consentimento — só a coordenação (`src/api.js:829`), e a tela diz
+> isso a ela (`public/app.js:1473`). O sucesso da tarefa é ela entender **por que não sai**, não
 > conseguir emitir. E o destino é literal do campo: *"que daí seria entre profissionais, que é mais
 > rico ainda"*.
 
@@ -179,7 +179,7 @@ Nesta versão do protocolo elas ficam **dentro** das tarefas:
   *"uma criança acabou de te chamar. Sai daí agora."* — 60 s de conversa sobre outra coisa —
   *"pronto, voltou. Continua."*
   > **Declarado antes de medir:** neste ponto o rascunho vive na **memória da página**
-  > (`ctx.folha.sugestao`, `public/app.js`), não no banco. Sair da tela e voltar por `#/voz` perde a
+  > (`ctx.folha.sugestao`, `public/app.js`), não no banco. Sair da tela e voltar por `#/registrar` perde a
   > extração; recarregar a página também. A medição aqui provavelmente confirma uma fragilidade
   > conhecida em vez de descobrir uma — e é por isso que ela está escrita aqui antes da sessão, e
   > não depois.
@@ -192,12 +192,12 @@ Primeira infância), o fluxo do ciclo existe e as tarefas são estas. Rodar `pre
 
 | # | Tarefa | Enunciado | Rota esperada | Sucesso quando |
 |---|---|---|---|---|
-| 1 | Entrar | "Entre no sistema como você entraria num dia normal de trabalho." | `#/entrar` → `#/hoje` | Chega à tela Hoje e diz o que faria primeiro |
+| 1 | Entrar | "Entre no sistema como você entraria num dia normal de trabalho." | `#/entrar` → `#/hoje` | Chega à tela Hoje e diz o que faria primeiro. **Não há senha** (decisão 51, 07/09/2026): escolher o próprio nome na lista já entra. A tarefa passou a medir só se ela reconhece o perfil dela — o passo da senha, que era observação em 04/09, deixou de existir |
 | 2 | Chamada | "Registre a presença da turma de hoje. Duas crianças faltaram — estas aqui." | `#/chamada` | Chamada salva com as duas faltas corretas |
-| 3 | Folha do dia por voz | "Conte como foi o dia de hoje **falando**, sem digitar." *(cartão: "Hoje a atividade foi leitura em roda. A turma participou bem, mas o barulho da rua atrapalhou. Duas crianças faltaram. Amanhã vamos continuar a história.")* | `#/folha` → `#/voz` → `#/confirmar` | Folha confirmada; taxa de correção pela §5 |
-| 4 | Agenda do ciclo | "Descubra quais crianças ainda faltam observar neste ciclo — e por que alguma delas aparece bloqueada." | `#/ciclo` | Aponta uma pendente e explica um bloqueio com as próprias palavras |
-| 5 | Observação com âncoras | "Faça a observação de uma dessas crianças pendentes." | `#/observacao/:id` | Cinco dimensões marcadas e salvas; cronometrar contra a promessa de ~3 min |
-| 6 | Fechar | "Encerre o seu registro do dia: feche a folha e saia do sistema." | fecho da folha em `#/folha` → sair | Folha fechada; anotar a reação literal à tela de fecho da turma, se ela aparecer |
+| 3 | Folha do dia por voz | "Conte como foi o dia de hoje **falando**, sem digitar." *(cartão: "Hoje a atividade foi leitura em roda. A turma participou bem, mas o barulho da rua atrapalhou. Duas crianças faltaram. Amanhã vamos continuar a história.")* | `#/registrar?passo=mao` → `#/registrar` → `#/registrar?passo=confirmar` | Folha confirmada; taxa de correção pela §5 |
+| 4 | Agenda do ciclo | "Descubra quais crianças ainda faltam observar neste ciclo — e por que alguma delas aparece bloqueada." | `#/hoje?detalhe=ciclo` | Aponta uma pendente e explica um bloqueio com as próprias palavras |
+| 5 | Observação com âncoras | "Faça a observação de uma dessas crianças pendentes." | `#/crianca/:id?ver=observacao` | Cinco dimensões marcadas e salvas; cronometrar contra a promessa de ~3 min |
+| 6 | Fechar | "Encerre o seu registro do dia: feche a folha e saia do sistema." | fecho da folha em `#/registrar?passo=mao` → sair | Folha fechada; anotar a reação literal à tela de fecho da turma, se ela aparecer |
 
 ---
 

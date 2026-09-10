@@ -1,6 +1,6 @@
 {
   "versao": 1,
-  "atualizado_em": "2026-08-25",
+  "atualizado_em": "2026-09-03",
   "nota_proveniencia": "A Qwen publica GGUF oficial do Qwen3-4B (abril/2025, modo thinking) em Qwen/Qwen3-4B-GGUF, mas NÃO publica GGUF da variante Instruct 2507 recomendada pela análise de arquitetura (ANALISE-SLM-E-SROI.md §1.2). O Q4_K_M usado aqui vem do repositório comunitário unsloth (quantização do peso oficial Qwen/Qwen3-4B-Instruct-2507, Apache-2.0). Divergência declarada em relação ao card citado na análise; o SHA-256 abaixo é a âncora de integridade.",
   "modelos": [
     {
@@ -30,7 +30,34 @@
       "licenca": "Apache-2.0",
       "contexto_nativo": 32768,
       "porta_padrao": 8082
+    },
+    {
+      "id": "whisper-small",
+      "papel": "audio",
+      "descricao": "Transcricao de narracao longa e de arquivo importado. Padrao: melhor pt-BR entre os portes que cabem num notebook de ONG.",
+      "repo": "ggerganov/whisper.cpp",
+      "peso_original": "openai/whisper-small",
+      "arquivo": "ggml-small.bin",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin",
+      "bytes": 487601967,
+      "sha256": "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
+      "licenca": "MIT (whisper.cpp) / MIT (pesos OpenAI Whisper)",
+      "ram_aproximada_mb": 1000
+    },
+    {
+      "id": "whisper-base",
+      "papel": "audio-leve",
+      "descricao": "Alternativa para maquina fraca. Erra mais em pt-BR; so' entra se a medicao na maquina do Instituto reprovar o small.",
+      "repo": "ggerganov/whisper.cpp",
+      "peso_original": "openai/whisper-base",
+      "arquivo": "ggml-base.bin",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin",
+      "bytes": 147951465,
+      "sha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
+      "licenca": "MIT (whisper.cpp) / MIT (pesos OpenAI Whisper)",
+      "ram_aproximada_mb": 500
     }
   ],
-  "decisao_de_papeis": "No MVP um único llama-server com o 4B pode atender os dois papéis: o cliente (src/ai-client.js) roteia por papel e, se a porta do estruturado (8082) não responder, cai para a do reflexivo (8081). Subir o 1.7B em 8082 é otimização de custo por máquina, não requisito."
+  "decisao_de_papeis": "No MVP um único llama-server com o 4B pode atender os dois papéis: o cliente (src/ai-client.js) roteia por papel e, se a porta do estruturado (8082) não responder, cai para a do reflexivo (8081). Subir o 1.7B em 8082 é otimização de custo por máquina, não requisito.",
+  "nota_audio": "A transcricao de audio longo e de arquivo (portas A', B e C da jornada v2) usa whisper.cpp — porte C/C++ sem dependencia, mesmo padrao do llama.cpp: o binario e' do sistema (brew install whisper-cpp) e o modelo entra por este manifest, com SHA-256 como ancora. IMPORTANTE: o whisper roda no COMPUTADOR DO INSTITUTO, nao no celular. O audio sai do aparelho pela rede local para virar texto e e' apagado em seguida — e a tela diz isso, em vez de prometer que nada sai (ver decisao 36 e a F0)."
 }

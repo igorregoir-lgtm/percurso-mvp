@@ -1,10 +1,10 @@
-// Percurso — o ranking do painel do Passo. Módulo PURO: sem banco, sem modelo,
+// Percurso — o ranking do painel da Aurora. Módulo PURO: sem banco, sem modelo,
 // sem relógio. Recebe candidatos e pesos, devolve ordem. É testável sozinho e é
 // onde moram as travas que impedem o painel de virar lista de dívida.
 //
 // A ideia central: a URGÊNCIA INSTITUCIONAL (`base`, escrita à mão no catálogo)
 // manda. A preferência da pessoa só REORDENA vizinhos, dentro de um teto —
-// nunca atravessa faixas de base. Assim o Passo aprende com quem usa sem virar
+// nunca atravessa faixas de base. Assim a Aurora aprende com quem usa sem virar
 // bolha: o que o instituto precisa que apareça continua aparecendo.
 export const SLOTS = 3;
 export const TETO_PESSOAL = 0.15;

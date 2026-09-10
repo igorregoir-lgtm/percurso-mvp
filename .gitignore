@@ -1,6 +1,14 @@
 data/*.db
 data/*.db-journal
 
+# Prova do consentimento em vídeo (decisão 42): dado pessoal do RESPONSÁVEL,
+# guardado modo 0600 fora de public/. Nunca versionado, em hipótese nenhuma.
+data/consentimento/
+
+# Áudio em trânsito para a transcrição (decisão 35). O ciclo de vida já apaga no
+# `finally`; esta linha é a segunda barreira, para o caso de uma queda no meio.
+data/audio-temp/
+
 # Camada de IA local: pesos de modelo nunca entram no git (ver ai/model-manifest.json);
 # o corpus.db do RAG é reconstruível por `node src/rag/ingest.mjs`; doações de interação
 # para o dataset LoRA são dado local, nunca versionado.
@@ -30,5 +38,8 @@ remix-bússola-—-instituto-ebenézer/
 # Cache de ferramenta de pesquisa e cópias soltas de trabalho — não são fonte
 .firecrawl/
 mvp-src-only/
+data/aurora/
 data/passo/
 graphify-out/
+certs/
+data/audio-temp/

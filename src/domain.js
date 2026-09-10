@@ -19,17 +19,30 @@ export const PARAMS = {
   // Escala da rubrica.
   NIVEL_MIN: 1,
   NIVEL_MAX: 4,
-  // Anti-abandono: a partir de quantos dias sem registro o sistema oferece
-  // retomada explicita, sem cobranca.
-  DIAS_LAPSO: 5,
+  // Anti-abandono: a partir de quantos ENCONTROS DA PROPRIA TURMA sem registro o
+  // sistema oferece retomada explicita, sem cobranca.
+  //
+  // ERA EM DIAS DE CALENDARIO (5), e isso acusava lapso TODA QUINTA-FEIRA para
+  // quem so' atende sabado — cinco dias depois do sabado, sem que um unico
+  // encontro tivesse sido perdido. Estava registrado em `c1edcbe` e nunca foi
+  // corrigido; o teste de fluxo chegou a derivar a assercao da regua errada
+  // para parar de quebrar, o que e' o teste se acomodando ao defeito.
+  //
+  // Contar ENCONTROS e' o que a frase "voce ficou um tempo sem registrar"
+  // sempre quis dizer. Dois: um encontro perdido acontece; dois viraram habito.
+  ENCONTROS_LAPSO: 2,
   // Meta do experimento de validacao do modulo: registro em menos de 2 minutos.
   META_REGISTRO_SEGUNDOS: 120,
   // Supressao de celula pequena: agregado com menos de N criancas nao sai
   // (logica populacional do EDI — protege contra reidentificacao).
   MINIMO_CELULA: 5,
   // --- v2 -----------------------------------------------------------------
-  // Janela maxima da captura por voz, em segundos.
-  VOZ_SEGUNDOS: 40,
+  // Quanto tempo de fala costuma bastar para preencher a folha. E' SUGESTAO,
+  // nao teto: ate' 03/09/2026 a captura PARAVA sozinha aos 40 s, e o campo pediu
+  // o contrario — "e esta forma tem que ser a mais simples e facil possivel".
+  // Quem esta arrumando a sala nao deve perder o fio porque o relogio zerou. O
+  // nome mudou junto com a natureza: `VOZ_SEGUNDOS` lia-se como limite.
+  VOZ_SUGESTAO_SEGUNDOS: 40,
   // Abaixo disto o extrator nao pre-marca nada: falhar em branco e' melhor que
   // falhar preenchido (06-AGENTES-IA).
   CONFIANCA_MINIMA: 0.6,
@@ -43,6 +56,15 @@ export const PARAMS = {
   // A regua de presenca do Instituto: 75% e' o minimo para permanecer no
   // programa e entrar no grupo de beneficios; abaixo de 80% a casa ja' marca
   // "atencao — os pais tem que regular". E' politica existente, absorvida.
+  // Retencao da prova do consentimento (decisao 42, governanca `consentimento_em_video`):
+  // "enquanto o consentimento valer + 5 anos". O relogio so' comeca a correr
+  // quando o consentimento DEIXA de valer — prova de consentimento ativo nunca
+  // vence, porque e' justamente quando o onus do Art. 8o, §1o esta' de pe'.
+  ANOS_RETENCAO_PROVA: 5,
+  // Retencao do relato livre sobre a crianca (governanca `campo_livre`):
+  // "enquanto a matricula estiver ativa + 2 anos". Detectada no fecho de
+  // ciclo, como a prova; nunca executada sozinha.
+  ANOS_RETENCAO_RELATO: 2,
   PRESENCA_MINIMA_PCT: 75,
   PRESENCA_ATENCAO_PCT: 80,
   // Com menos encontros que isto no periodo, a regua nao se aplica (sem base).
@@ -212,6 +234,9 @@ export function chamadasEmAberto(turmaId, limite = 10) {
   const turma = get(`SELECT * FROM turma WHERE id = ?`, turmaId);
   if (!turma) return [];
   const registradas = new Set(all(`SELECT data FROM encontro WHERE turma_id = ?`, turmaId).map(r => r.data));
+  // O calendario da casa manda: feriado marcado nao vira "chamada em aberto"
+  // cobrada para sempre, e encontro extra entra mesmo caindo fora do turno.
+  const excecoes = new Map(excecoesDaTurma(turmaId).map(e => [e.data, e.tipo]));
   const inicio = get(`SELECT MIN(entrada) AS d FROM matricula WHERE turma_id = ?`, turmaId)?.d;
   if (!inicio) return [];
   const abertas = [];
@@ -219,7 +244,9 @@ export function chamadasEmAberto(turmaId, limite = 10) {
   let cur = addDias(fim, -limite * 2);
   if (cur < inicio) cur = inicio;
   while (cur <= fim) {
-    if (diaLetivo(turma.turno, cur) && !registradas.has(cur)) abertas.push(cur);
+    const ex = excecoes.get(cur);
+    const houve = ex ? ex === 'extra' : diaLetivo(turma.turno, cur);
+    if (houve && !registradas.has(cur)) abertas.push(cur);
     cur = addDias(cur, 1);
   }
   return abertas.slice(-limite);
@@ -228,6 +255,64 @@ export function chamadasEmAberto(turmaId, limite = 10) {
 export function diaLetivo(turno, iso) {
   const dow = new Date(iso + 'T12:00:00Z').getUTCDay(); // 0=dom
   return turno === 'sabado' ? dow === 6 : dow >= 1 && dow <= 5;
+}
+
+// --------------------------------------------------------------------------
+// O CALENDARIO DA CASA (decisao 37) — a regra do turno MAIS as excecoes que a
+// casa marcou. Ate' aqui o produto deduzia o calendario do dia da semana e
+// pronto: feriado virava "chamada em aberto" cobrada para sempre, e encontro
+// extra simplesmente nao existia.
+// --------------------------------------------------------------------------
+export function excecoesDaTurma(turmaId, deISO = null, ateISO = null) {
+  const cond = [], args = [turmaId];
+  if (deISO) { cond.push('data >= ?'); args.push(deISO); }
+  if (ateISO) { cond.push('data <= ?'); args.push(ateISO); }
+  return all(
+    `SELECT * FROM calendario_excecao WHERE turma_id = ?${cond.length ? ' AND ' + cond.join(' AND ') : ''}
+      ORDER BY data`, ...args);
+}
+
+/** A pergunta que o produto inteiro faz: esta turma se reúne NESTE dia? */
+export function temEncontro(turmaId, iso) {
+  const turma = get(`SELECT turno FROM turma WHERE id = ?`, turmaId);
+  if (!turma) return false;
+  const ex = get(`SELECT tipo FROM calendario_excecao WHERE turma_id = ? AND data = ?`, turmaId, iso);
+  if (ex) return ex.tipo === 'extra';
+  return diaLetivo(turma.turno, iso);
+}
+
+/** Os próximos N encontros da turma, a partir de amanhã. Alimenta o aviso que
+ *  chega ANTES do encontro — que é o que o campo pediu: o lembrete tem de
+ *  chegar enquanto ainda dá para apertar "gravar", não depois. */
+export function proximosEncontros(turmaId, n = 3) {
+  const saida = [];
+  let d = hoje();
+  for (let i = 0; i < 120 && saida.length < n; i++) {
+    d = addDias(d, 1);
+    if (temEncontro(turmaId, d)) saida.push(d);
+  }
+  return saida;
+}
+
+export function marcarNoCalendario({ turmaId, data, tipo, motivo, educadorId }) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data ?? ''))) throw erro(422, 'Data inválida.');
+  if (!['sem_encontro', 'extra'].includes(tipo)) throw erro(422, 'Marque "não vai ter encontro" ou "encontro extra".');
+  // Marcar "sem encontro" num dia JA' REGISTRADO apagaria da vista um encontro
+  // que aconteceu — e o registro dele continuaria no banco, invisivel. Recusar
+  // e' o unico desfecho honesto.
+  if (tipo === 'sem_encontro' && encontroDe(turmaId, data))
+    throw erro(422, 'Esse dia já tem chamada registrada. Se o encontro não aconteceu, o caminho é a coordenação.');
+  run(`INSERT INTO calendario_excecao (turma_id, data, tipo, motivo, criado_por, criado_em)
+       VALUES (?,?,?,?,?,?)
+       ON CONFLICT(turma_id, data) DO UPDATE SET tipo = excluded.tipo, motivo = excluded.motivo,
+         criado_por = excluded.criado_por, criado_em = excluded.criado_em`,
+      turmaId, data, tipo, (motivo || '').slice(0, 120) || null, educadorId, agora());
+  return { ok: true, data, tipo };
+}
+
+export function desmarcarNoCalendario(turmaId, data) {
+  run(`DELETE FROM calendario_excecao WHERE turma_id = ? AND data = ?`, turmaId, data);
+  return { ok: true };
 }
 
 // --------------------------------------------------------------------------
@@ -317,12 +402,26 @@ export function registrarConsentimento(criancaId, campo, status, responsavel) {
     throw erro(422, 'Para ativar o consentimento é preciso registrar quem é o responsável que consentiu.');
   }
   if (!get(`SELECT id FROM crianca WHERE id = ?`, criancaId)) throw erro(404, 'Criança não encontrada.');
-  run(`INSERT INTO consentimento (crianca_id, campo, status, responsavel, data_registro)
-       VALUES (?,?,?,?,?)
+  // A VIGENCIA E' CONGELADA. `data_registro` marca quando o consentimento passou
+  // a valer e nao se move mais: e' o relogio da retencao declarada ("enquanto
+  // valer + 5 anos"). Antes ela era reescrita a cada mudanca de status, e
+  // revogar em 2026 um consentimento de 2021 empurrava o vencimento de 2026
+  // para 2031 — quatro anos a mais, causados pelo gesto que deveria encurtar.
+  run(`INSERT INTO consentimento (crianca_id, campo, status, responsavel, data_registro, revogado_em)
+       VALUES (?,?,?,?,?,?)
        ON CONFLICT(crianca_id, campo) DO UPDATE SET
-         status = excluded.status, responsavel = excluded.responsavel,
-         data_registro = excluded.data_registro`,
-      criancaId, campo, status, (responsavel || '').trim() || null, hoje());
+         status = excluded.status,
+         responsavel = excluded.responsavel,
+         data_registro = CASE
+           WHEN excluded.status = 'ativo' AND consentimento.data_registro IS NULL
+             THEN excluded.data_registro
+           ELSE consentimento.data_registro END,
+         revogado_em = CASE
+           WHEN excluded.status = 'revogado' THEN COALESCE(consentimento.revogado_em, excluded.data_registro)
+           WHEN excluded.status = 'ativo'    THEN NULL
+           ELSE consentimento.revogado_em END`,
+      criancaId, campo, status, (responsavel || '').trim() || null, hoje(),
+      status === 'revogado' ? hoje() : null);
   return consentimentoDe(criancaId, campo);
 }
 
@@ -519,12 +618,16 @@ export function salvarObservacao({ cicloId, criancaId, educadorId, itens, notaLi
                { recuperavel: true });
   }
 
-  // O olhar nao aceita texto sobre a crianca. Quem tentar gravar recebe 422 com
-  // o encaminhamento humano — a mesma porta que a voz usa.
+  // O OLHAR continua sem texto — e isto NAO mudou com a decisao 40. O campo
+  // livre voltou como registro PROPRIO (`relato_crianca`), com consentimento
+  // especifico, descarte no fim do ciclo e leitor restrito. Enfia-lo de volta
+  // dentro da rubrica faria o texto herdar a base legal, a retencao e os
+  // leitores DA RUBRICA, que sao outros — e foi exatamente essa mistura que a
+  // decisao 15 desfez. A porta existe; ela e' outra.
   if ((notaLivre || '').trim()) {
     throw erro(422,
-      'O olhar não guarda texto sobre a criança. Se for algo que precisa de encaminhamento, fale com a coordenação — esse caminho é fora daqui.',
-      { motivo: 'campo_livre_removido' });
+      'O olhar não guarda texto. O relato sobre a criança tem lugar próprio, na ficha dela — com consentimento do responsável e descarte no fim do ciclo.',
+      { motivo: 'campo_livre_tem_lugar_proprio' });
   }
 
   return tx(() => {
@@ -921,8 +1024,59 @@ export function fecharCiclo(cicloId, usuarioId, { abrirProximo = false } = {}) {
           `Ciclo ${ordem} · ${mes}`, Number(inicio.slice(0, 4)), ordem, inicio, fim);
       proximo = get(`SELECT * FROM ciclo WHERE ano = ? AND ordem = ?`, Number(inicio.slice(0, 4)), ordem);
     }
+    // A RETENCAO DA PROVA EM VIDEO, LIDA — NAO EXECUTADA (decisao 42 · OPAR 05/09).
+    //
+    // O fecho de ciclo e' o unico momento em que alguem da coordenacao olha o
+    // relogio do produto, entao e' aqui que a retencao declarada e' conferida.
+    // Mas ele MARCA e RELATA; nunca apaga. Tres razoes, todas medidas:
+    //
+    //  1. apagar prova de consentimento e' irreversivel e o disco nao participa
+    //     da transacao — um rollback devolveria a linha e nao os bytes, que e' o
+    //     desfecho que `evidencia.js` ja' chama pelo nome: "perda de prova";
+    //  2. o gesto tem dono. Apagar continua sendo `EVI.apagar` com motivo, por
+    //     uma pessoa, com rastro — como a revogacao do Art. 18, VI exige;
+    //  3. prova de consentimento ATIVO nunca entra na lista, qualquer que seja
+    //     a data: e' exatamente quando ela precisa existir.
+    const vencidas = all(
+      `SELECT ev.id, ev.crianca_id, c.nome, c.codigo,
+              date(COALESCE(co.revogado_em, co.data_registro, ev.criado_em),
+                   '+${PARAMS.ANOS_RETENCAO_PROVA} years') AS expira_em
+         FROM consentimento_evidencia ev
+         JOIN crianca c ON c.id = ev.crianca_id
+         -- O JOIN E' EM rubrica_socioemocional, E NAO E' ENGANO. A evidencia e'
+         -- catalogada como consentimento_em_video (a linha de governanca que
+         -- declara os 5 anos), mas esse campo tem exige_consentimento = 0 e
+         -- portanto NUNCA tem linha em consentimento. O consentimento cuja
+         -- vigencia governa o video e' o que o video PROVA — o da rubrica.
+         LEFT JOIN consentimento co
+                ON co.crianca_id = ev.crianca_id AND co.campo = 'rubrica_socioemocional'
+        WHERE COALESCE(co.status, 'pendente') <> 'ativo'`)
+      .map(l => ({ ...l, vencida: l.expira_em <= hoje() }));
+    for (const v of vencidas) run(`UPDATE consentimento_evidencia SET expira_em = ? WHERE id = ?`, v.expira_em, v.id);
+
+    // OS RELATOS LIVRES, LIDOS PELO MESMO RELOGIO. A retencao declarada e'
+    // "enquanto a matricula estiver ativa + N anos": relato de crianca que ja'
+    // saiu ha' mais de N anos venceu. `descartarRelatosDoCiclo` existia sem
+    // chamador — era retencao de aparencia. Agora ha' deteccao aqui e o
+    // descarte e' rota propria, de coordenacao, com log — nunca automatico.
+    const relatosVencidos = all(
+      `SELECT c.id AS crianca_id, c.nome, c.codigo, COUNT(r.id) AS relatos,
+              date(MAX(m.saida), '+${PARAMS.ANOS_RETENCAO_RELATO} years') AS expira_em
+         FROM relato_crianca r
+         JOIN crianca c ON c.id = r.crianca_id
+         JOIN matricula m ON m.crianca_id = c.id
+        WHERE NOT EXISTS (SELECT 1 FROM matricula a WHERE a.crianca_id = c.id AND a.status = 'ativa')
+        GROUP BY c.id
+       HAVING expira_em <= ?`, hoje());
+
     marcarAtividade(usuarioId, 'fecho_ciclo');
-    return { ciclo: get(`SELECT * FROM ciclo WHERE id = ?`, cicloId), notas_descartadas: comTexto, proximo };
+    return {
+      ciclo: get(`SELECT * FROM ciclo WHERE id = ?`, cicloId), notas_descartadas: comTexto, proximo,
+      relatos_vencidos: relatosVencidos,
+      // O que a coordenação tem de olhar, com nome e prazo. Vazio é o caso comum.
+      provas_vencidas: vencidas.filter(v => v.vencida)
+        .map(({ id, nome, codigo, expira_em }) => ({ id, nome, codigo, expira_em })),
+    };
   });
 }
 
@@ -934,17 +1088,46 @@ export function marcarAtividade(educadorId, tipo) {
   run(`INSERT INTO atividade (educador_id, data, tipo) VALUES (?,?,?)`, educadorId, hoje(), tipo);
 }
 
+/**
+ * Quantos dias LETIVOS DA TURMA existem entre duas datas (exclusivo no inicio,
+ * inclusivo no fim). E' o calendario que importa para a retomada: uma turma de
+ * sabado perde um encontro por semana, nao um por dia.
+ */
+export function encontrosEntre(turno, deISO, ateISO, turmaId = null) {
+  if (!deISO || !ateISO || deISO >= ateISO) return 0;
+  // Com turma, o calendario da casa manda (feriado nao conta como encontro
+  // perdido); sem turma, vale a regra do turno.
+  const excecoes = turmaId ? new Map(excecoesDaTurma(turmaId, deISO, ateISO).map(e => [e.data, e.tipo])) : new Map();
+  let n = 0;
+  const d = new Date(deISO + 'T12:00:00Z');
+  const fim = new Date(ateISO + 'T12:00:00Z');
+  // Teto de um ano: sem ele uma data corrompida no banco viraria laco infinito.
+  for (let i = 0; i < 400 && d < fim; i++) {
+    d.setUTCDate(d.getUTCDate() + 1);
+    const iso = d.toISOString().slice(0, 10);
+    const ex = excecoes.get(iso);
+    if (ex ? ex === 'extra' : diaLetivo(turno, iso)) n++;
+  }
+  return n;
+}
+
 export function estadoDeRetomada(educadorId) {
   const ultima = get(
     `SELECT MAX(data) AS d FROM atividade WHERE educador_id = ? AND data < ?`, educadorId, hoje())?.d;
   const hojeJa = get(
     `SELECT COUNT(*) AS n FROM atividade WHERE educador_id = ? AND data = ?`, educadorId, hoje()).n > 0;
   const dias = ultima ? diasEntre(ultima, hoje()) : null;
-  const emLapso = dias != null && dias >= PARAMS.DIAS_LAPSO;
+  // O CALENDARIO E' DA TURMA. Quem responde por mais de uma usa a de encontro
+  // mais frequente — e' a que primeiro deixaria um registro para tras.
+  const turmas = all(`SELECT id, turno FROM turma WHERE educador_id = ?`, educadorId);
+  const perdidos = !ultima || !turmas.length ? 0
+    : Math.max(...turmas.map(t => encontrosEntre(t.turno, ultima, hoje(), t.id)));
+  const emLapso = !!ultima && perdidos >= PARAMS.ENCONTROS_LAPSO;
   return {
-    ultima_atividade: ultima, dias_sem_registro: dias, registrou_hoje: hojeJa, em_lapso: emLapso,
+    ultima_atividade: ultima, dias_sem_registro: dias, encontros_sem_registro: perdidos,
+    registrou_hoje: hojeJa, em_lapso: emLapso,
     mensagem: emLapso
-      ? `Você ficou ${dias} dias sem registrar. Nada se perdeu — os registros anteriores continuam aqui e as datas em aberto seguem disponíveis.`
+      ? `Você ficou ${dias} dias sem registrar — ${perdidos} encontros desta turma. Nada se perdeu: os registros anteriores continuam aqui e as datas em aberto seguem disponíveis.`
       : null,
   };
 }
@@ -1029,6 +1212,9 @@ export function painelConsentimentos() {
        JOIN consentimento co ON co.crianca_id = c.id
       WHERE c.ativo = 1 AND co.campo = 'rubrica_socioemocional'
       GROUP BY c.id ORDER BY (co.status='ativo'), c.nome`);
+  // Quem tem PROVA e quem so' tem a palavra de quem digitou (decisao 41). A
+  // distincao aparece na tela: sem ela, "consentimento ativo" continuaria
+  // parecendo a mesma coisa nos dois casos — e nao e'.
   const provas = new Set(all(
     `SELECT DISTINCT crianca_id FROM consentimento_evidencia`).map(l => l.crianca_id));
   const comProva = linhas.map(l => ({ ...l, tem_prova: provas.has(l.id) }));
@@ -1263,7 +1449,7 @@ export const rotuloDoPapel = (papel) => PAPEIS.find(p => p.id === papel)?.rotulo
  *  'pendente' para ele sugeriria que um dia vai ser coletado. Não vai. */
 const CONSENTIMENTOS_DA_MATRICULA = ['rubrica_socioemocional', 'campo_livre', 'parecer_profissional'];
 
-function textoObrigatorio(v, campo, max = 120) {
+export function textoObrigatorio(v, campo, max = 120) {
   const t = String(v ?? '').trim().replace(/\s+/g, ' ');
   if (!t) throw erro(422, `${campo} é obrigatório.`);
   if (t.length > max) throw erro(422, `${campo} passa de ${max} caracteres.`);
@@ -1360,9 +1546,10 @@ export function criarPessoa({ nome, apelido = '', papel, turmaId = null, confirm
  * `tx` só: criança sem matrícula não aparece em lista nenhuma (todo `listar`
  * deste domínio faz JOIN com matrícula ativa) — seria um registro fantasma.
  */
-export function criarCrianca({ nome, nascimento, responsavel, programaId, turmaId = null, entrada = null }) {
+export function criarCrianca({ nome, nascimento, responsavel, contato = null, programaId, turmaId = null, entrada = null }) {
   const n = textoObrigatorio(nome, 'O nome da criança');
   const resp = textoObrigatorio(responsavel, 'O responsável');
+  const tel = normalizarContato(contato);
   const nasc = dataObrigatoria(nascimento, 'A data de nascimento');
   const hj = hoje();
   if (nasc > hj) throw erro(422, 'A data de nascimento está no futuro.');
@@ -1387,8 +1574,8 @@ export function criarCrianca({ nome, nascimento, responsavel, programaId, turmaI
   return tx(() => {
     const codigo = proximoCodigoCrianca();
     const id = Number(run(
-      `INSERT INTO crianca (codigo, nome, nascimento, responsavel, ativo, criado_em)
-       VALUES (?,?,?,?,1,?)`, codigo, n, nasc, resp, hj).lastInsertRowid);
+      `INSERT INTO crianca (codigo, nome, nascimento, responsavel, responsavel_contato, ativo, criado_em)
+       VALUES (?,?,?,?,?,1,?)`, codigo, n, nasc, resp, tel, hj).lastInsertRowid);
     run(`INSERT INTO matricula (crianca_id, programa_id, turma_id, entrada, saida, status)
          VALUES (?,?,?,?,NULL,'ativa')`, id, programa.id, turma?.id ?? null, ent);
     for (const campo of CONSENTIMENTOS_DA_MATRICULA)
@@ -1450,6 +1637,206 @@ function programaETurma(programaId, turmaId) {
       throw erro(422, `A turma ${turma.nome} não é do programa ${programa.nome}.`);
   }
   return { programa, turma };
+}
+
+// --------------------------------------------------------------------------
+// TURMA — o cadastro que faltava (decisao 39).
+//
+// Ate' aqui turma so' nascia da seed: a coordenacao matriculava crianca numa
+// lista fixa e nao tinha como abrir a turma do ano que vem, nem corrigir o
+// nome de uma, nem passar a turma para outra professora sem mexer no banco.
+// A pergunta do campo foi literal: "quem cadastra as turmas?". A resposta era
+// "ninguem" — e uma resposta dessas e' defeito, nao desenho.
+//
+// Quem cadastra e' a COORDENACAO, pelo mesmo motivo de todo o resto do bloco:
+// turma e' o que decide quem le a ficha de quem. Professora nao abre a propria
+// turma.
+// --------------------------------------------------------------------------
+export const TURNOS = [
+  { id: 'semana', rotulo: 'Dias de semana (segunda a sexta)' },
+  { id: 'sabado', rotulo: 'Sábado' },
+];
+
+// DDDs QUE EXISTEM. Lista fechada, como o resto do produto faz com catálogo:
+// "11 a 99" aceita 20, 23, 25, 26, 29, 30… que a Anatel nunca atribuiu, e um
+// número com DDD inexistente é erro de digitação com cara de telefone.
+const DDDS = new Set([
+  11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 24, 27, 28,
+  31, 32, 33, 34, 35, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+  51, 53, 54, 55, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+  71, 73, 74, 75, 77, 79, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+  91, 92, 93, 94, 95, 96, 97, 98, 99,
+]);
+
+/**
+ * Telefone do responsavel: guarda so' digito, e recusa o que nao e' telefone.
+ *
+ * ISTO FICOU MAIS ESTRITO EM 05/09/2026, e o motivo e' um defeito medido, nao
+ * zelo. A versao anterior validava COMPRIMENTO e mais nada, entao:
+ *
+ *   · `351912345678` (Portugal) passava intacto — 12 digitos —, e a tela
+ *     mostrava `(19) 1234-5678`. Quem conferia via um telefone brasileiro
+ *     plausivel: o erro era INVISIVEL na revisao.
+ *   · `1000000000` virava `551000000000` e aparecia como `(10) 0000-0000`.
+ *   · `11111111111` passava.
+ *
+ * E o destino desse numero e' o boletim: nome da crianca, presenca, evolucao
+ * socioemocional. Um digito errado entrega a ficha a um desconhecido.
+ *
+ * A validacao de forma NAO fecha o buraco — numero valido e errado continua
+ * valido. Ela reduz o ruido; quem fecha e' a conferencia registrada
+ * (`marcarContatoConferido`).
+ */
+export function normalizarContato(bruto) {
+  const t = String(bruto ?? '').trim();
+  if (!t) return null;
+  let so = t.replace(/\D+/g, '');
+  const recusa = (porque) => { throw erro(422, `${porque} Esperado: (11) 98888-7777.`); };
+
+  // O 55 so' e' prefixo de pais quando o numero tem 12 ou 13 digitos. Em 10 ou
+  // 11 ele e' o DDD do Rio Grande do Sul, e tirar seria corromper um numero bom.
+  if (so.length === 12 || so.length === 13) {
+    if (!so.startsWith('55'))
+      recusa('Esse número não parece brasileiro: com 12 ou 13 dígitos ele precisa começar com 55.');
+    so = so.slice(2);
+  } else {
+    so = so.replace(/^0+/, '');   // 0xx de operadora
+  }
+  if (so.length !== 10 && so.length !== 11)
+    recusa('O telefone do responsável precisa ter DDD e 8 ou 9 dígitos.');
+  if (!DDDS.has(Number(so.slice(0, 2))))
+    recusa(`Não existe o DDD ${so.slice(0, 2)}.`);
+  if (so.length === 11 && so[2] !== '9')
+    recusa('Celular com 9 dígitos começa com 9 depois do DDD.');
+  if (so.length === 10 && !'2345'.includes(so[2]))
+    recusa('Telefone fixo começa com 2, 3, 4 ou 5 depois do DDD.');
+  // Todos os dígitos iguais depois do DDD é o teclado travado, não um telefone.
+  if (new Set(so.slice(2)).size === 1)
+    recusa('Esse número tem todos os dígitos iguais.');
+  return `55${so}`;
+}
+
+/**
+ * Como o telefone aparece na tela. Nunca em lista, nunca em agregado.
+ *
+ * NAO FORMATA A FORCA o que nao tem forma brasileira: era assim que a tela
+ * mentia sobre um numero de outro pais gravado antes desta validacao existir.
+ * Linha antiga fora do padrao aparece crua, que e' o unico jeito de quem
+ * confere perceber que ha' algo errado ali.
+ */
+export function contatoLegivel(e164) {
+  const d = String(e164 ?? '').replace(/\D+/g, '');
+  if (!d) return '';
+  if (!d.startsWith('55') || (d.length !== 12 && d.length !== 13)) return `${e164} (fora do padrão)`;
+  const ddd = d.slice(2, 4), resto = d.slice(4);
+  if (!DDDS.has(Number(ddd))) return `${e164} (DDD ${ddd} não existe)`;
+  return resto.length === 9
+    ? `(${ddd}) ${resto.slice(0, 5)}-${resto.slice(5)}`
+    : `(${ddd}) ${resto.slice(0, 4)}-${resto.slice(4)}`;
+}
+
+function turmaValida({ nome, turno, programaId, educadorId }, { idAtual = null } = {}) {
+  const n = textoObrigatorio(nome, 'O nome da turma');
+  if (!TURNOS.some(t => t.id === turno))
+    throw erro(422, 'O turno da turma tem de ser "semana" ou "sabado" — é ele que diz em que dias há encontro.');
+  const programa = get(`SELECT * FROM programa WHERE id = ?`, programaId);
+  if (!programa) throw erro(404, 'Programa não encontrado.');
+  let educador = null;
+  if (educadorId != null) {
+    educador = get(`SELECT * FROM educador WHERE id = ? AND arquivado_em IS NULL`, educadorId);
+    if (!educador) throw erro(404, 'Essa pessoa não está na equipe ativa.');
+    if (!['educador', 'profissional'].includes(educador.papel))
+      throw erro(422, `${educador.nome} não é professora nem profissional — só quem atende assume turma.`);
+  }
+  const igual = get(
+    `SELECT id, nome FROM turma WHERE lower(nome) = lower(?) ${idAtual ? 'AND id <> ?' : ''}`,
+    ...(idAtual ? [n, idAtual] : [n]));
+  if (igual) throw erro(409, `Já existe uma turma chamada ${igual.nome}.`, { turma_id: igual.id });
+  return { nome: n, programa, educador };
+}
+
+export function criarTurma({ nome, turno, programaId, educadorId = null }) {
+  const v = turmaValida({ nome, turno, programaId, educadorId });
+  const id = Number(run(
+    `INSERT INTO turma (programa_id, nome, turno, educador_id) VALUES (?,?,?,?)`,
+    v.programa.id, v.nome, turno, v.educador?.id ?? null).lastInsertRowid);
+  return { turma: get(`SELECT * FROM turma WHERE id = ?`, id), programa: v.programa.nome,
+    aviso: v.educador
+      ? `${v.educador.nome} passa a ler as fichas de quem for matriculado nesta turma.`
+      : 'A turma nasce sem professora: ninguém lê ficha por ela até você atribuir alguém.' };
+}
+
+/**
+ * Editar turma existe por um motivo estreito: nome errado, turno errado e
+ * troca de professora. NAO se muda o programa de uma turma que ja' tem
+ * matricula — isso mudaria, em silencio, o programa de todas as criancas.
+ */
+export function editarTurma(id, { nome, turno, programaId, educadorId = null }) {
+  const atual = get(`SELECT * FROM turma WHERE id = ?`, id);
+  if (!atual) throw erro(404, 'Turma não encontrada.');
+  const v = turmaValida({ nome, turno, programaId, educadorId }, { idAtual: id });
+  if (v.programa.id !== atual.programa_id) {
+    const n = get(`SELECT COUNT(*) AS n FROM matricula WHERE turma_id = ?`, id).n;
+    if (n) throw erro(422, `Esta turma já tem ${n} matrícula(s): mudar o programa dela mudaria o programa de todas de uma vez. Crie a turma nova e rematricule quem for.`);
+  }
+  run(`UPDATE turma SET programa_id = ?, nome = ?, turno = ?, educador_id = ? WHERE id = ?`,
+    v.programa.id, v.nome, turno, v.educador?.id ?? null, id);
+  return { turma: get(`SELECT * FROM turma WHERE id = ?`, id) };
+}
+
+/** A lista com o que a coordenacao precisa ver ANTES de mexer: quantas criancas. */
+export function turmasDetalhadas() {
+  return all(
+    `SELECT t.id, t.nome, t.turno, t.programa_id, t.educador_id,
+            p.nome AS programa, e.nome AS educador,
+            (SELECT COUNT(*) FROM matricula m
+              WHERE m.turma_id = t.id AND m.status = 'ativa') AS criancas
+       FROM turma t JOIN programa p ON p.id = t.programa_id
+       LEFT JOIN educador e ON e.id = t.educador_id
+      ORDER BY p.nome, t.nome`);
+}
+
+/** Corrigir quem responde pela crianca e por onde se fala com essa pessoa. */
+export function atualizarResponsavel(criancaId, { responsavel, contato }) {
+  const c = get(`SELECT * FROM crianca WHERE id = ?`, criancaId);
+  if (!c) throw erro(404, 'Criança não encontrada.');
+  const resp = textoObrigatorio(responsavel, 'O responsável');
+  const tel = normalizarContato(contato);
+  // Trocar o telefone DERRUBA a conferencia — por comparacao de valor, sem
+  // maquina de estado, sem gatilho, sem cron. Reconfirmar um numero e' o mesmo
+  // UPDATE de troca-lo, e so' a comparacao distingue os dois.
+  run(`UPDATE crianca SET responsavel = ?, responsavel_contato = ?,
+         contato_conferido_em    = CASE WHEN ? IS NOT contato_conferido_valor THEN NULL ELSE contato_conferido_em END,
+         contato_conferido_por   = CASE WHEN ? IS NOT contato_conferido_valor THEN NULL ELSE contato_conferido_por END,
+         contato_conferido_valor = CASE WHEN ? IS NOT contato_conferido_valor THEN NULL ELSE contato_conferido_valor END
+       WHERE id = ?`, resp, tel, tel, tel, tel, criancaId);
+  return get(`SELECT id, nome, responsavel, responsavel_contato, contato_conferido_em
+                FROM crianca WHERE id = ?`, criancaId);
+}
+
+/**
+ * A CONFERENCIA DO TELEFONE, registrada (OPAR 05/09/2026).
+ *
+ * O Percurso nao envia mensagem — quem envia e' a pessoa. Entao a confirmacao
+ * e' humana e o produto guarda o registro dela, como faz com o disparo e com a
+ * revogacao: exige o COMO ("respondeu no WhatsApp", "confirmou na portaria")
+ * pelo mesmo motivo que `EVI.apagar` exige o motivo. Caixinha que a coordenacao
+ * marca da propria cadeira viraria formalidade e tornaria o registro mentira
+ * auditavel.
+ */
+export function marcarContatoConferido(criancaId, { valor, como, porUsuarioId }) {
+  const c = get(`SELECT * FROM crianca WHERE id = ?`, criancaId);
+  if (!c) throw erro(404, 'Criança não encontrada.');
+  if (!c.responsavel_contato) throw erro(422, 'Esta criança não tem telefone cadastrado para conferir.');
+  const oQue = textoObrigatorio(como, 'Como a confirmação aconteceu', 200);
+  // O valor confirmado tem de ser o que esta' no cadastro AGORA: sem isso, uma
+  // troca de telefone entre a conversa e o clique passaria por conferida.
+  const conferido = normalizarContato(valor);
+  if (conferido !== c.responsavel_contato)
+    throw erro(409, 'O telefone mudou desde a conversa. Confira de novo com o número que está no cadastro.');
+  run(`UPDATE crianca SET contato_conferido_em = ?, contato_conferido_por = ?, contato_conferido_valor = ?
+        WHERE id = ?`, hoje(), porUsuarioId, conferido, criancaId);
+  return { id: c.id, nome: c.nome, contato_conferido_em: hoje(), como: oQue };
 }
 
 /**
@@ -1566,6 +1953,66 @@ export function arquivarCrianca(id, { saida = null } = {}) {
  * perde no ato. O outro lado seria pior — retomar processamento de dado
  * sensível, em silêncio, depois de a base legal ter caducado com a saída.
  */
+/**
+ * TROCAR A TURMA de uma matricula ATIVA (decisao 39).
+ *
+ * Isto nao existia, e a falta aparecia como pergunta de campo: "quem faz a
+ * matricula da crianca em cada turma?". `rematricularCrianca` so' serve para
+ * quem VOLTOU do arquivo; para quem esta' na ativa e mudou de horario nao havia
+ * caminho nenhum — a coordenacao teria de arquivar a crianca e trazer de volta,
+ * o que sujaria o historico de presenca com uma saida que nunca houve.
+ *
+ * O que NAO se faz por aqui: mudar de programa. Turma nova tem de ser do MESMO
+ * programa — trocar o programa e' outra matricula, com outra entrada e outra
+ * leitura de permanencia.
+ */
+export function transferirDeTurma(matriculaId, { turmaId }) {
+  const m = get(
+    `SELECT m.*, p.nome AS programa, t.nome AS turma FROM matricula m
+       JOIN programa p ON p.id = m.programa_id
+       LEFT JOIN turma t ON t.id = m.turma_id
+      WHERE m.id = ?`, matriculaId);
+  if (!m) throw erro(404, 'Matrícula não encontrada.');
+  if (m.status !== 'ativa') throw erro(422, 'Essa matrícula já foi encerrada. Quem voltou entra pela rematrícula.');
+  if (turmaId == null) {
+    run(`UPDATE matricula SET turma_id = NULL WHERE id = ?`, matriculaId);
+    return { matricula_id: matriculaId, turma: null, aviso: 'A criança ficou sem turma neste programa: ninguém lê a ficha dela por aqui até você escolher uma.' };
+  }
+  const t = get(`SELECT * FROM turma WHERE id = ?`, turmaId);
+  if (!t) throw erro(404, 'Turma não encontrada.');
+  if (t.programa_id !== m.programa_id)
+    throw erro(422, `A turma ${t.nome} é de outro programa. Para mudar de programa, use "matricular em outro programa" — a entrada e a permanência mudam junto.`);
+  if (t.id === m.turma_id) return { matricula_id: matriculaId, turma: { id: t.id, nome: t.nome }, aviso: 'Já era essa a turma.' };
+  run(`UPDATE matricula SET turma_id = ? WHERE id = ?`, t.id, matriculaId);
+  const quem = get(`SELECT nome FROM educador WHERE id = ?`, t.educador_id);
+  return {
+    matricula_id: matriculaId, turma: { id: t.id, nome: t.nome },
+    aviso: quem
+      ? `Quem lê a ficha desta criança em ${m.programa} passa a ser ${quem.nome}.`
+      : `A turma ${t.nome} está sem professora: ninguém lê a ficha por ela até você atribuir alguém.`,
+  };
+}
+
+/** Matricular quem JA' esta' na ativa num programa a mais. A criança é única;
+ *  cada matrícula é uma relação com um programa — e ela pode ter várias. */
+export function matricularEmPrograma(criancaId, { programaId, turmaId = null, entrada = null }) {
+  const c = get(`SELECT * FROM crianca WHERE id = ?`, criancaId);
+  if (!c) throw erro(404, 'Criança não encontrada.');
+  if (!c.ativo) throw erro(409, `${c.nome} está no arquivo. Quem voltou entra pela rematrícula.`);
+  const { programa, turma } = programaETurma(programaId, turmaId);
+  if (get(`SELECT id FROM matricula WHERE crianca_id = ? AND programa_id = ? AND status='ativa'`, criancaId, programa.id))
+    throw erro(409, `${c.nome} já tem matrícula ativa em ${programa.nome}. Para mudar de horário, troque a turma dessa matrícula.`);
+  const hj = hoje();
+  const ent = entrada ? dataObrigatoria(entrada, 'A data de entrada') : hj;
+  if (ent > hj) throw erro(422, 'A data de entrada está no futuro.');
+  run(`INSERT INTO matricula (crianca_id, programa_id, turma_id, entrada, saida, status)
+       VALUES (?,?,?,?,NULL,'ativa')`, criancaId, programa.id, turma?.id ?? null, ent);
+  return {
+    programa: { id: programa.id, nome: programa.nome },
+    turma: turma ? { id: turma.id, nome: turma.nome } : null, entrada: ent,
+  };
+}
+
 export function rematricularCrianca(id, { programaId, turmaId = null, entrada = null }) {
   const c = get(`SELECT * FROM crianca WHERE id = ?`, id);
   if (!c) throw erro(404, 'Criança não encontrada.');
@@ -1670,12 +2117,48 @@ export function reguaDaTurma(turmaId, { desde = null, ref = hoje() } = {}) {
     });
   const resumo = { ok: 0, atencao: 0, abaixo: 0, sem_base: 0 };
   for (const c of criancas) resumo[c.faixa]++;
+  // QUANTAS CRIANCAS NAO PODEM ESTAR "EM ATENCAO", POR ARITMETICA (OPAR 05/09).
+  //
+  // A faixa tem cinco pontos (75 a 79%) e o denominador e' o numero de encontros
+  // que a crianca tem na janela. Com dez encontros, os unicos percentuais
+  // possiveis sao multiplos de dez — 70 (abaixo) ou 80 (ok) —, e NINGUEM pode
+  // cair no meio. Nao e' erro de calculo: e' granularidade, e numa turma de
+  // sabado no comeco do semestre ela apaga a faixa inteira.
+  //
+  // O produto nao decide a politica (a correcao de verdade e' a faixa virar
+  // intervalo relativo, e isso e' da coordenacao). Ele DIZ, para ninguem ler
+  // "zero em atencao" como boa noticia quando o zero e' impossibilidade.
+  const faixaAlcancavel = (n) => Number.isInteger(n) && n >= PARAMS.REGUA_MINIMO_ENCONTROS
+    && Array.from({ length: n + 1 }, (_, k) => Math.round((k / n) * 100))
+      .some(p => p >= PARAMS.PRESENCA_MINIMA_PCT && p < PARAMS.PRESENCA_ATENCAO_PCT);
+  const semFaixaDeAtencao = criancas.filter(c => c.faixa !== 'sem_base' && !faixaAlcancavel(c.encontros));
   return {
     turma: { id: turma.id, nome: turma.nome, programa: turma.programa },
     desde: inicio, ate: ref,
     minima_pct: PARAMS.PRESENCA_MINIMA_PCT, atencao_pct: PARAMS.PRESENCA_ATENCAO_PCT,
     minimo_encontros: PARAMS.REGUA_MINIMO_ENCONTROS,
-    criancas, resumo,
+    // A LEITURA RELATIVA, ao lado da percentual (OPAR 05/09). "Quantas faltas
+    // ate' sair da regua" e' o que a coordenacao de fato pergunta — e nao
+    // depende da granularidade que apaga a faixa de atencao. Nao muda a
+    // politica: a faixa continua sendo a da decisao 33. Acrescenta o numero
+    // que responde a pergunta certa.
+    criancas: criancas.map(c => {
+      let faltasAteAbaixo = null;
+      if (c.faixa !== 'sem_base' && c.encontros) {
+        faltasAteAbaixo = 0;
+        while (faltasAteAbaixo < 60
+          && Math.round((c.presentes / (c.encontros + faltasAteAbaixo)) * 100) >= PARAMS.PRESENCA_MINIMA_PCT)
+          faltasAteAbaixo++;
+      }
+      return { ...c, faixa_atencao_alcancavel: faixaAlcancavel(c.encontros), faltas_ate_abaixo: faltasAteAbaixo };
+    }),
+    resumo,
+    sem_faixa_de_atencao: semFaixaDeAtencao.length,
+    encontros_para_atencao: semFaixaDeAtencao.length
+      ? (() => { let n = (semFaixaDeAtencao[0].encontros || 0) + 1;
+                 while (n < 60 && !faixaAlcancavel(n)) n++;
+                 return n < 60 ? n : null; })()
+      : null,
     doutrina: 'A régua é a do Instituto (75% para permanecer e para o grupo de benefícios). Abaixo dela não é erro de ninguém: é protocolo — a conversa é com a família.',
   };
 }

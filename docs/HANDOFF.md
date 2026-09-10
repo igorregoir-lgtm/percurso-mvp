@@ -1,4 +1,402 @@
-# Handoff — 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
+# Handoff — 05/09, 04/09, 03/09, 02/09/2026 (pós-visita) e 25/08/2026
+
+> ## Sessão de 05/09/2026 — auditoria OPAR: fazer o que não depende de ninguém
+>
+> Pedido: *"faça tudo que não precisa de uma pessoa e que está pendente. Faça em OPAR."* Sete
+> dívidas estavam classificadas como trabalho pendente. Relatório completo em
+> `~/.claude/AUDITORIA-OPAR-sessao-2026-09-05.md`.
+>
+> **Duas caíram na observação, antes de qualquer código:** medir o whisper é impossível daqui
+> (`whisper-cli` não instalado, `models/` inexistente — o `whisper` do PATH é outra implementação),
+> e o certificado HTTPS depende de domínio. As duas viraram item nomeado.
+>
+> **O que mais vale guardar: a dívida declarada pode estar errada, e duas estavam.**
+>
+> 1. **O extrator.** A dívida dizia que *"umas seis"* ficava em branco. Medido: sempre devolveu 6.
+>    O defeito era o oposto e pior — ele **inventava 1** quando não entendia. *"Todas participaram
+>    do começo ao fim"*, numa turma de 24, entrava na planilha socioemocional como **uma** criança.
+>    *"Conflito nenhum"* virava **um conflito**. *"Dezesseis pediram ajuda"* virava **6**, porque a
+>    alternação casava o sufixo. Tudo isso contra a doutrina escrita no próprio arquivo.
+> 2. **A porta C.** A dívida mandava construir "encontro agendado + data retroativa". A data
+>    retroativa já funcionava; faltava a tela deixar escolher. E a metade cara — agendar — ficou de
+>    fora com razão medida: encontro sem presença entra em **cinco denominadores**, e um deles
+>    atravessa a fronteira do Instituto (o relatório do doador publica `COUNT(*) FROM encontro`).
+>
+> **Verificar antes de agir mudou o que foi construído, não só a ordem.** É o ponto do método.
+>
+> **Dois falsos positivos em ~30 achados, e os dois instrutivos:** o auditor do extrator testou os
+> regexes **isolados** e não viu o portão de confiança que os precede; e eu julguei um 403 ausente
+> consultando um banco já mutado pelo smoke — o portão estava certo, minha asserção é que estava
+> errada.
+>
+> **O resto do que entrou:** a prova do consentimento ganhou relógio (vigência congelada, revogação
+> com data própria, fecho de ciclo como **detector** que marca e nomeia mas nunca apaga, e a
+> reconciliação de órfãos no boot — que achou 4 arquivos para 2 linhas na primeira execução); o
+> telefone do responsável passou a ser validado contra DDDs que existem e **conferido** antes do
+> primeiro envio, com a primeira mensagem sendo um desafio **sem nome de criança**; e a régua passou
+> a dizer quando a faixa de atenção é **aritmeticamente impossível** — medido: 11 de 12 crianças.
+>
+> **Uma contradição de LGPD, encontrada e corrigida:** a decisão 40 declarava a retenção do relato
+> da criança como "descarte no fim do ciclo"; o banco e a tela declaram "matrícula ativa + 2 anos".
+> Retenções **diferentes para o mesmo campo**, no artefato que existe para impedir exatamente isso.
+>
+> **Gates: 512 smoke · 215 unitários · 6 RAG · 24 ia-stub · 19 áudio-stub.** 32 tabelas, 117 rotas.
+>
+> ### Segunda rodada, mesma noite — "conserte tudo que precisa ser consertado"
+>
+> Do que ficou aberto, o que era código entrou; o que é política ou depende de fora continua
+> nomeado. **Sete correções**, cada uma verificada antes e travada por gate depois:
+>
+> - **O extrator dizia 0 quando não sabia** (`pediram_ajuda` era `NOT NULL DEFAULT 0`). Zero é
+>   afirmação; agora é `NULL` no esquema, no extrator e na tela (traço). E "vinte e um" a "vinte e
+>   nove" passaram a contar — composição fechada, não inferência.
+> - **O recado anunciava feriado como "próximo encontro"** no texto que vai para as famílias:
+>   `proximoEncontro` lia só o dia da semana. Agora lê o calendário da casa (decisão 37).
+> - **`descartarRelatosDoCiclo` era retenção de aparência** — sem chamador, apagava por ciclo. Virou
+>   `descartarRelatosVencidos`, por criança, e o servidor **recusa** se a matrícula está ativa ou o
+>   prazo não venceu. O fecho de ciclo detecta e lista; apagar é rota de coordenação com motivo e log.
+> - **`"."` passava como motivo** para destruir prova. Agora exige texto por extenso.
+> - **A régua ganhou "N faltas da régua"** ao lado do percentual — a leitura relativa que não sofre da
+>   granularidade e responde a pergunta que a coordenação faz. A faixa da decisão 33 continua igual.
+> - **A porta C guarda a data do endereço** — `?data=null` renderizava "o encontro de null".
+> - **O modal de retenção vencida nascia e morria no mesmo tique**: `navegar()` remove todo `.veu` ao
+>   re-renderizar, e eu o chamava depois de montar o modal. Visto no navegador — três tentativas até
+>   olhar o JSON cru e perceber que o back devolvia tudo. A lição é a de sempre: quando o servidor está
+>   certo e a tela não mostra, o culpado é a ordem, não o dado.
+>
+> **Continua aberto, com nome:** certificado HTTPS (domínio), medir o whisper na máquina deles (o
+> produto agora mede sozinho), encontro agendado como entidade (quebra cinco denominadores), a faixa
+> de atenção como intervalo (política), a conferência do telefone sem canal próprio (limite de
+> desenho), e o schema do copilot por modelo que ainda força `pediram_ajuda: 0` (opt-in, sem PoC).
+>
+> **Gates: 517 smoke · 222 unitários · 6 RAG · 24 ia-stub · 19 áudio-stub.** 32 tabelas, 118 rotas.
+>
+
+
+> ## Sessão de 04/09/2026 (madrugada) — a segunda rodada de WhatsApp e Instagram (dec. 50)
+>
+> Pedido: *"veja se não há nada que não possa ser melhorado… seja criativo… alternativas ainda
+> não usualmente exploradas"*. **A criatividade veio depois do diagnóstico**, e o diagnóstico foi
+> olhar para onde a coordenação de fato está: rede local em http, notebook sem WhatsApp, responsável
+> que não digita link, sábado corrido em que se manda duas vezes.
+>
+> **A peça que destravou três coisas de uma vez foi um codificador de QR escrito à mão**
+> (`public/qr.js`, ISO 18004, sem biblioteca — decisão 1 intacta). O que vale guardar é **como foi
+> verificado**: com o `BarcodeDetector` do navegador, um leitor real, e não contra o próprio código.
+> Foi o leitor que pegou o único defeito — a v7 falhava porque eu desenhava o sincronismo antes do
+> padrão de alinhamento que fica em cima dele. Um teste que só conferisse a matriz contra o
+> codificador teria passado verde para sempre.
+>
+> **O que entrou:** o texto **dentro do link** (`wa.me/?text=`, o WhatsApp abre com a mensagem
+> escrita — o clipboard, que não existe em http, saiu do caminho crítico); o **passe por QR** do
+> notebook para o celular (dez minutos, uma leitura, sem a imagem); a **folha da turma** com QR de
+> cada grupo para colar na parede; a **trava de envio duplicado** ("já recebeu isto hoje",
+> desmarcado por padrão); story, carrossel e texto alternativo no card do Instagram; negrito e
+> itálico do WhatsApp no recado e no boletim.
+>
+> **Um defeito meu de ontem que só apareceu hoje:** a referência do disparo era montada de duas
+> formas em dois lugares, e a trava de duplicidade **nunca casava** — verde na tela, inútil na
+> prática. Virou uma fonte só. E "hoje" era UTC: um envio às 21h de sábado em São Paulo já era
+> domingo. Virou meia-noite local, mandada pelo cliente.
+>
+> **A alternativa legítima para "um envio, todos"** não é código: é a **Comunidade** do WhatsApp,
+> cujo grupo de avisos alcança todos os grupos de uma vez. Estava na pesquisa desde o começo, sem
+> ninguém ligar ao pedido. Agora a tela diz.
+>
+> **Os grafos foram atualizados:** o canônico do produto (raiz `Inteli - Artefato Modulo III/`,
+> 608 → 1.552 nós — mas ele segue o `main`, que está **39 commits atrás** deste branch) e o do
+> repositório no branch (`graphify-out/` no worktree, 1.773 nós, agora no `.gitignore`). Quem for
+> fundir o branch: rode `graphify update .` na raiz do produto depois.
+>
+> **Gates: 504 smoke · 205 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.** 31 tabelas, 116 rotas.
+>
+
+
+> ## Sessão de 04/09/2026 (noite) — WhatsApp, Instagram e a câmera que vira
+>
+> Três pedidos, e o segundo é o mais importante **porque metade dele não é possível**.
+>
+> **1. "Permita virar a câmera do celular"** (dec. 49). Óbvio em uso, não trivial em desenho:
+> `MediaRecorder` fica preso ao stream em que começou, e virar no meio da gravação perderia o que já
+> foi dito — emendar dois arquivos tampouco serve, são dois contêineres. Então a escolha passou a
+> acontecer **antes**, com a imagem na tela, que é quando ela importa. Dois detalhes que só aparecem
+> usando: a prévia frontal é **espelhada na tela** (sem isso a pessoa não se enquadra) e o **arquivo
+> não é** — prova invertida seria prova adulterada; e o botão só aparece se houver duas câmeras.
+>
+> **2. "Um botão que mande para vários grupos de WhatsApp"** (dec. 47). **Isso não existe, e a tela
+> passou a dizer isso.** Não é limitação do produto: a Groups API oficial só cria grupos novos de até
+> oito com um selo que quase ninguém tem; a Cloud API é 1-para-1; e as bibliotecas que postam em
+> grupo violam os Termos, com o número como preço possível — e o número é o único canal do Instituto
+> com as famílias. `PESQUISA-WHATSAPP.md` já tinha medido isso; o que faltava era **executar o Degrau
+> 0**, e é o que foi feito.
+>
+> **O que realmente custava caro nunca foi o toque.** Era montar o texto, lembrar quais grupos
+> existem, decidir o que pode ir para cada um e perder a conta de quais já receberam. Os quatro
+> saíram do caminho: os grupos viraram cadastro (`canal`), o texto é montado e copiado **uma vez**, a
+> fila **sobrevive a sair do navegador** (`localStorage`) e o que saiu fica registrado (`disparo`).
+> Sobra um toque por grupo, que é o que a Meta exige.
+>
+> **A trava que mais vale:** o público do canal não é etiqueta. A tabela do §4 da pesquisa virou
+> código, e a recusa é **do servidor** — carta do período não vai para grupo de responsáveis (repasse
+> do dado de cada criança a terceiros, Art. 14 §3º), recado da turma não vai para o Instagram.
+>
+> **3. "Integrações com Instagram"** (dec. 48). *"Na medida do possível"* tem medida exata: postar por
+> API exige conta Business, token de servidor e revisão de aplicativo na Meta — infraestrutura que
+> esta casa não opera. O que não exige nada disso é o trabalho **antes** do post, e é o que entrou: o
+> card do período desenhado em `<canvas>` no próprio navegador, sem biblioteca (decisão 1 intacta, com
+> gate varrendo o gerador atrás de `import(` e CDN), do mesmo agregado do relatório, com supressão de
+> célula pequena e passando pelo revisor de sobre-alegação. A ressalva metodológica vai **dentro da
+> imagem**, não só na legenda: legenda se corta, imagem circula.
+>
+> **Três coisas que só apareceram exercitando:**
+>
+> - **`lerFila` já existia neste arquivo**, e é OUTRA fila — a dos POSTs sem rede. Duas filas com o
+>   mesmo nome viram um defeito que ninguém enxerga; virou `lerDivulgacao`, com gate contando que só
+>   há um `lerFila`.
+> - **Eu escrevi uma asserção vazia no smoke** (`(await0 => 0)()` devolvendo `true`) e ela passou
+>   verde. Um gate que passa aconteça o que acontecer é pior que gate nenhum: removida.
+> - **`textoObrigatorio` não era exportada** de `domain.js`, e o módulo novo só quebrou no primeiro
+>   `import` real — nenhum `node --check` pegaria.
+>
+> **A honestidade que fica na tela, e é o que eu não quero que a próxima pessoa apague:** o rodapé de
+> `#/divulgar` explica por que não há o botão único. Sem ele, alguém vai "melhorar" isso instalando
+> Baileys, e o Instituto perde o WhatsApp.
+>
+> **Gates: 489 smoke · 198 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.** 31 tabelas, 113 rotas,
+> 13 telas.
+>
+
+
+> ## Sessão de 04/09/2026 (tarde) — as seis perguntas do campo, respondidas com código
+>
+> O dono do produto abriu o artefato no celular e mandou seis perguntas sobre **telas que ele estava
+> vendo**. Nenhuma era pedido de recurso novo em abstrato; cada uma apontava para um lugar em que o
+> produto **parecia** completo e não era. Foram seis, e viraram as **decisões 41 a 46**.
+>
+> **1. *"Quem faz a matrícula da criança em cada turma? Quem cadastra as turmas?"*** A resposta
+> honesta era **metade**. A matrícula existia (`Pessoas → Quem entra → Nova criança`). O cadastro de
+> turma **não existia em lugar nenhum**: as sete turmas vinham da `seed`. E faltava a metade
+> seguinte, que só se vê depois: **para quem já está na ativa não havia como trocar de turma** —
+> `rematricularCrianca` só serve a quem voltou do arquivo. Entrou a aba **Turmas**, mais
+> `transferirDeTurma` e `matricularEmPrograma`, com porta na própria ficha (**dec. 41**).
+>
+> **2. *"Onde esses pontos são registrados? Não é a professora que tem que registrar?"*** Era ela,
+> sempre foi — mas a **tabela que mostra os pontos, na ficha, não levava a lugar nenhum**. A única
+> porta ficava em `Hoje → Ciclo`. Quem olhava para os números não tinha como mexer neles, e a
+> pergunta que isso gera é exatamente a que foi feita. O cartão passou a dizer o estado e abrir o
+> registro (**dec. 46**) — e isso obrigou `GET /api/observacao` a devolver `na_rubrica`, senão a
+> ficha ofereceria, na Vivência, um registro que o `POST` teria de recusar depois.
+>
+> **3. *"Como ele deixa registrado o consentimento? Tem como ser por vídeo do responsável?"*** Tem —
+> e é melhor do que havia. O que havia era o nome do responsável **digitado por quem estava do outro
+> lado da mesa**: a afirmação de que houve consentimento, não a prova dele. A LGPD põe o ônus da
+> prova no controlador (Art. 8º, §1º). Entrou `consentimento_evidencia` + `src/evidencia.js`
+> (**dec. 42**) — o **oposto** de `src/transcricao.js`: lá o arquivo é apagado no `finally`, aqui
+> apagar é apagar a prova.
+>
+> **4. *"Pode excluir tudo isso… essa parte da governança não tem utilidade para o usuário."***
+> Eu li isso como *"está no lugar errado"* e tirei só da ficha, alegando que em `#/consentimentos`
+> era ferramenta de trabalho. **Errado, e ele voltou no mesmo dia:** *"eu estou pedindo para excluir
+> este texto da governança por campo. Não faz sentido ele estar dentro do app. Este deve ser um app
+> profissional."* O que ele disse não era "lugar errado" — era **produto errado**. Base legal,
+> titular, acesso e retenção são a justificação do sistema, não leitura de quem está trabalhando:
+> ninguém abre Consentimentos para ler cinco colunas de texto jurídico, abre para desbloquear a
+> criança que está esperando. **Saiu de toda tela** (**dec. 45**); continua sendo regra do banco, do
+> `seed.js` e do `MODELO-DE-DADOS.md`, e o gate passou a varrer o front inteiro, separando as duas
+> coisas — tabela na tela reprova; regra removida reprova em outros testes.
+>
+> **A lição, que é sobre mim:** quando o campo diz "isto não tem utilidade para o usuário", a
+> primeira leitura tende a ser a que preserva mais do meu trabalho. Foi o que fiz, e custou uma
+> rodada.
+>
+> **5. *"Áudio pode ser importado de qualquer lugar do celular."*** Era um defeito silencioso:
+> `accept="audio/*"` parece inofensivo e, no iPhone, faz um áudio de WhatsApp (`.opus`) ou do Drive
+> **sumir da lista** — a pessoa não vê erro, vê um arquivo que não existe. E entrou o **share
+> target** (**dec. 44**): o manifest declara `POST /compartilhar` e quem recebe é o **service
+> worker**, porque não há página aberta quando o sistema posta o arquivo.
+>
+> **6. *"O recado com link do WhatsApp, também na parte de cada criança."*** Isto parecia
+> contradizer *"da turma, nunca de uma criança"* e **não contradiz — inverte o motivo dela**. A
+> regra do recado existe por causa do destinatário: o **grupo** de pais. Aqui o destinatário é um só,
+> o responsável legal, que exerce o direito de acesso do titular (Art. 18, II). Negar o dado a ele
+> não protegeria ninguém (**dec. 43**).
+>
+> **Duas coisas que só apareceram porque exercitei em vez de confiar:**
+>
+> - **`turmaValida` filtrava `educador WHERE ativo = 1`, e a tabela `educador` não tem coluna
+>   `ativo`** — ela usa `arquivado_em`. SQLite devolveu `no such column` só na primeira chamada
+>   real; nenhum `node --check` pegaria.
+> - **A documentação vinha corrompendo o `403` há três rodadas.** `docs/TESTES.md` dizia
+>   *"educadora barrada no painel (443)"* — e no commit anterior dizia `(431)`, e antes disso `403`.
+>   Alguém (eu, provavelmente) vinha fazendo *find/replace* da contagem do smoke sobre o arquivo
+>   inteiro, e a contagem come o status HTTP toda vez. **Corrigido: 19 ocorrências voltaram a 403.**
+>   Quem for atualizar a contagem de novo: troque a frase inteira, nunca o número solto.
+>
+> **Uma escolha técnica que muda o que a família lê.** O boletim compara o **nível da rubrica
+> (1–4)**, não a nota 0–2 da planilha. `NIVEL_PARA_PLANILHA` colapsa 2 e 3 na mesma nota: quem foi
+> de 2 para 3 sairia como *"manteve"*, e a família leria estagnação onde houve avanço. O mapeamento
+> serve para falar com a planilha da outra organização; para falar com a mãe, só perde informação.
+> Dentro da casa as duas leituras continuam lado a lado, com o `*` marcando onde divergem.
+>
+> **O que NÃO entrou no boletim, e é decisão:** relato livre (anotação clínica interna — a dec. 40
+> fez dele o dado mais restrito do produto), detalhe do alerta (é conversa, não mensagem) e o nível
+> 1–4. A tela **diz** o que ficou de fora; silêncio viraria *"o sistema não tinha o dado"*.
+>
+> **O protótipo alcançou o código no mesmo dia.** A ordem foi quebrada (código antes do desenho) e
+> depois consertada: o v3 vai de 16 para **19 telas** e de 84 para **102 elementos com ação** —
+> `#/pessoas?aba=turmas`, o boletim do responsável e a prova em vídeo, mais a fita de abas em
+> `#/pessoas` e a porta do registro dentro do cartão do ciclo. Nenhuma rota nova: as 12 continuam 12.
+> Duas decisões não têm par no desenho, e está dito por quê — a 45 porque o protótipo nunca desenhou
+> a governança na ficha, e a 44 porque acontece fora do aplicativo, na folha de compartilhamento do
+> celular.
+>
+> **Gates: 471 smoke · 192 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.** 29 tabelas, 106 rotas.
+>
+
+
+> ## Sessão de 04/09/2026 — F2 a F8: menos telas, menos toques, e o calendário da casa
+>
+> Continuação direta da noite anterior (F1, a captura por áudio). **28 rotas viraram 12**, os
+> steppers sumiram, o calendário deixou de ser deduzido do dia da semana, a psicóloga passou a ver
+> a rubrica na língua dela, e toda leitura de dado individual passou a deixar rastro.
+>
+> **Decisões novas: 36** (fusão de telas), **37** (calendário da casa) e **38** (rastro de acesso).
+>
+> **O que mais vale guardar são os defeitos que a mudança revelou — nenhum deles apareceu lendo
+> código:**
+>
+> 1. **`#/relatorio` estava inalcançável por hash desde a v2.** `/^#\/relato/` casa em
+>    `#/relatorio`, e o despacho pega o primeiro que casa: quem tocava em "Relatório" — a tela
+>    principal da DIRETORIA — caía em *"Sem turma atribuída"*. Nenhum gate pegava, e por um motivo
+>    estrutural: smoke é HTTP, o unitário não tem DOM, e o defeito morava só no despacho do cliente.
+>    Agora há gate, e ele lê as rotas do próprio arquivo.
+> 2. **Um teste que mentia conforme o calendário.** `aurora/preferências` chamava o painel real da
+>    Rita e exigia tipos que os gatilhos não produzem todo dia. Falhou em 04/09 e passava nos dias
+>    anteriores. Gate que passa conforme a data não avisa: sorteia. E a asserção tinha derivado do
+>    próprio nome — `compor` promete vaga reservada, não primeiro lugar.
+> 3. **O lapso acusava toda quinta-feira quem só atende sábado**, e o teste de fluxo tinha
+>    **derivado a asserção da régua errada** para parar de quebrar. O gate se acomodando ao defeito
+>    em vez de acusá-lo é pior que o defeito.
+> 4. **`faltas_mencionadas` era código morto** ligando algo que o campo tinha pedido em voz alta —
+>    e com um bug de fronteira: "Ana" casava dentro de "sem**ana**".
+> 5. **A tabela nova ficou fora da lista de limpeza da semeadura.** O esquema passou em tudo e o
+>    `reset` só quebrou quando existia UMA linha nela. Virou gate; na primeira execução ele achou
+>    uma segunda tabela já faltando há tempos (`parecer`).
+> 6. **Guia duplicado vira texto morto.** Ao fundir telas, dois guias da Aurora ficaram com o mesmo
+>    hash — `guiaDe` responde sempre pelo primeiro, sem erro nenhum. E dentro de um deles estava a
+>    promessa que a F0 tinha desfeito quatro commits antes: *"o áudio nunca sai do seu aparelho"*.
+> 7. **Eu criei três telas sem saída** ao absorver rotas, e só apareceram porque fui clicar. Tela em
+>    que se entra e não se sai é pior que tela a mais.
+> 8. **A pré-marcação de faltas existia só na memória**: a lista renderizava do dado do servidor.
+>    Oferecer e não mostrar é pior que não oferecer.
+>
+> **O que ficou de fora, e por quê:**
+> - **F7, o campo livre de relato, continua fechada.** Dos três pré-requisitos, HTTPS e log de
+>   auditoria estão pagos; falta **autenticação**. Hoje entrar é escolher um perfil numa lista, sem
+>   senha — identificação, não autenticação. Um campo de texto livre sobre uma criança, num produto
+>   em que qualquer pessoa que abra a página escolhe ser a psicóloga, é risco, não frente. Ligar
+>   autenticação muda o protocolo de validação e a demonstração: é decisão de quem responde pelo
+>   Instituto.
+> - **A extração dos seis indicadores por voz.** A colisão que a travava está resolvida e testada
+>   (as âncoras já são comportamentais e passam no perímetro); a extração em si é frente própria.
+> - **A velocidade do whisper na máquina do Instituto** continua não medida — dívida declarada, não
+>   número inventado.
+>
+> **Gates: 443 smoke · 179 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.**
+>
+> ### Continuação: autenticação (dec. 39) e o campo livre de relato (dec. 40)
+>
+> **A senha sozinha teria sido teatro.** O cookie era `percurso_uid=5` — o próprio id; qualquer
+> pessoa trocava o número no navegador e virava a psicóloga, e o comentário no código já chamava
+> isso de dívida. As duas peças andam juntas: `scrypt` do `node:crypto` **e** token opaco. Sem
+> dependência nova.
+>
+> **Não há senha semeada, e é deliberado:** senha em seed é senha publicada. `senha_hash = NULL` é
+> primeiro acesso. O limite disso fica escrito na decisão 39 — quem chegar primeiro reivindica a
+> conta —, e com dado real a coordenação define todas antes de entregar o endereço.
+>
+> **Com as três dívidas pagas (HTTPS · rastro · autenticação), a F7 destravou** e o campo livre
+> voltou. Dois campos, não um: o do **grupo** na folha (legítimo interesse, 5 anos, equipe) e o da
+> **criança** em tabela própria (consentimento específico, descarte no fim do ciclo, leitor
+> restrito). Misturá-los faria o descarte de um levar o outro junto.
+>
+> **Divergi do plano num ponto, e está declarado na decisão 40.** Ele dizia que o filtro passaria a
+> *"avisar sem bloquear"* fora da categoria de nome. Não adotei: as categorias que o perímetro barra
+> são clínicas e protetivas, e deixá-las passar transformaria a folha da turma num prontuário com
+> retenção de cinco anos. Um aviso ignorável sobre conteúdo dessa natureza é uma porta aberta com um
+> bilhete pedindo para não entrar.
+>
+> **O que sustenta a reversão são duas garantias por construção** — o texto nunca chega a um modelo
+> e nunca sai em agregado — e "por construção" só é verdade enquanto ninguém acrescenta a leitura.
+> Uma leitura acrescentada não daria erro em lugar nenhum, então virou gate: ele varre relatório,
+> síntese, planilha, scores, SROI, recado, copilot, ai-client, assistente, redação e as pastas
+> `rag/` e `aurora/`.
+>
+> **O custo, declarado:** a proteção deixa de ser *"por construção"* e passa a ser *"por controle de
+> acesso"*. É troca consciente, e reversível.
+>
+
+
+> ## Sessão de 03/09/2026 (noite) — a captura por áudio, de ponta a ponta
+>
+> Cinco commits (`1ea4041` a `4ae41a1`, mais o de documentos), executando a frente **F1** do plano
+> aprovado, na ordem que a revisão do próprio plano impôs: **HTTPS antes de tudo**, porque
+> `getUserMedia` exige contexto seguro e o IP da rede local não conta.
+>
+> **A decisão que o plano não tinha tomado, e sem a qual a frente não era executável.** O
+> `whisper.cpp` roda num *host*, não no celular. Adotá-lo em silêncio faria a F1 **falsificar a
+> frase que ela mesma declarava inegociável** — *"o áudio não sai do aparelho"*. A saída não foi
+> esconder: foi trocar a promessa por uma verdadeira, por caminho, e escrever isso como
+> **decisão 35**. A captura curta continua no aparelho quando o navegador sabe; as três portas
+> longas mandam o áudio para o computador do Instituto, pela rede daqui.
+>
+> **O que existe agora:** as portas **A′** (narrar sem pressa), **C** (trazer um áudio que ela já
+> tem) e **B** (deixar gravando o encontro, desligada por padrão) — as três terminando no MESMO
+> campo de escrever, com "Terminei" como única saída. Porta nova que virasse fluxo novo seria mais
+> tela, o contrário do que o campo pediu.
+>
+> **E os "40 segundos" deixaram de ser teto.** O relógio conta para cima e, aos 40 s, troca de
+> frase em vez de desligar o microfone. Isso obrigou a acrescentar o **religamento** do
+> reconhecimento (que só existia no ditado de campo): sem ele, tirar o limite seria prometer "fale
+> sem pressa" e desligar na primeira respirada do Safari.
+>
+> **Cinco armadilhas novas, todas encontradas verificando em vez de confiar:**
+>
+> 1. **`aoSegundo?.(++segundos)` nunca incrementava** sem callback — com encadeamento opcional o
+>    *argumento* não é avaliado. O contador ficava em zero para quem lesse `.segundos`.
+> 2. **A `reancorar.mjs` escreveu uma colisão.** Moveu `510 → 511`, onde já havia âncora, e chave
+>    duplicada em objeto JS **some em silêncio**: a tabela cairia de 18 para 17 sem sinal nenhum —
+>    exatamente a espécie de falha que essas âncoras existem para impedir. A ferramenta passa a
+>    recusar, e **o teste passa a contar as linhas escritas contra as chaves vivas**.
+> 3. **A mesma ferramenta corrompeu um intervalo** (`2234-2238` → `2468-2238`, que anda para trás)
+>    e **reescreveu história neste arquivo**. Agora ela desloca as duas pontas e nunca toca no
+>    HANDOFF — que é registro do passado. O teste passa a excluí-lo pelo mesmo motivo: até então
+>    aquilo passava por **coincidência**, porque o número antigo por acaso ainda era âncora.
+> 4. **O estágio 2 quebrou o estágio 1 sem que nada acusasse.** `/api/voz/extrair` recusava texto
+>    acima de 4000 caracteres — a medida de uma fala de 40 s. Cinco minutos de narração já passam
+>    disso: o teto antigo recusaria justamente a captura que as portas longas existem para
+>    permitir. Só apareceu porque o estágio 3 foi mexer nos "40 segundos".
+> 5. **O extrator com modelo receberia o encontro inteiro.** Este porte não lê isso; o slot
+>    falharia e cairia no extrator lexical **em silêncio**. O corte de contexto passou a ser
+>    declarado no código.
+>
+> **Gate novo: `npm run test:audio`** (15 asserções), no padrão do `ai-stub-test.mjs`. O
+> `scripts/whisper-stub.mjs` imita a interface do `whisper-cli`, e o que se testa é o que importa e
+> não depende dos 465 MB de modelo: **o ciclo de vida do arquivo**. Provado como gate de verdade —
+> removendo o `finally` de `src/transcricao.js`, quatro asserções caem.
+>
+> **O que NÃO foi feito, e por quê:**
+> - **A velocidade do whisper na máquina do Instituto não foi medida.** Não há whisper instalado
+>   aqui, e a estimativa que circulava (*"~6× tempo real"*) **não diz nem a direção**. Está na
+>   tabela de dívidas como dívida, não como número — inventar seria pior.
+> - **Capturar ainda depende de um encontro já existir** (`#/voz` redireciona sem encontro,
+>   `src/voz.js` devolve 404). A porta C — *"um áudio de três semanas atrás"* — esbarra nisso. É
+>   dependência declarada da frente do calendário, não esquecimento.
+> - **`docs/jornada-usuario/` e `docs/revisao/`** foram tocados só no que era mentira de produto;
+>   o resto é material datado e fica como está.
+>
+> **Gates: 385 smoke · 170 unitários · 6 RAG · 24 ia-stub · 15 áudio-stub.**
+>
 
 
 > **Sessão de revisão do repositório (03/09/2026).** Varredura em busca de erros e lacunas —
@@ -25,7 +423,7 @@
 >
 > **1. O protocolo de validação passou para a psicóloga.** As seis tarefas eram de pedagoga e duas
 > delas são **inexecutáveis** por ela — a turma da Vivência está fora da rubrica e `#/ciclo`
-> responde 422 (`src/api.js:308`). Refeitas a partir do task flow do Exercício 03
+> responde 422 (`src/api.js:323`). Refeitas a partir do task flow do Exercício 03
 > (`docs/task-flow/`); a versão pedagoga virou a §3.4 de `VALIDACAO-USUARIO.md`. Nasceu
 > `scripts/preparar-sessao.mjs`: sem ele a sessão começa com o trabalho já feito, porque a seed
 > entrega o último sábado registrado. Com `--lapso` ele destrava o Protocolo do Lapso, que até
@@ -105,7 +503,7 @@
 > uma ao CONTEÚDO esperado e recusa citação nova sem âncora. Renumerar sem conferir passou a
 > quebrar o teste, que diz qual saiu do lugar. **Ao mover código, rode `npm run test:unit` antes de
 > concluir que a documentação está certa.** O histórico do problema: O botão do recado era citado como
-> `public/app.js:508` em três documentos; a linha é a **509**. Varri todas as **18** citações dos
+> `public/app.js:510` em três documentos; a linha é a **509**. Varri todas as **18** citações dos
 > docs e corrigi todas — inclusive as cinco de `docs/revisao/09-PLANO-PASSO-PROATIVO.md`, por
 > decisão sua. Duas delas **não eram erro de numeração**, e é o achado que vale guardar:
 > `periodosSugeridos()` tinha saído mesmo de `src/api.js` para `src/relatorio.js:440`, e o `GUIA`
@@ -221,11 +619,11 @@ Tudo commitado e no `main` de https://github.com/igorregoir-lgtm/percurso-mvp �
 6ce0e15  As duas pendências da revisão: controle de tipo e resumo do dia
 5051eed  Revisão da implementação: 28 achados, 4 bloqueantes corrigidos
 f4d865d  Decisão 27 e dois defeitos de integração
-d7169b7  Passo proativo: o Qwen orquestrando o painel (passo 6) + 17 testes
-eb71ede  Passo proativo: a memória de uso, que nasce desligada (passo 5)
-59294be  Passo proativo: a superfície no cliente (passo 4 do plano)
-6f70e4b  Passo proativo: 20 achados da revisão adversarial do plano
-b65cccf  Passo proativo: fundação determinística (sinais, catálogo, ranking, painel)
+d7169b7  Aurora proativo: o Qwen orquestrando o painel (passo 6) + 17 testes
+eb71ede  Aurora proativo: a memória de uso, que nasce desligada (passo 5)
+59294be  Aurora proativo: a superfície no cliente (passo 4 do plano)
+6f70e4b  Aurora proativo: 20 achados da revisão adversarial do plano
+b65cccf  Aurora proativo: fundação determinística (sinais, catálogo, ranking, painel)
 13f560a  Relatório do doador: tom de carta e ordem de leitura do doador
 ```
 
@@ -237,13 +635,13 @@ b65cccf  Passo proativo: fundação determinística (sinais, catálogo, ranking,
 quem doa; o bloco dos sonhos passou a **fechar** o conteúdo, porque terminar no que ainda falta
 é o único pedido honesto que um relatório assim pode fazer.
 
-**O Passo virou parceiro proativo** (decisão 27, `docs/DECISOES-TECNICAS.md`). Seis módulos novos
-em `src/passo/`: `sinais` (envelope de contadores), `catalogo` (54 sugestões nos quatro tipos,
+**A Aurora virou parceiro proativo** (decisão 27, `docs/DECISOES-TECNICAS.md`). Seis módulos novos
+em `src/aurora/`: `sinais` (envelope de contadores), `catalogo` (54 sugestões nos quatro tipos,
 vivas nos três papéis), `ranking` (puro), `painel` (a cola), `perfil` (memória, banco derivado),
 `orquestrador` (o Qwen). Mais `src/fila-modelo.js`, extraído do copilot para que o orquestrador
 possa falar com o modelo **sem alcançar o banco nem transitivamente**.
 
-**A doutrina 5 foi trocada, não contornada.** Ela dizia "o Passo não enxerga dado nenhum" e
+**A doutrina 5 foi trocada, não contornada.** Ela dizia "a Aurora não enxerga dado nenhum" e
 virou mentira quando a sugestão passou a nascer de estado real. A frase foi reescrita nos **nove**
 lugares para o que passou a ser verdade: **conta quantos, nunca quem**. Num produto que se
 sustenta em limites declarados serem verdadeiros, limite que virou mentira é pior que a mudança.
@@ -292,7 +690,7 @@ Quem for mexer precisa saber **por que** cada uma existe, senão vai "simplifica
 o defeito:
 
 - **Teto de UMA pendência por painel** (`ranking.js`). Cada item pode ser gentil e o **somatório**
-  ser cobrança diária. É a trava que impede o Passo de virar chefe.
+  ser cobrança diária. É a trava que impede a Aurora de virar chefe.
 - **A memória nasce DESLIGADA**, com convite de um toque na primeira abertura. Num produto onde
   tudo é opt-in, a única coisa que grava algo sobre a **pessoa** não podia ser a exceção.
 - **Nunca o nome da turma** em texto nenhum: `turma.educador_id` é 1:1, então "a turma X está sem
@@ -377,10 +775,10 @@ Cada ciclo desta sessão deixou registro, e ler o registro é mais barato que re
 
 | documento | o que contém |
 |---|---|
-| `docs/DECISOES-TECNICAS.md` | decisões **27** (Passo proativo) e **28** (redação por modelo) |
+| `docs/DECISOES-TECNICAS.md` | decisões **27** (Aurora proativo) e **28** (redação por modelo) |
 | `docs/revisao/09-PLANO-PASSO-PROATIVO.md` | o plano, de um painel de 4 propostas × 3 juízes |
 | `docs/revisao/10-REVISAO-PASSO-PROATIVO.md` | 28 achados da revisão da implementação + adendo do Qwen |
-| `docs/revisao/07` e `08` | o ciclo anterior do Passo |
+| `docs/revisao/07` e `08` | o ciclo anterior da Aurora |
 | `docs/METODOLOGIA-VALIDACAO-PERCURSO.md` | hipóteses, limiares com fonte, Protocolo do Lapso, ameaças à validade |
 | `docs/VALIDACAO-USUARIO.md` | o protocolo da sessão e onde o resultado é registrado (§6, em branco) |
 | `docs/visita-ebenezer/` | execução em campo: roteiros e cartões de Igor, do grupo e dos alunos |

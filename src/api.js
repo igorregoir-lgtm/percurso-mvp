@@ -10,19 +10,25 @@ import { buscar as buscarRag, infoCorpus } from './rag/search.js';
 import { anonimizarTexto } from './rag/anonimizar.js';
 import * as C from './copilot.js';
 import * as A from './assistente.js';
-import * as PP from './passo/painel.js';
-// O Passo responde pergunta agregada com número do banco; a ligação é feita
+import * as PP from './aurora/painel.js';
+// A Aurora responde pergunta agregada com número do banco; a ligação é feita
 // aqui para evitar ciclo de import (relatorio.js → domain/scores/db).
 A.ligarConsultaAgregada(R.consultar);
-import { invalidarSinais, falhasDoEnvelope as envelopeFalhou } from './passo/sinais.js';
-import * as PF from './passo/perfil.js';
-import * as PO from './passo/orquestrador.js';
+import { invalidarSinais, falhasDoEnvelope as envelopeFalhou } from './aurora/sinais.js';
+import * as PF from './aurora/perfil.js';
+import * as PO from './aurora/orquestrador.js';
 import * as SROI from './sroi/calculator.js';
 import * as PL from './planilha.js';
+import * as AUD from './auditoria.js';
+import * as AUTH from './auth.js';
+import * as RL from './relato-livre.js';
 import * as REL from './relato.js';
 import * as REC from './recado.js';
+import * as TRANSC from './transcricao.js';
 import * as PAR from './parecer.js';
 import * as EVI from './evidencia.js';
+import * as BOL from './boletim.js';
+import * as CAN from './canais.js';
 import { conversar, AI_ENABLED } from './ai-client.js';
 const { nomesParaAnonimizar } = C;
 
@@ -87,12 +93,17 @@ const COOKIE = 'percurso_uid';
 export function usuarioDa(req) {
   const raw = req.headers.cookie || '';
   const m = raw.split(';').map(s => s.trim()).find(s => s.startsWith(COOKIE + '='));
-  const id = m ? Number(m.split('=')[1]) : null;
+  // O COOKIE NÃO É O ID. Era `percurso_uid=5` — qualquer pessoa trocava o
+  // número no navegador e virava a psicóloga. É um token opaco de 32 bytes que
+  // só o servidor sabe a quem pertence. A decisão 51 tirou a senha e MANTEVE
+  // isto: sem senha, o token é a única coisa que separa entrar de forjar.
+  const token = m ? m.slice(COOKIE.length + 1) : null;
+  const id = AUTH.educadorDoToken(token);
   if (!id) return null;
-  // Quem foi para o ARQUIVO não tem sessão, mesmo com o cookie na mão: o
-  // cookie não é assinado (dívida nº 1) e vale 24 h, então arquivar alguém
-  // precisa valer AGORA. Este é o ponto único onde isso é verdade para todas
-  // as rotas — pôr a checagem só no login deixaria a sessão aberta em pé.
+  // Quem foi para o ARQUIVO não tem sessão, mesmo com o token válido na mão:
+  // arquivar alguém precisa valer AGORA. Este é o ponto único onde isso é
+  // verdade para todas as rotas — pôr a checagem só no login deixaria a sessão
+  // aberta em pé.
   return get(`SELECT * FROM educador WHERE id = ? AND arquivado_em IS NULL`, id) ?? null;
 }
 
@@ -159,19 +170,29 @@ function exigeAcessoTurma(req, turmaId) {
 
 /** Escopo por criança (A4): coordenação passa; educadora só se a criança tem
  *  matrícula ativa em turma DELA. Usado nas rotas de leitura individual. */
-function exigeAcessoCrianca(req, criancaId) {
+/**
+ * Acesso a dado individual — e AGORA COM RASTRO (decisao 38).
+ *
+ * O log fica AQUI, no unico portao por onde todo acesso individual passa. Pôr
+ * a chamada em cada rota seria garantir que a proxima rota esqueceria.
+ *
+ * `recurso` diz O QUE foi lido. Quem nao informa entra como 'ficha', que e' o
+ * caso geral — nenhuma leitura individual sai sem registro.
+ */
+function exigeAcessoCrianca(req, criancaId, recurso = 'ficha') {
   const u = semAcessoIndividual(exigeUsuario(req));
   // Criança que não existe é 404 para qualquer papel — o 403 de escopo só faz
   // sentido sobre uma criança real (e não vira oráculo de existência: a lista
   // da educadora já é restrita às turmas dela).
   if (!get(`SELECT 1 x FROM crianca WHERE id = ?`, criancaId))
     throw D.erro(404, 'Criança não encontrada.');
-  if (u.papel === 'coordenacao') return u;
+  if (u.papel === 'coordenacao') { AUD.registrarAcesso(u, recurso, criancaId); return u; }
   const vinculo = get(
     `SELECT 1 x FROM matricula m JOIN turma t ON t.id = m.turma_id
       WHERE m.crianca_id = ? AND m.status='ativa' AND t.educador_id = ?`, criancaId, u.id);
   if (!vinculo)
     throw D.erro(403, 'Esta criança é de outra turma. O acesso é do educador da criança e da coordenação.');
+  AUD.registrarAcesso(u, recurso, criancaId);
   return u;
 }
 // Escopo de leitura individual: professora e profissional (psicóloga) só nas
@@ -188,27 +209,52 @@ const cicloCorrente = () =>
 export const rotas = {
   'GET /api/sessao': (req) => ({
     usuario: usuarioDa(req),
+    // A lista é a tela de entrada inteira: escolher quem está usando É entrar
+    // (decisão 51). Não há mais `primeiro_acesso` — não há senha a criar.
     usuarios: all(
-      `SELECT id, nome, apelido, papel FROM educador WHERE arquivado_em IS NULL ORDER BY CASE WHEN papel = 'profissional' THEN 0 WHEN papel = 'educador' THEN 1 ELSE 2 END, id`),
+      `SELECT id, nome, apelido, papel
+         FROM educador WHERE arquivado_em IS NULL ORDER BY id`),
   }),
 
+  // Entrar é escolher quem está usando (decisão 51, que revoga a senha da 39).
+  // O que continua valendo: a pessoa tem de existir e não estar arquivada, e a
+  // sessão sai com TOKEN OPACO — o cookie nunca volta a ser o id.
   'POST /api/sessao': (req, body) => {
     const u = get(`SELECT * FROM educador WHERE id = ?`, num(body.educador_id, 'educador_id'));
     if (!u) throw D.erro(404, 'Usuário não encontrado.');
     if (u.arquivado_em)
       throw D.erro(403, `${u.nome} está no arquivo desde ${D.dataBR(u.arquivado_em)} e não entra no Percurso. A coordenação pode trazer de volta.`);
-    return { usuario: u, _cookie: `${COOKIE}=${u.id}; Path=/; Max-Age=86400; SameSite=Lax` };
+
+    const token = AUTH.abrirSessao(u.id);
+    const seguro = req.socket?.encrypted ? ' Secure;' : '';
+    return { usuario: u, _cookie: `${COOKIE}=${token}; Path=/; Max-Age=43200; HttpOnly;${seguro} SameSite=Lax` };
   },
 
-  'POST /api/sair': () => ({ ok: true, _cookie: `${COOKIE}=; Path=/; Max-Age=0; SameSite=Lax` }),
+  'POST /api/sair': (req) => {
+    const raw = req.headers.cookie || '';
+    const m = raw.split(';').map(s => s.trim()).find(s => s.startsWith(COOKIE + '='));
+    AUTH.encerrarSessao(m ? m.slice(COOKIE.length + 1) : null);
+    return { ok: true, _cookie: `${COOKIE}=; Path=/; Max-Age=0; SameSite=Lax` };
+  },
 
   // ---- Educadora ---------------------------------------------------------
-  'GET /api/hoje': (req) => {
+  'GET /api/hoje': (req, _b, q) => {
     const u = exigeUsuario(req);
     const turmas = all(
       `SELECT t.*, p.nome AS programa FROM turma t JOIN programa p ON p.id = t.programa_id
         WHERE t.educador_id = ? ORDER BY t.id`, u.id);
-    const turma = turmas[0] ?? null;
+    // A TURMA ESCOLHIDA, nao `turmas[0]`. Este foi um achado de campo do dono do
+    // produto (03/09/2026): a turma de sabado A' TARDE tem porta de entrada,
+    // nome e chamada na operacao real — quem nao acompanhava era o produto. A
+    // psicologa responde por duas turmas e o cartao, a chamada, a folha, a
+    // pauta, os alertas e a agenda saiam todos da PRIMEIRA. So' `recados[]`
+    // tinha virado por turma (achado A-1 da OPAR).
+    //
+    // A escolha vem por query e e' VALIDADA contra as turmas dela: turma_id de
+    // outra pessoa nao seleciona nada, cai na primeira — o escopo continua
+    // sendo o do vinculo, nunca o do parametro.
+    const pedida = Number(q?.get('turma_id')) || null;
+    const turma = (pedida && turmas.find(t => t.id === pedida)) || turmas[0] || null;
     const ciclo = D.cicloAberto();
     return {
       usuario: u, hoje: D.hoje(), turmas, turma,
@@ -238,6 +284,19 @@ export const rotas = {
       // da Vivencia ainda tem o recado do sabado. Sem encontro nenhum na turma,
       // `dataDaFolha` devolve hoje e este campo e' falso — nao ha o que mandar.
       encontro_registrado: turma ? !!D.encontroDe(turma.id, D.dataDaFolha(turma.id)) : false,
+      // F4 — o aviso chega ANTES do encontro, que e' o que o campo pediu: o
+      // lembrete tem de chegar enquanto ainda da' para apertar "gravar". E' o
+      // aviso IN-APP; notificacao agendada nao existe no padrao web (ver
+      // decisao 37), e prometer o que o navegador nao faz seria pior que nada.
+      proximos_encontros: turma ? D.proximosEncontros(turma.id, 2) : [],
+      // "Registrado depois": o encontro guarda a DATA em que aconteceu e o
+      // instante em que foi registrado. Quando os dois nao batem, a tela diz —
+      // registro atrasado vale igual, e esconder isso e' que seria estranho.
+      folha_registrada_depois: (() => {
+        if (!turma) return null;
+        const e = D.encontroDe(turma.id, D.dataDaFolha(turma.id));
+        return e?.registrado_em && e.registrado_em.slice(0, 10) > e.data ? e.registrado_em.slice(0, 10) : null;
+      })(),
       // O recado e' de TURMA, e quem responde por varias tinha porta so' para a
       // primeira (`turmas[0]`): a psicologa cobre a Vivencia de manha E de tarde,
       // e a Cleide, quatro turmas — os responsaveis das demais nao recebiam nada
@@ -276,6 +335,26 @@ export const rotas = {
     exigeAcessoTurma(req, turmaId);
     return { datas: D.chamadasEmAberto(turmaId) };
   },
+
+  // ---- Transcricao de audio (F1) ---------------------------------------
+  // O corpo e' o WAV cru. Nao passa pela fila offline do cliente: audio nao e'
+  // um POST idempotente de formulario, e reenviar dezenas de MB quando a rede
+  // volta seria pior que pedir para a pessoa tentar de novo.
+  'POST /api/transcrever': async (req, corpo) => {
+    exigeUsuario(req);
+    const { texto, audio_s, ms, fator } = await TRANSC.transcrever(corpo);
+    // A transcricao NAO e' persistida aqui: volta ao cliente, que a leva para o
+    // extrator na confirmacao. Mesma doutrina da captura ao vivo.
+    //
+    // O QUE FICA E' A MEDICAO, e so' ela: quantos segundos de audio, quantos
+    // milissegundos de maquina. Sem texto, sem quem falou, sem encontro. E'
+    // assim que a divida "velocidade do whisper nunca medida" deixa de esperar
+    // um benchmark de bancada e passa a ser respondida pela propria operacao.
+    TRANSC.registrarMedicao({ audio_s, ms });
+    return { texto, caracteres: texto.length, audio_s, fator };
+  },
+
+  'GET /api/audio/status': (req) => { exigeUsuario(req); return TRANSC.estadoDoAudio(); },
 
   'GET /api/rubrica': (req) => { exigeUsuario(req); return { dimensoes: D.rubrica(), params: D.PARAMS }; },
 
@@ -319,9 +398,15 @@ export const rotas = {
     const criancaId = num(q.get('crianca_id'), 'crianca_id');
     const c = get(`SELECT id, codigo, nome FROM crianca WHERE id = ?`, criancaId);
     if (!c) throw D.erro(404, 'Criança não encontrada.');
-    exigeAcessoCrianca(req, criancaId);
+    exigeAcessoCrianca(req, criancaId, 'observacao');
+    // A turma diz se ha' rubrica individual. Na Vivencia nao ha' (decisao 31) —
+    // e a ficha precisa saber disso para nao oferecer um registro que o POST
+    // teria de recusar depois. Botao que leva a lugar nenhum e' pior que
+    // ausencia de botao: parece defeito do produto, e e'.
+    const turmaId = turmaDaCrianca(criancaId);
     return {
       ciclo, crianca: c,
+      na_rubrica: turmaId ? D.turmaNaRubrica(turmaId) : false,
       elegibilidade: D.elegibilidade(criancaId, ciclo.id),
       observacao: D.observacaoDe(ciclo.id, criancaId),
       campo_livre: D.consentimentoDe(criancaId, 'campo_livre'),
@@ -388,7 +473,88 @@ export const rotas = {
   'GET /api/crianca': (req, _b, q) => {
     const id = num(q.get('id'), 'id');
     exigeAcessoCrianca(req, id);
-    return D.fichaCrianca(id);
+    const ficha = D.fichaCrianca(id);
+    // F5 — A RUBRICA NA LÍNGUA DELA. O produto já calculava `evolucao012`
+    // (piorou/manteve/evoluiu) e ela nunca via: o delta só chegava ao parecer.
+    // A leitura dela é entre DUAS medições, na escala 0–2 da planilha do
+    // Instituto; a do produto é em níveis 1–4. As duas vão juntas de propósito,
+    // porque o mapeamento 2 e 3 → 1 é LOSSY e declarado provisório (decisão 34):
+    // é vendo onde elas divergem que ela pode avalizar ou recusar o mapeamento.
+    ficha.trajetoria.dimensoes = ficha.trajetoria.dimensoes.map(d => {
+      const [ant, ult] = [d.niveis.at(-2), d.niveis.at(-1)];
+      const e = (ant != null && ult != null)
+        ? PL.evolucao012(PL.NIVEL_PARA_PLANILHA[ant], PL.NIVEL_PARA_PLANILHA[ult]) : null;
+      return {
+        ...d,
+        evolucao: e,
+        evolucao_rotulo: e == null ? null : PL.ROTULO_EVOLUCAO[e],
+        // O caso que interessa à decisão 34: o nível mudou e a planilha não viu.
+        divergente: e != null && ((d.mudanca === 'avancou' && e !== 2) || (d.mudanca === 'recuou' && e !== 0)),
+      };
+    });
+    ficha.legenda_planilha = PL.LEGENDA_PLANILHA;
+    // A coordenacao mexe em matricula DAQUI — e para isso precisa da lista de
+    // turmas e programas. Vai so' para ela: quem nao pode mexer nao carrega o
+    // catalogo do Instituto junto com a ficha.
+    if (usuarioDa(req)?.papel === 'coordenacao') {
+      ficha.turmas = D.turmasDetalhadas();
+      ficha.programas = all(`SELECT id, nome, no_escopo FROM programa ORDER BY id`);
+    }
+    return ficha;
+  },
+
+  // ---- Rastro de acesso individual (decisao 38) ---------------------------
+  // Quem leu a ficha de quem. E' o que a coordenacao precisa responder a um
+  // responsavel que pergunte — e o que a LGPD chama de rastreabilidade.
+  'GET /api/acessos': (req, _b, q) => {
+    const criancaId = num(q.get('crianca_id'), 'crianca_id');
+    // Ler o rastro E' ler dado individual: passa pelo mesmo portao, e fica
+    // registrado tambem. Auditoria sem auditoria de si mesma nao e' auditoria.
+    exigeAcessoCrianca(req, criancaId);
+    return { acessos: AUD.acessosDaCrianca(criancaId) };
+  },
+
+  // O resumo, para a tela de governanca: volume por recurso e por papel, SEM
+  // nome de crianca. A coordenacao ve o padrao de acesso, nao o caso a caso.
+  'GET /api/acessos/resumo': (req, _b, q) => {
+    exigeGestao(req);
+    return AUD.resumoDeAcesso({ desde: q.get('desde') || null });
+  },
+
+  // ---- Campo livre de relato (decisao 40) ---------------------------------
+  // Dois campos, duas naturezas. O do GRUPO mora na folha; o da CRIANCA tem
+  // tabela propria, consentimento especifico e descarte no fim do ciclo.
+  'POST /api/relato-grupo': (req, corpo) => {
+    const turmaId = num(corpo.turma_id, 'turma_id');
+    exigeAcessoTurma(req, turmaId);
+    const data = corpo.data || D.dataDaFolha(turmaId);
+    const enc = D.encontroDe(turmaId, data);
+    const folha = enc ? V.folhaDe(enc.id) : null;
+    if (!folha) throw D.erro(422, 'A folha deste encontro ainda não existe. Registre-a antes.');
+    return RL.salvarRelatoGrupo({ folhaId: folha.id, turmaId, texto: corpo.texto });
+  },
+
+  'GET /api/relato-crianca': (req, _b, q) => {
+    const criancaId = num(q.get('crianca_id'), 'crianca_id');
+    exigeAcessoCrianca(req, criancaId, 'ficha');
+    return {
+      relatos: RL.relatosDaCrianca(criancaId),
+      consentimento: D.consentimentoDe(criancaId, 'campo_livre').status,
+    };
+  },
+
+  'POST /api/relato-crianca': (req, corpo) => {
+    const criancaId = num(corpo.crianca_id, 'crianca_id');
+    const u = exigeAcessoCrianca(req, criancaId, 'ficha');
+    return RL.salvarRelatoCrianca({
+      criancaId, educadorId: u.id, cicloId: D.cicloAberto()?.id ?? null, texto: corpo.texto,
+    });
+  },
+
+  'DELETE /api/relato-crianca': (req, corpo) => {
+    const id = num(corpo.id, 'id');
+    const u = exigeUsuario(req);
+    return RL.apagarRelatoCrianca(id, u.id);
   },
 
   'GET /api/alertas': (req) => {
@@ -432,14 +598,196 @@ export const rotas = {
   'GET /api/safras': (req) => { exigeCoordenacao(req); return D.safras(); },
   'GET /api/consentimentos': (req) => { exigeCoordenacao(req); return D.painelConsentimentos(); },
 
-  // ---- Prova do consentimento em vídeo (decisão 41) ----------------------
-  // O corpo é BINÁRIO (ver server.js): base64 em JSON inflaria 33% um arquivo
+  // DESCARTE DOS RELATOS VENCIDOS (OPAR 05/09/2026). O fecho de ciclo so'
+  // detecta; apagar e' aqui, de coordenacao, com motivo, e passa pelo portao de
+  // acesso individual — destruir texto sobre a crianca e' ato sobre a crianca.
+  'POST /api/relato-crianca/descartar-vencidos': (req, body) => {
+    const u = exigeCoordenacao(req);
+    const id = num(body.crianca_id, 'crianca_id');
+    exigeAcessoCrianca(req, id, 'ficha');
+    return RL.descartarRelatosVencidos(id, { motivo: body.motivo, porUsuarioId: u.id });
+  },
+
+  // A CONFERENCIA DO TELEFONE (OPAR 05/09/2026). Passa pelo mesmo portao do
+  // boletim, e por isso fica no log de acesso individual: confirmar de quem e'
+  // o numero e' ato sobre a crianca, nao sobre um campo de cadastro.
+  'POST /api/crianca/contato-conferido': (req, body) => {
+    const u = exigeUsuario(req);
+    const id = num(body.crianca_id, 'crianca_id');
+    exigeAcessoCrianca(req, id, 'boletim');
+    return D.marcarContatoConferido(id, { valor: body.valor, como: body.como, porUsuarioId: u.id });
+  },
+
+  // ---- Canais: onde o Instituto fala com quem (decisao 47) ---------------
+  // Cadastro de coordenacao pelo mesmo motivo do resto: e' o publico do canal
+  // que decide o que pode ser montado para ele.
+  'GET /api/canais': (req, _b, q) => {
+    exigeUsuario(req);
+    const u = usuarioDa(req);
+    const canais = CAN.listarCanais({ incluirArquivados: q.get('todos') === '1' && u.papel === 'coordenacao' });
+    return {
+      canais: u.papel === 'coordenacao' || u.papel === 'diretoria'
+        ? canais
+        // Quem esta' em sala ve' os canais das PROPRIAS turmas e os que nao sao
+        // de turma nenhuma. Nao e' segredo — e' nao oferecer o grupo de outra
+        // turma a quem nao responde por ela.
+        : canais.filter(c => c.turma_id == null
+            || all(`SELECT id FROM turma WHERE educador_id = ?`, u.id).some(t => t.id === c.turma_id)),
+      tipos: CAN.TIPOS, publicos: CAN.PUBLICOS, conteudos: CAN.CONTEUDOS,
+      turmas: D.turmasDetalhadas(),
+      recentes: u.papel === 'coordenacao' || u.papel === 'diretoria' ? CAN.disparosRecentes() : [],
+    };
+  },
+
+  // O que EXISTE para ser divulgado agora. Duas regras moram aqui:
+  //
+  //  1. so' sai o que ja' foi PUBLICADO. Carta e relatorio em rascunho nao
+  //     aparecem — mandar para fora um texto que ainda nao passou pelo revisor
+  //     de sobre-alegacao seria burlar o revisor por um caminho lateral.
+  //  2. o recado nao persiste (decisao 33): ele e' montado do encontro na hora
+  //     em que ela escolhe. Aqui vem so' a LISTA de encontros que tem recado.
+  'GET /api/divulgar': (req) => {
+    exigeGestao(req);
+    const publicados = R.relatorios().filter(r => r.status === 'publicado').slice(0, 8).map(r => {
+      const cheio = R.relatorioDe(r.tipo, r.periodo);
+      return {
+        tipo: r.tipo, periodo: r.periodo, publicado_em: r.publicado_em,
+        rotulo: `${r.tipo === 'carta' ? 'Carta' : 'Relatório'} · ${r.periodo}`,
+        destaque: cheio?.blocos?.[0]?.destaque ?? null,
+        texto: cheio?.texto ?? '',
+        primeiro_bloco: cheio?.blocos?.[0]?.texto ?? '',
+      };
+    });
+    // Encontros com folha liberada, das ultimas semanas: sao os que tem recado.
+    const recados = all(
+      `SELECT e.turma_id, t.nome AS turma, e.data
+         FROM encontro e JOIN turma t ON t.id = e.turma_id
+         JOIN folha f ON f.encontro_id = e.id
+        WHERE e.data >= date('now', '-28 days')
+        ORDER BY e.data DESC, t.nome LIMIT 12`);
+    return { canais: CAN.listarCanais(), tipos: CAN.TIPOS, publicos: CAN.PUBLICOS,
+      conteudos: CAN.CONTEUDOS, turmas: D.turmasDetalhadas(),
+      recados, publicados, recentes: CAN.disparosRecentes() };
+  },
+
+  // O CARD do período — a peça que vai para o Instagram (decisão 48).
+  //
+  // Nasce de `redigirCarta`, que é template fechado sobre números de SQL:
+  // NENHUM modelo escreve aqui, e a supressão de célula pequena já aconteceu
+  // antes, dentro de `numerosDoPeriodo`. Ainda assim passa pelo revisor de
+  // sobre-alegação antes de sair — o Instagram é público, e público não tem
+  // errata.
+  'GET /api/divulgar/card': (req, _b, q) => {
+    exigeGestao(req);
+    const periodo = q.get('periodo') || '';
+    const [inicio, fim] = periodo.split('..');
+    if (!inicio || !fim) throw D.erro(422, 'Informe o período como inicio..fim.');
+    const n = R.numerosDoPeriodo({ inicio, fim });
+    const carta = R.redigirCarta(n)[0];
+    const revisor = D.revisarSobreAlegacao(carta.texto);
+    if (revisor.status !== 'aprovado')
+      throw D.erro(422, `O revisor de sobre-alegação barrou este texto: ${revisor.achados?.join('; ') || 'sobre-alegação'}.`);
+    return {
+      periodo, rotulo: `${D.dataBR(inicio)} a ${D.dataBR(fim)}`,
+      destaque: carta.destaque,
+      // As três linhas do card. Só agregado — nenhuma delas pode apontar para
+      // uma criança, e o mínimo de célula já foi aplicado lá atrás.
+      linhas: [
+        { valor: String(n.cobertura.criancas_unicas), rotulo: 'crianças no período' },
+        { valor: n.permanencia.presenca_pct != null ? `${n.permanencia.presenca_pct}%` : '—', rotulo: 'de presença nos encontros' },
+        { valor: String(n.exposicao.aspiracoes_declaradas), rotulo: 'disseram o que querem ser' },
+      ],
+      legenda: carta.texto,
+      ressalva: 'Nenhuma criança aparece sozinha: grupos com menos de '
+        + `${n.minimo_celula} são agrupados ou suprimidos antes de qualquer publicação.`,
+      revisor: revisor.status,
+    };
+  },
+
+  // Quem JÁ recebeu este conteúdo hoje — para a tela desmarcar por padrão e
+  // dizer por quê. Não proíbe: repetir pode ser intencional.
+  'GET /api/divulgar/ja-recebeu': (req, _b, q) => {
+    // Quem manda o recado no sábado é a professora — a trava de duplicidade
+    // tem de valer para ela também. Devolve só ids, nunca conteúdo.
+    exigeUsuario(req);
+    return { canal_ids: CAN.jaRecebeuHoje(String(q.get('conteudo') ?? ''), q.get('referencia'), { desde: q.get('desde') }) };
+  },
+
+  // O PASSE PARA O CELULAR (decisão 50): a fila montada no notebook vira um
+  // id de dez minutos, de uso único, que o QR leva ao celular. Só gestão cria
+  // e só gestão consome — o QR, sozinho, não abre nada para quem não tem sessão.
+  'POST /api/divulgar/passe': (req, body) => {
+    const u = exigeGestao(req);
+    return CAN.criarPasse(body.fila, { porUsuarioId: u.id });
+  },
+  'GET /api/divulgar/passe': (req, _b, q) => {
+    exigeGestao(req);
+    return { fila: CAN.consumirPasse(q.get('id')) };
+  },
+
+  'POST /api/canais': (req, body) => {
+    exigeCoordenacao(req);
+    return CAN.criarCanal({
+      tipo: String(body.tipo ?? ''), nome: body.nome, publico: String(body.publico ?? ''),
+      turmaId: body.turma_id ? num(body.turma_id, 'turma_id') : null,
+      destino: body.destino, observacao: body.observacao,
+    });
+  },
+
+  'POST /api/canais/editar': (req, body) => {
+    exigeCoordenacao(req);
+    return CAN.editarCanal(num(body.id, 'id'), {
+      nome: body.nome, publico: String(body.publico ?? ''),
+      turmaId: body.turma_id ? num(body.turma_id, 'turma_id') : null,
+      destino: body.destino, observacao: body.observacao,
+    });
+  },
+
+  'POST /api/canais/arquivar': (req, body) => {
+    exigeCoordenacao(req);
+    return body.reativar ? CAN.reativarCanal(num(body.id, 'id')) : CAN.arquivarCanal(num(body.id, 'id'));
+  },
+
+  // O registro de que SAIU. O Percurso nao envia — quem envia e' a pessoa —,
+  // mas "ja' mandei para os pais?" precisa de resposta que nao seja a memoria
+  // de quem passou o sabado inteiro em pe' dentro da sala.
+  'POST /api/disparo': (req, body) => {
+    const u = exigeUsuario(req);
+    // Quem está em sala registra envio só em canal da PRÓPRIA turma (ou sem
+    // turma). Não é segredo — é não deixar o grupo do Reforço receber o recado
+    // da Vivência por um clique errado, e não deixar o registro mentir.
+    if (!['coordenacao', 'diretoria'].includes(u.papel)) {
+      const canal = CAN.porId(num(body.canal_id, 'canal_id'));
+      const minhas = all(`SELECT id FROM turma WHERE educador_id = ?`, u.id).map(t => t.id);
+      if (canal.turma_id != null && !minhas.includes(canal.turma_id))
+        throw D.erro(403, `${canal.nome} não é da sua turma.`);
+    }
+    return CAN.registrarDisparo({
+      canalId: num(body.canal_id, 'canal_id'),
+      conteudo: String(body.conteudo ?? ''),
+      referencia: body.referencia ?? null,
+      porUsuarioId: u.id,
+    });
+  },
+
+  // ---- Boletim da crianca para o responsavel (decisao 42) ----------------
+  // Contraparte do recado da turma, e o oposto dele no destinatario: aqui vai
+  // UMA crianca para UMA pessoa — quem responde por ela. Nao persiste; e'
+  // gerado do que ja' esta registrado, como o recado.
+  'GET /api/boletim': (req, _b, q) => {
+    const id = num(q.get('crianca_id'), 'crianca_id');
+    exigeAcessoCrianca(req, id, 'boletim');
+    return BOL.boletimDaCrianca(id);
+  },
+
+  // ---- Prova do consentimento em video (decisao 41) ----------------------
+  // O corpo e' BINARIO (ver server.js): base64 em JSON inflaria 33% um arquivo
   // de dezenas de MB, e o teto de 1 MB do lerCorpo existe para recusar isso.
   'POST /api/consentimento/evidencia': (req, corpo, q) => {
     const u = exigeCoordenacao(req);
     const criancaId = num(q.get('crianca_id'), 'crianca_id');
     return EVI.guardar(corpo, {
-      criancaId, campo: q.get('campo') || 'consentimento_em_video',
+      criancaId, campo: q.get('campo') || '',
       mime: q.get('mime') || req.headers['content-type'] || '',
       duracaoS: q.get('duracao') ? Number(q.get('duracao')) : null,
       responsavel: q.get('responsavel') || '',
@@ -450,25 +798,31 @@ export const rotas = {
   'GET /api/consentimento/evidencias': (req, _b, q) => {
     exigeCoordenacao(req);
     const id = num(q.get('crianca_id'), 'crianca_id');
-    exigeAcessoCrianca(req, id);
+    exigeAcessoCrianca(req, id, 'consentimento_video');
     return { evidencias: EVI.daCrianca(id) };
   },
 
-  // Devolve os BYTES do vídeo. Passa pelo mesmo portão de acesso individual —
+  // Devolve os BYTES do video. Passa pelo mesmo portao de acesso individual —
   // e por isso fica registrado quem assistiu, e quando.
   'GET /api/consentimento/video': (req, _b, q) => {
     exigeCoordenacao(req);
     const linha = EVI.porId(num(q.get('id'), 'id'));
-    exigeAcessoCrianca(req, linha.crianca_id);
+    exigeAcessoCrianca(req, linha.crianca_id, 'consentimento_video');
     const { buffer, mime } = EVI.bytesDe(linha.id);
     return { _arquivo: buffer, _mime: mime };
   },
 
+  // DESTRUIR A PROVA PASSA PELO MESMO PORTAO QUE ASSISTIR A ELA (OPAR 05/09).
+  // Antes, `GET /api/consentimento/video` registrava quem assistiu e este
+  // DELETE nao registrava nada: **ver ficava no log, destruir nao.** Para uma
+  // peca que existe por causa do onus da prova, era o rastro exatamente ao
+  // contrario. Agora a leitura da linha vem antes, para saber de QUEM e' a
+  // prova, e o acesso e' registrado antes de o arquivo sumir.
   'DELETE /api/consentimento/evidencia': (req, body) => {
     exigeCoordenacao(req);
     const id = num(body.id, 'id');
     const linha = EVI.porId(id);
-    exigeAcessoCrianca(req, linha.crianca_id);
+    exigeAcessoCrianca(req, linha.crianca_id, 'consentimento_video');
     return EVI.apagar(id, { motivo: body.motivo });
   },
 
@@ -554,7 +908,7 @@ export const rotas = {
   },
 
   // ======================================================================
-  // Passo — assistente-parceiro de navegacao (todos os papeis; responde SO
+  // Aurora — assistente-parceiro de navegacao (todos os papeis; responde SO
   // sobre o produto — plano auditado em docs/revisao/07-PLANO-ASSISTENTE.md).
   // Sempre responde: com modelo (AI_ASSISTENTE) ou pelo guia deterministico.
   // ======================================================================
@@ -569,19 +923,19 @@ export const rotas = {
   // O painel proativo: sugestões ancoradas no estado REAL da pessoa, por papel
   // e por tela. DETERMINÍSTICO PURO — nunca chama o modelo, nunca escreve em
   // banco nenhum. O refinamento por modelo é rota separada e opcional.
-  'GET /api/passo/painel': (req, _b, q) => {
+  'GET /api/aurora/painel': (req, _b, q) => {
     const u = exigeUsuario(req);
-    return PP.painelDoPasso(u, A.telaSegura(String(q.get('tela') || '')));
+    return PP.painelDoAurora(u, A.telaSegura(String(q.get('tela') || '')));
   },
 
   // O refinamento pelo Qwen — ASSÍNCRONO e opcional. O painel determinístico
   // já está pintado quando isto roda; falha, timeout, fila ocupada ou modelo
   // desligado devolvem `refinado:false` e NADA muda na tela. Nunca 5xx.
-  'POST /api/passo/refinar': async (req, body) => {
+  'POST /api/aurora/refinar': async (req, body) => {
     const u = exigeUsuario(req);
     if (!A.AI_ASSISTENTE) return { refinado: false, motivo: 'desligado' };
     const tela = A.telaSegura(String(body.tela || ''));
-    const painel = PP.painelDoPasso(u, tela);
+    const painel = PP.painelDoAurora(u, tela);
     const alvos = painel.sugestoes.filter(s => !s.id.startsWith('guia:'));
     if (alvos.length < 2) return { refinado: false, motivo: 'nada_a_fazer' };
     const porId = new Map(alvos.map(s => [s.id, s]));
@@ -598,7 +952,7 @@ export const rotas = {
         anonimizar: anonimizarTexto,
         semCobranca: PP.semCobranca,
         // O PORTÃO 4, agora de verdade. Antes isto era `(ordem) => ordem` — a
-        // identidade — enquanto o comentário e o corpo de /api/passo/qualidade
+        // identidade — enquanto o comentário e o corpo de /api/aurora/qualidade
         // afirmavam que "o piso de núcleo roda DEPOIS do modelo". A doutrina
         // publicada era mais forte que o código; o modelo definia a vaga 1.
         // Sort ESTÁVEL por núcleo: o conjunto não muda, só garante que nenhum
@@ -616,7 +970,7 @@ export const rotas = {
     };
   },
 
-  'GET /api/passo/qualidade': (req) => {
+  'GET /api/aurora/qualidade': (req) => {
     exigeCoordenacao(req);
     return {
       orquestrador: PO.estatisticas(),
@@ -628,9 +982,9 @@ export const rotas = {
     };
   },
 
-  // Telemetria do Passo — só o que a pessoa faz COM ELE. No-op silencioso
+  // Telemetria da Aurora — só o que a pessoa faz COM ELE. No-op silencioso
   // enquanto o aprendizado está desligado (que é o padrão).
-  'POST /api/passo/uso': (req, body) => {
+  'POST /api/aurora/uso': (req, body) => {
     const u = exigeUsuario(req);
     const id = String(body.id || '');
     const evento = String(body.evento || '');
@@ -650,12 +1004,21 @@ export const rotas = {
 
   // A pessoa só lê e apaga a PRÓPRIA memória. Não existe rota para ver a de
   // outra pessoa — e essa ausência é a decisão, não um esquecimento.
-  'GET /api/passo/memoria': (req) => PF.memoriaDe(exigeUsuario(req).id),
-  'POST /api/passo/memoria': (req, body) => PF.salvarPreferencia(exigeUsuario(req).id, {
+  'GET /api/aurora/memoria': (req) => PF.memoriaDe(exigeUsuario(req).id),
+  'POST /api/aurora/memoria': (req, body) => PF.salvarPreferencia(exigeUsuario(req).id, {
     aprender: body.aprender, resumo_do_dia: body.resumo_do_dia,
     prefere_tipo: body.prefere_tipo, convidado: body.convidado,
   }),
-  'DELETE /api/passo/memoria': (req) => PF.apagarMemoria(exigeUsuario(req).id),
+  'DELETE /api/aurora/memoria': (req) => PF.apagarMemoria(exigeUsuario(req).id),
+
+  // Aliases de retrocompatibilidade para o assistente (Passo -> Aurora)
+  'GET /api/passo/painel': (req, b, q) => rotas['GET /api/aurora/painel'](req, b, q),
+  'POST /api/passo/refinar': (req, b) => rotas['POST /api/aurora/refinar'](req, b),
+  'GET /api/passo/qualidade': (req) => rotas['GET /api/aurora/qualidade'](req),
+  'POST /api/passo/uso': (req, b) => rotas['POST /api/aurora/uso'](req, b),
+  'GET /api/passo/memoria': (req) => rotas['GET /api/aurora/memoria'](req),
+  'POST /api/passo/memoria': (req, b) => rotas['POST /api/aurora/memoria'](req, b),
+  'DELETE /api/passo/memoria': (req) => rotas['DELETE /api/aurora/memoria'](req),
 
   'DELETE /api/assistente/sessao': (req, body) =>
     A.apagarSessaoAssistente(exigeUsuario(req), String(body.session_id || '')),
@@ -707,6 +1070,35 @@ export const rotas = {
          LEFT JOIN educador e ON e.id = t.educador_id ORDER BY t.id`) };
   },
 
+  // ---- O calendario da casa (decisao 37) ---------------------------------
+  // O turno da' a regra base; a casa marca a excecao. Quem responde pela turma
+  // marca a dela; coordenacao e diretoria marcam qualquer uma — e' calendario
+  // da casa, nao agenda pessoal.
+  'GET /api/calendario': (req, _b, q) => {
+    const turmaId = num(q.get('turma_id'), 'turma_id');
+    exigeAcessoTurma(req, turmaId);
+    return {
+      turma: get(`SELECT id, nome, turno FROM turma WHERE id = ?`, turmaId),
+      proximos: D.proximosEncontros(turmaId, 4),
+      excecoes: D.excecoesDaTurma(turmaId, D.hoje()),
+      abertas: D.chamadasEmAberto(turmaId),
+    };
+  },
+
+  'POST /api/calendario': (req, corpo) => {
+    const turmaId = num(corpo.turma_id, 'turma_id');
+    const u = exigeAcessoTurma(req, turmaId);
+    return D.marcarNoCalendario({
+      turmaId, data: corpo.data, tipo: corpo.tipo, motivo: corpo.motivo, educadorId: u.id,
+    });
+  },
+
+  'DELETE /api/calendario': (req, corpo) => {
+    const turmaId = num(corpo.turma_id, 'turma_id');
+    exigeAcessoTurma(req, turmaId);
+    return D.desmarcarNoCalendario(turmaId, String(corpo.data ?? ''));
+  },
+
   'GET /api/folha': (req, _b, q) => {
     const turmaId = num(q.get('turma_id'), 'turma_id');
     exigeAcessoTurma(req, turmaId);
@@ -723,6 +1115,11 @@ export const rotas = {
       vivencia: !D.turmaNaRubrica(turmaId),
       // E6: a devolucao por encontro, quando ja' ha' folha.
       devolucao: enc && V.folhaDe(enc.id) ? V.devolucaoDoEncontro(enc.id) : null,
+      // F3: o encontro anterior desta turma, para a tela oferecer "Igual ao
+      // encontro de <data>" em UM toque. So' vai quando ainda nao ha folha —
+      // oferecer copia de tres semanas atras por cima do que ela acabou de
+      // registrar seria convidar ao erro.
+      anterior: enc && !V.folhaDe(enc.id) ? V.folhaAnteriorDaTurma(turmaId, data) : null,
     };
   },
 
@@ -734,7 +1131,11 @@ export const rotas = {
     const turmaId = num(body.turma_id, 'turma_id');
     exigeAcessoTurma(req, turmaId);
     const texto = String(body.transcricao ?? '');
-    if (texto.length > 4000) throw D.erro(422, 'Transcrição longa demais para uma fala de 40 segundos.');
+    // O teto era 4000 — cabia numa fala de 40 s e NAO cabe num encontro
+    // inteiro: cinco minutos de narracao ja' passam disso. Com as portas longas
+    // (F1) o limite antigo recusaria justamente a captura que elas existem para
+    // permitir. O novo teto e' generoso e continua sendo um teto.
+    if (texto.length > 60000) throw D.erro(422, 'Esse texto é maior do que o Percurso consegue ler de uma vez. Dá para guardar em duas partes.');
     const nomes = D.criancasDaTurma(turmaId).map(c => c.nome);
     const vivencia = !D.turmaNaRubrica(turmaId);
     // Modo A com modelo e' OPT-IN (AI_EXTRATOR=1) e cai para o extrator lexical
@@ -751,6 +1152,20 @@ export const rotas = {
       origem: origem ?? 'regras',
       vivencia,
       nomes_substituidos: substituicoes,
+      // F6 — `faltas_mencionadas` era CODIGO MORTO: o extrator devolvia, a folha
+      // gravava `[]` fixo (certo: a folha e' da turma, sem nome) e o front nunca
+      // lia. O campo pediu literalmente "ou entao voce marque a presenca / pelo
+      // nome, so falando" (Grav. 82).
+      //
+      // Volta como SUGESTAO POR CRIANCA, com id, para a tela oferecer e a pessoa
+      // confirmar. NUNCA presume 'P' para quem a fala nao citou: presenca decide
+      // renovacao de matricula (regua de 75%, decisao 33), e quem nao foi citada
+      // simplesmente nao foi citada.
+      faltas_sugeridas: (() => {
+        const ditas = new Set(extracao.faltas_mencionadas ?? []);
+        if (!ditas.size) return [];
+        return D.criancasDaTurma(turmaId).filter(c => ditas.has(c.nome)).map(c => ({ id: c.id, nome: c.nome }));
+      })(),
       procedimento_neutralizado: perimetro.neutralizados ?? 0,
       // Fato de ter havido exclusao + a categoria, para a tela devolver o
       // encaminhamento humano. O trecho volta so para a pessoa que falou ver o
@@ -795,7 +1210,13 @@ export const rotas = {
   'GET /api/recado': (req, _b, q) => {
     const turmaId = num(q.get('turma_id'), 'turma_id');
     exigeAcessoTurma(req, turmaId);
-    return REC.recadoDaTurma(turmaId, q.get('data') || D.dataDaFolha(turmaId));
+    const r = REC.recadoDaTurma(turmaId, q.get('data') || D.dataDaFolha(turmaId));
+    // O mesmo texto, com a primeira linha em negrito e a assinatura em itálico:
+    // o WhatsApp entende *asteriscos*, e e' assim que o recado chega legível
+    // no celular de quem lê no ônibus. O `texto` cru continua, para quem cola
+    // em outro lugar.
+    const texto_whatsapp = CAN.formatarParaWhatsApp(r.texto);
+    return { ...r, texto_whatsapp, whatsapp_url: 'https://wa.me/?text=' + encodeURIComponent(texto_whatsapp) };
   },
 
   // ---- Parecer profissional-a-profissional (decisao 32) --------------------
@@ -803,7 +1224,7 @@ export const rotas = {
   // A diretoria nunca chega aqui (decisao 16).
   'GET /api/parecer': (req, _b, q) => {
     const criancaId = num(q.get('crianca_id'), 'crianca_id');
-    exigeAcessoCrianca(req, criancaId);
+    exigeAcessoCrianca(req, criancaId, 'parecer');
     return {
       consentimento: D.consentimentoDe(criancaId, 'parecer_profissional').status,
       previa: PAR.numerosDoParecer(criancaId),
@@ -812,12 +1233,12 @@ export const rotas = {
   },
   'GET /api/parecer/ver': (req, _b, q) => {
     const p = PAR.parecerDe(num(q.get('id'), 'id'));
-    exigeAcessoCrianca(req, p.crianca_id);
+    exigeAcessoCrianca(req, p.crianca_id, 'parecer');
     return p;
   },
   'POST /api/parecer/gerar': (req, body) => {
     const criancaId = num(body.crianca_id, 'crianca_id');
-    const u = exigeAcessoCrianca(req, criancaId);
+    const u = exigeAcessoCrianca(req, criancaId, 'parecer');
     return { ok: true, parecer: PAR.gerarParecer({ criancaId, destinatario: body.destinatario, usuarioId: u.id }) };
   },
   'POST /api/parecer/liberar': (req, body) => {
@@ -1011,10 +1432,14 @@ export const rotas = {
       equipe: D.listarEquipe(),
       papeis: D.PAPEIS,
       programas: all(`SELECT id, nome, faixa, cadencia FROM programa WHERE no_escopo = 1 ORDER BY id`),
-      turmas: all(
-        `SELECT t.id, t.nome, t.turno, t.programa_id, p.nome AS programa, e.nome AS educador
-           FROM turma t JOIN programa p ON p.id = t.programa_id
-           LEFT JOIN educador e ON e.id = t.educador_id ORDER BY t.id`),
+      // A lista de TURMA e' outra, e de proposito: a Vivencia terapeutica esta'
+      // fora do escopo de MEDICAO (nao entra na cobertura, nao tem rubrica
+      // individual) — mas ela existe, tem turma, chamada e recado, e e' onde a
+      // psicologa trabalha. Impedir de criar turma dela seria confundir "fora da
+      // medicao" com "fora do Instituto".
+      programas_de_turma: all(`SELECT id, nome, faixa, cadencia, no_escopo FROM programa ORDER BY id`),
+      turmas: D.turmasDetalhadas(),
+      turnos: D.TURNOS,
       proximo_codigo: D.proximoCodigoCrianca(),
     };
   },
@@ -1032,10 +1457,63 @@ export const rotas = {
     exigeCoordenacao(req);
     return D.criarCrianca({
       nome: body.nome, nascimento: body.nascimento, responsavel: body.responsavel,
+      contato: body.contato ?? null,
       programaId: num(body.programa_id, 'programa_id'),
       turmaId: body.turma_id ? num(body.turma_id, 'turma_id') : null,
       entrada: body.entrada || null,
     });
+  },
+
+  // ---- Turma — o cadastro que faltava (decisao 39) -----------------------
+  // A pergunta do campo foi "quem cadastra as turmas?" e a resposta, ate' aqui,
+  // era "ninguem: vem da seed". Coordenacao, pelo mesmo motivo do resto do
+  // bloco — turma e' o que decide quem le a ficha de quem.
+  'POST /api/turmas': (req, body) => {
+    exigeCoordenacao(req);
+    return D.criarTurma({
+      nome: body.nome, turno: String(body.turno ?? ''),
+      programaId: num(body.programa_id, 'programa_id'),
+      educadorId: body.educador_id ? num(body.educador_id, 'educador_id') : null,
+    });
+  },
+
+  'POST /api/turmas/editar': (req, body) => {
+    exigeCoordenacao(req);
+    return D.editarTurma(num(body.id, 'id'), {
+      nome: body.nome, turno: String(body.turno ?? ''),
+      programaId: num(body.programa_id, 'programa_id'),
+      educadorId: body.educador_id ? num(body.educador_id, 'educador_id') : null,
+    });
+  },
+
+  // Trocar a turma de uma matricula ativa, e matricular quem ja' esta' na ativa
+  // num programa a mais. Sem estas duas, "matricular numa turma" so' existia no
+  // instante do cadastro — depois disso a coordenacao nao tinha caminho nenhum.
+  'POST /api/matricula/turma': (req, body) => {
+    exigeCoordenacao(req);
+    return D.transferirDeTurma(num(body.matricula_id, 'matricula_id'), {
+      turmaId: body.turma_id ? num(body.turma_id, 'turma_id') : null,
+    });
+  },
+
+  'POST /api/matricula': (req, body) => {
+    exigeCoordenacao(req);
+    const id = num(body.crianca_id, 'crianca_id');
+    exigeAcessoCrianca(req, id, 'ficha');
+    return D.matricularEmPrograma(id, {
+      programaId: num(body.programa_id, 'programa_id'),
+      turmaId: body.turma_id ? num(body.turma_id, 'turma_id') : null,
+      entrada: body.entrada || null,
+    });
+  },
+
+  // Quem responde pela crianca e por onde se fala com essa pessoa. E' o dado
+  // que o boletim (decisao 42) precisa, e ele nao existia no cadastro.
+  'POST /api/crianca/responsavel': (req, body) => {
+    exigeCoordenacao(req);
+    const id = num(body.crianca_id, 'crianca_id');
+    exigeAcessoCrianca(req, id, 'ficha');
+    return D.atualizarResponsavel(id, { responsavel: body.responsavel, contato: body.contato ?? null });
   },
 
   // ---- Arquivo — ninguem e' apagado (decisao 30) -------------------------

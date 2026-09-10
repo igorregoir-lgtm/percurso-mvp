@@ -72,10 +72,12 @@ const DIMENSOES = [
 const GOVERNANCA = [
   { campo: 'presenca', rotulo: 'Presença', base_legal: 'Legítimo interesse (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Equipe do programa', retencao: '5 anos', exige_consentimento: 0 },
   { campo: 'rubrica_socioemocional', rotulo: 'Rubrica socioemocional', base_legal: 'Consentimento específico do responsável (LGPD Art. 14)', titular: 'Organização', acesso: 'Educador da criança + coordenação', retencao: 'Enquanto ativa + 2 anos', exige_consentimento: 1 },
-  { campo: 'campo_livre', rotulo: 'Campo livre da observação', base_legal: 'Consentimento específico do responsável (LGPD Art. 14)', titular: 'Organização', acesso: 'Educador que registrou', retencao: 'Descarte ao fim do ciclo', exige_consentimento: 1 },
+  { campo: 'campo_livre', rotulo: 'Relato sobre a criança (campo livre)', base_legal: 'Consentimento específico do responsável (LGPD Art. 14)', titular: 'Organização', acesso: 'Só quem escreveu + coordenação, com log de acesso (decisão 38)', retencao: 'Enquanto a matrícula estiver ativa + 2 anos', exige_consentimento: 1 },
   { campo: 'aspiracao', rotulo: 'Aspiração declarada (Lab. de Sonhos)', base_legal: 'Legítimo interesse — atividade-fim do programa (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Equipe do programa', retencao: 'Enquanto ativa', exige_consentimento: 0 },
   { campo: 'folha_do_dia', rotulo: 'Folha do dia (registro da turma)', base_legal: 'Legítimo interesse — execução do programa (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Equipe do programa', retencao: '5 anos', exige_consentimento: 0 },
-  { campo: 'audio_da_voz', rotulo: 'Áudio da captura por voz', base_legal: 'Não coletado — descartado na transcrição, dentro do navegador', titular: '—', acesso: 'Ninguém', retencao: 'Não persiste em nenhum momento', exige_consentimento: 0 },
+  { campo: 'audio_da_voz', rotulo: 'Áudio da captura por voz (ao vivo, curta)', base_legal: 'Não coletado pelo Percurso. A transcrição é do navegador: quando ele a faz no aparelho, o áudio não sai dali; quando não faz, vai ao serviço do fornecedor do navegador', titular: 'Fornecedor do navegador, quando a transcrição não é no aparelho', acesso: 'Ninguém, no Percurso', retencao: 'Não persiste em nenhum momento no Percurso', exige_consentimento: 0 },
+  { campo: 'audio_longo', rotulo: 'Áudio da narração longa, do encontro gravado ou do arquivo trazido', base_legal: 'Legítimo interesse — execução do programa (LGPD Art. 7º, IX). Coletado de forma transitória: chega ao computador do Instituto, é transcrito ali e apagado no mesmo instante; nunca sai da rede local', titular: 'Organização', acesso: 'Ninguém — o arquivo não sobrevive à transcrição', retencao: 'Apagado ao virar texto, sempre, inclusive quando a transcrição falha (finally, varredura no boot e teto de idade)', exige_consentimento: 0 },
+  { campo: 'audio_da_sala', rotulo: 'Áudio do encontro inteiro (porta B — a sala, com as crianças)', base_legal: 'Escolha explícita de quem responde pela turma, por aparelho. Desligada por padrão — o campo chamou gravar criança de "perigoso"', titular: 'Organização', acesso: 'Ninguém — mesmo ciclo de vida do áudio longo', retencao: 'Apagado ao virar texto; o texto passa pela anonimização antes de qualquer gravação', exige_consentimento: 1 },
   { campo: 'transcricao_da_voz', rotulo: 'Transcrição da captura por voz', base_legal: 'Não coletada — usada em memória e descartada na confirmação', titular: '—', acesso: 'Ninguém', retencao: 'Não persiste em nenhum momento', exige_consentimento: 0 },
   { campo: 'score_evasao', rotulo: 'Score de risco de evasão', base_legal: 'Legítimo interesse — proteção do vínculo (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Coordenação e diretoria', retencao: 'Recalculado a cada consulta; não historiado', exige_consentimento: 0 },
   { campo: 'agregado_publicado', rotulo: 'Agregado publicado no relatório', base_legal: 'Legítimo interesse — prestação de contas (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Público, após revisão da diretoria', retencao: 'Permanente', exige_consentimento: 0 },
@@ -91,9 +93,15 @@ const GOVERNANCA = [
   // identificável por código — atrás de consentimento específico, liberação
   // registrada e revisor. Nasce pendente para toda criança, como a rubrica.
   { campo: 'parecer_profissional', rotulo: 'Parecer a profissional parceiro (por código)', base_legal: 'Consentimento específico do responsável (LGPD Art. 14)', titular: 'Organização', acesso: 'Profissional parceiro nomeado pela coordenação, após liberação', retencao: 'Registro da liberação permanente; o texto é o do parecer liberado', exige_consentimento: 1 },
-  { campo: 'recado_da_turma', rotulo: 'Recado da turma aos responsáveis', base_legal: 'Legítimo interesse — comunicação com responsáveis sobre a turma (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Responsáveis da turma, pelo grupo que já existe; quem envia é a pessoa', retencao: 'Não persiste — gerado sob demanda, só agregado da turma', exige_consentimento: 0 },
-  // Decisão 41 — a prova do consentimento. Dado do RESPONSÁVEL, não da criança.
+  // Decisao 42 — o boletim da crianca para quem responde por ela. Nao e' um
+  // dado novo: e' a leitura, num lugar so', do que ja' esta registrado. A base
+  // legal e' o DIREITO DE ACESSO do titular (Art. 18, II), exercido pelo
+  // responsavel legal — por isso nao exige consentimento: negar seria negar um
+  // direito. O que ele NAO leva esta na propria doutrina do boletim.
+  { campo: 'boletim_do_responsavel', rotulo: 'Boletim da criança para o responsável', base_legal: 'Direito de acesso do titular (LGPD Art. 18, II), exercido pelo responsável legal', titular: 'Criança', acesso: 'Apenas o responsável cadastrado; quem envia é a pessoa da equipe, com registro', retencao: 'Não persiste — gerado sob demanda do que já está registrado', exige_consentimento: 0 },
+  // Decisao 41 — a prova do consentimento. Dado do RESPONSAVEL, nao da crianca.
   { campo: 'consentimento_em_video', rotulo: 'Vídeo do responsável consentindo (prova)', base_legal: 'Ônus da prova do consentimento (LGPD Art. 8º, §1º)', titular: 'Responsável', acesso: 'Coordenação e diretoria, com log de acesso', retencao: 'Enquanto o consentimento valer + 5 anos; apagado com a revogação a pedido', exige_consentimento: 0 },
+  { campo: 'recado_da_turma', rotulo: 'Recado da turma aos responsáveis', base_legal: 'Legítimo interesse — comunicação com responsáveis sobre a turma (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Responsáveis da turma, pelo grupo que já existe; quem envia é a pessoa', retencao: 'Não persiste — gerado sob demanda, só agregado da turma', exige_consentimento: 0 },
 ];
 
 export function semear() {
@@ -101,7 +109,7 @@ export function semear() {
   const T = hoje();
 
   return tx(() => {
-    for (const t of ['importacao','relatorio','pauta','atividade_area','folha_marcador','folha','aspiracao','atividade','sintese','alerta','consentimento_evidencia','consentimento','observacao_item','observacao','presenca','encontro','matricula','crianca','turma','programa','ancora','dimensao','ciclo','educador','governanca_campo'])
+    for (const t of ['importacao','relatorio','pauta','atividade_area','folha_marcador','folha','aspiracao','atividade','sintese','alerta','transcricao_medida','disparo','canal','consentimento_evidencia','consentimento','observacao_item','observacao','presenca','encontro','calendario_excecao','parecer','acesso_individual','relato_crianca','matricula','crianca','turma','programa','ancora','dimensao','ciclo','educador','governanca_campo'])
       db.exec(`DELETE FROM ${t};`);
 
     for (const g of GOVERNANCA)
@@ -140,6 +148,18 @@ export function semear() {
       (6,4,'Vivência · Sábado manhã','sabado',5),
       (7,4,'Vivência · Sábado tarde','sabado',5)`);
 
+    // Canais (decisão 47). SINTÉTICOS, como todo o resto: os links de convite
+    // abaixo não existem no WhatsApp — são a forma do link, para a tela ter o
+    // que mostrar. Com dado real, a coordenação cadastra os de verdade.
+    run(`INSERT INTO canal (id,tipo,nome,publico,turma_id,destino,observacao,ativo,criado_em) VALUES
+      (1,'whatsapp','Responsáveis · Vivência Sábado manhã','pais',6,'https://chat.whatsapp.com/EXEMPLOvivmanha1','Só o recado da turma. Nunca lista com nome.',1,?),
+      (2,'whatsapp','Responsáveis · Vivência Sábado tarde','pais',7,'https://chat.whatsapp.com/EXEMPLOvivtarde12','Só o recado da turma. Nunca lista com nome.',1,?),
+      (3,'whatsapp','Responsáveis · Reforço Tarde A','pais',1,'https://chat.whatsapp.com/EXEMPLOreforcoA12','Só o recado da turma. Nunca lista com nome.',1,?),
+      (4,'whatsapp','Apoiadores do Instituto','apoiadores',NULL,'https://chat.whatsapp.com/EXEMPLOapoiadores1','Prestação de contas: só agregado.',1,?),
+      (5,'whatsapp','Equipe Ebenézer','equipe',NULL,'https://chat.whatsapp.com/EXEMPLOequipe1234','Pauta da semana e avisos internos.',1,?),
+      (6,'instagram','@institutoebenezer','apoiadores',NULL,'@institutoebenezer','Perfil público: só o card agregado, nunca rosto sem termo.',1,?)`,
+      T, T, T, T, T, T);
+
     const c1i = addDias(T, -165), c1f = addDias(T, -135);
     const c2i = addDias(T, -14),  c2f = addDias(T, 26);
     const mesNome = (iso) => new Date(iso + 'T12:00:00Z').toLocaleDateString('pt-BR', { month: 'short', timeZone: 'UTC' }).replace('.', '');
@@ -162,9 +182,14 @@ export function semear() {
       seq++;
       const codigo = 'EBZ-' + String(seq).padStart(4, '0');
       const anos = intBetween(idadeMin, idadeMax);
-      run(`INSERT INTO crianca (codigo,nome,nascimento,responsavel,ativo,criado_em) VALUES (?,?,?,?,1,?)`,
+      // Telefone SINTÉTICO, e reconhecível como tal: DDD 11, prefixo 9 e oito
+      // zeros-e-sequência. Ninguém atende esse número. Existe para o boletim
+      // (decisão 42) ter um destino nesta base de demonstração — botão que só
+      // aparece com dado real não é testado por ninguém.
+      const telefone = `5511900${String(seq).padStart(6, '0')}`;
+      run(`INSERT INTO crianca (codigo,nome,nascimento,responsavel,responsavel_contato,ativo,criado_em) VALUES (?,?,?,?,?,1,?)`,
           codigo, `${pick(NOMES)} ${pick(SOBRENOMES)}`,
-          addDias(T, -(anos * 365 + intBetween(0, 364))), pick(RESPONSAVEIS), entrada);
+          addDias(T, -(anos * 365 + intBetween(0, 364))), pick(RESPONSAVEIS), telefone, entrada);
       return get(`SELECT id FROM crianca WHERE codigo = ?`, codigo).id;
     };
     const entradaAleatoria = () => {
@@ -308,13 +333,49 @@ export function semear() {
     // Régua de presença do Instituto (75%, decisão 33): na Vivência da manhã,
     // uma criança fica claramente abaixo da régua e outra na faixa de atenção,
     // para a tela ter as três faixas e a coordenação ter com quem conversar.
+    //
+    // O PADRÃO É FORÇADO DENTRO DA JANELA QUE A RÉGUA LÊ — o semestre corrente
+    // —, não sobre o histórico inteiro. A primeira versão distribuía as faltas
+    // por índice sobre todos os encontros da criança; como `reguaDaTurma` só
+    // conta do início do semestre para cá, a fatia que caía na janela mudava
+    // conforme o dia, e a criança de "atenção" escorregava para "ok" sozinha.
+    // O gate acusou na virada de 04 para 05/09/2026: falhava por data, que é o
+    // modo de falha que este repositório já pagou uma vez (handoff de 04/09).
+    // Aqui as faltas são CONTADAS para cair no meio de cada faixa, e o número
+    // não depende do calendário.
     {
+      const inicioSemestre = Number(T.slice(5, 7)) >= 7 ? `${T.slice(0, 4)}-07-01` : `${T.slice(0, 4)}-01-01`;
       const manha = all(`SELECT crianca_id FROM matricula WHERE turma_id = 6 AND status='ativa' ORDER BY crianca_id`);
-      const alvoAbaixo = manha[3]?.crianca_id, alvoAtencao = manha[7]?.crianca_id;
-      const pres = (id) => all(`SELECT p.id FROM presenca p JOIN encontro e ON e.id = p.encontro_id
-                                 WHERE p.crianca_id = ? AND e.turma_id = 6 ORDER BY e.data`, id);
-      if (alvoAbaixo) pres(alvoAbaixo).forEach((p, i) => run(`UPDATE presenca SET status = ? WHERE id = ?`, i % 5 < 3 ? 'F' : 'P', p.id));
-      if (alvoAtencao) pres(alvoAtencao).forEach((p, i) => run(`UPDATE presenca SET status = ? WHERE id = ?`, i % 9 === 0 || i % 9 === 4 ? 'F' : 'P', p.id));
+      const naJanela = (id) => all(
+        `SELECT p.id FROM presenca p JOIN encontro e ON e.id = p.encontro_id
+          WHERE p.crianca_id = ? AND e.turma_id = 6 AND e.data >= ? AND e.data <= ?
+          ORDER BY e.data`, id, inicioSemestre, T);
+      // E a faixa é procurada, não estimada. Com POUCOS encontros na janela a
+      // faixa de atenção (75 a 79%) pode ser ARITMETICAMENTE INALCANÇÁVEL: numa
+      // turma de sábado, dez encontros no semestre só produzem múltiplos de 10 —
+      // 70% (abaixo) ou 80% (ok), e nada entre os dois. Não é defeito do cálculo;
+      // é a granularidade do denominador, e está declarada nas dívidas técnicas.
+      // Aqui, quando nenhum número de presenças cai na faixa, a criança perde o
+      // encontro mais antigo — que é o que acontece com quem entrou depois do
+      // começo do semestre — até existir um inteiro que caiba.
+      const forcarFaixa = (id, min, max) => {
+        let linhas = naJanela(id);
+        while (linhas.length >= 5) {
+          const n = linhas.length;
+          for (let k = n; k >= 0; k--) {
+            const pct = Math.round((k / n) * 100);
+            if (pct >= min && pct < max) {
+              linhas.forEach((l, j) => run(`UPDATE presenca SET status = ? WHERE id = ?`, j < k ? 'P' : 'F', l.id));
+              return pct;
+            }
+          }
+          run(`DELETE FROM presenca WHERE id = ?`, linhas[0].id);   // entrou depois
+          linhas = naJanela(id);
+        }
+        return null;
+      };
+      if (manha[3]) forcarFaixa(manha[3].crianca_id, 40, 70);   // claramente abaixo
+      if (manha[7]) forcarFaixa(manha[7].crianca_id, 75, 80);   // na faixa de atenção
     }
 
     // --- Folha do dia, exposicao e pauta (v2) --------------------------------

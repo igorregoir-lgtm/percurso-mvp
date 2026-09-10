@@ -101,6 +101,122 @@ permanência e evasão medem exatamente a saída.
 desenvolvimento. O áudio nunca sai do navegador; a transcrição vive em memória durante uma
 requisição; o score de evasão é recalculado a cada consulta e nunca historiado.
 
+## O calendário da casa (decisão 37)
+
+```sql
+CREATE TABLE calendario_excecao (
+  id         INTEGER PRIMARY KEY,
+  turma_id   INTEGER NOT NULL REFERENCES turma(id),
+  data       TEXT NOT NULL,
+  tipo       TEXT NOT NULL CHECK (tipo IN ('sem_encontro','extra')),
+  motivo     TEXT,
+  criado_por INTEGER REFERENCES educador(id),
+  criado_em  TEXT,
+  UNIQUE (turma_id, data)
+);
+```
+
+**Guarda só a exceção, não o calendário.** O turno da turma já dá a regra base — Vivência aos
+sábados, Reforço em dia útil. Uma tabela com uma linha por sábado do ano seria um calendário para
+alguém manter à mão, e a casa cabe em duas pessoas. `temEncontro(turma, data)` é a pergunta única;
+`chamadasEmAberto`, o lapso e os próximos encontros derivam dela.
+
+**Registro retroativo não precisou de coluna nova:** `encontro.data` é quando o encontro aconteceu
+e `encontro.registrado_em` é quando foi registrado. Quando os dois não batem, a tela diz — e o
+registro vale igual.
+
+## O rastro de acesso individual (decisão 38)
+
+```sql
+CREATE TABLE acesso_individual (
+  id          INTEGER PRIMARY KEY,
+  educador_id INTEGER NOT NULL REFERENCES educador(id),
+  papel       TEXT NOT NULL,
+  recurso     TEXT NOT NULL,      -- 'ficha' | 'observacao' | 'parecer' | 'trajetoria'
+  crianca_id  INTEGER NOT NULL REFERENCES crianca(id),
+  em          TEXT NOT NULL
+);
+```
+
+**Guarda quem, o quê e quando — nunca o conteúdo lido.** O log responde *"quem viu a ficha da Yasmin
+em agosto"*; virar uma segunda cópia do prontuário seria exatamente o risco que ele existe para
+reduzir. A gravação mora em `exigeAcessoCrianca`, o portão único: espalhá-la por rota garantiria que
+a próxima rota esqueceria.
+
+## Sessão (decisão 51, que revogou a senha da 39)
+
+**Nenhuma coluna.** A decisão 39 tinha posto `senha_hash` e `senha_definida_em` em `educador`; a 51
+tirou as duas do esquema. O banco não guarda nada sobre entrar.
+
+As sessões nunca moraram no banco, e continuam fora dele: **token opaco de 32 bytes em memória**,
+revogável, que cai quando a pessoa é arquivada ou o servidor reinicia. É o que separa entrar de
+forjar — o cookie não é o id.
+
+**O que isto custa está na decisão 51:** sem senha, quem alcança o endereço entra como qualquer
+perfil. O que ainda protege dado individual é o papel, o escopo de turma, o consentimento e o rastro
+de acesso da decisão 38.
+
+## O campo livre de relato (decisão 40)
+
+```sql
+-- na folha, para o GRUPO: mesma base legal, mesma retenção, mesmos leitores
+ALTER TABLE folha ADD COLUMN relato_grupo TEXT;
+
+-- tabela própria, para a CRIANÇA: base legal, retenção e leitores são OUTROS
+CREATE TABLE relato_crianca (
+  id          INTEGER PRIMARY KEY,
+  crianca_id  INTEGER NOT NULL REFERENCES crianca(id) ON DELETE CASCADE,
+  educador_id INTEGER NOT NULL REFERENCES educador(id),
+  ciclo_id    INTEGER REFERENCES ciclo(id),
+  texto       TEXT NOT NULL,
+  criado_em   TEXT NOT NULL
+);
+```
+
+**Por que não é uma coluna em `observacao`.** Base legal (consentimento específico × legítimo
+interesse), retenção (fim do ciclo × 5 anos) e leitores são diferentes. Misturá-los faria o descarte
+de um levar o outro junto — e foi essa mistura que a decisão 15 desfez.
+
+**Nenhum módulo de saída agregada ou de modelo lê estes campos**, e isso tem gate: `unit-test.mjs`
+varre `relatorio`, `sintese`, `planilha`, `scores`, `sroi`, `recado`, `copilot`, `ai-client`,
+`assistente`, `redacao-modelo` e as pastas `rag/` e `aurora/`.
+
+## A prova do consentimento (decisão 42)
+
+```sql
+CREATE TABLE consentimento_evidencia (
+  id             INTEGER PRIMARY KEY,
+  crianca_id     INTEGER NOT NULL REFERENCES crianca(id) ON DELETE CASCADE,
+  campo          TEXT NOT NULL REFERENCES governanca_campo(campo),
+  arquivo        TEXT NOT NULL,   -- nome no disco; NUNCA sai para a tela
+  mime           TEXT NOT NULL,
+  bytes          INTEGER NOT NULL,
+  duracao_s      INTEGER,
+  responsavel    TEXT NOT NULL,
+  registrado_por INTEGER NOT NULL REFERENCES educador(id),
+  criado_em      TEXT NOT NULL
+);
+```
+
+**O arquivo não está no banco nem em `public/`**: fica em `data/consentimento/`, modo `0600`, e sai
+só por rota autenticada de coordenação — que registra o acesso como `consentimento_video`. A linha
+guarda o que a auditoria precisa saber **sem abrir o vídeo**.
+
+**O oposto do áudio de transcrição, de propósito.** Em `src/transcricao.js` o arquivo é apagado no
+`finally`, sempre; aqui apagar é apagar a prova. Por isso os dois vivem em módulos separados, e por
+isso `apagar` exige motivo — ele existe para revogação (Art. 18, VI), não para arrumar tela.
+
+## O contato do responsável (decisão 43)
+
+```sql
+ALTER TABLE crianca ADD COLUMN responsavel_contato TEXT;   -- E.164 sem '+': 5511988887777
+```
+
+Existe por **um** motivo declarado: o boletim da criança precisa ter para onde ir. Guardado sem
+máscara porque é ele que monta o link do WhatsApp; quem lê a ficha já passou pelo controle de acesso
+e pelo log. **Não entra em lista, agregado nem modelo**, e o normalizador recusa o que não tem DDD —
+número incompleto mandaria a ficha de uma criança para um desconhecido.
+
 ## Restrições que carregam regra de negócio
 
 | Restrição | O que impede |
@@ -115,6 +231,9 @@ requisição; o score de evasão é recalculado a cada consulta e nunca historia
 | `UNIQUE (tipo, periodo)` em `relatorio` | Duas versões publicáveis do mesmo período |
 | `CHECK pediram_ajuda BETWEEN 0 AND 30` | Contagem implausível vinda da voz |
 | `CHECK origem IN ('voz','manual')` | Origem da folha fora do que o sistema sabe auditar |
+| `UNIQUE` de nome em `turma` (na aplicação) | Duas turmas com o mesmo nome — a coordenação escolheria a errada no seletor |
+| Turma da transferência tem de ser do **mesmo programa** | Mudar o programa de uma criança sem mudar entrada nem permanência |
+| Programa de uma turma **com matrícula** não muda | Mudar, em silêncio, o programa de todas as crianças dela |
 | **`folha` não tem `crianca_id`** | Registro individual disfarçado de folha de turma |
 | `CHECK nivel BETWEEN 1 AND 4` | Nota fora da escala da rubrica |
 | `CHECK conflitos_resolvidos_conversando <= conflitos` (e cada contagem 0–30 ou NULL) | Check-in de grupo impossível |
@@ -125,6 +244,13 @@ A última é a mais importante: **é impossível gravar consentimento para um ca
 quatro respostas do bloco 6.** A regra virou chave estrangeira.
 
 ## A tabela de governança, como está semeada
+
+> **Ela mora AQUI, não numa tela** (decisão 45, 04/09/2026). A governança é a **justificação** do
+> sistema: ela decide o que nasce bloqueado e recusa campo sem base legal declarada. Isso é
+> mecanismo, e mecanismo não precisa ser lido durante o trabalho — ninguém abre Consentimentos para
+> ler cinco colunas de texto jurídico; abre para desbloquear a criança que está esperando. A tabela
+> saiu da interface e ficou onde ela de fato serve: neste documento e em `src/seed.js`.
+
 
 | Campo | Base legal | Titular | Acesso | Retenção |
 |---|---|---|---|---|

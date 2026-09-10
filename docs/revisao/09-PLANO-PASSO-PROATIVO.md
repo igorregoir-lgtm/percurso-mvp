@@ -1,5 +1,10 @@
 # Plano — o Passo proativo: parceiro por papel, que aprende sem vigiar
 
+> **Nota de 03/09/2026 — o assistente mudou de nome.** O que este documento chama de
+> **Passo** hoje se chama **Aurora**, com ícone de girassol. O texto abaixo fica como foi
+> escrito: é registro do que se decidiu na época, e reescrevê-lo apagaria a data da decisão.
+> O estado atual está em [`DECISOES-TECNICAS.md`](../DECISOES-TECNICAS.md).
+
 > **Ponteiros de código refeitos em 03/09/2026.** Este documento continua sendo o **plano como foi
 > escrito** — a análise, as decisões e a ordem de execução não foram tocadas. O que foi atualizado
 > são as cinco referências `arquivo:linha`, que tinham derivado do código. Duas delas não eram erro
@@ -8,7 +13,7 @@
 > - **`periodosSugeridos()` saiu mesmo de `src/api.js`** para `src/relatorio.js:440`, exportada, como
 >   o plano previa. A referência antiga apontava para a função no lugar de onde ela foi tirada.
 > - **O `GUIA` com os campos `naoEnxergo` não é mais lido de `public/app.js`**: vive em
->   `src/assistente.js:112`. A doutrina 5 foi substituída pela 5′, como o plano pedia.
+>   `src/assistente.js:113`. A doutrina 5 foi substituída pela 5′, como o plano pedia.
 >
 > **As outras 47 referências deste documento NÃO foram refeitas, e é deliberado.** São as escritas
 > sem caminho — `api.js:694`, `db.js:85`, `domain.js:315` — que a varredura por
@@ -33,7 +38,7 @@
 ## 0. As quatro decisões de princípio (tudo o mais decorre delas)
 
 **D-A · O Passo passa a enxergar CONTADORES, e a doutrina 5 é substituída, não relaxada.**
-Hoje `src/assistente.js:13-15` declara *"O Passo NÃO enxerga dado nenhum"* — e a UI repete isso à pessoa (campos `naoEnxergo` do `GUIA`, hoje em `src/assistente.js:112` — o `GUIA` deixou de ser lido de `public/app.js`). Ancorar sugestão em estado real torna essa frase falsa. Num produto cuja história inteira de privacidade repousa em **limites declarados serem verdadeiros**, um limite que virou mentira é pior que a mudança. A frase é trocada nos quatro lugares onde aparece, no mesmo commit:
+Hoje `src/assistente.js:13-15` declara *"O Passo NÃO enxerga dado nenhum"* — e a UI repete isso à pessoa (campos `naoEnxergo` do `GUIA`, hoje em `src/assistente.js:113` — o `GUIA` deixou de ser lido de `public/app.js`). Ancorar sugestão em estado real torna essa frase falsa. Num produto cuja história inteira de privacidade repousa em **limites declarados serem verdadeiros**, um limite que virou mentira é pior que a mudança. A frase é trocada nos quatro lugares onde aparece, no mesmo commit:
 
 ```
 //   5. Dois canais, duas permissões.
@@ -50,7 +55,7 @@ Hoje `src/assistente.js:13-15` declara *"O Passo NÃO enxerga dado nenhum"* — 
 
 **D-B · Nenhum número sai de modelo — nem pela porta da redação.** É o furo mais grave apontado em todas as quatro propostas. A trava é estrutural, não regex: cada sugestão tem **dois textos**, `rotulo` (sem dígito, é o único que vai ao modelo) e `texto` (com os números, template determinístico, o modelo nunca o vê nem o devolve). O resumo do dia é **template puro, nunca modelo**. `consulta_agregada` devolve o retorno de `R.consultar()` **verbatim**, sem passar pelo modelo.
 
-**D-C · Sugestão não é cobrança — e a garantia é de composição, não de tom.** Lint de palavra pega "você não fez"; não pega o **somatório**. Regra dura: **no máximo UM item de pendência (trabalho não feito pela própria pessoa) por painel**, e as outras duas vagas são obrigatoriamente pergunta / aprimoramento / dúvida / alívio. E: a sugestão é **suprimida na tela que já mostra o mesmo fato** — `#/hoje` já pinta retomada, chamada, folha, ciclo, alertas e pauta (`public/app.js:453-575`); repetir isso dentro de um painel flutuante é ruído com um toque a mais.
+**D-C · Sugestão não é cobrança — e a garantia é de composição, não de tom.** Lint de palavra pega "você não fez"; não pega o **somatório**. Regra dura: **no máximo UM item de pendência (trabalho não feito pela própria pessoa) por painel**, e as outras duas vagas são obrigatoriamente pergunta / aprimoramento / dúvida / alívio. E: a sugestão é **suprimida na tela que já mostra o mesmo fato** — `#/hoje` já pinta retomada, chamada, folha, ciclo, alertas e pauta (`public/app.js:513-633`); repetir isso dentro de um painel flutuante é ruído com um toque a mais.
 
 **D-D · O aprendizado mora fora do banco principal e é apagável.** `getDb()` (`src/db.js:22-41`) derruba **todas** as tabelas quando a assinatura do DDL muda, e `scripts/reset.mjs` limpa. Precedente correto já existe: `data/rag/corpus.db`, conexão própria (decisão 20). O perfil de uso vive em `data/passo/uso.db`, com `PERCURSO_PASSO_DB` para os testes, vocabulário fechado, decaimento e apagamento pela própria pessoa.
 
@@ -86,7 +91,7 @@ O `#/painel` mostra alertas, cobertura e calibração; nenhuma tela mostra **o q
 | **aprimoramento** | `coo.descarte_alto` | `taxaDeDescarte({}).alerta` (`scores.js:383`) | *"41% das sugestões de pauta foram descartadas. Isso é o sistema se autocriticando: acima de 30% a sugestão costuma estar genérica demais para servir — vale rever o banco de atividades por dimensão com as educadoras."* → **Ir para Scores** |
 | **dúvida** | `coo.duvida.supressao` | há recorte suprimido no último relatório ou na distribuição de evasão | *"Um número sumiu de uma tabela? Grupo com menos de 5 crianças é agrupado antes da redação — proteção contra reidentificação, declarada no próprio relatório."* |
 
-**Proibido para sempre neste papel:** qualquer sugestão que recorte cobertura, tempo ou correção **por educadora**, e qualquer sugestão que **nomeie a turma**. `turma.educador_id` é 1:1 (`db.js:85`): "a turma Girassol está sem registro" **é** "a educadora X não registrou", com outro rótulo. O texto diz *"uma turma"*, e a ação leva Rita a `#/scores`, que **já renderiza a tabela por turma com nome, %, e última folha completa** (`public/app.js:2247-2283`) — ou seja, a oferta não morre no destino, e o recorte nominativo continua onde ele é legítimo: numa tela de gestão, lida por uma pessoa, fora de qualquer prompt.
+**Proibido para sempre neste papel:** qualquer sugestão que recorte cobertura, tempo ou correção **por educadora**, e qualquer sugestão que **nomeie a turma**. `turma.educador_id` é 1:1 (`db.js:85`): "a turma Girassol está sem registro" **é** "a educadora X não registrou", com outro rótulo. O texto diz *"uma turma"*, e a ação leva Rita a `#/scores`, que **já renderiza a tabela por turma com nome, %, e última folha completa** (`public/app.js:3340-3312`) — ou seja, a oferta não morre no destino, e o recorte nominativo continua onde ele é legítimo: numa tela de gestão, lida por uma pessoa, fora de qualquer prompt.
 
 ### 1.3 Solange Ribeiro (diretoria) — o papel mais pobre vira o mais bem servido, e com número de verdade
 
@@ -94,7 +99,7 @@ Hoje ela tem 3 telas no `GUIA` e 5 chips. O ganho maior do plano está aqui, e v
 
 | tipo | id | o que ela lê / o que acontece |
 |---|---|---|
-| **pergunta** | `dir.pergunta.evasao` (rotativa entre 6) | Chip: *"Quantas crianças estão em risco de sair?"* — e o Passo **responde ali mesmo**, com o retorno literal de `R.consultar()`: *"7 matrículas em risco de evasão de 118 avaliadas…"* + a oferta **Ir para Perguntar à base**. Hoje o chip a levaria para um campo de texto vazio (`public/app.js:2451`, na rota `#/consulta`) para redigitar a pergunta que ela acabou de tocar. |
+| **pergunta** | `dir.pergunta.evasao` (rotativa entre 6) | Chip: *"Quantas crianças estão em risco de sair?"* — e o Passo **responde ali mesmo**, com o retorno literal de `R.consultar()`: *"7 matrículas em risco de evasão de 118 avaliadas…"* + a oferta **Ir para Perguntar à base**. Hoje o chip a levaria para um campo de texto vazio (`public/app.js:3574`, na rota `#/consulta`) para redigitar a pergunta que ela acabou de tocar. |
 | **ação** | `dir.periodo_descoberto` | *"O 1º semestre de 2026 ainda não tem relatório publicado. O rascunho leva um toque."* → **Ir para Relatório** |
 | **ação** | `dir.revisor_barrou` | *"O revisor de sobre-alegação barrou o rascunho. Ele barra verbo causal forte — é a linguagem protegendo o Instituto perante quem financia."* → **Ir para Relatório** |
 | **aprimoramento** | `dir.custo_ausente` | *"Sem o custo do período, o bloco de eficiência publica só os denominadores. É o número que o doador pergunta primeiro."* → **Ir para Relatório** |
@@ -127,7 +132,7 @@ Nada individual entra aqui. A recusa da decisão 16 continua valendo na conversa
 | `src/assistente.js` | doutrinas 5 e 7 reescritas no cabeçalho e nos `naoEnxergo` afetados; `CATALOGO_ACOES` ganha `alertas` (**hoje não existe** — `validarAcao('alertas', …)` devolveria `null` e a oferta sumiria em silêncio); pipeline chama J1 só quando `casarIntencao()` falha; `chipsDe` **intocado** | ~60 linhas |
 | `src/copilot.js` | passa a reexportar `comVaga` de `src/fila-modelo.js` (compatibilidade total: `api.js:31` e `assistente.js` continuam importando de lá) | 3 linhas |
 | `src/ai-client.js` | `conversar({ …, timeoutMs })` sobrepondo `TIMEOUT_MS[papel]` (`ai-client.js:88`). Sem isso o cliente desiste em 2,5 s e o slot da fila fica preso por até 90 s | 2 linhas |
-| `src/relatorio.js` | `periodosSugeridos()` **movida de `src/api.js`** (onde era função privada) para cá, exportada — **feito**: hoje é `src/relatorio.js:440`, e `src/api.js:930` a consome; `diasDesdeUltimoPublicado()`; `INTENCOES` ganha `id` estável por item (os códigos já existem) | ~20 linhas |
+| `src/relatorio.js` | `periodosSugeridos()` **movida de `src/api.js`** (onde era função privada) para cá, exportada — **feito**: hoje é `src/relatorio.js:440`, e `src/api.js:1342` a consome; `diasDesdeUltimoPublicado()`; `INTENCOES` ganha `id` estável por item (os códigos já existem) | ~20 linhas |
 | `src/api.js` | importa `periodosSugeridos` de `relatorio.js`; 5 rotas novas (§5.5); invalidação do memo de sinais em todo POST/DELETE do usuário | ~35 linhas |
 | `public/app.js` | painel com sugestões tipadas, card de oferta, "Hoje não", ponto no FAB, resumo do dia, balão do momento, seção "o que eu lembro de você", invalidação de cache em POST de estado; `PASSO_ROTAS_POR_PAPEL` ganha `#/alertas` (**hoje ausente** — `app.js:2859`) | ~140 linhas |
 | `public/styles.css` | `.passo-ponto`, `.passo-card`, `.passo-chip[data-tipo]`, `.passo-resumo`, `.passo-porque` — só variáveis existentes (`styles.css:13-20`, com par em `prefers-color-scheme: dark` em `:31-38`) | ~18 linhas |

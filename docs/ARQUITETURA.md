@@ -64,13 +64,17 @@ Quatro camadas em um processo, um arquivo de banco, interface servida estaticame
 
 ```
 navegador (public/ — HTML+CSS+JS puro, hash routing, sem build)
+                 13 rotas desde 04/09/2026 (eram 28; decisão 36, mais
+                 #/divulgar da decisão 47) — o mapa
+                 FUNDIDAS traduz o endereço antigo, e um gate reprova rota
+                 engolida por outra
     │   SpeechRecognition nativo: o ÁUDIO nunca sai daqui
     │   fila offline em localStorage: falha de rede não perde registro
     │  fetch JSON
     ▼
 server.js        HTTP puro (node:http) — estáticos + despacho de /api/*
     ▼
-src/api.js       83 rotas — sessão por perfil; RBAC educadora / coordenação /
+src/api.js       118 rotas — sessão por perfil; RBAC educadora / coordenação /
     │            diretoria (a diretoria não abre registro individual)
     ▼
     ├── src/domain.js     núcleo: elegibilidade, perímetro, alertas, safras,
@@ -80,16 +84,42 @@ src/api.js       83 rotas — sessão por perfil; RBAC educadora / coordenação
     ├── src/relatorio.js  sete blocos do doador, carta, consulta agregada
     └── src/ingestao.js   ingestão retroativa com deduplicação de criança
     ▼
-src/db.js        esquema (24 tabelas) + helpers — SQLite via node:sqlite
+src/db.js        esquema (32 tabelas) + helpers — SQLite via node:sqlite
     │            migração pela assinatura do próprio DDL (decisão 14)
     ▼
 data/percurso.db local ou /var/data/percurso.db no Render
                    (WAL; disco persistente; backup externo obrigatório)
 
 src/seed.js      dados 100% sintéticos, PRNG com semente fixa (regra 1 do bloco 6)
-scripts/         reset.mjs · smoke-test.mjs (381 asserções) · unit-test.mjs (167) · preparar-sessao.mjs
+public/qr.js     codificador de QR sem biblioteca (decisao 50): ISO 18004,
+                 byte/M, v1–v10, mascara por penalidade; verificado com o
+                 BarcodeDetector do navegador, nao com o proprio codigo
+src/canais.js    grupos de WhatsApp e perfil de Instagram (decisao 47) — o
+                 publico do canal e' TRAVA: decide o que pode ser montado para
+                 ele, e a recusa e' do servidor, nao do botao
+src/evidencia.js prova do consentimento em video (decisao 42) — arquivo em
+                 data/consentimento/ (0600, FORA de public/), linha com ponteiro;
+                 o OPOSTO de transcricao.js: aqui apagar e' apagar a prova
+src/boletim.js   boletim de UMA crianca para quem responde por ela (decisao 43)
+                 — nao persiste; monta do que ja' esta' registrado, como o recado
+src/auth.js      sessao com token OPACO (o que restou da decisao 39 depois da
+                 51) — o cookie nao e' o id; sessoes em memoria, revogaveis.
+                 NAO ha senha: entrar e' escolher quem esta' usando
+src/auditoria.js rastro de leitura de dado individual (decisao 38)
+
+src/transcricao.js  audio longo -> texto pelo whisper.cpp do sistema (decisao 35)
+                    DESLIGADO por padrao (PERCURSO_AUDIO=1); o arquivo nao
+                    sobrevive a funcao — finally + varredura no boot + teto de idade
+data/audio-temp/    unico lugar onde audio toca disco, e sempre de passagem
+                    (fora de public/: nada de audio servido como estatico)
+public/audio.js     conversao para WAV 16 kHz no NAVEGADOR (evita o ffmpeg) e
+                    gravacao em blocos fechados de 5 min (evita 1 GB de Float32)
+
+scripts/         reset.mjs · smoke-test.mjs (517 asserções) · unit-test.mjs (221) · preparar-sessao.mjs
                  rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
-.github/workflows/ci.yml   as quatro baterias a cada push (AI_ENABLED=false)
+                 audio-stub-test.mjs (ciclo de vida do áudio, sem modelo) · reancorar.mjs
+                 whisper-stub.mjs · ai-stub.mjs (imitam a interface, não o comportamento)
+.github/workflows/ci.yml   as cinco baterias a cada push (AI_ENABLED=false)
 ```
 
 **Por que o domínio deixou de ser um arquivo só.** A revisão de 22/08 recomendava extrair por área
@@ -186,14 +216,14 @@ aceitáveis apenas porque o dado é sintético.
 
 | Ordem | Item | Desenho proposto |
 |---|---|---|
-| 2.1 | Autenticação real | Senha por educador (hash + sal, `node:crypto`), sessão em cookie assinado; sem provedor externo — mantém zero dependência |
+| 2.1 | Autenticação real | **Voltou a ser pendência com a decisão 51**, que removeu a senha. O desenho é o que a decisão 39 já tinha implementado: senha por educador (scrypt do `node:crypto`) sobre o token opaco que ficou de pé. É pré-requisito de dado real e do campo livre de relato (F7) |
 | 2.2 | Transporte cifrado | Operação em rede local do Instituto com TLS (certificado próprio) ou túnel gerenciado; se sair da rede local, HTTPS obrigatório |
 | 2.3 | Trilha de auditoria | Tabela `auditoria` (quem, o quê, quando) alimentada pela camada de API; a tabela `atividade` já é o embrião |
 | 2.4 | Backup automatizado | Cópia diária dos três arquivos WAL para segunda mídia + teste de restauração mensal documentado; hoje o backup é manual por cópia |
 | 2.5 | Consentimento de verdade | Termo impresso por campo (a tabela `consentimento` já modela), assinado pelo responsável, arquivado fisicamente; o registro no sistema aponta para o termo |
 | 2.6 | Encarregado LGPD | Nomeação formal pela coordenação; canal de requisição do titular (acesso, correção, eliminação) — a eliminação já é viável por SQL, precisa virar procedimento |
 | 2.7 | Operação no Render | O Web Service canônico usa disco persistente e uma única instância; backup externo continua obrigatório. Escala horizontal exige migrar do SQLite para banco compartilhado |
-| 2.8 | Troca da seed | **Porta manual entregue** (`#/pessoas`, `POST /api/equipe`, `POST /api/criancas`): coordenação cadastra equipe e criança uma a uma, com dedup por nome+nascimento e consentimento nascendo pendente. Desligar pessoa e encerrar matrícula também entraram, como **arquivo** e não como exclusão (`#/arquivo`, decisão 30). Falta para fechar o item: a troca da seed por dado real — que continua condicionada a 2.1–2.6 prontos; `reset.mjs` passa a ser proibido em produção (guarda por variável de ambiente) |
+| 2.8 | Troca da seed | **Porta manual entregue** (`#/pessoas`, `POST /api/equipe`, `POST /api/criancas`): coordenação cadastra equipe e criança uma a uma, com dedup por nome+nascimento e consentimento nascendo pendente. Desligar pessoa e encerrar matrícula também entraram, como **arquivo** e não como exclusão (`#/pessoas?aba=arquivo`, decisão 30). Falta para fechar o item: a troca da seed por dado real — que continua condicionada a 2.1–2.6 prontos; `reset.mjs` passa a ser proibido em produção (guarda por variável de ambiente) |
 
 Critério de saída do horizonte: uma educadora real registra uma chamada real, com consentimento
 real arquivado, num banco que sobreviveria à perda da máquina.
@@ -274,9 +304,9 @@ da linha "SLM local de verdade" da tabela acima, que segue esperando o gatilho d
   operação real) não disparou. A **borda 2** (consistência entre observadores) ganhou implementação
   determinística: a leitura de calibração no painel da coordenação.
 - **O que entrou, atrás de `AI_ENABLED` (padrão: desligada):** RAG com corpus governado
-  (`src/rag/`, `docs/GOVERNANCA-FONTES-RAG.md`), copilot reflexivo Modo B (`#/copilot`,
+  (`src/rag/`, `docs/GOVERNANCA-FONTES-RAG.md`), copilot reflexivo Modo B (`#/pensar`,
   Qwen3 4B local via `llama.cpp` em `127.0.0.1`), Modo A opcional sobre o slot da decisão 13
-  (`AI_EXTRATOR=1`, fallback lexical), SROI exploratório determinístico (`#/impacto`,
+  (`AI_EXTRATOR=1`, fallback lexical), SROI exploratório determinístico (`#/relatorio?aba=impacto`,
   `docs/SROI-METODOLOGIA.md`) e a infraestrutura da Fase 4 (`ai/training/`, treino não executado
   por gate). Arquitetura em camadas: `celular/navegador → Node → RAG (SQLite/FTS5) →
   llama.cpp (127.0.0.1) → GGUF local`.

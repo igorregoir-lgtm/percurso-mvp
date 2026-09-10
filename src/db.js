@@ -103,6 +103,23 @@ const ESQUEMA_SQL = `
     nome         TEXT NOT NULL,
     nascimento   TEXT NOT NULL,
     responsavel  TEXT NOT NULL,
+    -- O telefone do responsavel existe por UM motivo declarado: o boletim da
+    -- crianca (decisao 42) sai para quem responde por ela, e so' para essa
+    -- pessoa. Nao entra em lista, nao entra em agregado, nao vai para modelo.
+    -- Guardado sem mascara porque e' ele que monta o link do WhatsApp; quem le
+    -- a ficha ja' passou pelo controle de acesso e pelo log.
+    responsavel_contato TEXT,
+    -- CONFERENCIA DO TELEFONE (OPAR 05/09/2026). Validar formato nao fecha o
+    -- buraco: o modo de falha e' um numero VALIDO e ERRADO, e o destino dele e'
+    -- a ficha socioemocional nominal de uma crianca. Quem fecha e' a
+    -- conferencia humana, registrada aqui.
+    --
+    -- A coluna contato_conferido_valor guarda o E.164 confirmado — e' o truque
+    -- que dispensa maquina de estado: se o telefone mudar, o valor deixa de
+    -- casar e a conferencia cai sozinha, por comparacao.
+    contato_conferido_em    TEXT,
+    contato_conferido_por   INTEGER REFERENCES educador(id),
+    contato_conferido_valor TEXT,
     ativo        INTEGER NOT NULL DEFAULT 1,
     criado_em    TEXT NOT NULL
   );
@@ -129,6 +146,65 @@ const ESQUEMA_SQL = `
     duracao_segundos INTEGER,
     UNIQUE (turma_id, data)
   );
+
+  -- O CALENDARIO DA CASA (decisao 37). O turno da turma da' a regra base — a
+  -- Vivencia e' de sabado, o Reforco e' de dia util —, mas a casa tem feriado,
+  -- recesso e encontro extra, e ate' aqui o produto nao tinha como saber disso:
+  -- ele deduzia o calendario do dia da semana e pronto.
+  --
+  -- Guarda so' a EXCECAO, nao cada encontro: uma tabela com uma linha por sabado
+  -- do ano seria um calendario para alguem manter a mao, e a casa cabe em duas
+  -- pessoas. Quem marca e' quem responde pela turma, a coordenacao ou a direcao.
+  CREATE TABLE IF NOT EXISTS calendario_excecao (
+    id         INTEGER PRIMARY KEY,
+    turma_id   INTEGER NOT NULL REFERENCES turma(id),
+    data       TEXT NOT NULL,
+    -- 'sem_encontro' (feriado, recesso) ou 'extra' (encontro fora do padrao)
+    tipo       TEXT NOT NULL CHECK (tipo IN ('sem_encontro','extra')),
+    motivo     TEXT,
+    criado_por INTEGER REFERENCES educador(id),
+    criado_em  TEXT,
+    UNIQUE (turma_id, data)
+  );
+
+  -- LOG DE ACESSO INDIVIDUAL (decisao 38). Divida declarada desde a v1 como
+  -- "exigivel sob LGPD, antes do primeiro dado real" — e pre-requisito escrito
+  -- do campo livre de relato: sem rastro, qualquer pessoa que abrisse a pagina
+  -- leria a ficha de qualquer crianca e ninguem saberia.
+  --
+  -- Guarda QUEM leu O QUE e QUANDO. Nao guarda o conteudo lido: o log existe
+  -- para responder "quem viu a ficha da Yasmin em agosto", nao para virar uma
+  -- segunda copia do prontuario.
+  CREATE TABLE IF NOT EXISTS acesso_individual (
+    id         INTEGER PRIMARY KEY,
+    educador_id INTEGER NOT NULL REFERENCES educador(id),
+    papel      TEXT NOT NULL,
+    recurso    TEXT NOT NULL,      -- 'ficha' | 'observacao' | 'parecer' | 'trajetoria'
+    crianca_id INTEGER NOT NULL REFERENCES crianca(id),
+    em         TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_acesso_crianca ON acesso_individual (crianca_id, em);
+  CREATE INDEX IF NOT EXISTS idx_acesso_educador ON acesso_individual (educador_id, em);
+
+  -- CAMPO LIVRE DE RELATO SOBRE A CRIANCA (decisao 40). Reverte a decisao 15,
+  -- e a reversao e' explicita: a v1 tinha campo livre protegido pelo filtro de
+  -- perimetro e a v2 o REMOVEU porque "um filtro e' mitigacao, nao ausencia de
+  -- risco". O que mudou foi o pedido vir da propria usuaria, em campo, com um
+  -- caso concreto (Grav. 84, 12:00) — e os tres pre-requisitos ficarem pagos:
+  -- HTTPS, log de acesso e autenticacao.
+  --
+  -- TABELA PROPRIA, nao coluna na observacao: base legal, retencao e leitores
+  -- sao diferentes dos da rubrica, e misturar os dois faria o descarte de um
+  -- levar o outro junto.
+  CREATE TABLE IF NOT EXISTS relato_crianca (
+    id          INTEGER PRIMARY KEY,
+    crianca_id  INTEGER NOT NULL REFERENCES crianca(id) ON DELETE CASCADE,
+    educador_id INTEGER NOT NULL REFERENCES educador(id),
+    ciclo_id    INTEGER REFERENCES ciclo(id),
+    texto       TEXT NOT NULL,
+    criado_em   TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_relato_crianca ON relato_crianca (crianca_id, criado_em);
 
   CREATE TABLE IF NOT EXISTS presenca (
     id          INTEGER PRIMARY KEY,
@@ -202,13 +278,79 @@ const ESQUEMA_SQL = `
     campo         TEXT NOT NULL REFERENCES governanca_campo(campo),
     status        TEXT NOT NULL CHECK (status IN ('ativo','pendente','revogado')),
     responsavel   TEXT,
+    -- data_registro e' o inicio da VIGENCIA, e por isso e' congelada: so' e'
+    -- escrita quando o consentimento passa a valer. A versao anterior a
+    -- reescrevia a cada mudanca de status, entao REVOGAR empurrava o relogio
+    -- para frente — o gesto que deveria encurtar o prazo o esticava em anos.
     data_registro TEXT,
+    revogado_em   TEXT,
     UNIQUE (crianca_id, campo)
   );
 
-  -- PROVA DO CONSENTIMENTO (decisão 41). A LGPD põe o ônus da prova no
-  -- controlador (Art. 8º, §1º): dizer "o responsável consentiu" é afirmação,
-  -- não prova. O vídeo do responsável na matrícula é a prova.
+  -- PROVA DO CONSENTIMENTO (decisao 41). A LGPD poe o onus da prova no
+  -- controlador (Art. 8o, paragrafo 1o): dizer "o responsavel consentiu" e'
+  -- afirmacao, nao prova. O video do responsavel na matricula E' a prova — e e'
+  -- tambem o caminho que funciona numa casa onde papel se perde e nem todo
+  -- responsavel le com facilidade.
+  --
+  -- O arquivo NAO fica no banco nem em public/: fica em data/consentimento/,
+  -- modo 0600, e so' sai por rota autenticada de coordenacao, com log. A linha
+  -- aqui guarda o ponteiro e o que a auditoria precisa saber sem abrir o video.
+  -- ONDE O INSTITUTO FALA COM QUEM (decisao 47). Grupo de WhatsApp e perfil de
+  -- Instagram deixam de viver na cabeca da coordenacao e passam a ser cadastro:
+  -- e' o unico jeito de o produto saber, ANTES de montar a mensagem, para QUEM
+  -- ela vai — e a pesquisa de WhatsApp diz que a embalagem muda com o publico
+  -- (pais nao recebem o mesmo que apoiadores).
+  --
+  -- A coluna destino guarda o LINK DE CONVITE do grupo (chat.whatsapp.com/...) ou o
+  -- @perfil. Nao guarda telefone: grupo nao tem telefone, e o link e' publico
+  -- para quem ja' esta' dentro.
+  -- QUANTO O WHISPER DEMORA, MEDIDO NA MAQUINA DELES (OPAR 05/09/2026).
+  -- A divida pedia um benchmark de bancada: alguem rodaria um audio de 10 min
+  -- no notebook mais fraco e escreveria o numero. Isso nunca aconteceu, e a
+  -- promessa da porta B ("deixe gravando o encontro inteiro") seguia sem numero.
+  -- O produto passa a medir a si mesmo, em operacao, e o numero vira mediana
+  -- observada em vez de estimativa.
+  --
+  -- NAO GUARDA TEXTO, NAO GUARDA PESSOA, NAO GUARDA ENCONTRO. Sao tres inteiros
+  -- e o nome do modelo: metrica de maquina, e nao dado de ninguem — se guardasse
+  -- o vinculo, viraria registro de quem falou quanto, e nao e' isso que se mede.
+  CREATE TABLE IF NOT EXISTS transcricao_medida (
+    id        INTEGER PRIMARY KEY,
+    audio_s   INTEGER NOT NULL,
+    ms        INTEGER NOT NULL,
+    modelo    TEXT,
+    threads   INTEGER,
+    criado_em TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS canal (
+    id         INTEGER PRIMARY KEY,
+    tipo       TEXT NOT NULL CHECK (tipo IN ('whatsapp','instagram')),
+    nome       TEXT NOT NULL,
+    publico    TEXT NOT NULL CHECK (publico IN ('pais','apoiadores','equipe')),
+    turma_id   INTEGER REFERENCES turma(id),
+    destino    TEXT NOT NULL,
+    observacao TEXT,
+    ativo      INTEGER NOT NULL DEFAULT 1,
+    criado_em  TEXT NOT NULL,
+    UNIQUE (tipo, destino)
+  );
+
+  -- O QUE SAIU, PARA ONDE E POR QUEM. Mesma doutrina do parecer (decisao 32): o
+  -- Percurso nao envia — quem envia e' a pessoa —, mas o registro de que saiu
+  -- fica. Sem isto, "ja' mandei para os pais?" so' tem a memoria como resposta,
+  -- e o disparo repetido e' o erro mais comum de quem manda no sabado corrido.
+  CREATE TABLE IF NOT EXISTS disparo (
+    id         INTEGER PRIMARY KEY,
+    canal_id   INTEGER NOT NULL REFERENCES canal(id) ON DELETE CASCADE,
+    conteudo   TEXT NOT NULL,
+    referencia TEXT,
+    por        INTEGER NOT NULL REFERENCES educador(id),
+    em         TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS ix_disparo_canal ON disparo (canal_id, em);
+
   CREATE TABLE IF NOT EXISTS consentimento_evidencia (
     id            INTEGER PRIMARY KEY,
     crianca_id    INTEGER NOT NULL REFERENCES crianca(id) ON DELETE CASCADE,
@@ -220,10 +362,12 @@ const ESQUEMA_SQL = `
     responsavel   TEXT NOT NULL,
     registrado_por INTEGER NOT NULL REFERENCES educador(id),
     criado_em     TEXT NOT NULL,
+    -- Quando a retencao declarada vence. Escrita pelo fecho de ciclo, que e'
+    -- DETECTOR e nunca executor: marcar e' dele, apagar continua sendo gesto
+    -- humano com motivo. NULL = prova viva, e prova viva nunca e' marcada.
     expira_em     TEXT
   );
   CREATE INDEX IF NOT EXISTS ix_evidencia_crianca ON consentimento_evidencia (crianca_id, campo);
-
 
   CREATE TABLE IF NOT EXISTS alerta (
     id            INTEGER PRIMARY KEY,
@@ -284,7 +428,10 @@ const ESQUEMA_SQL = `
     encontro_id       INTEGER NOT NULL UNIQUE REFERENCES encontro(id) ON DELETE CASCADE,
     atividade         TEXT NOT NULL,
     area_tematica     TEXT NOT NULL,
-    pediram_ajuda     INTEGER NOT NULL DEFAULT 0 CHECK (pediram_ajuda BETWEEN 0 AND 30),
+    -- NULL = nao informado (OPAR 05/09/2026). Era NOT NULL DEFAULT 0, e zero e'
+    -- afirmacao: "ninguem pediu ajuda" e' um fato que a fala nao disse. A mesma
+    -- doutrina que o check-in ja' seguia — e que este campo contradizia.
+    pediram_ajuda     INTEGER CHECK (pediram_ajuda IS NULL OR pediram_ajuda BETWEEN 0 AND 30),
     origem            TEXT NOT NULL CHECK (origem IN ('voz','manual')),
     -- Confianca devolvida pelo extrator e quantos campos a educadora corrigiu na
     -- confirmacao: e' a metrica-chave de qualidade do agente (07-SCORES).
@@ -313,7 +460,11 @@ const ESQUEMA_SQL = `
     relato_liberado_em  TEXT,
     confirmado_por    INTEGER NOT NULL REFERENCES educador(id),
     confirmado_em     TEXT NOT NULL,
-    status            TEXT NOT NULL CHECK (status IN ('aberta','fechada'))
+    status            TEXT NOT NULL CHECK (status IN ('aberta','fechada')),
+    -- Campo livre sobre O GRUPO (decisao 40). Fica NA FOLHA porque e' o mesmo
+    -- registro: mesma base legal (legitimo interesse), mesma retencao (5 anos),
+    -- mesmos leitores. O de crianca tem tabela propria justamente porque nao e'.
+    relato_grupo     TEXT
   );
 
   CREATE TABLE IF NOT EXISTS folha_marcador (

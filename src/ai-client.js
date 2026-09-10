@@ -72,7 +72,7 @@ export async function statusIA() {
  * @throws {Error} com .causa ('desligada'|'fora_do_ar'|'timeout'|'http'|'saida_invalida')
  *                 — quem chama decide o fallback determinístico.
  */
-// `timeoutMs` sobrepõe o teto do papel: o painel do Passo é trabalho de FUNDO e
+// `timeoutMs` sobrepõe o teto do papel: o painel da Aurora é trabalho de FUNDO e
 // desiste em poucos segundos — sem isso ele prenderia um slot da fila por até
 // 90 s esperando uma melhoria de rótulo que ninguém está olhando.
 export async function conversar({ papel = 'reflexivo', mensagens, schema = null, maxTokens = 1024, temperatura = 0.7, timeoutMs = null }) {

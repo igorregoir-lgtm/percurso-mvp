@@ -1,6 +1,6 @@
 # SROI exploratório — metodologia, limites e papel do modelo
 
-> Como a tela **Impacto** (`#/impacto`) calcula, o que ela pode afirmar e o que
+> Como a tela **Impacto** (`#/relatorio?aba=impacto`) calcula, o que ela pode afirmar e o que
 > ela é proibida de afirmar. Deriva de `docs/ANALISE-SLM-E-SROI.md` §5 e do
 > plano de arquitetura §Fase 3. Motor: `src/sroi/calculator.js` (v1.0.0);
 > premissas: `data/sroi/premissas.json` (versionadas).

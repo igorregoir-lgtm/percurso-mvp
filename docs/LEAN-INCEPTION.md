@@ -172,7 +172,7 @@ escreve o relatório com adjetivos, porque não tem substantivos.
    expor nenhuma criança. *(F5, F7)*
 5. Como **coordenação**, quero campos sem consentimento bloqueados por padrão, para que a proteção
    seja regra do sistema. *(F1)*
-6. Como **psicóloga da Vivência**, quero contar em 40 segundos como foi o encontro, para que o
+6. Como **psicóloga da Vivência**, quero contar de viva voz como foi o encontro, para que o
    relatório no padrão do conselho exista sem eu ter que escrever à noite. *(decisão 31)*
 
 > **A sexta chegou depois, e pelo campo.** As cinco de cima saíram da inception, com a pedagoga como
@@ -221,8 +221,8 @@ semana, sentir que "já era", e nunca mais voltar. O produto foi desenhado contr
 | Retomada sem culpa: *"Que bom te ver de volta… Nada se perdeu"* | `#/hoje`, após 5+ dias sem registro |
 | Nenhuma data expira — chamadas atrasadas continuam registráveis | `#/chamada`, seletor com as datas em aberto |
 | Encadeamento de recuperação: ao salvar, o sistema abre a próxima pendência | após salvar a chamada |
-| Rascunho de observação: sai no meio, volta onde parou | `#/observacao/:id` |
-| Barra de progresso que só sobe — sem *streak*, sem penalidade, sem vermelho de falha | `#/hoje`, `#/ciclo` |
+| Rascunho de observação: sai no meio, volta onde parou | `#/crianca/:id?ver=observacao` |
+| Barra de progresso que só sobe — sem *streak*, sem penalidade, sem vermelho de falha | `#/hoje`, `#/hoje?detalhe=ciclo` |
 | Bloqueio explicado, nunca como erro da usuária | crianças bloqueadas na agenda do ciclo |
 
 ---

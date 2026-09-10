@@ -20,20 +20,20 @@ ser demonstrado, a feature não está pronta.** Cada linha abaixo aponta o teste
 | # | Feature do pack | Estado | Onde | Teste |
 |---|---|---|---|---|
 | F1 | Chamada que registra, funciona offline | **adotada + fila offline** | `#/chamada`, `public/fila.js` | smoke §2; unit ×5 (fila com armazenamento e envio injetados); decisão 17 |
-| F2 | Folha do dia, registro da turma | **nova** | `#/folha`, `src/voz.js` (`salvarFolha`) | smoke §11 |
-| F3 | Captura por voz, 40 s, áudio descartado | **adaptada** | `#/voz` (`SpeechRecognition` no navegador) | smoke §11; decisão 13 |
+| F2 | Folha do dia, registro da turma | **nova** | `#/registrar?passo=mao`, `src/voz.js` (`salvarFolha`) | smoke §11 |
+| F3 | Captura por voz, 40 s, áudio descartado | **adaptada** | `#/registrar` (`SpeechRecognition` no navegador) | smoke §11; decisão 13 |
 | F4 | Agente extrator com schema fechado | **adaptada** | `src/voz.js` (`extrairDaFala`, `validarExtracao`) | unit ×5 (`validarExtracao` + 4 de `extrairDaFala`), smoke §11 |
 | F5 | Lista de exclusão com encaminhamento humano | **adotada e realocada** | `filtrarPerimetro` + `modalEncaminhamento` | unit ×8 (5 de `filtrarPerimetro` + os de regressão SRV-04, categoria 5 e área *saúde*), smoke §11 |
-| F6 | Confirmação humana antes de gravar | **adotada** | `#/confirmar`, `POST /api/folha` | smoke §11 |
-| F7 | Ingestão retroativa com dedup de criança | **adotada** | `src/ingestao.js`, `#/importar` | unit ×4 (`lerCsv`, `chaveDeCrianca` + regressões SRV-02 e fusão), smoke §15 |
+| F6 | Confirmação humana antes de gravar | **adotada** | `#/registrar?passo=confirmar`, `POST /api/folha` | smoke §11 |
+| F7 | Ingestão retroativa com dedup de criança | **adotada** | `src/ingestao.js`, `#/pessoas?aba=importar` | unit ×4 (`lerCsv`, `chaveDeCrianca` + regressões SRV-02 e fusão), smoke §15 |
 | F8 | Score de risco de evasão | **adotada, pesos recalibrados** | `src/scores.js` (`riscoEvasao`) | unit ×3 + 2 de `suprimir`, smoke §12 |
 | F9 | Score de cobertura do registro | **adotada** | `src/scores.js` (`coberturaRegistro`) | unit ×2 (folha em branco + regressão SRV-05), smoke §12 |
 | F10 | Score de exposição | **adotada** | `src/scores.js` (`exposicao`) | unit ×1, smoke §12 |
-| F11 | Pauta de segunda, com aceite e descarte | **adotada** | `#/pauta`, `pautaDaSemana`, `decidirPauta` | unit ×1, smoke §13 |
+| F11 | Pauta de segunda, com aceite e descarte | **adotada** | `#/hoje?detalhe=semana`, `pautaDaSemana`, `decidirPauta` | unit ×1, smoke §13 |
 | F12 | Painel da coordenação com cobertura | **adotada** | `#/painel` (bloco "Cobertura do registro") | smoke §12 (*"a cobertura enumera TODAS as turmas"*, *"o painel traz a terceira linha do board"*) |
 | F13 | Gerador do relatório do ciclo | **adotada** | `src/relatorio.js`, `#/relatorio` | unit ×5 (supressão, revisor ×2, regressão E-02, guarda da interface), smoke §16 |
 | F14 | Carta do trimestre | **adotada** | mesmo pipeline, `redigirCarta` | unit ×1 (mínimo de célula na manchete), smoke §16 |
-| F15 | Consulta em linguagem natural *(opcional no pack)* | **adotada, determinística** | `consultar`, `#/consulta` | unit ×1, smoke §17 |
+| F15 | Consulta em linguagem natural *(opcional no pack)* | **adotada, determinística** | `consultar`, `#/relatorio?aba=consulta` | unit ×1, smoke §17 |
 
 ## 2. As onze telas
 
@@ -42,18 +42,18 @@ ser demonstrado, a feature não está pronta.** Cada linha abaixo aponta o teste
 | 1 | `entrada` — entra Solange Ribeiro, diretoria | adotado | `#/entrar` |
 | 2 | `hoje` — "Contar como foi" e bloco "Para esta semana" | adotado | `#/hoje` |
 | 3 | `chamada` | sem mudança | `#/chamada` |
-| 4 | `folha-do-dia` — "Contar como foi" como ação principal | adotado | `#/folha` |
-| 5 | `registrar-por-voz` | adotado | `#/voz` |
-| 6 | `confirmar-registro` | adotado | `#/confirmar` |
-| 7 | `olhar` — sai o texto livre, vira opcional | adotado *(ver §5)* | `#/observacao/:id` |
-| 8 | `pauta-de-segunda` | adotado | `#/pauta` |
+| 4 | `folha-do-dia` — "Contar como foi" como ação principal | adotado | `#/registrar?passo=mao` |
+| 5 | `registrar-por-voz` | adotado | `#/registrar` |
+| 6 | `confirmar-registro` | adotado | `#/registrar?passo=confirmar` |
+| 7 | `olhar` — sai o texto livre, vira opcional | adotado *(ver §5)* | `#/crianca/:id?ver=observacao` |
+| 8 | `pauta-de-segunda` | adotado | `#/hoje?detalhe=semana` |
 | 9 | `turma` — rótulo passa a descrever o registro | adotado | `#/turma` |
 | 10 | `painel-coordenacao` — ganha cobertura do registro | adotado | `#/painel` |
 | 11 | `gerar-relatorio` (diretoria) | adotado | `#/relatorio` |
 
-Telas que o MVP tem **além** do board, herdadas da v1 e mantidas: `#/ciclo` (agenda de observação),
-`#/safras`, `#/sintese`, `#/consentimentos`, `#/alertas`, `#/criancas`, `#/crianca/:id`. Duas telas
-novas fora do board, exigidas pelas features: `#/scores` (F9/F10 não cabem no painel) e `#/importar`
+Telas que o MVP tem **além** do board, herdadas da v1 e mantidas: `#/hoje?detalhe=ciclo` (agenda de observação),
+`#/painel?aba=safras`, `#/painel?aba=sintese`, `#/consentimentos`, `#/hoje?detalhe=alertas`, `#/crianca`, `#/crianca/:id`. Duas telas
+novas fora do board, exigidas pelas features: `#/painel?aba=scores` (F9/F10 não cabem no painel) e `#/pessoas?aba=importar`
 (F7 precisa de uma porta).
 
 ## 3. Design
@@ -84,7 +84,7 @@ o pack manda explicitamente *"não introduza cor nem fonte nova"*.
 |---|---|---|
 | 1. A IA nunca grava; a IA pré-preenche e a pessoa confirma | `POST /api/voz/extrair` devolve `gravado: false`; a única escrita é `POST /api/folha` | *"antes de confirmar, não existe folha no banco"*, *"o que a pessoa confirmou vence o que a IA propôs"* |
 | 2. Nenhum dado individual sai; agregado com supressão abaixo de cinco | `suprimir()` roda antes da redação, em programas, faixas e áreas | *"a supressão foi aplicada ANTES da redação"*, *"nenhum nome de criança aparece no relatório"* |
-| 3. Se a IA cair, o registro manual continua | `#/folha` é caminho completo e independente; "Prefiro escrever" e o campo de digitação estão sempre visíveis; falha de rede cai na fila | *"editar à mão marca a folha como manual"* e *"edição manual não grava confiança de agente nenhum"* (smoke §11); os cinco testes de fila em `unit-test.mjs` |
+| 3. Se a IA cair, o registro manual continua | `#/registrar?passo=mao` é caminho completo e independente; "Prefiro escrever" e o campo de digitação estão sempre visíveis; falha de rede cai na fila | *"editar à mão marca a folha como manual"* e *"edição manual não grava confiança de agente nenhum"* (smoke §11); os cinco testes de fila em `unit-test.mjs` |
 
 ## 5. O que foi adaptado, e por quê
 

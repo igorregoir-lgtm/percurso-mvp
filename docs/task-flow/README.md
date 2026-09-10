@@ -11,7 +11,7 @@ Artefato do **Grupo 06** para o exercício de task flow. Sai da **jornada de usu
 
 ## 1. A história escolhida
 
-> **US-6 — Como psicóloga da Vivência, quero contar em 40 segundos como foi o encontro, para que o
+> **US-6 — Como psicóloga da Vivência, quero contar de viva voz como foi o encontro, para que o
 > relatório no padrão do conselho exista sem eu ter que escrever à noite.**
 
 Ela **não estava** nas cinco user stories de [`../LEAN-INCEPTION.md`](../LEAN-INCEPTION.md) §5 nem em
@@ -32,11 +32,11 @@ a pessoa trava. As bifurcações reais (escrever em vez de falar, registrar trê
 na jornada v2 e ficam fora **de propósito**: user flow é outro desenho.
 
 ```
-início → #/entrar → #/hoje → #/voz → #/confirmar → #/hoje → #/relato → fim
+início → #/entrar → #/hoje → #/registrar (falar → conferir) → #/hoje → #/sai-daqui?aba=relato → fim
 ```
 
 Os seis passos, com o tempo esperado, estão no PNG. **O passo 05 é o achado:** ao confirmar a folha,
-`public/app.js:4272` faz `location.hash = '#/hoje'`. O relato **não abre sozinho** — ela precisa
+`public/app.js:6522` abre o relato logo depois de confirmar a folha, na Vivência (corrigido em 04/09/2026). Antes ele **não abria sozinho** e ela precisava
 achar o botão "Revisar e liberar o relato" no cartão do Hoje. O desenho supunha continuidade; o
 código devolve para a tela inicial. Está marcado em âmbar no fluxo, com limiar próprio de
 observação (20 s).
@@ -63,8 +63,17 @@ Os cinco ajustes feitos no protocolo depois disso estão na faixa escura do PNG.
 2. **A tarefa termina no relato liberado**, não na folha confirmada — é o relatório, não a folha,
    que é a dor nomeada em campo.
 
-E o que fica de fora: as portas **B** (gravar o encontro inteiro) e **C** (importar um áudio) da
-jornada v2 não existem no MVP. Simular o que não existe contamina o dado.
+E o que ficava de fora: as portas **B** (gravar o encontro inteiro) e **C** (importar um áudio) da
+jornada v2 **não existiam no MVP quando este protocolo foi escrito**. Passaram a existir em
+03/09/2026 (F1). O protocolo continua valendo como está — a tarefa mede a porta A′, que é a mais
+curta — mas as duas deixaram de ser simulação proibida e podem virar tarefa própria numa
+remedição.
+
+Desde 04/09/2026 a porta C tem **duas** entradas, e a segunda muda o roteiro de quem for medi-la: o
+seletor de arquivo deixou de filtrar por `audio/*` (que fazia `.opus` do WhatsApp sumir da lista no
+iPhone) e o aplicativo passou a aparecer na **folha de compartilhamento do sistema** — o caminho real
+dela é segurar o áudio no WhatsApp e mandar para o Percurso, não abrir o Percurso e procurar o
+arquivo. Medir só a segunda entrada mediria o caminho errado (decisão 44).
 
 ## 4. O que este teste não prova
 

@@ -1,3 +1,12 @@
+/* [hidden] PRECISA GANHAR DE TODA REGRA DE display DESTE ARQUIVO.
+   O `display:none` que o navegador dá a [hidden] tem especificidade zero, e
+   qualquer `.btn{display:inline-flex}` o vence — então `el.hidden = true`
+   deixava o elemento na tela, visível, e o código parecia certo. Já tinha
+   acontecido duas vezes (a barra de navegação na tela de entrada; os botões da
+   câmera no modal de consentimento), e as duas foram remendadas uma a uma.
+   Esta linha fecha a classe inteira. */
+[hidden]{display:none !important}
+
 /* Percurso — sistema visual v2.
    Tokens do board `percurso-v2-pack/html/percurso-board-v2.html`, sem excecao:
    fundo creme #F4EFE5, cartao branco com borda #E6DFD0 e canto de 11px, botao
@@ -75,7 +84,7 @@ button, a, .item, .p{touch-action:manipulation}
 }
 .sintetico:empty{display:none}
 .topo .quem b{white-space:nowrap}
-main{max-width:960px; margin:0 auto; padding:18px 16px 24px}
+main{max-width:960px; margin:0 auto; padding:18px 16px 181px}
 .kicker{color:var(--muted); font-size:9.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase}
 h1{font-size:24px; line-height:1.2; margin:6px 0 3px; font-weight:600; letter-spacing:-.02em}
 h2{font-size:17.5px; margin:0 0 2px; font-weight:600; letter-spacing:-.02em}
@@ -239,15 +248,8 @@ input[type=text],input[type=date],input[type=number],select{
 .bloco-volta[open]>summary::after{transform:rotate(90deg)}
 .bloco-volta .rot-campo:first-of-type{margin-top:0}
 
-/* contador de "pediram ajuda" */
-.step{display:inline-flex; align-items:center; gap:10px}
-.step button{
-  width:44px; height:44px; border:1px solid var(--line); border-radius:7px;
-  color:var(--muted); font-size:17px; line-height:1; background:var(--card);
-  transition:transform 240ms cubic-bezier(.34,1.56,.64,1);
-}
-.step button:active{transform:scale(.94); transition-duration:60ms}
-.step b{min-width:26px; text-align:center; font-weight:600; font-size:15px}
+/* O stepper saiu na F3: check-ins e "pediram ajuda" viraram entrada direta,
+   um toque por valor. O CSS sai junto — regra morta é dívida silenciosa. */
 
 /* ---------- kpis ---------- */
 .kpis{display:grid; gap:10px; grid-template-columns:repeat(2,1fr)}
@@ -334,10 +336,14 @@ svg{display:block; max-width:100%; height:auto}
 .contagem-voz.acabando{color:var(--red)}
 
 /* ---------- navegacao ---------- */
+/* ALTURA DA BARRA: 88 px — contrato do protótipo v3 (ARTEFATOS-VISUAIS).
+   50 do item + 18 acima + 19 abaixo + 1 da borda. A altura da barra e a posição
+   do girassol são ACOPLADAS: mexer numa sem a outra reintroduz sobreposição —
+   armadilha declarada na conferência do protótipo. */
 nav.barra-nav{
   position:fixed; bottom:0; left:0; right:0; z-index:50;
   background:var(--card); border-top:1px solid var(--line);
-  display:flex; padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  display:flex; padding:18px 4px calc(19px + env(safe-area-inset-bottom));
   view-transition-name:nav;
 }
 [hidden]{display:none !important}
@@ -560,34 +566,42 @@ nav.barra-nav a[aria-current="page"]{color:var(--red)}
   h1, .kicker, .sub{display:block}
 }
 
-/* ---------- Passo (assistente-parceiro) ---------- */
+/* ---------- Aurora (assistente-parceiro) ---------- */
 /* Camadas: FAB a 60 — acima da nav (50), abaixo do véu (80) e da festa (90).
    Toasts e o respiro do body sobem junto: nada fica escondido atrás do botão. */
 body{padding-bottom:calc(124px + env(safe-area-inset-bottom))}
 .toasts{bottom:calc(168px + env(safe-area-inset-bottom))}
-/* O GIRASSOL DA AURORA: FAB canônico do Figma (nó #22:2)
-   FUNDO BRANCO PURO (#FFFFFF), borda suave (#E6DFD0) e sombra sutil.
-   O girassol dourado (#E6A400) com miolo marrom (#6B4410) precisa de fundo claro para contrastar. */
-.passo-fab, .aurora-fab{
-  position:fixed; right:16px; bottom:calc(98px + env(safe-area-inset-bottom));
-  z-index:60; width:58px; height:58px; border-radius:50%;
+/* O GIRASSOL DA AURORA: 65 px, 12 px acima da barra de 88 — contrato do protótipo v3 (nó #22:2).
+   FUNDO BRANCO PURO (#FFFFFF), borda suave (#E6DFD0), sombra e contraste nítido. */
+.aurora-fab{
+  position:fixed; right:10px; bottom:calc(100px + env(safe-area-inset-bottom));
+  z-index:60; width:65px; height:65px; border-radius:50%;
   background:#FFFFFF !important; color:var(--ink); border:1.5px solid #E6DFD0 !important;
-  font-size:24px; line-height:1; display:flex; align-items:center; justify-content:center;
-  box-shadow:0 4px 18px rgba(46,42,36,.14) !important; cursor:pointer;
+  line-height:1; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 6px 18px rgba(46,42,36,.28); cursor:pointer;
   -webkit-tap-highlight-color:transparent; touch-action:manipulation;
   transition:transform .24s cubic-bezier(.34,1.56,.64,1);
 }
-.passo-fab:active, .aurora-fab:active{transform:scale(.92); transition-duration:60ms}
-.passo-bolha{
-  position:fixed; right:16px; bottom:calc(162px + env(safe-area-inset-bottom));
+.passo-fab{
+  position:fixed; right:10px; bottom:calc(100px + env(safe-area-inset-bottom));
+  z-index:60; width:65px; height:65px; border-radius:50%;
+  background:#FFFFFF !important; color:var(--ink); border:1.5px solid #E6DFD0 !important;
+  line-height:1; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 6px 18px rgba(46,42,36,.28); cursor:pointer;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  transition:transform .24s cubic-bezier(.34,1.56,.64,1);
+}
+.aurora-fab:active, .passo-fab:active{transform:scale(.92); transition-duration:60ms}
+.aurora-bolha{
+  position:fixed; right:10px; bottom:calc(175px + env(safe-area-inset-bottom));
   z-index:60; max-width:232px; background:var(--card); color:var(--ink);
   border:1px solid var(--line); border-radius:14px 14px 4px 14px;
   padding:10px 12px; font-size:14px; line-height:1.45;
   box-shadow:0 6px 18px rgba(46,42,36,.18); cursor:pointer;
   animation:sobe .3s cubic-bezier(.2,.8,.2,1) backwards .6s;
 }
-.passo-veu{display:flex; align-items:flex-end; justify-content:center; padding:0}
-.passo-sheet{
+.aurora-veu{display:flex; align-items:flex-end; justify-content:center; padding:0}
+.aurora-sheet{
   width:100%; max-width:560px; display:flex; flex-direction:column;
   max-height:82vh; max-height:82dvh;   /* vh primeiro: aparelho antigo sem dvh mantém o teto */
   background:var(--card); border:1px solid var(--line); border-bottom:none;
@@ -595,106 +609,131 @@ body{padding-bottom:calc(124px + env(safe-area-inset-bottom))}
   padding:14px 16px calc(12px + env(safe-area-inset-bottom));
   animation:sobe .28s cubic-bezier(.2,.8,.2,1);
 }
-.passo-cabeca{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:6px}
-.passo-cabeca h2{margin:0; font-size:19px}
-.passo-cabeca .sub{margin:2px 0 0; font-size:13px}
-.passo-som{
+.aurora-cabeca{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:6px}
+.aurora-cabeca h2{margin:0; font-size:19px}
+.aurora-cabeca .sub{margin:2px 0 0; font-size:13px}
+.aurora-som{
   min-height:36px; padding:6px 12px; border-radius:999px; font-size:13px; cursor:pointer;
   border:1px solid var(--line); background:var(--card); color:var(--muted);
   -webkit-tap-highlight-color:transparent; touch-action:manipulation;
 }
-.passo-som[aria-pressed="true"]{background:var(--ok-bg); color:var(--ok); border-color:var(--ok-bg)}
-.passo-fechar{
+.aurora-som[aria-pressed="true"]{background:var(--ok-bg); color:var(--ok); border-color:var(--ok-bg)}
+.aurora-fechar{
   width:36px; height:36px; border-radius:50%; font-size:20px; line-height:1; cursor:pointer;
   border:1px solid var(--line); background:var(--card); color:var(--muted);
   -webkit-tap-highlight-color:transparent; touch-action:manipulation;
 }
-.passo-fio{
+.aurora-fio{
   flex:1; min-height:96px; overflow:auto;
   max-height:44vh; max-height:44dvh;
   display:flex; flex-direction:column; gap:8px; padding:6px 2px;
 }
-.passo-msg{max-width:90%; padding:9px 12px; border-radius:14px; font-size:15px; line-height:1.5}
-.passo-msg.voce{align-self:flex-end; background:var(--ink); color:var(--bg); border-radius:14px 14px 4px 14px}
-.passo-msg.passo{align-self:flex-start; background:var(--bg); border:1px solid var(--line); border-radius:14px 14px 14px 4px}
-.passo-chips{display:flex; flex-wrap:wrap; gap:8px; padding:8px 0 10px}
-.passo-chips:empty{padding:0}
-.passo-chip{
+.aurora-msg{max-width:90%; padding:9px 12px; border-radius:14px; font-size:15px; line-height:1.5}
+.aurora-msg.voce{align-self:flex-end; background:var(--ink); color:var(--bg); border-radius:14px 14px 4px 14px}
+.aurora-msg.aurora{align-self:flex-start; background:var(--bg); border:1px solid var(--line); border-radius:14px 14px 14px 4px}
+.aurora-chips{display:flex; flex-wrap:wrap; gap:8px; padding:8px 0 10px}
+.aurora-chips:empty{padding:0}
+.aurora-chip{
   min-height:40px; padding:8px 14px; border-radius:999px; font-size:14px; cursor:pointer;
   border:1px solid var(--line); background:var(--card-2); color:var(--ink);
   -webkit-tap-highlight-color:transparent; touch-action:manipulation;
 }
-.passo-entrada{display:flex; gap:8px; align-items:flex-end}
-.passo-entrada textarea{flex:1; resize:none; min-height:46px; max-height:120px}
-.passo-entrada .mic-ditado{flex:none}
-@media print{ .passo-fab, .passo-bolha, .passo-veu{display:none !important} }
+.aurora-entrada{display:flex; gap:8px; align-items:flex-end}
+.aurora-entrada textarea{flex:1; resize:none; min-height:46px; max-height:120px}
+.aurora-entrada .mic-ditado{flex:none}
+@media print{ .aurora-fab, .aurora-bolha, .aurora-veu{display:none !important} }
 
-/* Só para leitores de tela — a região viva do Passo anuncia a última fala. */
+/* Só para leitores de tela — a região viva da Aurora anuncia a última fala. */
 .oculto-acessivel{position:absolute; width:1px; height:1px; overflow:hidden;
   clip-path:inset(50%); white-space:nowrap}
 
-/* ---------- Passo proativo: sugestões tipadas, ponto e resumo ---------- */
+/* ---------- Aurora proativo: sugestões tipadas, ponto e resumo ---------- */
 /* Um PONTO, nunca um número: contador ao lado do ❋ lê como caixa de entrada em
    dívida; ponto lê como aviso — e some quando o motivo esfria, não no clique. */
-.passo-ponto, .aurora-ponto{
-  position:absolute; top:7px; right:7px; width:10px; height:10px; border-radius:50%;
-  background:#B0392C; box-shadow:0 0 0 2px #FFFFFF;
+.aurora-ponto, .passo-ponto{
+  position:absolute; top:7px; right:7px; width:9px; height:9px; border-radius:50%;
+  background:var(--atencao); box-shadow:0 0 0 2px var(--ink);
 }
-.passo-resumo{
+.aurora-resumo{
   margin:0 2px 4px; padding:9px 12px; font-size:14.5px; line-height:1.5;
   color:var(--ink); background:var(--card-2); border:1px solid var(--line);
   border-radius:var(--r-s);
 }
-.passo-sug{display:inline-flex; align-items:stretch; max-width:100%}
+.aurora-sug{display:inline-flex; align-items:stretch; max-width:100%}
 /* O chip carrega o tipo num glifo — a pessoa aprende a diferença entre "vá
    fazer" e "isto costuma confundir" sem ler legenda nenhuma. */
-.passo-chip[data-tipo]::before{
+.aurora-chip[data-tipo]::before{
   margin-right:6px; opacity:.55; font-weight:600;
 }
-.passo-chip[data-tipo="acao"]::before{content:"▸"}
-.passo-chip[data-tipo="pergunta"]::before{content:"?"}
-.passo-chip[data-tipo="aprimoramento"]::before{content:"✦"}
-.passo-chip[data-tipo="duvida"]::before{content:"⌾"}
-.passo-sug .passo-chip{
+.aurora-chip[data-tipo="acao"]::before{content:"▸"}
+.aurora-chip[data-tipo="pergunta"]::before{content:"?"}
+.aurora-chip[data-tipo="aprimoramento"]::before{content:"✦"}
+.aurora-chip[data-tipo="duvida"]::before{content:"⌾"}
+.aurora-sug .aurora-chip{
   max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-.passo-sug:has(.passo-adiar) .passo-chip{
+.aurora-sug:has(.aurora-adiar) .aurora-chip{
   border-top-right-radius:0; border-bottom-right-radius:0; border-right:none;
 }
-.passo-adiar{
+.aurora-adiar{
   min-width:30px; padding:0 9px; font-size:15px; line-height:1; cursor:pointer;
   border:1px solid var(--line); border-left:1px solid var(--line);
   border-radius:0 999px 999px 0; background:var(--card-2); color:var(--muted);
   -webkit-tap-highlight-color:transparent; touch-action:manipulation;
 }
-.passo-porque{
+.aurora-porque{
   margin:8px 0 0; font-size:12.5px; line-height:1.45; color:var(--muted);
 }
-@media print{ .passo-ponto{display:none !important} }
-.passo-convite{
+@media print{ .aurora-ponto{display:none !important} }
+.aurora-convite{
   margin:0 2px 10px; padding:11px 13px; font-size:14px; line-height:1.5;
   background:var(--atencao-bg); border:1px solid var(--atencao-linha);
   border-radius:var(--r-s); color:var(--ink);
 }
-.passo-memlink{
+.aurora-memlink{
   margin:8px auto 0; padding:6px 4px; font-size:12.5px; color:var(--muted);
   background:none; border:none; text-decoration:underline; cursor:pointer;
   -webkit-tap-highlight-color:transparent;
 }
-.passo-memoria{
+.aurora-memoria{
   margin:0 2px 10px; padding:12px 13px; font-size:14px; line-height:1.5;
   background:var(--card-2); border:1px solid var(--line); border-radius:var(--r-s);
 }
-.passo-memoria .lbl{margin:0}
-.passo-opcao{
+.aurora-memoria .lbl{margin:0}
+.aurora-opcao{
   display:flex; align-items:center; justify-content:space-between; gap:10px;
   padding:7px 0; border-bottom:1px solid var(--line);
 }
-.passo-opcao:last-of-type{border-bottom:none}
-.passo-chip.on{
+.aurora-opcao:last-of-type{border-bottom:none}
+.aurora-chip.on{
   background:var(--ok-bg); border-color:var(--ok-bg); color:var(--ok); font-weight:600;
 }
 .comparar{margin-top:10px; border-top:1px solid var(--line); padding-top:8px}
 .comparar summary{font-size:13px; color:var(--muted); cursor:pointer; padding:4px 0}
 .comparar p{font-size:14px; line-height:1.6; margin-top:8px; color:var(--ink)}
 .comparar .sub{font-size:12.5px; color:var(--muted)}
+
+
+/* ---- A FOLHA DA TURMA (decisão 50): QR para colar na parede ---------------
+   Na tela é um cartão como os outros; no papel é só a folha — cabeçalho,
+   navegação, girassol e toasts saem, porque quem lê a parede não tem botão. */
+.folha{background:#fff;border:1px solid var(--line);border-radius:11px;padding:18px}
+.folha-cabecalho{display:flex;flex-direction:column;gap:2px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.folha-cabecalho b{font-size:20px}
+.folha-cabecalho span{color:var(--muted);font-size:13px}
+.folha-item{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px dashed var(--line);break-inside:avoid}
+.folha-item:last-of-type{border-bottom:0}
+.folha-item svg{width:132px;height:132px;flex:0 0 132px}
+.folha-texto{display:flex;flex-direction:column;gap:3px;min-width:0}
+.folha-texto b{font-size:16px}
+.folha-texto span{color:var(--muted);font-size:13px}
+.folha-texto small{font-size:12px;color:var(--ink)}
+.folha-texto code{font-size:10.5px;color:var(--muted);word-break:break-all}
+.folha-rodape{margin-top:14px;font-size:11.5px;color:var(--muted)}
+@media print{
+  body > :not(main){display:none !important}
+  main{padding:0 !important;max-width:none !important}
+  .nao-imprime,#aurora-fab,#toasts{display:none !important}
+  .folha{border:0;border-radius:0;padding:0}
+  .folha-item svg{width:150px;height:150px;flex-basis:150px}
+}
