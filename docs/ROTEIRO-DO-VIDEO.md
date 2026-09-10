@@ -38,7 +38,7 @@ para caber, e por quê:
 4. **Cena 9 (recado):** abrir pelo botão **"Recado para os responsáveis"** no cartão da folha, na
    tela Hoje — o caminho que a psicóloga usaria. Funciona em qualquer dia desde `48ec1dd`
    (03/09/2026), que ligou o botão ao **encontro da folha** e não à chamada de hoje
-   (`public/app.js:509`). Até ali ele sumia em dia não letivo e a cena tinha de abrir `#/recado`
+   (`public/app.js:539`). Até ali ele sumia em dia não letivo e a cena tinha de abrir `#/recado`
    pela URL; **essa instrução caiu.**
 5. Cenas dos papéis de campo (1–10): janela estreita (≈400 px) ou celular — as personas usam o
    produto em pé, dentro da sala. Cenas de gestão (11–16): janela normal.

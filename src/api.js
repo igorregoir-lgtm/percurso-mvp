@@ -22,6 +22,7 @@ import * as PL from './planilha.js';
 import * as REL from './relato.js';
 import * as REC from './recado.js';
 import * as PAR from './parecer.js';
+import * as EVI from './evidencia.js';
 import { conversar, AI_ENABLED } from './ai-client.js';
 const { nomesParaAnonimizar } = C;
 
@@ -430,6 +431,46 @@ export const rotas = {
   },
   'GET /api/safras': (req) => { exigeCoordenacao(req); return D.safras(); },
   'GET /api/consentimentos': (req) => { exigeCoordenacao(req); return D.painelConsentimentos(); },
+
+  // ---- Prova do consentimento em vídeo (decisão 41) ----------------------
+  // O corpo é BINÁRIO (ver server.js): base64 em JSON inflaria 33% um arquivo
+  // de dezenas de MB, e o teto de 1 MB do lerCorpo existe para recusar isso.
+  'POST /api/consentimento/evidencia': (req, corpo, q) => {
+    const u = exigeCoordenacao(req);
+    const criancaId = num(q.get('crianca_id'), 'crianca_id');
+    return EVI.guardar(corpo, {
+      criancaId, campo: q.get('campo') || 'consentimento_em_video',
+      mime: q.get('mime') || req.headers['content-type'] || '',
+      duracaoS: q.get('duracao') ? Number(q.get('duracao')) : null,
+      responsavel: q.get('responsavel') || '',
+      registradoPor: u.id,
+    });
+  },
+
+  'GET /api/consentimento/evidencias': (req, _b, q) => {
+    exigeCoordenacao(req);
+    const id = num(q.get('crianca_id'), 'crianca_id');
+    exigeAcessoCrianca(req, id);
+    return { evidencias: EVI.daCrianca(id) };
+  },
+
+  // Devolve os BYTES do vídeo. Passa pelo mesmo portão de acesso individual —
+  // e por isso fica registrado quem assistiu, e quando.
+  'GET /api/consentimento/video': (req, _b, q) => {
+    exigeCoordenacao(req);
+    const linha = EVI.porId(num(q.get('id'), 'id'));
+    exigeAcessoCrianca(req, linha.crianca_id);
+    const { buffer, mime } = EVI.bytesDe(linha.id);
+    return { _arquivo: buffer, _mime: mime };
+  },
+
+  'DELETE /api/consentimento/evidencia': (req, body) => {
+    exigeCoordenacao(req);
+    const id = num(body.id, 'id');
+    const linha = EVI.porId(id);
+    exigeAcessoCrianca(req, linha.crianca_id);
+    return EVI.apagar(id, { motivo: body.motivo });
+  },
 
   'POST /api/consentimento': (req, body) => {
     exigeCoordenacao(req);

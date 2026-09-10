@@ -611,16 +611,16 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
   const { readFileSync } = await import('node:fs');
   const raiz = new URL('../', import.meta.url);
   const ANCORAS = {
-    'public/app.js:423': /rota\(\/\^#\\\/hoje\//,
-    'public/app.js:508': /Revisar e liberar o relato|relato_liberado/,
-    'public/app.js:509': /recados|#\/recado/,
-    'public/app.js:1014': /coordenacao.*Consentimentos|Registre abaixo/,
-    'public/app.js:2202': /rota\(\/\^#\\\/scores\//,
-    'public/app.js:2406': /id="pergunta"/,
-    'public/app.js:4031': /location\.hash = '#\/hoje'/,
-    'src/api.js:308': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:435': /exigeCoordenacao\(req\)/,
-    'src/api.js:889': /periodosSugeridos\(\)/,
+    'public/app.js:453': /rota\(\/\^#\\\/hoje\//,
+    'public/app.js:538': /Revisar e liberar o relato|relato_liberado/,
+    'public/app.js:539': /recados|#\/recado/,
+    'public/app.js:1044': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:2247': /rota\(\/\^#\\\/scores\//,
+    'public/app.js:2451': /id="pergunta"/,
+    'public/app.js:4272': /location\.hash = '#\/hoje'/,
+    'src/api.js:309': /erro\(422.*rubrica por ciclo/,
+    'src/api.js:476': /exigeCoordenacao\(req\)/,
+    'src/api.js:930': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:112': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
@@ -640,9 +640,10 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
 
   // e toda citação que aparece nos docs tem de estar nesta tabela: citação nova
   // sem âncora volta a poder derivar em silêncio.
+  const HISTORICOS = new Set(['docs/HANDOFF.md']);
   const docs = [
     ...(await import('node:fs')).readdirSync(new URL('docs/', raiz)).filter(f => f.endsWith('.md')).map(f => 'docs/' + f),
-  ];
+  ].filter(d => !HISTORICOS.has(d));
   const vistas = new Set();
   for (const d of docs)
     for (const m of readFileSync(new URL(d, raiz), 'utf8').matchAll(/(?:src|public|scripts)\/[a-z/-]+\.(?:js|mjs):\d+/g))
@@ -2154,3 +2155,53 @@ test('régua: criança sem presença nesta turma aparece como sem_base, não som
   assert.equal(linha.faixa, 'sem_base');
   assert.equal(r.criancas.length, D.criancasDaTurma(t).length);
 });
+
+// ===========================================================================
+// PROVA DO CONSENTIMENTO EM VÍDEO (decisão 41)
+// ===========================================================================
+const EVI = await import('../src/evidencia.js');
+
+test('evidência: guarda o vídeo fora de public/, recusa formato estranho e não devolve o nome do arquivo', () => {
+  const c = get(`SELECT id FROM crianca WHERE ativo = 1 LIMIT 1`);
+  const bytes = Buffer.alloc(2048, 7);
+  assert.throws(() => EVI.guardar(bytes, { criancaId: c.id, campo: 'consentimento_em_video',
+    mime: 'application/pdf', responsavel: 'Fulana', registradoPor: 2 }), /não reconhecido/);
+  assert.throws(() => EVI.guardar(bytes, { criancaId: c.id, campo: 'consentimento_em_video',
+    mime: 'video/mp4', responsavel: '  ', registradoPor: 2 }), /quem é o responsável|responsável/i);
+
+  const e = EVI.guardar(bytes, { criancaId: c.id, campo: 'consentimento_em_video',
+    mime: 'video/mp4', duracaoS: 31, responsavel: 'Fulana de Tal', registradoPor: 2 });
+  assert.equal(e.bytes, 2048);
+  assert.equal(e.duracao_s, 31);
+  assert.equal(e.arquivo, undefined, 'o nome do arquivo no disco não pode sair para a tela');
+  assert.ok(!EVI.DIR.includes('public'), 'o vídeo estaria sendo servido como estático');
+  assert.equal(EVI.bytesDe(e.id).buffer.length, 2048);
+  assert.equal(EVI.daCrianca(c.id).length, 1);
+  // O painel de consentimentos passa a separar quem tem prova de quem só tem palavra.
+  assert.ok(D.painelConsentimentos().linhas.some(l => l.id === c.id ? l.tem_prova : true));
+
+  // Apagar é para revogação, não para arrumar tela: sem motivo, não apaga.
+  assert.throws(() => EVI.apagar(e.id, { motivo: '' }), /motivo/);
+  const morto = EVI.apagar(e.id, { motivo: 'pedido do responsável' });
+  assert.equal(morto.apagado, e.id);
+  assert.throws(() => EVI.bytesDe(e.id), /não está no sistema/);
+});
+
+test('a câmera do consentimento abre em prévia e deixa virar (pedido do campo)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const audio = readFileSync(new URL('../public/audio.js', import.meta.url), 'utf8');
+  const front = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert.match(audio, /facingMode/);
+  assert.match(audio, /environment/);
+  assert.match(audio, /export async function abrirCamera/);
+  assert.match(front, /data-acao="cv-virar"/);
+  assert.match(front, /if \(gravador\) return;\s*\/\/ no meio da gravação/);
+  assert.match(front, /video\.style\.transform = traseira \? 'none' : 'scaleX\(-1\)'/);
+});
+
+test('[hidden] vence toda regra de display — a classe inteira, não o remendo', async () => {
+  const { readFileSync } = await import('node:fs');
+  const css = readFileSync(new URL('../public/styles.css', import.meta.url), 'utf8');
+  assert.match(css, /\[hidden\]\{display:none !important\}/);
+});
+

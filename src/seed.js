@@ -92,6 +92,8 @@ const GOVERNANCA = [
   // registrada e revisor. Nasce pendente para toda criança, como a rubrica.
   { campo: 'parecer_profissional', rotulo: 'Parecer a profissional parceiro (por código)', base_legal: 'Consentimento específico do responsável (LGPD Art. 14)', titular: 'Organização', acesso: 'Profissional parceiro nomeado pela coordenação, após liberação', retencao: 'Registro da liberação permanente; o texto é o do parecer liberado', exige_consentimento: 1 },
   { campo: 'recado_da_turma', rotulo: 'Recado da turma aos responsáveis', base_legal: 'Legítimo interesse — comunicação com responsáveis sobre a turma (LGPD Art. 7º, IX)', titular: 'Organização', acesso: 'Responsáveis da turma, pelo grupo que já existe; quem envia é a pessoa', retencao: 'Não persiste — gerado sob demanda, só agregado da turma', exige_consentimento: 0 },
+  // Decisão 41 — a prova do consentimento. Dado do RESPONSÁVEL, não da criança.
+  { campo: 'consentimento_em_video', rotulo: 'Vídeo do responsável consentindo (prova)', base_legal: 'Ônus da prova do consentimento (LGPD Art. 8º, §1º)', titular: 'Responsável', acesso: 'Coordenação e diretoria, com log de acesso', retencao: 'Enquanto o consentimento valer + 5 anos; apagado com a revogação a pedido', exige_consentimento: 0 },
 ];
 
 export function semear() {
@@ -99,7 +101,7 @@ export function semear() {
   const T = hoje();
 
   return tx(() => {
-    for (const t of ['importacao','relatorio','pauta','atividade_area','folha_marcador','folha','aspiracao','atividade','sintese','alerta','consentimento','observacao_item','observacao','presenca','encontro','matricula','crianca','turma','programa','ancora','dimensao','ciclo','educador','governanca_campo'])
+    for (const t of ['importacao','relatorio','pauta','atividade_area','folha_marcador','folha','aspiracao','atividade','sintese','alerta','consentimento_evidencia','consentimento','observacao_item','observacao','presenca','encontro','matricula','crianca','turma','programa','ancora','dimensao','ciclo','educador','governanca_campo'])
       db.exec(`DELETE FROM ${t};`);
 
     for (const g of GOVERNANCA)

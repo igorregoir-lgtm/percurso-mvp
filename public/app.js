@@ -1,6 +1,7 @@
 // Percurso — aplicacao. Sem framework: DOM + hash routing.
 // A ordem das telas segue a jornada da persona: hoje -> chamada -> ciclo -> turma.
 import { criarFila } from './fila.js';
+import { abrirCamera, temDuasCameras, encerrarStream, melhorTipoVideo, gravarVideoConsentimento, podeGravar } from './audio.js';
 
 const app     = document.getElementById('app');
 const navEl   = document.getElementById('nav');
@@ -399,6 +400,35 @@ rota(/^#\/entrar/, async () => {
               <div class="meta">${PAPEL[u.papel] ?? 'Educadora'}</div></div>
             <span class="seta" aria-hidden="true">›</span>
           </button>`).join('')}
+      </div>
+    </div>
+    <div class="cartao entra" style="margin-top:16px; border: 1.5px solid var(--laranja, #D97706); background: rgba(217, 119, 6, 0.05); animation-delay:.22s">
+      <div class="linha" style="align-items:center">
+        <h2 style="margin:0; font-size:15px; color:var(--tinta)">📁 Artefatos de Entrega · Semana 5 (Trilha B)</h2>
+        <span class="selo ok" style="font-size:10px">Oficial</span>
+      </div>
+      <p class="sub" style="margin-top:6px">Acesse diretamente os artefatos de entrega do Grupo 06 no Vercel:</p>
+      <div class="pilha" style="margin-top:10px">
+        <a class="item" href="/dossie.html" target="_blank" style="text-decoration:none">
+          <div><div class="nome">📖 Dossiê Executivo Consolidado</div>
+            <div class="meta">Visão completa, Diretoria Solange Ribeiro, SROI, Redução da Violência</div></div>
+          <span class="seta" aria-hidden="true">↗</span>
+        </a>
+        <a class="item" href="/Artefato_Negocios_Semana5_TrilhaB.html" target="_blank" style="text-decoration:none">
+          <div><div class="nome">💼 Artefato de Negócios (Trilha B)</div>
+            <div class="meta">Alinhamento estratégico, personas, modelo de impacto e sustentabilidade</div></div>
+          <span class="seta" aria-hidden="true">↗</span>
+        </a>
+        <a class="item" href="/Artefato_Tecnologia_UX_UI_Semana5_TrilhaB.html" target="_blank" style="text-decoration:none">
+          <div><div class="nome">💻 Artefato de Tecnologia & UX/UI</div>
+            <div class="meta">Arquitetura, LGPD Art. 14, vídeo consentimento, IA determinística</div></div>
+          <span class="seta" aria-hidden="true">↗</span>
+        </a>
+        <a class="item" href="/Link_Prototipo_Figma_Navegavel.html" target="_blank" style="text-decoration:none">
+          <div><div class="nome">🎨 Protótipo Figma Navegável</div>
+            <div class="meta">Links e telas navegáveis do protótipo v3 no Figma</div></div>
+          <span class="seta" aria-hidden="true">↗</span>
+        </a>
       </div>
     </div>
     <p class="rodape entra" style="animation-delay:.55s">Cada pessoa entra com a própria conta. O registro fica no instituto.<br>
@@ -1421,9 +1451,10 @@ rota(/^#\/consentimentos/, async () => {
     <h1>Consentimentos</h1>
     <p class="sub">Campo sem consentimento nasce bloqueado — a proteção é regra do sistema, não lembrete de processo.</p>
 
-    <div class="kpis" style="margin-top:16px;grid-template-columns:1fr 1fr">
+    <div class="kpis" style="margin-top:16px;grid-template-columns:1fr 1fr 1fr">
       <div class="kpi"><b>${d.ativos}</b><span>Ativos</span></div>
       <div class="kpi"><b>${d.pendentes}</b><span>Pendentes</span><small>campos bloqueados por padrão</small></div>
+      <div class="kpi"><b>${d.com_prova ?? 0}</b><span>Com vídeo</span><small>prova do consentimento</small></div>
     </div>
 
     <div class="cartao" style="margin-top:14px">
@@ -1437,6 +1468,20 @@ rota(/^#\/consentimentos/, async () => {
           </div>`).join('') || '<p class="vazio">Nenhum consentimento pendente.</p>'}
       </div>
       <p class="sub" style="margin-top:14px">${d.ativos} criança(s) com consentimento ativo não aparecem nesta lista.</p>
+      ${d.ativos ? `<details style="margin-top:10px">
+        <summary style="cursor:pointer;font-size:13px;color:var(--tinta-fraca)">Quem tem a prova em vídeo · ${d.com_prova ?? 0} de ${d.ativos}</summary>
+        <p class="sub" style="margin-top:8px">Consentimento sem vídeo continua valendo — só não tem como
+          ser mostrado a ninguém depois. Para gravar de quem ainda não tem, registre de novo o consentimento.</p>
+        <div class="pilha" style="margin-top:8px">
+          ${d.linhas.filter(l => l.status === 'ativo').map(l => `<div class="item" style="cursor:default">
+            <div class="cresce"><div class="nome">${esc(l.nome)}</div>
+              <div class="meta">${esc(l.responsavel || 'responsável não anotado')}${l.data_registro ? ` · ${dataBR(l.data_registro)}` : ''}</div></div>
+            ${l.tem_prova
+              ? '<span class="selo ok">vídeo</span>'
+              : `<button class="btn pequeno fantasma" data-acao="consentir" data-id="${l.id}" data-nome="${esc(l.nome)}">Gravar</button>`}
+          </div>`).join('')}
+        </div>
+      </details>` : ''}
     </div>
 
     <div class="cartao" style="margin-top:14px">
@@ -3149,6 +3194,202 @@ function prenderFoco(veu) {
   });
 }
 
+// ======================================================================
+// PROVA DO CONSENTIMENTO EM VÍDEO (decisão 41)
+//
+// O pedido do campo, em 04/09/2026: "como ele deixa registrado o consentimento?
+// tem como ser por meio de um vídeo do responsável na hora de fazer a
+// matrícula?". Tem — e é melhor do que o que havia.
+//
+// O que havia era o nome do responsável DIGITADO por quem estava do outro lado
+// da mesa. Isso é a afirmação de que houve consentimento, não a prova dele; e a
+// LGPD põe o ônus da prova no controlador (Art. 8º, §1º). Trinta segundos de
+// vídeo sustentam o que uma linha de texto não sustenta.
+//
+// O vídeo é OPCIONAL de propósito — nem todo responsável quer ser filmado, e
+// exigir a câmera seria transformar uma proteção em barreira. Sem vídeo o
+// consentimento vale igual; a tela é que diz, depois, quais têm prova e quais
+// só têm a palavra de quem digitou.
+// ======================================================================
+const CAMPOS_DA_MATRICULA = ['rubrica_socioemocional', 'campo_livre'];
+
+function modalConsentimento({ id, nome }) {
+  const veu = document.createElement('div');
+  veu.className = 'veu';
+  veu.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mcv">
+      <h2 id="mcv">Registrar consentimento</h2>
+      <p>Consentimento específico do responsável (LGPD Art. 14) para o registro socioemocional de
+        ${esc(nome)}. Pode ser revogado a qualquer momento.</p>
+      <label for="cv-resp" style="font-size:13px;font-weight:600;display:block;margin:12px 0 6px">Quem é o responsável que consentiu?</label>
+      <input type="text" id="cv-resp" autocomplete="off" placeholder="Nome do responsável">
+
+      <div class="cartao compacto" style="margin-top:14px;background:var(--fundo)">
+        <div class="linha"><h3 class="cresce" style="margin:0;font-size:14px">A prova, em vídeo</h3>
+          <span class="selo pend" id="cv-selo">opcional</span></div>
+        <p class="sub" style="margin-top:6px">Trinta segundos bastam: peça para o responsável dizer o nome
+          dele, o nome da criança e que autoriza o Instituto a registrar como ela está indo. O vídeo fica
+          nesta casa, só a coordenação abre, e toda abertura fica registrada.</p>
+        <video id="cv-video" playsinline muted style="width:100%;border-radius:10px;margin-top:8px;display:none;background:#000"></video>
+        <p class="sub" id="cv-estado" style="min-height:18px;margin-top:6px"></p>
+        <div class="pilha" style="margin-top:8px">
+          <button class="btn pequeno secundario" data-acao="cv-abrir" type="button">Abrir a câmera</button>
+          <button class="btn pequeno" data-acao="cv-gravar" type="button" hidden>Começar a gravar</button>
+          <button class="btn pequeno fantasma" data-acao="cv-virar" type="button" hidden>Virar a câmera</button>
+          <button class="btn pequeno fantasma" data-acao="cv-escolher" type="button">Escolher um vídeo do celular</button>
+        </div>
+        <input type="file" id="cv-arquivo" accept="video/*,audio/*" hidden>
+      </div>
+
+      <p class="sub" id="cv-erro" style="color:var(--red);font-size:13px;margin-top:8px;display:none"></p>
+      <div class="linha" style="margin-top:16px">
+        <button class="btn cresce" data-acao="cv-ok" type="button">Registrar e desbloquear</button>
+        <button class="btn secundario cresce" data-acao="cv-cancelar" type="button">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(veu);
+  prenderFoco(veu);
+
+  const campo = veu.querySelector('#cv-resp');
+  const erro = veu.querySelector('#cv-erro');
+  const estado = veu.querySelector('#cv-estado');
+  const selo = veu.querySelector('#cv-selo');
+  const video = veu.querySelector('#cv-video');
+  const btnAbrir = veu.querySelector('[data-acao="cv-abrir"]');
+  const btnGravar = veu.querySelector('[data-acao="cv-gravar"]');
+  const btnVirar = veu.querySelector('[data-acao="cv-virar"]');
+  let blob = null, gravador = null, duracao = 0, camera = null, traseira = false;
+  campo.focus();
+
+  // A prévia: a imagem na tela ANTES de gravar, que é quando a escolha da
+  // câmera importa. Quem grava o responsável sentado do outro lado da mesa
+  // precisa da traseira; quem grava a si mesmo, da frontal.
+  const mostrarPrevia = async () => {
+    if (camera) encerrarStream(camera);
+    camera = await abrirCamera({ traseira });
+    video.srcObject = camera; video.src = ''; video.muted = true; video.controls = false;
+    video.style.display = 'block';
+    // A frontal é espelhada na tela, como todo aplicativo de selfie faz — sem
+    // isso a pessoa se vê ao contrário e não consegue se enquadrar. O ARQUIVO
+    // não é espelhado: prova invertida seria prova adulterada.
+    video.style.transform = traseira ? 'none' : 'scaleX(-1)';
+    video.play?.().catch(() => {});
+    btnAbrir.hidden = true; btnGravar.hidden = false;
+    btnVirar.hidden = !(await temDuasCameras());
+    estado.textContent = traseira ? 'Câmera de trás. Enquadre e comece.' : 'Câmera da frente. Enquadre e comece.';
+  };
+  const fecharCamera = () => { if (camera) { encerrarStream(camera); camera = null; } };
+
+  const marcarProva = (b, segundos) => {
+    blob = b; duracao = segundos || 0;
+    selo.textContent = 'com prova'; selo.className = 'selo ok';
+    const dizer = () => { estado.textContent = duracao
+      ? `Vídeo de ${duracao} s guardado aqui, ainda não enviado.`
+      : 'Vídeo guardado aqui, ainda não enviado.'; };
+    dizer();
+    video.srcObject = null; video.src = URL.createObjectURL(b); video.muted = false; video.controls = true;
+    video.style.display = 'block';
+    video.addEventListener('loadedmetadata', () => {
+      if (Number.isFinite(video.duration) && video.duration > 0) { duracao = Math.round(video.duration); dizer(); }
+    }, { once: true });
+  };
+
+  const encerrarGravacao = () => {
+    try { gravador?.cancelar(); } catch { /* já parou */ }
+    gravador = null; fecharCamera();
+  };
+
+  veu.addEventListener('click', comErro(async (e) => {
+    const a2 = e.target.dataset?.acao;
+    if (a2 === 'cv-cancelar' || e.target === veu) { encerrarGravacao(); fecharCamera(); veu.remove(); return; }
+
+    if (a2 === 'cv-escolher') { fecharCamera(); veu.querySelector('#cv-arquivo').click(); return; }
+
+    if (a2 === 'cv-abrir') {
+      if (!podeGravar()) { estado.textContent = 'Este aparelho não deixa gravar pelo navegador. Dá para escolher um vídeo já gravado.'; return; }
+      try { await mostrarPrevia(); }
+      catch { estado.textContent = 'Não consegui abrir a câmera. Confira a permissão do navegador, ou escolha um vídeo já gravado.'; }
+      return;
+    }
+
+    if (a2 === 'cv-virar') {
+      if (gravador) return;   // no meio da gravação, virar perderia o que já foi dito
+      traseira = !traseira;
+      try { await mostrarPrevia(); }
+      catch { traseira = !traseira; estado.textContent = 'Este aparelho não deixou trocar de câmera.'; }
+      return;
+    }
+
+    if (a2 === 'cv-gravar') {
+      if (gravador) { gravador.parar(); return; }
+      if (!camera) { await mostrarPrevia(); return; }
+      let segundos = 0;
+      btnGravar.textContent = 'Parar e usar este vídeo';
+      btnVirar.hidden = true;   // virar agora perderia o que já foi dito
+      gravador = await gravarVideoConsentimento({
+        stream: camera,
+        aoSegundo: (n) => { segundos = n; estado.textContent = `Gravando… ${n} s (para sozinho em 90 s)`; },
+        aoParar: (b) => {
+          gravador = null; camera = null;
+          btnGravar.hidden = true; btnAbrir.hidden = false; btnAbrir.textContent = 'Gravar de novo';
+          video.style.transform = 'none';
+          marcarProva(b, segundos);
+        },
+      });
+      return;
+    }
+
+    if (a2 !== 'cv-ok') return;
+    const responsavel = campo.value.trim();
+    if (!responsavel) { erro.textContent = 'É preciso informar quem consentiu.'; erro.style.display = 'block'; campo.focus(); return; }
+    encerrarGravacao();
+    e.target.disabled = true;
+    try {
+      for (const c of CAMPOS_DA_MATRICULA)
+        await post('/api/consentimento', { crianca_id: id, campo: c, status: 'ativo', responsavel });
+      if (blob) {
+        estado.textContent = 'Enviando o vídeo…';
+        await enviarEvidencia(blob, { id, responsavel, duracao });
+      }
+      veu.remove();
+      toast(blob
+        ? `Consentimento registrado com vídeo. O campo de ${nome} foi desbloqueado.`
+        : `Consentimento registrado. O campo de ${nome} foi desbloqueado.`, 'bom');
+      navegar();
+    } catch (err) {
+      e.target.disabled = false;
+      erro.textContent = err.message; erro.style.display = 'block';
+    }
+  }));
+
+  veu.querySelector('#cv-arquivo').addEventListener('change', (e) => {
+    const arq = e.target.files?.[0];
+    e.target.value = '';
+    if (arq) { btnGravar.hidden = true; btnAbrir.hidden = false; marcarProva(arq, 0); }
+  });
+  campo.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') veu.querySelector('[data-acao="cv-ok"]').click();
+  });
+}
+
+/** O upload é de BYTES CRUS, como o do áudio: base64 dentro de JSON inflaria
+ *  33% um arquivo de megabytes e esbarraria no teto de corpo do servidor. */
+async function enviarEvidencia(blob, { id, responsavel, duracao }) {
+  const q = new URLSearchParams({
+    crianca_id: String(id), campo: 'consentimento_em_video',
+    mime: blob.type || 'video/webm', responsavel,
+    ...(duracao ? { duracao: String(duracao) } : {}),
+  });
+  const r = await fetch(`/api/consentimento/evidencia?${q}`, {
+    method: 'POST', credentials: 'same-origin',
+    headers: { 'Content-Type': blob.type || 'application/octet-stream' },
+    body: blob,
+  });
+  const corpo = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(corpo.erro || 'Não consegui guardar o vídeo.');
+  return corpo;
+}
+
 // Modal com um campo — usado no registro de consentimento.
 // Substitui o prompt() nativo: mesma linguagem visual, foco gerenciado e Esc funciona.
 function modalCampo({ titulo, texto, rotulo, dica, confirmar }, aoConfirmar) {
@@ -4359,22 +4600,7 @@ document.addEventListener('click', comErro(async (ev) => {
   }
 
   if (a === 'consentir') {
-    const nome = alvo.dataset.nome;
-    const id = Number(alvo.dataset.id);
-    modalCampo({
-      titulo: 'Registrar consentimento',
-      texto: `Consentimento específico do responsável (LGPD Art. 14) para o registro socioemocional de ${nome}. `
-           + 'O registro fica gravado com o nome de quem consentiu e pode ser revogado a qualquer momento.',
-      rotulo: 'Quem é o responsável que consentiu?',
-      dica: 'Nome do responsável',
-      confirmar: 'Registrar e desbloquear',
-    }, comErro(async (responsavel) => {
-      for (const campo of ['rubrica_socioemocional', 'campo_livre']) {
-        await post('/api/consentimento', { crianca_id: id, campo, status: 'ativo', responsavel });
-      }
-      toast(`Consentimento registrado. O campo de ${nome} foi desbloqueado.`, 'bom');
-      navegar();
-    }));
+    modalConsentimento({ id: Number(alvo.dataset.id), nome: alvo.dataset.nome });
     return;
   }
 }));

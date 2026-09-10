@@ -1029,11 +1029,15 @@ export function painelConsentimentos() {
        JOIN consentimento co ON co.crianca_id = c.id
       WHERE c.ativo = 1 AND co.campo = 'rubrica_socioemocional'
       GROUP BY c.id ORDER BY (co.status='ativo'), c.nome`);
+  const provas = new Set(all(
+    `SELECT DISTINCT crianca_id FROM consentimento_evidencia`).map(l => l.crianca_id));
+  const comProva = linhas.map(l => ({ ...l, tem_prova: provas.has(l.id) }));
   return {
-    ativos: linhas.filter(l => l.status === 'ativo').length,
-    pendentes: linhas.filter(l => l.status !== 'ativo').length,
+    ativos: comProva.filter(l => l.status === 'ativo').length,
+    pendentes: comProva.filter(l => l.status !== 'ativo').length,
+    com_prova: comProva.filter(l => l.status === 'ativo' && l.tem_prova).length,
     governanca: all(`SELECT * FROM governanca_campo ORDER BY rowid`),
-    linhas,
+    linhas: comProva,
   };
 }
 

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { getDb, get } from './src/db.js';
 import { rotas, usuarioDa } from './src/api.js';
 import { invalidarSinais } from './src/passo/sinais.js';
+import * as EVI from './src/evidencia.js';
 import { semear } from './src/seed.js';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -18,8 +19,9 @@ const HOST = process.env.HOST || (process.env.PORT ? '0.0.0.0' : '127.0.0.1');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.png': 'image/png',
+  '.js': 'application/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
+  '.mp4': 'video/mp4', '.webm': 'video/webm',
 };
 
 function json(res, status, corpo, cookie) {
@@ -27,6 +29,19 @@ function json(res, status, corpo, cookie) {
   if (cookie) h['Set-Cookie'] = cookie;
   res.writeHead(status, h);
   res.end(JSON.stringify(corpo));
+}
+
+// O vídeo do consentimento e áudios sobem como bytes crus, não como JSON:
+// base64 num corpo JSON inflaria 33% um arquivo de dezenas de MB.
+async function lerBytes(req, teto) {
+  const partes = [];
+  let total = 0;
+  for await (const c of req) {
+    total += c.length;
+    if (total > teto) throw Object.assign(new Error('Arquivo grande demais.'), { status: 413 });
+    partes.push(c);
+  }
+  return Buffer.concat(partes);
 }
 
 async function lerCorpo(req) {
@@ -53,7 +68,11 @@ const servidor = createServer(async (req, res) => {
     try {
       const handler = rotas[rota];
       if (!handler) return json(res, 404, { erro: `Rota não encontrada: ${rota}` });
-      const corpo = ['POST', 'DELETE'].includes(req.method) ? await lerCorpo(req) : {};
+      const binaria = req.method === 'POST'
+        && ['/api/transcrever', '/api/consentimento/evidencia'].includes(url.pathname);
+      const corpo = binaria
+        ? await lerBytes(req, 32 * 1024 * 1024)
+        : (['POST', 'DELETE'].includes(req.method) ? await lerCorpo(req) : {});
       const saida = await handler(req, corpo, url.searchParams);
       // Todo POST/DELETE bem-sucedido pode ter mudado o estado que alimenta o
       // painel do Passo. Sem esta linha, o memo de 30 s de src/passo/sinais.js
@@ -64,6 +83,16 @@ const servidor = createServer(async (req, res) => {
         invalidarSinais(usuarioDa(req)?.id ?? null);
       const cookie = saida?._cookie;
       if (saida && typeof saida === 'object') delete saida._cookie;
+      // Saída BINÁRIA (o vídeo da prova de consentimento): nunca é estático de
+      // public/ — sai por aqui, depois do controle de acesso e do log.
+      if (saida && typeof saida === 'object' && Buffer.isBuffer(saida._arquivo)) {
+        res.writeHead(200, {
+          'Content-Type': saida._mime || 'application/octet-stream',
+          'Content-Length': saida._arquivo.length,
+          'Cache-Control': 'no-store, private',
+        });
+        return res.end(saida._arquivo);
+      }
       // Saída em arquivo (a planilha socioemocional, decisão 34): a rota
       // devolve `_csv` e o nome; tudo o mais continua JSON.
       if (saida && typeof saida === 'object' && typeof saida._csv === 'string') {
@@ -103,5 +132,14 @@ if (!get(`SELECT COUNT(*) AS n FROM educador`).n) {
   console.log('Banco vazio — semeando dados sintéticos...');
   semear();
 }
+
+try {
+  const r = EVI.reconciliar();
+  if (r.sem_linha.length || r.sem_arquivo.length) {
+    console.warn(`  [consentimento] ${r.sem_linha.length} arquivo(s) sem linha e `
+      + `${r.sem_arquivo.length} linha(s) sem arquivo em data/consentimento/. `
+      + `Nada foi apagado — isso é prova, e a decisão é da coordenação.`);
+  }
+} catch { /* diretório ainda não existe: nada a reconciliar */ }
 
 servidor.listen(PORTA, HOST, () => console.log(`\n  Percurso rodando em  http://localhost:${PORTA}  (${HOST})\n`));

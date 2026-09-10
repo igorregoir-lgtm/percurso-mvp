@@ -340,9 +340,7 @@ nav.barra-nav{
   display:flex; padding:6px 4px calc(6px + env(safe-area-inset-bottom));
   view-transition-name:nav;
 }
-/* o display:flex acima vence o [hidden] do UA — sem esta linha, a nav da
-   sessão anterior continuava visível na tela de entrada */
-nav.barra-nav[hidden]{display:none}
+[hidden]{display:none !important}
 nav.barra-nav a{
   flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:3px;
   padding:8px 2px; font-size:9.5px; font-weight:500; color:var(--muted);

@@ -206,6 +206,25 @@ const ESQUEMA_SQL = `
     UNIQUE (crianca_id, campo)
   );
 
+  -- PROVA DO CONSENTIMENTO (decisão 41). A LGPD põe o ônus da prova no
+  -- controlador (Art. 8º, §1º): dizer "o responsável consentiu" é afirmação,
+  -- não prova. O vídeo do responsável na matrícula é a prova.
+  CREATE TABLE IF NOT EXISTS consentimento_evidencia (
+    id            INTEGER PRIMARY KEY,
+    crianca_id    INTEGER NOT NULL REFERENCES crianca(id) ON DELETE CASCADE,
+    campo         TEXT NOT NULL REFERENCES governanca_campo(campo),
+    arquivo       TEXT NOT NULL,
+    mime          TEXT NOT NULL,
+    bytes         INTEGER NOT NULL,
+    duracao_s     INTEGER,
+    responsavel   TEXT NOT NULL,
+    registrado_por INTEGER NOT NULL REFERENCES educador(id),
+    criado_em     TEXT NOT NULL,
+    expira_em     TEXT
+  );
+  CREATE INDEX IF NOT EXISTS ix_evidencia_crianca ON consentimento_evidencia (crianca_id, campo);
+
+
   CREATE TABLE IF NOT EXISTS alerta (
     id            INTEGER PRIMARY KEY,
     crianca_id    INTEGER NOT NULL REFERENCES crianca(id) ON DELETE CASCADE,
