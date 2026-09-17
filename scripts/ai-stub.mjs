@@ -67,7 +67,7 @@ const servidor = createServer(async (req, res) => {
         // teste controla o enum e pode verificar o descarte de ação inválida.
         const enumAcao = js.schema?.properties?.acao?.anyOf?.find(x => x.enum)?.enum ?? [];
         conteudo = JSON.stringify({
-          resposta: 'Resposta canônica do Passo pelo stub: esta tela mostra o essencial do dia.',
+          resposta: 'Resposta canônica da Aurora pelo stub: esta tela mostra o essencial do dia.',
           fala: ultima.includes('__stub_fala_pseudonimo__') ? 'Sobre a Criança A: tudo certo.'
               : ultima.includes('__stub_fala_nula__') ? null
               : 'Esta tela mostra o essencial do dia.',

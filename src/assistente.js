@@ -1,23 +1,23 @@
-// Percurso — "Passo", o parceiro de percurso (assistente de navegação e uso).
+// Percurso — "Aurora", o parceiro de percurso (assistente de navegação e uso).
 //
 // DOUTRINA PRÓPRIA, além da herdada (plano auditado em revisao/07):
-//   1. O Passo responde SÓ sobre o produto. Pergunta reflexivo-pedagógica não
-//      vai ao modelo daqui: é redirecionada ao copilot (que tem RAG, 7 blocos
+//   1. A Aurora responde SÓ sobre o produto. Pergunta reflexivo-pedagógica não
+//      vai ao modelo daqui: abre o modo 'pensar junto' (que tem RAG, 7 blocos
 //      e verificador) — e, para a diretoria, à camada agregada (decisão 16).
 //   2. Diretoria + nome de criança = recusa determinística. Nada vai ao modelo
 //      nem à memória.
 //   3. A FALA é mais restrita que a tela: perímetro/recusa saem com fala nula;
 //      fala que contenha pseudônimo ou nome do roster é descartada no servidor.
 //   4. Ação é um catálogo FECHADO de navegação (enum na gramática) e sempre
-//      OFERTA — quem navega é o toque da pessoa, nunca o Passo.
+//      OFERTA — quem navega é o toque da pessoa, nunca a Aurora.
 //   5′. DOIS CANAIS, DUAS PERMISSÕES (substitui a doutrina 5 antiga, que dizia
-//      "o Passo não enxerga dado nenhum" e virou mentira no instante em que a
+//      "a Aurora não enxerga dado nenhum" e virou mentira no instante em que a
 //      sugestão passou a nascer de estado real — e limite declarado que virou
 //      mentira é pior do que a mudança):
 //      · CONVERSA (assistente(), este arquivo) continua CEGA: nada do banco
 //        entra no prompt de uma resposta a pergunta. Pergunta sobre um caso
 //        específico recebe o limite declarado, nunca um motivo inventado.
-//      · SUGESTÃO (src/passo/) enxerga CONTADORES do próprio dia da pessoa —
+//      · SUGESTÃO (src/aurora/) enxerga CONTADORES do próprio dia da pessoa —
 //        quantos, quantas datas, quantos dias. Nunca um nome, nunca uma ficha,
 //        nunca um nível, nunca um escore individual. Conta quantos, nunca quem.
 //      A exceção declarada: coordenação e diretoria recebem, no portão 3.5,
@@ -36,7 +36,7 @@ import { criarSessoes } from './sessoes.js';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-// O Passo com modelo herda o gate da PoC (decisão 19); AI_ASSISTENTE=0 desliga
+// A Aurora com modelo herda o gate da PoC (decisão 19); AI_ASSISTENTE=0 desliga
 // só ele, mantendo o copilot — kill switch independente.
 export const AI_ASSISTENTE = AI_ENABLED &&
   !['0', 'false'].includes(String(process.env.AI_ASSISTENTE ?? '').toLowerCase());
@@ -46,38 +46,39 @@ const MAX_TROCAS = 4;
 
 export function apagarSessaoAssistente(u, sessaoId) {
   memoria.apagar(u, String(sessaoId || ''));
-  return { ok: true, aviso: 'Conversa com o Passo apagada. Nada dela foi persistido.' };
+  return { ok: true, aviso: 'Conversa com a Aurora apagada. Nada dela foi persistido.' };
 }
 
 // ---------------------------------------------------------------------------
-// CATÁLOGO DE AÇÕES — fechado, só navegação. O Passo nunca grava nada.
+// CATÁLOGO DE AÇÕES — fechado, só navegação. A Aurora nunca grava nada.
 // ---------------------------------------------------------------------------
 export const CATALOGO_ACOES = [
   { id: 'hoje', rotulo: 'Hoje', hash: '#/hoje', papeis: ['educador', 'profissional'] },
   { id: 'chamada', rotulo: 'Chamada', hash: '#/chamada', papeis: ['educador', 'profissional'] },
-  { id: 'voz', rotulo: 'Contar como foi (voz)', hash: '#/voz', papeis: ['educador', 'profissional'] },
-  { id: 'folha', rotulo: 'Folha do dia', hash: '#/folha', papeis: ['educador', 'profissional'] },
-  { id: 'relato', rotulo: 'Relato do procedimento', hash: '#/relato', papeis: ['educador', 'profissional', 'coordenacao'] },
-  { id: 'recado', rotulo: 'Recado da turma (responsáveis)', hash: '#/recado', papeis: ['educador', 'profissional'] },
-  { id: 'pauta', rotulo: 'Pauta de segunda', hash: '#/pauta', papeis: ['educador'] },
-  { id: 'ciclo', rotulo: 'Agenda do ciclo', hash: '#/ciclo', papeis: ['educador', 'profissional'] },
+  { id: 'voz', rotulo: 'Contar como foi (voz)', hash: '#/registrar', papeis: ['educador', 'profissional'] },
+  { id: 'folha', rotulo: 'Folha do dia', hash: '#/registrar?passo=mao', papeis: ['educador', 'profissional'] },
+  { id: 'relato', rotulo: 'Relato do procedimento', hash: '#/sai-daqui?aba=relato', papeis: ['educador', 'profissional', 'coordenacao'] },
+  { id: 'recado', rotulo: 'Recado da turma (responsáveis)', hash: '#/sai-daqui?aba=recado', papeis: ['educador', 'profissional'] },
+  { id: 'pauta', rotulo: 'Pauta de segunda', hash: '#/hoje?detalhe=semana', papeis: ['educador'] },
+  { id: 'ciclo', rotulo: 'Agenda do ciclo', hash: '#/hoje?detalhe=ciclo', papeis: ['educador', 'profissional'] },
   { id: 'turma', rotulo: 'Painel da turma', hash: '#/turma', papeis: ['educador', 'profissional'] },
-  { id: 'criancas', rotulo: 'Crianças', hash: '#/criancas', papeis: ['educador', 'profissional', 'coordenacao'] },
+  { id: 'criancas', rotulo: 'Crianças', hash: '#/crianca', papeis: ['educador', 'profissional', 'coordenacao'] },
   // A entrada de GUIA 'alertas' existia sem par aqui: validarAcao('alertas')
   // devolvia null e a oferta "Ir para Alertas" sumia em silêncio.
-  { id: 'alertas', rotulo: 'Alertas de ausência', hash: '#/alertas', papeis: ['educador', 'profissional', 'coordenacao'] },
-  { id: 'copilot', rotulo: 'Refletir (copilot)', hash: '#/copilot', papeis: ['educador', 'profissional', 'coordenacao'] },
+  { id: 'alertas', rotulo: 'Alertas de ausência', hash: '#/hoje?detalhe=alertas', papeis: ['educador', 'profissional', 'coordenacao'] },
+  { id: 'pensar', rotulo: 'Pensar junto', hash: '#/pensar', papeis: ['educador', 'profissional', 'coordenacao'] },
   { id: 'painel', rotulo: 'Painel da coordenação', hash: '#/painel', papeis: ['coordenacao'] },
-  { id: 'scores', rotulo: 'Scores', hash: '#/scores', papeis: ['coordenacao'] },
-  { id: 'safras', rotulo: 'Safras', hash: '#/safras', papeis: ['coordenacao'] },
-  { id: 'sintese', rotulo: 'Síntese do ciclo', hash: '#/sintese', papeis: ['coordenacao'] },
+  { id: 'divulgar', rotulo: 'Divulgar (grupos e Instagram)', hash: '#/divulgar', papeis: ['coordenacao', 'diretoria'] },
+  { id: 'scores', rotulo: 'Scores', hash: '#/painel?aba=scores', papeis: ['coordenacao'] },
+  { id: 'safras', rotulo: 'Safras', hash: '#/painel?aba=safras', papeis: ['coordenacao'] },
+  { id: 'sintese', rotulo: 'Síntese do ciclo', hash: '#/painel?aba=sintese', papeis: ['coordenacao'] },
   { id: 'consentimentos', rotulo: 'Consentimentos', hash: '#/consentimentos', papeis: ['coordenacao'] },
-  { id: 'importar', rotulo: 'Importar planilha', hash: '#/importar', papeis: ['coordenacao'] },
+  { id: 'importar', rotulo: 'Importar planilha', hash: '#/pessoas?aba=importar', papeis: ['coordenacao'] },
   { id: 'pessoas', rotulo: 'Cadastrar pessoas', hash: '#/pessoas', papeis: ['coordenacao'] },
-  { id: 'arquivo', rotulo: 'Arquivo (quem saiu)', hash: '#/arquivo', papeis: ['coordenacao'] },
+  { id: 'arquivo', rotulo: 'Arquivo (quem saiu)', hash: '#/pessoas?aba=arquivo', papeis: ['coordenacao'] },
   { id: 'relatorio', rotulo: 'Relatório do doador', hash: '#/relatorio', papeis: ['diretoria'] },
-  { id: 'impacto', rotulo: 'Impacto (SROI)', hash: '#/impacto', papeis: ['diretoria'] },
-  { id: 'consulta', rotulo: 'Perguntar à base', hash: '#/consulta', papeis: ['diretoria'] },
+  { id: 'impacto', rotulo: 'Impacto (SROI)', hash: '#/relatorio?aba=impacto', papeis: ['diretoria'] },
+  { id: 'consulta', rotulo: 'Perguntar à base', hash: '#/relatorio?aba=consulta', papeis: ['diretoria'] },
 ];
 
 export const catalogoDoPapel = (papel) => CATALOGO_ACOES.filter(a => a.papeis.includes(papel));
@@ -92,24 +93,40 @@ export function validarAcao(id, papel) {
 // barra de endereço não pode virar canal lateral para o modelo, nem injeção
 // de instrução em mensagem de sistema.
 const ROTAS_CONHECIDAS = new Set([
-  ...CATALOGO_ACOES.map(a => a.hash),
-  '#/entrar', '#/alertas', '#/confirmar', '#/observacao', '#/crianca', '#/parecer',
+  ...CATALOGO_ACOES.map(a => a.hash.split('?')[0]),
+  '#/entrar', '#/registrar', '#/crianca',
 ]);
 /** Mesmo conjunto, exportado: é o vocabulário fechado de `tela` no perfil. */
-export const ROTAS_CONHECIDAS_PASSO = ROTAS_CONHECIDAS;
+export const ROTAS_CONHECIDAS_AURORA = ROTAS_CONHECIDAS;
 export function telaSegura(tela) {
   const rota = String(tela ?? '').split('?')[0];
   if (ROTAS_CONHECIDAS.has(rota)) return rota;
-  const m = rota.match(/^(#\/(?:crianca|observacao|parecer))\/\d+$/);   // fichas com id numérico
+  const m = rota.match(/^(#\/crianca)\/\d+$/);   // a ficha, com id numérico
   return m ? m[1] : '';
 }
 
 // ---------------------------------------------------------------------------
-// GUIA — fonte única de conhecimento do Passo. Dois níveis: a TELA (o que é)
+// GUIA — fonte única de conhecimento da Aurora. Dois níveis: a TELA (o que é)
 // e as TAREFAS (como fazer), com intenções para o casamento determinístico.
-// `naoEnxergo`: o limite declarado — o Passo não vê dado nenhum.
+// `naoEnxergo`: o limite declarado — a Aurora não vê dado nenhum.
 // ---------------------------------------------------------------------------
 export const GUIA = [
+  {
+    id: 'divulgar', papeis: ['coordenacao', 'diretoria'],
+    oQueE: 'Divulgar é onde os grupos de WhatsApp e o perfil de Instagram do Instituto ficam cadastrados, e de onde sai o recado da turma, a carta do período e o card com os números. O Percurso monta o texto e guarda a fila de quem já recebeu; o envio é seu.',
+    chips: ['Por que não manda para todos os grupos de uma vez?', 'Como cadastro um grupo?', 'O que pode ir para cada grupo?'],
+    tarefas: [
+      { intencoes: ['todos os grupos', 'de uma vez', 'um botão só', 'automatico', 'automático'],
+        resposta: 'Não existe caminho para um site postar num grupo de WhatsApp já existente: a API oficial da Meta só cria grupos novos de até oito pessoas, e as bibliotecas que postam em grupo violam os Termos — o preço possível é o número do Instituto. O que o Percurso tira do caminho é o resto: o texto sai montado e copiado uma vez só, os grupos já estão cadastrados, e a fila lembra quais já receberam.',
+        acao: 'divulgar' },
+      { intencoes: ['cadastrar grupo', 'link do grupo', 'novo grupo'],
+        resposta: 'No WhatsApp, abra o grupo → Dados do grupo → Convidar por link → Copiar. Em Divulgar, abra "Cadastrar um grupo ou perfil" e cole esse link. O Percurso guarda o link do convite, nunca o telefone de ninguém.',
+        acao: 'divulgar' },
+      { intencoes: ['o que pode ir', 'pode mandar', 'pais recebem'],
+        resposta: 'O público do canal decide: grupo de responsáveis recebe o recado da turma, que é agregado e sem nome; apoiadores e Instagram recebem a carta e o card do período, que são agregados com supressão. Lista nominal de presença não sai para grupo nenhum — é repasse do dado de cada criança a terceiros.',
+        acao: 'divulgar' },
+    ],
+  },
   {
     id: 'hoje', papeis: ['educador', 'profissional'],
     oQueE: 'A tela Hoje é o ponto de partida da educadora: mostra a chamada do dia, a folha do dia, a agenda do ciclo e o que precisa de atenção nesta semana.',
@@ -131,14 +148,21 @@ export const GUIA = [
     ],
   },
   {
-    id: 'voz', papeis: ['educador', 'profissional'],
-    oQueE: 'Em "Contar como foi", você fala por até 40 segundos sobre o encontro da TURMA e o Percurso transforma a fala em campos — que você confere e confirma antes de qualquer coisa ser gravada.',
-    chips: ['Como funciona a captura por voz?', 'O áudio fica gravado?', 'E se eu preferir escrever?'],
+    // UM guia para os três passos: contar por voz, preencher à mão e conferir
+    // viraram uma tela só (F2), e três guias com o mesmo hash fariam `guiaDe`
+    // responder sempre pelo primeiro — os outros dois virariam texto morto.
+    id: 'registrar', papeis: ['educador', 'profissional'],
+    oQueE: 'Em "Registrar" você conta o encontro da TURMA — falando ou escrevendo — e o Percurso transforma em campos, que você confere antes de qualquer coisa ser gravada.',
+    chips: ['Como funciona a captura por voz?', 'O áudio fica gravado?', 'E se eu preferir escrever?', 'Já foi gravado?'],
     tarefas: [
       { intencoes: ['gravar', 'falar', 'voz', 'microfone', 'audio', 'conto como', 'contar como foi', 'como foi o encontro', 'relato do encontro'], resposta: 'Toque no microfone grande, fale sobre o encontro da turma (atividade, tema, como o grupo esteve) e toque em Terminei. Os campos se preenchem sozinhos para você conferir — nada é gravado antes do seu "Confirmar e guardar".', acao: 'voz' },
-      { intencoes: ['audio fica', 'gravacao', 'fica gravado', 'guardado o audio'], resposta: 'O áudio nunca sai do seu aparelho e nunca chega ao servidor: o navegador transcreve na hora, o texto é usado para preencher os campos e morre na confirmação. Não existe gravação de voz no Percurso.', acao: null },
+      { intencoes: ['audio fica', 'gravacao', 'fica gravado', 'guardado o audio'], resposta: 'Depende do caminho, e a tela diz qual é. Na captura curta quem transcreve é o navegador — no aparelho, quando ele sabe fazer. Na narração longa, no encontro gravado e no arquivo trazido, o áudio vai para o computador do Instituto e é apagado assim que vira texto. O Percurso nunca guarda áudio.', acao: null },
       { intencoes: ['escrever', 'digitar', 'sem falar', 'teclado'], resposta: 'Prefere escrever? Na mesma tela há o campo de texto — ou use "Preencher à mão" na folha do dia. A voz é atalho, nunca obrigação.', acao: 'folha' },
       { intencoes: ['nome de crianca', 'posso falar nome', 'falar da crianca'], resposta: 'Fale da TURMA, não de uma criança. Se algo sensível sobre alguém escapar, o filtro de proteção segura o trecho: ele não vira campo, não é gravado, e a tela orienta o caminho humano (coordenação).', acao: null },
+      { intencoes: ['preench', 'registrar a folha', 'como faco a folha', 'campos'], resposta: 'Toque em "Prefiro escrever": escolha a atividade e a área, marque como a turma esteve e quantos pediram ajuda, e guarde. A voz faz o mesmo caminho falando — nenhum dos dois grava nada sem a sua confirmação.', acao: 'folha' },
+      { intencoes: ['ajustar', 'corrig', 'editar', 'mudar depois', 'errado', 'errou'], resposta: 'Ajuste qualquer campo à vontade — vale o que você confirmar, não o que a extração sugeriu. E dá para ajustar depois: abra a mesma data e registre de novo; o que você confirmar por último é o que vale.', acao: 'folha' },
+      { intencoes: ['diferenca', 'voz ou folha', 'em vez de falar'], resposta: 'Falar e escrever preenchem os MESMOS campos, na mesma tela: a voz é atalho, escrever é o caminho à mão. A escolha é sua, todo dia.', acao: null },
+      { intencoes: ['ja foi gravado', 'já foi gravado', 'salvou', 'ta gravado', 'está gravado'], resposta: 'Ainda não: o passo de conferir existe exatamente para isso. Só o seu toque em confirmar grava — e a transcrição morre nesse momento.', acao: null },
     ],
   },
   {
@@ -166,20 +190,11 @@ export const GUIA = [
     tarefas: [],
   },
   {
-    id: 'criancas', papeis: ['educador', 'profissional', 'coordenacao'],
-    oQueE: 'A lista de Crianças abre a ficha viva de cada uma: matrículas, presença, trajetória categórica e consentimentos. Educadora vê as crianças das próprias turmas.',
-    chips: ['Como encontro uma criança?', 'O que tem na ficha?'],
-    naoEnxergo: 'Eu não abro a ficha de ninguém — eu só te levo até a lista.',
-    tarefas: [
-      { intencoes: ['buscar', 'busca', 'encontrar', 'encontro uma', 'encontro a crianca', 'procur', 'achar', 'acho', 'lista de crianca'], resposta: 'Na tela Crianças, use a busca por nome ou código — a lista mostra as crianças das suas turmas. Toque no nome para abrir a ficha viva.', acao: 'criancas' },
-    ],
-  },
-  {
     id: 'copilot', papeis: ['educador', 'profissional', 'coordenacao'],
-    oQueE: 'O Refletir é a sala de reflexão pedagógica: você descreve uma situação da turma e o copilot local devolve perguntas, hipóteses rotuladas, alternativas e contraponto — com fontes do corpus aprovado. A decisão é sempre sua.',
-    chips: ['O que é o Refletir?', 'O que ele nunca faz?'],
+    oQueE: 'Pensar junto é a mesma Aurora, com tempo. Aqui na gaveta eu respondo do guia, na hora. Ali eu consulto as fontes do corpus e devolvo perguntas, hipóteses rotuladas, alternativas e contraponto — leva mais tempo, e a decisão continua sendo sua.',
+    chips: ['O que é pensar junto?', 'O que a Aurora nunca faz?'],
     tarefas: [
-      { intencoes: ['refletir', 'copilot', 'reflexao', 'conversar sobre a turma'], resposta: 'Para refletir sobre uma situação pedagógica, o lugar é o Refletir: descreva a situação (sem nomear criança) e receba perguntas socráticas, hipóteses e alternativas com fontes. Eu sou só o guia do produto — a reflexão de verdade mora lá.', acao: 'copilot' },
+      { intencoes: ['refletir', 'pensar junto', 'reflexao', 'conversar sobre a turma'], resposta: 'Descreva a situação — sem nomear criança — e eu penso junto: perguntas, hipóteses e alternativas, com as fontes que eu consultei. Aqui na gaveta eu respondo do guia; para pensar junto eu preciso de mais tempo e abro a sala.', acao: 'pensar' },
     ],
   },
   {
@@ -269,27 +284,9 @@ export const GUIA = [
     chips: ['O que posso perguntar aqui?'],
     tarefas: [],
   },
-  // As entradas abaixo ficam DEPOIS de 'criancas' de propósito: guiaDe casa
-  // por startsWith e '#/criancas' precisa vencer antes de '#/crianca'.
-  {
-    id: 'folha', papeis: ['educador', 'profissional'],
-    oQueE: 'A Folha do dia é o registro à mão do encontro da TURMA — atividade, área temática, como o grupo esteve e quantos pediram ajuda: os mesmos campos que a voz preenche.',
-    chips: ['Como preencho a folha?', 'Posso ajustar depois?', 'Qual a diferença para a voz?'],
-    tarefas: [
-      { intencoes: ['preench', 'registrar a folha', 'como faco a folha', 'campos'], resposta: 'Escolha a atividade e a área, marque como a turma esteve e quantos pediram ajuda, e guarde. A voz faz o mesmo caminho falando — nenhum dos dois grava nada sem a sua confirmação.', acao: 'folha' },
-      { intencoes: ['ajustar', 'corrig', 'editar', 'mudar depois'], resposta: 'Dá para ajustar enquanto o dia não fecha: abra a mesma data e registre de novo — o que você confirmar por último é o que vale.', acao: 'folha' },
-      { intencoes: ['diferenca', 'voz ou folha', 'em vez de falar'], resposta: 'Voz e folha preenchem os MESMOS campos: a voz é atalho, a folha é o caminho à mão. A escolha é sua, todo dia.', acao: null },
-    ],
-  },
-  {
-    id: 'confirmar', papeis: ['educador', 'profissional'],
-    oQueE: 'A tela "O que entendi" mostra os campos extraídos da sua fala para você conferir e ajustar — NADA é gravado antes do seu toque em confirmar, e a transcrição é descartada nesse momento.',
-    chips: ['Já foi gravado?', 'Posso corrigir um campo?', 'E se estiver tudo errado?'],
-    tarefas: [
-      { intencoes: ['ja foi gravado', 'já foi gravado', 'salvou', 'ta gravado', 'está gravado'], resposta: 'Ainda não: esta tela existe exatamente para você conferir antes. Só o seu toque em confirmar grava — e a transcrição morre nesse momento.', acao: null },
-      { intencoes: ['corrig', 'ajustar', 'mudar', 'errado', 'errou'], resposta: 'Ajuste qualquer campo à vontade — vale o que você confirmar, não o que a extração sugeriu. Se estiver tudo errado, descarte e conte de novo, ou preencha à mão na folha.', acao: null },
-    ],
-  },
+  // ATENÇÃO À ORDEM, e agora também à barra: com a fusão da F2 a lista e a ficha
+  // vivem no MESMO hash (`#/crianca` e `#/crianca/7`), então `startsWith` casa
+  // nas duas. `guiaDe` passou a exigir a fronteira depois do id.
   {
     id: 'alertas', papeis: ['educador', 'profissional', 'coordenacao'],
     oQueE: 'Os Alertas de ausência disparam com faltas consecutivas na chamada — para agir antes de virar evasão: a coordenação liga para a família e a tratativa fica registrada.',
@@ -310,11 +307,15 @@ export const GUIA = [
     ],
   },
   {
+    // A busca e a ficha eram dois guias porque eram duas telas. A F2 fundiu as
+    // telas; manter dois guias com o mesmo hash faria `guiaDe` responder sempre
+    // pelo primeiro e o outro viraria texto morto.
     id: 'crianca', papeis: ['educador', 'profissional', 'coordenacao'],
-    oQueE: 'A ficha viva mostra o percurso de uma criança — presença, observações e evolução — sempre dentro do escopo das suas turmas e do consentimento registrado.',
+    oQueE: 'A tela Crianças busca por nome ou código e abre a ficha viva: matrículas, presença, trajetória, o olhar do ciclo e o parecer. Educadora vê as crianças das próprias turmas.',
     naoEnxergo: 'Eu não abro o conteúdo de nenhuma ficha — só sei explicar o que a tela mostra e por que algo pode estar fechado.',
-    chips: ['O que é esta tela?', 'Por que uma ficha não abre?', 'O que significa bloqueada?'],
+    chips: ['Como encontro uma criança?', 'Por que uma ficha não abre?', 'O que tem na ficha?'],
     tarefas: [
+      { intencoes: ['buscar', 'busca', 'encontrar', 'encontro uma', 'encontro a crianca', 'procur', 'achar', 'acho', 'lista de crianca'], resposta: 'Use a busca por nome ou código no topo da tela Crianças — a lista mostra as crianças das suas turmas. Toque no nome para abrir a ficha viva.', acao: 'criancas' },
       { intencoes: ['nao abre', 'não abre', 'bloquead', 'sem acesso', 'fechada'], resposta: 'A ficha só abre para quem convive com a criança (escopo de turma) e respeita o consentimento registrado. Se estiver bloqueada, o caminho é a coordenação — eu não abro a ficha de nenhum caso.', acao: null },
     ],
   },
@@ -325,17 +326,23 @@ export const GUIA = [
 // ---------------------------------------------------------------------------
 const semAcento = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-const guiaDe = (tela) => GUIA.find(g => tela && tela.startsWith(`#/${g.id}`)) ?? null;
+const guiaDe = (tela) => GUIA.find(g => {
+  if (!tela) return false;
+  const alvo = `#/${g.id}`;
+  // Fronteira obrigatória: sem ela `#/crianca` casaria em `#/criancas` (e o
+  // inverso), e o guia de uma tela responderia pela outra.
+  return tela === alvo || tela.startsWith(`${alvo}/`) || tela.startsWith(`${alvo}?`);
+}) ?? null;
 export const guiaDoPapel = (papel) => GUIA.filter(g => g.papeis.includes(papel));
 
-// Vocabulário do produto — o domínio do Passo. Fora dele, o modelo não responde.
+// Vocabulário do produto — o domínio da Aurora. Fora dele, o modelo não responde.
 const VOCABULARIO = new Set([
-  'percurso', 'tela', 'app', 'aplicativo', 'sistema', 'ajuda', 'passo',
+  'percurso', 'tela', 'app', 'aplicativo', 'sistema', 'ajuda', 'aurora',
   'chamada', 'presenca', 'presente', 'falta', 'cronometro', 'salvar',
   'folha', 'voz', 'gravar', 'microfone', 'audio', 'ditado', 'terminei',
   'ciclo', 'observacao', 'observar', 'rubrica', 'ancora', 'bloquead',
   'pauta', 'sugestao', 'painel', 'ficha', 'busca',
-  'copilot', 'refletir', 'score', 'scores', 'safra', 'safras', 'evasao',
+  'pensar', 'refletir', 'score', 'scores', 'safra', 'safras', 'evasao',
   'sintese', 'revisor', 'consentimento', 'consentimentos', 'importar', 'planilha',
   'relatorio', 'doador', 'supressao', 'impacto', 'sroi', 'cenario', 'consulta',
   'cobertura', 'calibra', 'alerta', 'registro', 'registrar', 'retomar', 'navega',
@@ -349,7 +356,8 @@ export function dominioDoProduto(texto) {
 
 // Pergunta reflexivo-pedagógica tem PRECEDÊNCIA sobre o vocabulário: "como
 // lidar com uma criança que bate" menciona palavras do produto, mas é conversa
-// para o copilot (com RAG, 7 blocos e verificador) — nunca para o Passo.
+// para o modo 'pensar junto' (com RAG, 7 blocos e verificador) — nunca para a
+// conversa da gaveta, que é CEGA ao banco e responde só do guia.
 const REFLEXIVA = /(como lidar|o que fa[çc]o com|o que fazer com|como agir|como ajudar|se comporta|comportamento|briga|bate\b|morde|birra|agressiv|agitad|dispers|nao participa|não participa|timid|conflito|disciplina)/;
 export function pareceReflexiva(texto) {
   return REFLEXIVA.test(semAcento(texto));
@@ -429,16 +437,16 @@ export function limparFala(fala, roster) {
 
 const REDIRECIONAMENTO = {
   educador: {
-    resposta: 'Essa é uma conversa para a sala de reflexão, não para mim — eu sou o guia do produto. No Refletir, o copilot pensa junto com você: perguntas, hipóteses e alternativas, com fontes. Quer ir até lá?',
-    acaoId: 'copilot',
+    resposta: 'Isso eu penso com você — mas não aqui, que é resposta de guia, na hora. Abro a sala onde eu consulto as fontes e devolvo perguntas, hipóteses e alternativas. Quer?',
+    acaoId: 'pensar',
   },
   profissional: {
-    resposta: 'Essa é uma conversa para a sala de reflexão, não para mim — eu sou o guia do produto. No Refletir, o copilot pensa junto com você: perguntas, hipóteses e alternativas, com fontes. Quer ir até lá?',
-    acaoId: 'copilot',
+    resposta: 'Isso eu penso com você — mas não aqui, que é resposta de guia, na hora. Abro a sala onde eu consulto as fontes e devolvo perguntas, hipóteses e alternativas. Quer?',
+    acaoId: 'pensar',
   },
   coordenacao: {
-    resposta: 'Essa é uma conversa para a sala de reflexão, não para mim — eu sou o guia do produto. No Refletir, o copilot pensa junto com você: perguntas, hipóteses e alternativas, com fontes. Quer ir até lá?',
-    acaoId: 'copilot',
+    resposta: 'Isso eu penso com você — mas não aqui, que é resposta de guia, na hora. Abro a sala onde eu consulto as fontes e devolvo perguntas, hipóteses e alternativas. Quer?',
+    acaoId: 'pensar',
   },
   diretoria: {
     resposta: 'Eu sou o guia do produto e a diretoria trabalha sobre a camada agregada — conversa pedagógica sobre situações de turma é da equipe que convive com as crianças. Posso te ajudar com o relatório, o impacto ou a consulta à base.',
@@ -446,7 +454,7 @@ const REDIRECIONAMENTO = {
   },
 };
 
-let PROMPT_PASSO = null;
+let PROMPT_AURORA = null;
 
 // Import tardio de propósito: relatorio.js importa domain/scores/db, e o topo
 // deste arquivo é lido por módulos que não querem esse peso. `consultar` lança
@@ -473,7 +481,7 @@ export function pareceQuantitativa(texto) {
 }
 
 // ---------------------------------------------------------------------------
-// O pipeline do Passo.
+// O pipeline da Aurora.
 // ---------------------------------------------------------------------------
 export async function assistente(u, { message, session_id, tela }) {
   const texto = String(message ?? '').trim();
@@ -562,7 +570,7 @@ export async function assistente(u, { message, session_id, tela }) {
   // 4. porta lateral fechada. Dois casos distintos, duas respostas distintas:
   //    (a) pergunta REFLEXIVA (precedência sobre o vocabulário) → o lugar é o
   //        copilot (educador/coordenação) ou a equipe (diretoria);
-  //    (b) fora do produto de modo geral → o Passo declara o próprio limite,
+  //    (b) fora do produto de modo geral → a Aurora declara o próprio limite,
   //        SEM empurrar para o copilot (capital da França não é reflexão).
   if (pareceReflexiva(pergunta)) {
     const red = REDIRECIONAMENTO[u.papel] ?? REDIRECIONAMENTO.educador;
@@ -606,17 +614,17 @@ export async function assistente(u, { message, session_id, tela }) {
   };
 
   // 6. com modelo: o Qwen refina dentro do domínio; QUALQUER falha (fora do
-  //    ar, timeout, fila cheia, saída ruim) cai no guia — nunca 503 para o Passo.
+  //    ar, timeout, fila cheia, saída ruim) cai no guia — nunca 503 para a Aurora.
   if (AI_ASSISTENTE) {
     try {
-      PROMPT_PASSO ??= readFileSync(join(RAIZ, 'ai', 'prompts', 'assistente-passo.md'), 'utf8')
+      PROMPT_AURORA ??= readFileSync(join(RAIZ, 'ai', 'prompts', 'assistente-aurora.md'), 'utf8')
         .split('\n---\n').pop().trim();
       const catalogo = catalogoDoPapel(u.papel);
       const guiaCompacto = guiaDoPapel(u.papel).map(g =>
         `[${g.id}] ${g.oQueE}${g.naoEnxergo ? ' LIMITE: ' + g.naoEnxergo : ''}\n` +
         g.tarefas.map(tf => `  - ${tf.resposta}`).join('\n')).join('\n');
       const schema = {
-        name: 'assistente_passo',
+        name: 'assistente_aurora',
         schema: {
           type: 'object',
           required: ['resposta', 'fala', 'acao'],
@@ -635,7 +643,7 @@ export async function assistente(u, { message, session_id, tela }) {
       const { objeto } = await comVaga(() => conversar({
         papel: 'reflexivo', schema, maxTokens: 320,
         mensagens: [
-          { role: 'system', content: PROMPT_PASSO },
+          { role: 'system', content: PROMPT_AURORA },
           { role: 'system', content: `GUIA DO PRODUTO (sua única fonte — não invente nada fora dele):\n${guiaCompacto}\n\nTELA ATUAL da pessoa: ${tela || 'desconhecida'} · PAPEL: ${u.papel}\nAÇÕES possíveis (ids): ${catalogo.map(a => `${a.id}=${a.rotulo}`).join(', ')}` },
           ...historico,
           { role: 'user', content: pergunta },

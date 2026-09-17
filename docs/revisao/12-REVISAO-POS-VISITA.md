@@ -1,5 +1,10 @@
 # Revisão adversarial da implementação pós-visita — e o ciclo de correção
 
+> **Nota de 03/09/2026 — o assistente mudou de nome.** O que este documento chama de
+> **Passo** hoje se chama **Aurora**, com ícone de girassol. O texto abaixo fica como foi
+> escrito: é registro do que se decidiu na época, e reescrevê-lo apagaria a data da decisão.
+> O estado atual está em [`DECISOES-TECNICAS.md`](../DECISOES-TECNICAS.md).
+
 > Par do [`11-PLANO-POS-VISITA.md`](11-PLANO-POS-VISITA.md). O método é o de sempre: plano →
 > revisão do plano → implementação → **revisão da implementação** → correção, em ciclo. Aqui está
 > o que a revisão achou depois das etapas E1–E8, o que foi corrigido no mesmo ciclo, o que ficou

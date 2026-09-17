@@ -1,4 +1,4 @@
-# Handoff — 03/09/2026, 02/09/2026 (pós-visita) e 25/08/2026
+# Handoff — 05/09, 04/09, 03/09, 02/09/2026 (pós-visita) e 25/08/2026
 
 
 > **Sessão de revisão do repositório (03/09/2026).** Varredura em busca de erros e lacunas —
@@ -25,7 +25,7 @@
 >
 > **1. O protocolo de validação passou para a psicóloga.** As seis tarefas eram de pedagoga e duas
 > delas são **inexecutáveis** por ela — a turma da Vivência está fora da rubrica e `#/ciclo`
-> responde 422 (`src/api.js:308`). Refeitas a partir do task flow do Exercício 03
+> responde 422 (`src/api.js:323`). Refeitas a partir do task flow do Exercício 03
 > (`docs/task-flow/`); a versão pedagoga virou a §3.4 de `VALIDACAO-USUARIO.md`. Nasceu
 > `scripts/preparar-sessao.mjs`: sem ele a sessão começa com o trabalho já feito, porque a seed
 > entrega o último sábado registrado. Com `--lapso` ele destrava o Protocolo do Lapso, que até
@@ -105,7 +105,7 @@
 > uma ao CONTEÚDO esperado e recusa citação nova sem âncora. Renumerar sem conferir passou a
 > quebrar o teste, que diz qual saiu do lugar. **Ao mover código, rode `npm run test:unit` antes de
 > concluir que a documentação está certa.** O histórico do problema: O botão do recado era citado como
-> `public/app.js:508` em três documentos; a linha é a **509**. Varri todas as **18** citações dos
+> `public/app.js:510` em três documentos; a linha é a **509**. Varri todas as **18** citações dos
 > docs e corrigi todas — inclusive as cinco de `docs/revisao/09-PLANO-PASSO-PROATIVO.md`, por
 > decisão sua. Duas delas **não eram erro de numeração**, e é o achado que vale guardar:
 > `periodosSugeridos()` tinha saído mesmo de `src/api.js` para `src/relatorio.js:440`, e o `GUIA`
@@ -221,11 +221,11 @@ Tudo commitado e no `main` de https://github.com/igorregoir-lgtm/percurso-mvp �
 6ce0e15  As duas pendências da revisão: controle de tipo e resumo do dia
 5051eed  Revisão da implementação: 28 achados, 4 bloqueantes corrigidos
 f4d865d  Decisão 27 e dois defeitos de integração
-d7169b7  Passo proativo: o Qwen orquestrando o painel (passo 6) + 17 testes
-eb71ede  Passo proativo: a memória de uso, que nasce desligada (passo 5)
-59294be  Passo proativo: a superfície no cliente (passo 4 do plano)
-6f70e4b  Passo proativo: 20 achados da revisão adversarial do plano
-b65cccf  Passo proativo: fundação determinística (sinais, catálogo, ranking, painel)
+d7169b7  Aurora proativo: o Qwen orquestrando o painel (passo 6) + 17 testes
+eb71ede  Aurora proativo: a memória de uso, que nasce desligada (passo 5)
+59294be  Aurora proativo: a superfície no cliente (passo 4 do plano)
+6f70e4b  Aurora proativo: 20 achados da revisão adversarial do plano
+b65cccf  Aurora proativo: fundação determinística (sinais, catálogo, ranking, painel)
 13f560a  Relatório do doador: tom de carta e ordem de leitura do doador
 ```
 
@@ -237,13 +237,13 @@ b65cccf  Passo proativo: fundação determinística (sinais, catálogo, ranking,
 quem doa; o bloco dos sonhos passou a **fechar** o conteúdo, porque terminar no que ainda falta
 é o único pedido honesto que um relatório assim pode fazer.
 
-**O Passo virou parceiro proativo** (decisão 27, `docs/DECISOES-TECNICAS.md`). Seis módulos novos
-em `src/passo/`: `sinais` (envelope de contadores), `catalogo` (54 sugestões nos quatro tipos,
+**A Aurora virou parceiro proativo** (decisão 27, `docs/DECISOES-TECNICAS.md`). Seis módulos novos
+em `src/aurora/`: `sinais` (envelope de contadores), `catalogo` (54 sugestões nos quatro tipos,
 vivas nos três papéis), `ranking` (puro), `painel` (a cola), `perfil` (memória, banco derivado),
 `orquestrador` (o Qwen). Mais `src/fila-modelo.js`, extraído do copilot para que o orquestrador
 possa falar com o modelo **sem alcançar o banco nem transitivamente**.
 
-**A doutrina 5 foi trocada, não contornada.** Ela dizia "o Passo não enxerga dado nenhum" e
+**A doutrina 5 foi trocada, não contornada.** Ela dizia "a Aurora não enxerga dado nenhum" e
 virou mentira quando a sugestão passou a nascer de estado real. A frase foi reescrita nos **nove**
 lugares para o que passou a ser verdade: **conta quantos, nunca quem**. Num produto que se
 sustenta em limites declarados serem verdadeiros, limite que virou mentira é pior que a mudança.
@@ -292,7 +292,7 @@ Quem for mexer precisa saber **por que** cada uma existe, senão vai "simplifica
 o defeito:
 
 - **Teto de UMA pendência por painel** (`ranking.js`). Cada item pode ser gentil e o **somatório**
-  ser cobrança diária. É a trava que impede o Passo de virar chefe.
+  ser cobrança diária. É a trava que impede a Aurora de virar chefe.
 - **A memória nasce DESLIGADA**, com convite de um toque na primeira abertura. Num produto onde
   tudo é opt-in, a única coisa que grava algo sobre a **pessoa** não podia ser a exceção.
 - **Nunca o nome da turma** em texto nenhum: `turma.educador_id` é 1:1, então "a turma X está sem
@@ -377,10 +377,10 @@ Cada ciclo desta sessão deixou registro, e ler o registro é mais barato que re
 
 | documento | o que contém |
 |---|---|
-| `docs/DECISOES-TECNICAS.md` | decisões **27** (Passo proativo) e **28** (redação por modelo) |
+| `docs/DECISOES-TECNICAS.md` | decisões **27** (Aurora proativo) e **28** (redação por modelo) |
 | `docs/revisao/09-PLANO-PASSO-PROATIVO.md` | o plano, de um painel de 4 propostas × 3 juízes |
 | `docs/revisao/10-REVISAO-PASSO-PROATIVO.md` | 28 achados da revisão da implementação + adendo do Qwen |
-| `docs/revisao/07` e `08` | o ciclo anterior do Passo |
+| `docs/revisao/07` e `08` | o ciclo anterior da Aurora |
 | `docs/METODOLOGIA-VALIDACAO-PERCURSO.md` | hipóteses, limiares com fonte, Protocolo do Lapso, ameaças à validade |
 | `docs/VALIDACAO-USUARIO.md` | o protocolo da sessão e onde o resultado é registrado (§6, em branco) |
 | `docs/visita-ebenezer/` | execução em campo: roteiros e cartões de Igor, do grupo e dos alunos |

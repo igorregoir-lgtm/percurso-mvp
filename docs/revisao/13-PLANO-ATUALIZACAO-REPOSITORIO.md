@@ -1,5 +1,10 @@
 # 13 · Plano de atualização do repositório — 02/09/2026
 
+> **Nota de 03/09/2026 — o assistente mudou de nome.** O que este documento chama de
+> **Passo** hoje se chama **Aurora**, com ícone de girassol. O texto abaixo fica como foi
+> escrito: é registro do que se decidiu na época, e reescrevê-lo apagaria a data da decisão.
+> O estado atual está em [`DECISOES-TECNICAS.md`](../DECISOES-TECNICAS.md).
+
 > **O que este documento é.** O inventário do que mudou no artefato desde a visita de campo
 > (29/08/2026), o que ficou **incoerente** por causa dessas mudanças, e o que fazer a respeito —
 > incluindo o protótipo navegável completo, que é a última peça do artefato ainda declarada

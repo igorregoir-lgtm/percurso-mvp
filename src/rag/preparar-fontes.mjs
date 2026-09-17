@@ -8,7 +8,7 @@
 //   HTML (planalto, windows-1252) → decodifica → remove <strike>/<del> (texto
 //     revogado não entra no corpus) → strip de tags → entidades → normaliza.
 //   BNCC (texto extraído via `pdftotext -layout -enc UTF-8 bncc.pdf bncc.txt`,
-//     passo manual documentado no manifest) → fatia por capítulo (linhas fixas
+//     aurora manual documentado no manifest) → fatia por capítulo (linhas fixas
 //     da versão de 2018) → normaliza.
 //
 // Uso:  node src/rag/preparar-fontes.mjs      (grava corpus/ e imprime hashes)

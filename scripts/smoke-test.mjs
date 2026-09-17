@@ -27,6 +27,12 @@ async function req(quem, caminho, opts = {}) {
 }
 const GET = (quem, c) => req(quem, c);
 const POST = (quem, c, b) => req(quem, c, { method: 'POST', body: JSON.stringify(b || {}) });
+const DELETE = (quem, c, b) => req(quem, c, { method: 'DELETE', body: JSON.stringify(b || {}) });
+
+// SESSÃO (decisão 51, que revogou a senha da 39). Entrar é escolher quem está
+// usando: o corpo leva só o id, e a resposta traz o token opaco no cookie. É o
+// mesmo caminho que a educadora percorre na tela.
+const ENTRAR = (quem, id) => POST(quem, '/api/sessao', { educador_id: id });
 
 console.log('\n\x1b[1mPercurso — testes do fluxo principal\x1b[0m');
 console.log(`Alvo: ${BASE}\n`);
@@ -37,16 +43,16 @@ secao('0 · Sessão e controle de acesso');
   const anon = await GET('anon', '/api/hoje');
   T('sem sessão, /api/hoje responde 401', anon.status === 401, `(${anon.status})`);
 
-  const login = await POST('maria', '/api/sessao', { educador_id: 1 });
+  const login = await ENTRAR('maria', 1);
   T('educadora entra (Maria Silvia)', login.status === 200 && login.corpo.usuario.papel === 'educador');
 
-  const coord = await POST('rita', '/api/sessao', { educador_id: 2 });
+  const coord = await ENTRAR('rita', 2);
   T('coordenação entra (Rita)', coord.status === 200 && coord.corpo.usuario.papel === 'coordenacao');
 
   const negado = await GET('maria', '/api/painel');
   T('educadora NÃO acessa o painel da coordenação (403)', negado.status === 403, `(${negado.status})`);
 
-  const inexistente = await POST('x', '/api/sessao', { educador_id: 999 });
+  const inexistente = await ENTRAR('x', 999);
   T('login com usuário inexistente responde 404', inexistente.status === 404);
 }
 
@@ -71,7 +77,14 @@ secao('2 · Chamada em um toque (F2)');
   T('educadora tem turma atribuída', !!turmaId);
   T('há datas de chamada em aberto (nada expira)', hoje.chamadas_abertas.length > 0,
     `(${hoje.chamadas_abertas.length})`);
-  T('estado de retomada detecta o lapso sem culpar', hoje.retomada.em_lapso === true);
+  // O lapso passou a ser contado em ENCONTROS DA TURMA, não em dias de
+  // calendário (F4). A asserção deriva da mesma regra do domínio em vez de
+  // repetir um número — repetir o número foi o que deixou o defeito de pé.
+  T('estado de retomada conta ENCONTROS da turma, não dias de calendário',
+    typeof hoje.retomada.encontros_sem_registro === 'number');
+  T('estado de retomada detecta o lapso sem culpar',
+    hoje.retomada.em_lapso === (hoje.retomada.encontros_sem_registro >= 2),
+    `(${hoje.retomada.encontros_sem_registro} encontros, em_lapso=${hoje.retomada.em_lapso})`);
 
   const data = hoje.chamadas_abertas[0];
   const ch = (await GET('maria', `/api/chamada?turma_id=${turmaId}&data=${data}`)).corpo;
@@ -166,17 +179,19 @@ secao('4 · Observação, consentimento e filtro de perímetro (F3 + bloco 6)');
   const rel = (await GET('maria', `/api/observacao?crianca_id=${alvo.crianca_id}`)).corpo;
   T('o rascunho volta preenchido ao reabrir', rel.observacao?.itens?.length === 2);
 
-  // v2: o olhar nao tem mais campo de texto sobre a crianca. Quem tentar gravar
-  // por ele e' recusado com encaminhamento humano, nao com erro tecnico.
+  // O olhar continua sem campo de texto — e isto NAO mudou com a decisao 40. O
+  // campo livre voltou como registro PROPRIO (`relato_crianca`), com
+  // consentimento especifico e descarte no fim do ciclo; enfia-lo de volta na
+  // rubrica faria o texto herdar a base legal, a retencao e os leitores DELA.
   const clinico = await POST('maria', '/api/observacao', {
     crianca_id: alvo.crianca_id, concluir: true,
     itens: o.dimensoes.map(d => ({ dimensao_id: d.id, nivel: 3 })),
     nota_livre: 'A mãe contou que ele foi diagnosticado com depressão.',
   });
   T('texto sobre a criança no olhar é recusado (422)', clinico.status === 422, `(${clinico.status})`);
-  T('a recusa devolve o encaminhamento humano, não um erro técnico',
-    /coordena[çc][ãa]o/i.test(clinico.corpo?.erro || ''), clinico.corpo?.erro);
-  T('a recusa nomeia o motivo para a tela tratar', clinico.corpo?.motivo === 'campo_livre_removido');
+  T('a recusa APONTA O LUGAR CERTO em vez de só dizer não',
+    /ficha dela/i.test(clinico.corpo?.erro || ''), clinico.corpo?.erro);
+  T('a recusa nomeia o motivo para a tela tratar', clinico.corpo?.motivo === 'campo_livre_tem_lugar_proprio');
 
   const limpo = await POST('maria', '/api/observacao', {
     crianca_id: alvo.crianca_id, concluir: true,
@@ -319,6 +334,15 @@ secao('8 · Consentimento desbloqueia o campo (F1 · LGPD Art. 14)');
   T('painel de consentimentos separa ativos de pendentes', c.pendentes > 0 && c.ativos > 0);
   T('a tabela de governança declara os 4 atributos de cada campo',
     c.governanca.every(g => g.base_legal && g.titular && g.acesso && g.retencao));
+  // Decisão 35: com as portas longas o áudio CHEGA ao servidor. A tela de
+  // Consentimentos é onde a organização lê o que o produto faz — se a linha não
+  // estiver ali, a mudança aconteceu escondida.
+  const gLonga = c.governanca.find(g => g.campo === 'audio_longo');
+  const gSala = c.governanca.find(g => g.campo === 'audio_da_sala');
+  T('a governança declara o áudio longo como coleta transitória, apagada ao virar texto',
+    !!gLonga && /transit/i.test(gLonga.base_legal) && /apagado ao virar texto/i.test(gLonga.retencao));
+  T('e a porta que grava a sala com as crianças exige consentimento',
+    !!gSala && gSala.exige_consentimento === 1);
 
   const semResp = await POST('rita', '/api/consentimento', {
     crianca_id: criancaBloqueada.crianca_id, campo: 'rubrica_socioemocional', status: 'ativo',
@@ -383,13 +407,186 @@ secao('10 · Robustez');
 // ============================================================================
 // 11 · v2 — folha do dia, voz, extrator e perímetro (F2, F3, F4, F5, F6)
 // ============================================================================
+// ============================================================================
+// ============================================================================
+secao('9c · As faltas ditas na fala viram sugestão, nunca presunção (F6)');
+{
+  const ch = (await GET('maria', `/api/chamada?turma_id=${turmaId}`)).corpo;
+  const dois = ch.criancas.slice(0, 2);
+  const base = 'hoje a gente fez uma roda de conversa sobre saude a turma colaborou participou e ficou alegre tres criancas pediram ajuda ';
+  const fala = `${base} a ${dois.map(c => c.nome.split(' ')[0]).join(' e a ')} faltaram`;
+  const r = (await POST('maria', '/api/voz/extrair', { turma_id: turmaId, transcricao: fala })).corpo;
+  T('a fala devolve as faltas como sugestão POR CRIANÇA, com id',
+    (r.faltas_sugeridas ?? []).length === 2 && r.faltas_sugeridas.every(c => c.id && c.nome),
+    JSON.stringify(r.faltas_sugeridas));
+  T('e são exatamente as citadas, ninguém mais',
+    r.faltas_sugeridas.map(c => c.id).sort().join() === dois.map(c => c.id).sort().join());
+
+  const semFalta = (await POST('maria', '/api/voz/extrair', { turma_id: turmaId, transcricao: base + ' a turma toda veio' })).corpo;
+  T('sem verbo de falta, ninguém é sugerido', (semFalta.faltas_sugeridas ?? []).length === 0);
+
+  // A guarda que importa: a folha é da TURMA e não guarda nome. A sugestão vive
+  // só no caminho da conferência.
+  T('a folha gravada continua sem nome nenhum', Array.isArray(r.extracao.faltas_mencionadas));
+}
+
+// ============================================================================
+secao('0b · Sessão sem senha (decisão 51)');
+{
+  // O que a decisão 51 PROMETE, item por item. Ela removeu a senha da 39 e
+  // MANTEVE o token opaco: sem prova de identidade, o token passa a ser a única
+  // coisa que separa entrar de forjar — então é ele que esta seção cerca.
+  // A seção cria a PRÓPRIA pessoa: usar um id da seed amarraria o teste ao
+  // tamanho da semente, e usar um id alto amarraria à ordem das seções.
+  const criada = await POST('rita', '/api/equipe', { nome: 'Teste de Sessão', papel: 'educador' });
+  T('a coordenação cria a pessoa deste teste', criada.status === 200, `(${criada.status})`);
+  const NOVA = criada.corpo?.pessoa?.id;
+
+  const entrou = await ENTRAR('novato', NOVA);
+  T('escolher o perfil entra, sem senha nenhuma no corpo', entrou.status === 200, `(${entrou.status})`);
+  T('e a sessão vale na requisição seguinte', (await GET('novato', '/api/hoje')).status === 200);
+
+  const comSenha = await POST('novato2', '/api/sessao', { educador_id: NOVA, senha: 'sobra de cliente antigo' });
+  T('um cliente velho que ainda mande senha entra assim mesmo — o campo é ignorado',
+    comSenha.status === 200, `(${comSenha.status})`);
+
+  const inexistente = await POST('x', '/api/sessao', { educador_id: 999999 });
+  T('id que não existe é 404', inexistente.status === 404, `(${inexistente.status})`);
+
+  // O COOKIE NÃO É O ID. Este é o teste que mais importa, e o que mais importa
+  // AGORA: era a outra metade da decisão 39, e é a metade que ficou de pé.
+  const forjado = await fetch(`${BASE}/api/hoje`, { headers: { cookie: 'percurso_uid=1' } });
+  T('cookie forjado com o id não abre sessão (401)', forjado.status === 401, `(${forjado.status})`);
+  const tokenChutado = await fetch(`${BASE}/api/hoje`, { headers: { cookie: 'percurso_uid=aaaaaaaaaaaaaaaaaaaaaaaa' } });
+  T('token inventado também não (401)', tokenChutado.status === 401, `(${tokenChutado.status})`);
+
+  // Não sobrou resíduo de senha em lugar nenhum do que vai ao navegador.
+  const eu = (await GET('novato', '/api/sessao')).corpo;
+  const cru = JSON.stringify(eu);
+  T('nada de senha chega ao navegador — nem hash, nem primeiro acesso',
+    !cru.includes('scrypt') && !cru.includes('senha') && !cru.includes('primeiro_acesso'));
+  T('a lista de quem pode entrar continua vindo', Array.isArray(eu.usuarios) && eu.usuarios.length > 0);
+
+  // As rotas de senha SUMIRAM — não ficaram respondendo 401 por engano.
+  const troca = await POST('novato', '/api/senha', { senha_atual: 'a', senha_nova: 'b' });
+  T('POST /api/senha não existe mais (404)', troca.status === 404, `(${troca.status})`);
+  const redefine = await POST('rita', '/api/senha/redefinir', { educador_id: NOVA });
+  T('POST /api/senha/redefinir não existe mais (404)', redefine.status === 404, `(${redefine.status})`);
+
+  // Arquivar continua fechando a porta da ENTRADA: é o único controle de acesso
+  // que sobra ali, e sem senha ele carrega sozinho o peso que dividia com ela.
+  // (Que a sessão JÁ ABERTA também cai é a §22, e continua valendo.)
+  const arq = await POST('rita', '/api/equipe/arquivar', { id: NOVA });
+  T('a coordenação arquiva a pessoa deste teste', arq.status === 200, `(${arq.status})`);
+  const arquivada = await ENTRAR('novato3', NOVA);
+  T('quem está no arquivo não entra (403)', arquivada.status === 403, `(${arquivada.status})`);
+}
+
+// ============================================================================
+secao('9a · Rastro de acesso a dado individual (decisão 38)');
+{
+  const c = (await GET('maria', '/api/criancas')).corpo.criancas[0];
+  const antes = (await GET('rita', '/api/acessos/resumo')).corpo.total;
+
+  await GET('maria', `/api/crianca?id=${c.id}`);
+  await GET('maria', `/api/observacao?crianca_id=${c.id}`);
+  const rastro = (await GET('maria', `/api/acessos?crianca_id=${c.id}`)).corpo.acessos;
+  T('ler a ficha e o olhar deixa rastro, com quem e quando',
+    rastro.length >= 2 && rastro.every(a => a.quem && a.em && a.recurso), `(${rastro.length})`);
+  T('o rastro distingue O QUE foi lido', new Set(rastro.map(a => a.recurso)).size >= 2,
+    [...new Set(rastro.map(a => a.recurso))].join(', '));
+  T('e NÃO guarda o conteúdo lido — só quem, o quê e quando',
+    rastro.every(a => Object.keys(a).sort().join() === 'em,papel,quem,recurso'));
+
+  const resumo = (await GET('rita', '/api/acessos/resumo')).corpo;
+  T('a coordenação vê o padrão de acesso, sem nome de criança',
+    resumo.total > antes && JSON.stringify(resumo).indexOf(c.nome) === -1, `(${antes} → ${resumo.total})`);
+
+  const invasao = await GET('maria', '/api/acessos/resumo');
+  T('educadora não lê o resumo de acesso da casa (403)', invasao.status === 403, `(${invasao.status})`);
+
+  const dela = new Set((await GET('maria', '/api/criancas')).corpo.criancas.map(x => x.id));
+  const alheia = (await GET('rita', '/api/criancas')).corpo.criancas.find(x => !dela.has(x.id));
+  if (alheia) {
+    const fora = await GET('maria', `/api/acessos?crianca_id=${alheia.id}`);
+    T('ler o rastro de criança de outra turma é barrado (403)', fora.status === 403, `(${fora.status})`);
+  }
+}
+
+// ============================================================================
+secao('9b · A rubrica na língua dela — piorou / manteve / evoluiu (F5)');
+{
+  const lista = (await GET('maria', '/api/criancas')).corpo.criancas;
+  let comTrajetoria = null;
+  for (const c of lista.slice(0, 8)) {
+    const f = (await GET('maria', `/api/crianca?id=${c.id}`)).corpo;
+    if (f.trajetoria?.ciclos?.length >= 2) { comTrajetoria = f; break; }
+  }
+  T('há criança com dois ciclos observados para comparar', !!comTrajetoria);
+  if (comTrajetoria) {
+    const dims = comTrajetoria.trajetoria.dimensoes;
+    T('cada indicador traz a leitura DELA (piorou/manteve/evoluiu)',
+      dims.every(d => d.evolucao_rotulo === null || ['piorou', 'manteve', 'evoluiu'].includes(d.evolucao_rotulo)),
+      dims.map(d => d.evolucao_rotulo).join(', '));
+    T('e a leitura do produto (níveis 1–4) continua ao lado, não no lugar',
+      dims.every(d => 'mudanca' in d && 'niveis' in d));
+    // O caso que a decisão 34 precisa que apareça: o nível mudou (2→3) e a
+    // planilha não viu, porque 2 e 3 mapeiam para 1. É vendo a divergência que
+    // a psicóloga pode avalizar ou recusar o mapeamento provisório.
+    T('a divergência entre as duas leituras é marcada, não escondida',
+      dims.every(d => typeof d.divergente === 'boolean'));
+    const div = dims.find(d => d.divergente);
+    T('o mapeamento lossy 2/3 → 1 aparece quando acontece',
+      !div || (div.mudanca === 'avancou' && div.evolucao_rotulo === 'manteve'),
+      div ? `${div.dimensao}: níveis ${div.niveis.join('→')} = ${div.evolucao_rotulo}` : '(nenhuma nesta criança)');
+    T('a legenda da planilha viaja junto com a ficha', /provisório/i.test(comTrajetoria.legenda_planilha ?? ''));
+  }
+}
+
+secao('10b · O calendário da casa (decisão 37)');
+{
+  const cal = (await GET('maria', `/api/calendario?turma_id=${turmaId}`)).corpo;
+  T('o calendário deduz os próximos encontros do turno da turma', cal.proximos.length > 0, `(${cal.proximos.join(', ')})`);
+  const alvo = cal.proximos[0];
+
+  const marcou = await POST('maria', '/api/calendario', { turma_id: turmaId, data: alvo, tipo: 'sem_encontro', motivo: 'Feriado' });
+  T('a casa marca um dia sem encontro', marcou.status === 200);
+  const depois = (await GET('maria', `/api/calendario?turma_id=${turmaId}`)).corpo;
+  T('o dia marcado SAI dos próximos encontros', !depois.proximos.includes(alvo), `(${alvo})`);
+  T('e fica visível como decisão da casa, com o motivo',
+    depois.excecoes.some(e => e.data === alvo && e.tipo === 'sem_encontro' && /Feriado/.test(e.motivo ?? '')));
+
+  // A guarda que importa: apagar da vista um encontro JÁ REGISTRADO deixaria o
+  // registro dele no banco, invisível. Recusar é o único desfecho honesto.
+  const jaRegistrado = (await GET('maria', '/api/hoje')).corpo.data_folha;
+  const conflito = await POST('maria', '/api/calendario', { turma_id: turmaId, data: jaRegistrado, tipo: 'sem_encontro' });
+  T('marcar "sem encontro" num dia com chamada registrada é recusado (422)',
+    conflito.status === 422, `(${conflito.status})`);
+
+  const tipoInvalido = await POST('maria', '/api/calendario', { turma_id: turmaId, data: alvo, tipo: 'talvez' });
+  T('tipo fora do vocabulário é recusado (422)', tipoInvalido.status === 422, `(${tipoInvalido.status})`);
+
+  const limpou = await DELETE('maria', '/api/calendario', { turma_id: turmaId, data: alvo });
+  T('desfazer devolve o dia ao padrão da turma', limpou.status === 200);
+  const volta = (await GET('maria', `/api/calendario?turma_id=${turmaId}`)).corpo;
+  T('e ele volta aos próximos encontros', volta.proximos.includes(alvo));
+
+  const alheia = (await GET('maria', '/api/turmas')).corpo.turmas.find(t => t.id !== turmaId);
+  const invasao = await POST('maria', '/api/calendario', { turma_id: alheia.id, data: alvo, tipo: 'sem_encontro' });
+  T('educadora não mexe no calendário de turma alheia (403)', invasao.status === 403, `(${invasao.status})`);
+}
+
 secao('11 · Folha do dia, captura por voz e agente extrator (F2–F6)');
 let dataFolha = null;
 {
   const cat = (await GET('maria', '/api/catalogos')).corpo;
   T('catálogos são listas fechadas, não texto livre',
     cat.atividades.length > 0 && cat.areas.length > 0 && cat.marcadores.length === 6);
-  T('a janela da voz é de 40 segundos', cat.voz_segundos === 40);
+  // A janela deixou de ser TETO em 03/09/2026 (F1). O teste guarda as duas
+  // metades: o numero sugerido continua 40, e o nome antigo — que se lia como
+  // limite — nao volta pela porta dos fundos.
+  T('a janela da voz é sugestão, não teto',
+    cat.voz_sugestao_segundos === 40 && cat.voz_segundos === undefined);
   T('o piso de confiança do extrator é 0,6', cat.confianca_minima === 0.6);
 
   // A folha e' do ENCONTRO, nao do calendario: a rota resolve para o ultimo
@@ -397,6 +594,17 @@ let dataFolha = null;
   const abre = (await GET('maria', `/api/folha?turma_id=${turmaId}`)).corpo;
   dataFolha = abre.data;
   T('a folha abre no último encontro registrado, não numa data sem aula', !!abre.encontro, dataFolha);
+
+  // F3 — "Igual ao encontro de <data>": a maior redução de toques disponível, e
+  // promessa literal da visita. O servidor tem de oferecer o encontro anterior
+  // SÓ quando ainda não há folha; sobre uma folha já registrada, oferecer cópia
+  // de três semanas atrás seria convidar ao erro.
+  {
+    const semFolha = (await GET('maria', `/api/folha?turma_id=${turmaId}&data=2020-01-02`)).corpo;
+    T('sem encontro, não há o que copiar', semFolha.anterior === null || semFolha.encontro === null);
+    T('com folha já registrada, o servidor NÃO oferece o encontro anterior',
+      abre.folha ? abre.anterior === null : true);
+  }
   const semChamada = await POST('maria', '/api/folha', {
     turma_id: turmaId, data: '2020-01-02', campos: { atividade: 'roda', area_tematica: 'nenhuma', marcadores_turma: [], pediram_ajuda: 0 },
   });
@@ -414,6 +622,18 @@ let dataFolha = null;
     ex.corpo.extracao.marcadores_turma.length <= 4 &&
     ex.corpo.extracao.marcadores_turma.every(m => cat.marcadores.some(x => x.codigo === m)));
   T('"pediram ajuda" é contagem, não lista de nomes', ex.corpo.extracao.pediram_ajuda === 3);
+
+  // O teto de tamanho do texto (F1). Era 4000 caracteres, medida de uma fala de
+  // 40 s — e as portas longas produzem MUITO mais que isso. Um teto que recusa
+  // justamente a captura que o produto passou a oferecer nao e' protecao, e' um
+  // defeito. Estes dois casos guardam as duas bordas.
+  const falaLonga = (fala + ' ').repeat(80);   // ~10 mil caracteres, uns 10 min de fala
+  const exLonga = await POST('maria', '/api/voz/extrair', { turma_id: turmaId, transcricao: falaLonga });
+  T('transcrição de encontro inteiro é aceita, não recusada por tamanho',
+    exLonga.status === 200, `(${exLonga.status}, ${falaLonga.length} caracteres)`);
+  const absurda = await POST('maria', '/api/voz/extrair', { turma_id: turmaId, transcricao: 'a'.repeat(60001) });
+  T('mas o teto continua existindo, e explica o que fazer',
+    absurda.status === 422 && /duas partes/.test(absurda.corpo.erro || ''), `(${absurda.status})`);
   T('confiança alta em fala clara', ex.corpo.extracao.confianca >= 0.6, String(ex.corpo.extracao.confianca));
   T('o extrator não escreve texto livre em campo nenhum',
     Object.values(ex.corpo.extracao).every(v =>
@@ -465,7 +685,7 @@ let dataFolha = null;
     ruido.corpo.extracao.marcadores_turma.length === 0);
 
   const longa = await POST('maria', '/api/voz/extrair', { turma_id: turmaId, transcricao: 'a'.repeat(4001) });
-  T('transcrição longa demais para 40 s é recusada (422)', longa.status === 422);
+  T('uma fala de mais de 4 mil caracteres já NÃO é recusada (o teto era de 40 s)', longa.status === 200);
 
   // --- F6: a confirmacao humana e' a primeira gravacao ----------------------
   const antes = (await GET('maria', `/api/folha?turma_id=${turmaId}&data=${dataFolha}`)).corpo;
@@ -542,6 +762,68 @@ let dataFolha = null;
 // ============================================================================
 // 12 · Os três scores (F8, F9, F10)
 // ============================================================================
+secao('11b · Campo livre de relato (decisão 40) — o que ele aceita e o que recusa');
+{
+  // A decisão 40 REVERTE a decisão 15, que tinha tirado o campo livre do
+  // produto ("um filtro é mitigação, não ausência de risco"). A reversão só se
+  // sustenta com as travas de pé — é isso que esta seção mede.
+  const nomes = (await GET('maria', `/api/chamada?turma_id=${turmaId}`)).corpo.criancas;
+  const primeiro = nomes[0].nome.split(' ')[0];
+
+  const comNome = await POST('maria', '/api/relato-grupo',
+    { turma_id: turmaId, texto: `a ${primeiro} bateu no colega e o grupo travou` });
+  T('relato do GRUPO com nome de criança é recusado (422)',
+    comNome.status === 422 && comNome.corpo.motivo === 'nome_no_relato_de_grupo', `(${comNome.status})`);
+  T('e a recusa aponta as DUAS saídas certas: iniciais ou a ficha dela',
+    /iniciais/i.test(comNome.corpo.erro) && /ficha dela/i.test(comNome.corpo.erro));
+
+  const clinico = await POST('maria', '/api/relato-grupo',
+    { turma_id: turmaId, texto: 'a mae de uma delas contou que ela comecou a tomar remedio controlado' });
+  T('conteúdo de atendimento no relato do grupo continua barrado (422)',
+    clinico.status === 422 && clinico.corpo.motivo === 'perimetro', `(${clinico.status})`);
+
+  const limpo = await POST('maria', '/api/relato-grupo',
+    { turma_id: turmaId, texto: 'a roda travou no comeco e destravou quando mudei a ordem da fala' });
+  T('relato do grupo sem nome e sem conteúdo clínico é aceito', limpo.status === 200, `(${limpo.status})`);
+  const folha = (await GET('maria', `/api/folha?turma_id=${turmaId}`)).corpo.folha;
+  T('e volta gravado na folha, com ela', /destravou/.test(folha?.relato_grupo ?? ''));
+
+  // O relato sobre a CRIANÇA depende do consentimento específico.
+  const semCons = (await GET('rita', '/api/consentimentos')).corpo;
+  const pendente = (semCons.criancas ?? []).find(c => (c.campos ?? []).some(x => x.campo === 'campo_livre' && x.status !== 'ativo'));
+  if (pendente) {
+    const barrado = await POST('rita', '/api/relato-crianca', { crianca_id: pendente.id, texto: 'pediu para sentar perto da porta' });
+    T('relato sobre a criança SEM consentimento é recusado (403)',
+      barrado.status === 403 && barrado.corpo.motivo === 'sem_consentimento', `(${barrado.status})`);
+  }
+
+  const alvo = (await GET('maria', '/api/criancas')).corpo.criancas[0];
+  await POST('rita', '/api/consentimento', { crianca_id: alvo.id, campo: 'campo_livre', status: 'ativo', responsavel: 'Mãe' });
+  const ok = await POST('maria', '/api/relato-crianca', { crianca_id: alvo.id, texto: 'pediu para sentar perto da porta e explicou por que' });
+  T('com consentimento ativo, o relato sobre a criança é aceito', ok.status === 200, `(${ok.status})`);
+  const clinicoNaFicha = await POST('maria', '/api/relato-crianca', { crianca_id: alvo.id, texto: 'esta tomando remedio controlado desde marco' });
+  T('mas conteúdo de atendimento continua fora, também na ficha (422)',
+    clinicoNaFicha.status === 422, `(${clinicoNaFicha.status})`);
+
+  const lista = (await GET('maria', `/api/relato-crianca?crianca_id=${alvo.id}`)).corpo;
+  T('o relato volta na ficha, com quem escreveu e quando',
+    lista.relatos.some(r => /porta/.test(r.texto) && r.quem && r.criado_em));
+
+  // O que sai da organização NUNCA leva o campo livre. Aqui a verificação é de
+  // ponta a ponta: o texto está gravado, e não aparece em nenhuma saída.
+  const marca = 'destravou';
+  const rel = (await GET('solange', '/api/relatorio?tipo=ciclo')).corpo;
+  T('o relatório do doador não leva o relato do grupo', !JSON.stringify(rel).includes(marca));
+  const rec = (await GET('maria', `/api/recado?turma_id=${turmaId}`)).corpo;
+  T('o recado aos responsáveis não leva o relato do grupo', !JSON.stringify(rec).includes(marca));
+  const pl = (await GET('rita', '/api/planilha/resumo')).corpo;
+  T('a planilha socioemocional não leva o relato do grupo', !JSON.stringify(pl).includes(marca));
+  const painel = (await GET('rita', '/api/painel')).corpo;
+  T('o painel da coordenação não leva o relato do grupo', !JSON.stringify(painel).includes(marca));
+}
+
+
+// ============================================================================
 secao('12 · Risco de evasão, cobertura do registro e exposição (F8–F10)');
 {
   const negado = await GET('maria', '/api/scores');
@@ -598,7 +880,7 @@ secao('13 · Pauta de segunda — o laço de devolução (F11)');
   // Antes esta linha era `every(c => c.crianca_id > 0)` — vácua, nunca falhava.
   // Agora o que ela anuncia é verificado de verdade: a turma da Cleide é fechada
   // para a Maria, e a coordenação passa.
-  const cleide = await POST('cleide', '/api/sessao', { educador_id: 3 });
+  const cleide = await ENTRAR('cleide', 3);
   T('a outra educadora entra (Cleide)', cleide.status === 200);
   const turmaAlheia = (await GET('cleide', '/api/hoje')).corpo.turma;
   const invasao = await GET('maria', `/api/pauta?turma_id=${turmaAlheia.id}`);
@@ -614,7 +896,7 @@ secao('13 · Pauta de segunda — o laço de devolução (F11)');
   T('a coordenação passa em qualquer turma', coordPassa.status === 200);
   T('a própria turma continua aberta para a educadora', p.risco.criancas.every(c => c.crianca_id > 0));
   T('a sugestão sai da lacuna de exposição', !p.exposicao.area || p.sugestao?.origem === 'exposição');
-  T('a pauta lembra o custo real do registro', /chamada e de 40 segundos/i.test(p.rodape));
+  T('a pauta lembra o custo real do registro', /chamada e de um pouco de voz/i.test(p.rodape));
 
   const ruim = await POST('maria', '/api/pauta/decidir', { turma_id: turmaId, decisao: 'talvez' });
   T('decisão fora de aceita/descartada é recusada (422)', ruim.status === 422);
@@ -713,7 +995,7 @@ secao('15 · Ingestão retroativa das planilhas antigas (F7)');
 // ============================================================================
 secao('16 · Relatório do ciclo, carta e supressão (F13/F14)');
 {
-  const sol = await POST('solange', '/api/sessao', { educador_id: 4 });
+  const sol = await ENTRAR('solange', 4);
   T('diretoria entra (Solange Ribeiro)', sol.status === 200 && sol.corpo.usuario.papel === 'diretoria');
 
   const individual = await GET('solange', '/api/crianca?id=1');
@@ -912,7 +1194,7 @@ secao('18 · Fecho de ciclo executa a retenção declarada');
 secao('19 · Escopo de turma nas rotas de leitura individual (decisão 22)');
 {
   // Cleide (educador 3) tem turma própria; Maria não pode abrir criança dela.
-  await POST('cleide', '/api/sessao', { educador_id: 3 });
+  await ENTRAR('cleide', 3);
   const deCleide = (await GET('cleide', '/api/criancas')).corpo.criancas;
   T('a lista da Cleide também vem escopada e não-vazia', deCleide.length > 0);
 
@@ -929,26 +1211,26 @@ secao('19 · Escopo de turma nas rotas de leitura individual (decisão 22)');
   T('educadora NÃO abre observação de criança de outra turma (403)', obs.status === 403, `(${obs.status})`);
 }
 
-// ------------------------------------------------ 20. Passo (assistente)
-// Só os caminhos que NUNCA chegam ao modelo — o Passo com modelo é coberto
+// ------------------------------------------------ 20. Aurora (assistente)
+// Só os caminhos que NUNCA chegam ao modelo — a Aurora com modelo é coberto
 // pelo ai-stub-test. Assim o bloco passa igual com AI_ENABLED ligado ou não.
-secao('20 · Passo — assistente-parceiro (limites no servidor)');
+secao('20 · Aurora — assistente-parceiro (limites no servidor)');
 {
-  const anon = await POST('anon-passo', '/api/assistente', { message: 'oi', tela: '#/hoje' });
-  T('sem sessão, o Passo responde 401', anon.status === 401, `(${anon.status})`);
+  const anon = await POST('anon-aurora', '/api/assistente', { message: 'oi', tela: '#/hoje' });
+  T('sem sessão, a Aurora responde 401', anon.status === 401, `(${anon.status})`);
 
   const vazio = await POST('maria', '/api/assistente', { message: '   ', tela: '#/hoje' });
   T('pergunta vazia responde 422', vazio.status === 422, `(${vazio.status})`);
 
   const reflexiva = await POST('maria', '/api/assistente',
     { message: 'como lidar com uma criança que morde os colegas?', tela: '#/hoje' });
-  T('pergunta reflexiva redireciona ao copilot, sem passar por modelo',
+  T('pergunta reflexiva abre o modo pensar junto, sem passar por modelo',
     reflexiva.status === 200 && reflexiva.corpo.tipo === 'redirecionamento'
-    && reflexiva.corpo.origem === 'guia' && reflexiva.corpo.acao?.id === 'copilot');
+    && reflexiva.corpo.origem === 'guia' && reflexiva.corpo.acao?.id === 'pensar');
   T('redirecionamento nunca tem fala', reflexiva.corpo.fala === null);
 
   const fora = await POST('maria', '/api/assistente', { message: 'qual é a capital da França?', tela: '#/hoje' });
-  T('fora do produto: o Passo declara o próprio limite, sem ação',
+  T('fora do produto: a Aurora declara o próprio limite, sem ação',
     fora.status === 200 && fora.corpo.tipo === 'redirecionamento' && fora.corpo.acao === null);
 
   const criancas = (await GET('maria', '/api/criancas')).corpo.criancas;
@@ -966,7 +1248,7 @@ secao('20 · Passo — assistente-parceiro (limites no servidor)');
 
   const del = await req('maria', '/api/assistente/sessao',
     { method: 'DELETE', body: JSON.stringify({ session_id: reflexiva.corpo.session_id }) });
-  T('apagar a sessão do Passo responde 200', del.status === 200, `(${del.status})`);
+  T('apagar a sessão da Aurora responde 200', del.status === 200, `(${del.status})`);
 }
 
 // ------------------------------------- 21. cadastro de pessoas (equipe/criancas)
@@ -993,7 +1275,7 @@ secao('21 · Cadastro de pessoas — equipe e crianças');
   const repetida = await POST('rita', '/api/equipe', { nome: 'vera lúcia antunes', papel: 'educador' });
   T('homônimo no mesmo papel é recusado (409)', repetida.status === 409, `(${repetida.status})`);
 
-  const entra = await POST('vera', '/api/sessao', { educador_id: nova.corpo.pessoa.id });
+  const entra = await ENTRAR('vera', nova.corpo.pessoa.id);
   T('a pessoa nova entra no Percurso pela porta de sempre',
     entra.status === 200 && entra.corpo.usuario.nome === 'Vera Lúcia Antunes');
   T('a pessoa nova aparece na lista da tela de entrada',
@@ -1062,14 +1344,14 @@ secao('22 · Arquivo — ninguém é apagado (decisão 30)');
   T('a sessão aberta dela morre no ato (401)', (await GET('vera', '/api/hoje')).status === 401);
   T('ela some da lista da tela de entrada',
     !(await GET('anon3', '/api/sessao')).corpo.usuarios.some(u => u.id === vera.id));
-  const relogin = await POST('vera2', '/api/sessao', { educador_id: vera.id });
+  const relogin = await ENTRAR('vera2', vera.id);
   T('e não consegue entrar de novo (403)', relogin.status === 403, `(${relogin.status})`);
   T('mas continua existindo, no arquivo',
     (await GET('rita', '/api/arquivo')).corpo.pessoas.some(p => p.id === vera.id));
 
   const volta = await POST('rita', '/api/equipe/reativar', { id: vera.id });
   T('a coordenação traz de volta do arquivo', volta.status === 200);
-  T('e ela entra outra vez', (await POST('vera3', '/api/sessao', { educador_id: vera.id })).status === 200);
+  T('e ela entra outra vez', (await ENTRAR('vera3', vera.id)).status === 200);
 
   const eu = (await GET('rita', '/api/sessao')).corpo.usuario;
   const auto = await POST('rita', '/api/equipe/arquivar', { id: eu.id });
@@ -1105,7 +1387,7 @@ secao('22 · Arquivo — ninguém é apagado (decisão 30)');
 // ------------------------- 24. a psicóloga e a Vivência terapêutica (decisão 31)
 secao('24 · Psicóloga e Vivência terapêutica — indicador de programa, nunca clínico (decisão 31)');
 {
-  const login = await POST('carolina', '/api/sessao', { educador_id: 5 });
+  const login = await ENTRAR('carolina', 5);
   T('psicóloga entra com o papel profissional', login.status === 200 && login.corpo.usuario.papel === 'profissional');
 
   const inv = (await GET('carolina', '/api/inventario')).corpo;
@@ -1121,16 +1403,19 @@ secao('24 · Psicóloga e Vivência terapêutica — indicador de programa, nunc
   const hoje = (await GET('carolina', '/api/hoje')).corpo;
   T('o Hoje dela abre na turma da Vivência', !!hoje.turma && /Viv[eê]ncia/i.test(hoje.turma.programa));
   T('a turma da Vivência está fora da rubrica: sem agenda de ciclo', hoje.na_rubrica === false && hoje.agenda === null);
-  // A Vivencia e' sabatica: a ultima atividade dela e' sempre o sabado anterior, e a
-  // regua de lapso e' de 5 dias (PARAMS.DIAS_LAPSO). Numa quinta-feira o lapso dispara
-  // sozinho — isso e' a regua funcionando, nao o teste quebrando. Fixar `false` aqui so'
-  // valia de sabado a quarta; a assercao passa a derivar da mesma regra.
+  // ESTA ASSERÇÃO MUDOU DE SENTIDO NA F4, e a razão fica escrita. A régua era de
+  // 5 DIAS DE CALENDÁRIO, e para uma turma de sábado ela disparava TODA
+  // QUINTA-FEIRA sem que um único encontro tivesse sido perdido. O teste antigo
+  // derivava a asserção da régua errada para parar de quebrar — o gate se
+  // acomodando ao defeito em vez de acusá-lo. Agora a régua é em ENCONTROS DA
+  // TURMA, e a Vivência, sendo sabática, tem no máximo um perdido depois de uma
+  // semana: nenhum lapso numa quinta.
   const diasSemRegistro = hoje.retomada.dias_sem_registro;
   T('a retomada dela conta a partir do último sábado (a Vivência é sabática)',
     diasSemRegistro != null && diasSemRegistro <= 7, `(${diasSemRegistro} dias)`);
-  T('o lapso dela segue a régua de 5 dias, sem exceção para a Vivência',
-    hoje.retomada.em_lapso === (diasSemRegistro >= 5),
-    `(${diasSemRegistro} dias, em_lapso=${hoje.retomada.em_lapso})`);
+  T('uma semana sem sábado NÃO é lapso para a Vivência (era, em dias de calendário)',
+    hoje.retomada.encontros_sem_registro <= 1 && hoje.retomada.em_lapso === false,
+    `(${diasSemRegistro} dias, ${hoje.retomada.encontros_sem_registro} encontros, em_lapso=${hoje.retomada.em_lapso})`);
 
   const agenda = await GET('carolina', `/api/ciclo/agenda?turma_id=${hoje.turma.id}`);
   T('pedir a agenda do ciclo para a Vivência é recusado com o motivo (422)',
@@ -1343,6 +1628,264 @@ secao('28 · Parecer a profissional parceiro — por código, sob consentimento,
   T('o histórico de pareceres da criança fica na ficha', hist.pareceres.length >= 1 && hist.pareceres[0].status === 'liberado');
   T('a governança declara o parecer com consentimento específico',
     (await GET('rita', '/api/consentimentos')).corpo.governanca.some(g => g.campo === 'parecer_profissional' && g.exige_consentimento === 1));
+}
+
+
+// ---------------------------------------- 29. as seis perguntas de 04/09/2026
+secao('29 · Turma, matrícula, prova em vídeo e boletim do responsável');
+{
+  // --- quem cadastra as turmas: a coordenação, e mais ninguém --------------
+  const nova = await POST('rita', '/api/turmas',
+    { nome: 'Reforço · Manhã (smoke)', programa_id: 1, turno: 'semana', educador_id: 1 });
+  T('a coordenação cria turma', nova.status === 200 && !!nova.corpo.turma.id);
+  T('a professora NÃO cria turma (403)',
+    (await POST('maria', '/api/turmas', { nome: 'X', programa_id: 1, turno: 'semana' })).status === 403);
+  T('a diretoria NÃO cria turma (403)',
+    (await POST('solange', '/api/turmas', { nome: 'Y', programa_id: 1, turno: 'semana' })).status === 403);
+  T('turno inventado é recusado (422)',
+    (await POST('rita', '/api/turmas', { nome: 'Z', programa_id: 1, turno: 'domingo' })).status === 422);
+
+  const cad = (await GET('rita', '/api/cadastro')).corpo;
+  T('o catálogo de turma inclui a Vivência, que está fora da MEDIÇÃO mas dentro do Instituto',
+    cad.programas_de_turma.some(p => !p.no_escopo)
+    && !cad.programas.some(p => cad.programas_de_turma.find(q => q.id === p.id && !q.no_escopo)));
+  T('a lista de turmas diz quantas crianças cada uma tem', cad.turmas.every(t => typeof t.criancas === 'number'));
+
+  const edit = await POST('rita', '/api/turmas/editar',
+    { id: nova.corpo.turma.id, nome: 'Reforço · Manhã (smoke)', programa_id: 1, turno: 'sabado', educador_id: null });
+  T('editar turma troca turno e deixa sem professora', edit.status === 200 && edit.corpo.turma.turno === 'sabado');
+
+  // --- matrícula da criança em cada turma ---------------------------------
+  const alvoM = (await GET('rita', '/api/criancas')).corpo.criancas[0];
+  const fichaM = (await GET('rita', `/api/crianca?id=${alvoM.id}`)).corpo;
+  T('a ficha entrega à coordenação as turmas e os programas para matricular', !!fichaM.turmas && !!fichaM.programas);
+  const mAtiva = fichaM.matriculas.find(m => m.status === 'ativa');
+  const outra = fichaM.turmas.find(t => t.programa_id === mAtiva.programa_id && t.id !== mAtiva.turma_id);
+  const troca = await POST('rita', '/api/matricula/turma', { matricula_id: mAtiva.id, turma_id: outra.id });
+  T('a coordenação troca a turma de uma matrícula ativa', troca.status === 200 && troca.corpo.turma.id === outra.id);
+  T('o aviso diz a consequência: quem passa a ler a ficha', /passa a ser|sem professora/.test(troca.corpo.aviso));
+  T('a professora NÃO troca a turma de ninguém (403)',
+    (await POST('maria', '/api/matricula/turma', { matricula_id: mAtiva.id, turma_id: outra.id })).status === 403);
+  await POST('rita', '/api/matricula/turma', { matricula_id: mAtiva.id, turma_id: mAtiva.turma_id });
+
+  // --- a prova do consentimento em vídeo ----------------------------------
+  const video = Buffer.alloc(4096, 3);
+  const q = new URLSearchParams({ crianca_id: String(alvoM.id), campo: 'rubrica_socioemocional',
+    mime: 'video/mp4', duracao: '30', responsavel: 'Responsável do smoke' });
+  const subir = await fetch(`${BASE}/api/consentimento/evidencia?${q}`, {
+    method: 'POST', headers: { Cookie: cookies.rita, 'Content-Type': 'video/mp4' }, body: video });
+  const subiu = await subir.json();
+  T('a coordenação guarda o vídeo do responsável', subir.status === 200 && subiu.bytes === 4096);
+  T('a linha do vídeo NÃO carrega o nome do arquivo no disco', subiu.arquivo === undefined);
+  const semAcesso = await fetch(`${BASE}/api/consentimento/evidencia?${q}`, {
+    method: 'POST', headers: { Cookie: cookies.maria, 'Content-Type': 'video/mp4' }, body: video });
+  T('a professora NÃO grava prova de consentimento (403)', semAcesso.status === 403);
+  const baixar = await fetch(`${BASE}/api/consentimento/video?id=${subiu.id}`, { headers: { Cookie: cookies.rita } });
+  T('o vídeo volta pelos bytes, com no-store e sem virar estático',
+    baixar.status === 200 && baixar.headers.get('content-type') === 'video/mp4'
+    && /no-store/.test(baixar.headers.get('cache-control') || ''));
+  T('a professora NÃO assiste ao vídeo (403)',
+    (await fetch(`${BASE}/api/consentimento/video?id=${subiu.id}`, { headers: { Cookie: cookies.maria } })).status === 403);
+  T('ler a prova deixa rastro, como toda leitura individual',
+    (await GET('rita', `/api/acessos?crianca_id=${alvoM.id}`)).corpo.acessos.some(a => a.recurso === 'consentimento_video'));
+  T('apagar a prova exige motivo (422)',
+    (await DELETE('rita', '/api/consentimento/evidencia', { id: subiu.id })).status === 422);
+  T('com motivo, a prova é apagada',
+    (await DELETE('rita', '/api/consentimento/evidencia', { id: subiu.id, motivo: 'pedido do responsável' })).status === 200);
+  T('o painel de consentimentos separa quem tem prova de quem só tem palavra',
+    typeof (await GET('rita', '/api/consentimentos')).corpo.com_prova === 'number');
+
+  // --- o boletim do responsável -------------------------------------------
+  await POST('rita', '/api/crianca/responsavel',
+    { crianca_id: alvoM.id, responsavel: 'Mãe do smoke', contato: '(11) 98888-7777' });
+  T('telefone sem DDD é recusado (422)',
+    (await POST('rita', '/api/crianca/responsavel', { crianca_id: alvoM.id, responsavel: 'X', contato: '999' })).status === 422);
+  const bol = (await GET('rita', `/api/boletim?crianca_id=${alvoM.id}`)).corpo;
+  T('o boletim traz o link de WhatsApp do responsável, não do grupo',
+    bol.primeiro_contato_url.startsWith('https://wa.me/5511988887777?text='));
+  T('sem conferência do telefone, o boletim NÃO tem link — só o desafio',
+    bol.whatsapp_url === null && bol.contato_conferido === false);
+  T('o desafio não diz o nome de nenhuma criança',
+    !bol.primeiro_contato_texto.includes(alvoM.nome.split(' ')[0]));
+  // A diretoria é o caso forte e sempre verdadeiro: por desenho ela nunca abre
+  // registro individual, e conferir de quem é o telefone é ato sobre a criança.
+  // (Não uso "professora de outra turma" aqui porque a criança que sai em
+  // primeiro na lista está em três turmas, e quem é de fora varia com a seed.)
+  T('a diretoria NÃO registra a conferência (403)',
+    (await POST('solange', '/api/crianca/contato-conferido', { crianca_id: alvoM.id, valor: bol.contato, como: 'x' })).status === 403);
+  T('conferir sem dizer COMO é recusado (422)',
+    (await POST('rita', '/api/crianca/contato-conferido', { crianca_id: alvoM.id, valor: bol.contato, como: '  ' })).status === 422);
+  T('conferir um número diferente do cadastrado é recusado (409)',
+    (await POST('rita', '/api/crianca/contato-conferido', { crianca_id: alvoM.id, valor: '(11) 90000-0001', como: 'x' })).status === 409);
+  const conf = await POST('rita', '/api/crianca/contato-conferido',
+    { crianca_id: alvoM.id, valor: bol.contato, como: 'respondeu no WhatsApp' });
+  T('a coordenação registra a conferência', conf.status === 200 && !!conf.corpo.contato_conferido_em);
+  const bol2 = (await GET('rita', `/api/boletim?crianca_id=${alvoM.id}`)).corpo;
+  T('depois de conferido, o boletim ganha o link',
+    bol2.contato_conferido === true && bol2.whatsapp_url.startsWith('https://wa.me/5511988887777?text='));
+  await POST('rita', '/api/crianca/responsavel', { crianca_id: alvoM.id, responsavel: 'Mãe do smoke', contato: '(11) 97777-6666' });
+  T('trocar o telefone derruba a conferência',
+    (await GET('rita', `/api/boletim?crianca_id=${alvoM.id}`)).corpo.contato_conferido === false);
+  await POST('rita', '/api/crianca/responsavel', { crianca_id: alvoM.id, responsavel: 'Mãe do smoke', contato: '(11) 98888-7777' });
+  T('o boletim NÃO leva conteúdo clínico nem detalhe de alerta',
+    !/Faltou nos|laudo|terapia|abuso/i.test(bol.texto));
+  T('o boletim NÃO leva o nível 1–4 da rubrica', !/\b[1-4]\/4\b/.test(bol.texto));
+  T('o boletim diz o que ficou de fora', Array.isArray(bol.fora) && bol.fora.length > 0);
+  T('a diretoria NÃO abre o boletim de ninguém (403)',
+    (await GET('solange', `/api/boletim?crianca_id=${alvoM.id}`)).status === 403);
+  T('ler o boletim deixa rastro',
+    (await GET('rita', `/api/acessos?crianca_id=${alvoM.id}`)).corpo.acessos.some(a => a.recurso === 'boletim'));
+
+  // --- o compartilhamento do sistema, sem service worker ------------------
+  const comp = await fetch(`${BASE}/compartilhar`, { method: 'POST', redirect: 'manual' });
+  T('compartilhar sem service worker leva à porta de importar, não a um 404',
+    comp.status === 303 && /#\/registrar\?porta=C/.test(comp.headers.get('location') || ''));
+}
+
+
+// -------------------------- 30. divulgação: grupos, fila e o card do Instagram
+secao('30 · Canais de WhatsApp e Instagram (decisões 47 e 48)');
+{
+  const div = await GET('rita', '/api/divulgar');
+  T('a coordenação vê os canais cadastrados', div.status === 200 && div.corpo.canais.length >= 6);
+  T('a diretoria também divulga', (await GET('solange', '/api/divulgar')).status === 200);
+  T('a professora NÃO abre a tela de divulgação (403)', (await GET('maria', '/api/divulgar')).status === 403);
+  const canaisMaria = (await GET('maria', '/api/canais')).corpo.canais;
+  T('a professora vê só os canais das turmas dela (e os que não são de turma)',
+    canaisMaria.length > 0 && canaisMaria.every(c => c.turma_id == null || c.turma == 'Reforço · Tarde A'));
+
+  // --- o que pode ir para cada público, recusado no SERVIDOR ---------------
+  const grupoPais = div.corpo.canais.find(c => c.publico === 'pais');
+  const perfil = div.corpo.canais.find(c => c.tipo === 'instagram');
+  T('carta do período NÃO vai para o grupo dos responsáveis (422)',
+    (await POST('rita', '/api/disparo', { canal_id: grupoPais.id, conteudo: 'carta' })).status === 422);
+  T('recado da turma NÃO vai para o Instagram (422)',
+    (await POST('rita', '/api/disparo', { canal_id: perfil.id, conteudo: 'recado' })).status === 422);
+  const okDisparo = await POST('rita', '/api/disparo',
+    { canal_id: grupoPais.id, conteudo: 'recado', referencia: 'smoke' });
+  T('o recado vai para o grupo dos responsáveis, e o envio fica registrado',
+    okDisparo.status === 200 && !!okDisparo.corpo.ultimo_envio);
+  T('o que já saiu aparece na lista, com quem mandou',
+    (await GET('rita', '/api/divulgar')).corpo.recentes.some(r => r.referencia === 'smoke' && r.quem));
+
+  // --- cadastro de canal ---------------------------------------------------
+  T('telefone no lugar do link de convite é recusado (422)',
+    (await POST('rita', '/api/canais', { tipo: 'whatsapp', nome: 'X', publico: 'pais', destino: '5511988887777' })).status === 422);
+  const novo = await POST('rita', '/api/canais',
+    { tipo: 'whatsapp', nome: 'Smoke · apoiadores', publico: 'apoiadores', destino: 'https://chat.whatsapp.com/SMOKEapoia001' });
+  T('a coordenação cadastra um grupo novo', novo.status === 200 && novo.corpo.ativo === 1);
+  T('a professora NÃO cadastra canal (403)',
+    (await POST('maria', '/api/canais', { tipo: 'whatsapp', nome: 'Y', publico: 'equipe', destino: 'https://chat.whatsapp.com/SMOKEy0000001' })).status === 403);
+  const arq = await POST('rita', '/api/canais/arquivar', { id: novo.corpo.id });
+  T('arquivar tira da lista viva sem apagar', arq.status === 200 && arq.corpo.ativo === 0);
+
+  // --- o card do Instagram -------------------------------------------------
+  const card = await GET('rita', '/api/divulgar/card?periodo=2026-07-01..2026-12-31');
+  T('o card do período é montado do agregado', card.status === 200 && card.corpo.linhas.length === 3);
+  T('o card passa pelo revisor de sobre-alegação', card.corpo.revisor === 'aprovado');
+  T('a legenda não afirma causa', !/graças a|por causa|resultado d[eo] nosso|comprova/i.test(card.corpo.legenda));
+  T('o card carrega a ressalva de supressão na própria imagem',
+    /menos de \d+/.test(card.corpo.ressalva));
+  T('período inválido é recusado (422)',
+    (await GET('rita', '/api/divulgar/card?periodo=xxx')).status === 422);
+  T('a professora NÃO gera o card (403)',
+    (await GET('maria', '/api/divulgar/card?periodo=2026-07-01..2026-12-31')).status === 403);
+}
+
+
+// -------------------------------- 31. decisão 50: passe, duplicidade e formato
+secao('31 · Passe para o celular, envio duplicado e o texto no link (decisão 50)');
+{
+  const canais = (await GET('rita', '/api/divulgar')).corpo.canais;
+  const grupo = canais.find(c => c.publico === 'pais');
+  const fila = { tipo: 'recado', rotulo: 'smoke', texto: 'x', imagem: 'data:image/png;base64,AAAA',
+    referencia: 'smoke-passe', canais: [{ id: grupo.id, nome: grupo.nome, feito: false }] };
+  const passe = await POST('rita', '/api/divulgar/passe', { fila });
+  T('a coordenação cria o passe (id aleatório, dez minutos)', passe.status === 200 && passe.corpo.id?.length >= 12 && passe.corpo.expira_em_s === 600);
+  T('a professora NÃO cria passe (403)', (await POST('maria', '/api/divulgar/passe', { fila })).status === 403);
+  T('a professora NÃO consome passe (403)', (await GET('maria', `/api/divulgar/passe?id=${passe.corpo.id}`)).status === 403);
+  const lido = await GET('solange', `/api/divulgar/passe?id=${passe.corpo.id}`);
+  T('a diretoria consome o passe — sem a imagem, com a fila inteira', lido.status === 200 && lido.corpo.fila.imagem === null && lido.corpo.fila.canais[0].id === grupo.id);
+  T('o passe vale por UMA leitura (404 na segunda)', (await GET('rita', `/api/divulgar/passe?id=${passe.corpo.id}`)).status === 404);
+  T('passe sem fila é recusado (422)', (await POST('rita', '/api/divulgar/passe', { fila: { canais: [] } })).status === 422);
+
+  const meiaNoite = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+  const antes = await GET('rita', `/api/divulgar/ja-recebeu?conteudo=recado&referencia=${encodeURIComponent('smoke-dup')}&desde=${encodeURIComponent(meiaNoite)}`);
+  T('antes de sair, ninguém "já recebeu"', antes.status === 200 && antes.corpo.canal_ids.length === 0);
+  await POST('rita', '/api/disparo', { canal_id: grupo.id, conteudo: 'recado', referencia: 'smoke-dup' });
+  const depois = await GET('rita', `/api/divulgar/ja-recebeu?conteudo=recado&referencia=${encodeURIComponent('smoke-dup')}&desde=${encodeURIComponent(meiaNoite)}`);
+  T('depois do disparo, o servidor diz quem já recebeu este conteúdo hoje', depois.corpo.canal_ids.includes(grupo.id));
+  T('outra referência não conta como duplicado',
+    !(await GET('rita', `/api/divulgar/ja-recebeu?conteudo=recado&referencia=outra&desde=${encodeURIComponent(meiaNoite)}`)).corpo.canal_ids.includes(grupo.id));
+
+  // Quem manda o recado no sábado é quem está em sala — e o produto tem de
+  // servir a ela sem abrir a divulgação inteira.
+  const todos = (await GET('rita', '/api/canais')).corpo.canais;
+  const daMaria = todos.find(c => c.turma === 'Reforço · Tarde A');
+  const deOutra = todos.find(c => c.turma && c.turma !== 'Reforço · Tarde A');
+  T('a professora registra o envio ao grupo da própria turma',
+    (await POST('maria', '/api/disparo', { canal_id: daMaria.id, conteudo: 'recado', referencia: 'smoke-maria' })).status === 200);
+  T('a professora NÃO registra envio ao grupo de outra turma (403)',
+    (await POST('maria', '/api/disparo', { canal_id: deOutra.id, conteudo: 'recado', referencia: 'smoke-maria' })).status === 403);
+  T('a professora pergunta quem já recebeu — devolve só ids, e o dela está lá',
+    (await GET('maria', `/api/divulgar/ja-recebeu?conteudo=recado&referencia=smoke-maria&desde=${encodeURIComponent(meiaNoite)}`)).corpo.canal_ids.includes(daMaria.id));
+
+  const rec = (await GET('rita', '/api/divulgar')).corpo.recados[0];
+  const recado = await GET('rita', `/api/recado?turma_id=${rec.turma_id}&data=${rec.data}`);
+  T('o link do recado já leva o texto formatado', decodeURIComponent(recado.corpo.whatsapp_url.split('text=')[1]).startsWith('*'));
+  T('o recado sai também formatado para o WhatsApp (primeira linha em negrito)',
+    recado.status === 200 && recado.corpo.texto_whatsapp?.startsWith('*') && recado.corpo.texto === recado.corpo.texto.replace(/^\*/, ''));
+  T('a assinatura do recado vai em itálico', /_— Instituto Ebenézer_$/.test(recado.corpo.texto_whatsapp.trim()));
+}
+
+
+// ------------------------------ 32. OPAR, segunda rodada: relatos vencidos e feriado
+secao('32 · Relato vencido é detectado e descartado com motivo; o recado respeita o feriado');
+{
+  // Uma criança fora da ativa, saída há três anos, com um relato guardado.
+  const arq = (await GET('rita', '/api/arquivo')).corpo;
+  const alvo = (arq.criancas ?? [])[0];
+  if (alvo) {
+    const desc = await POST('solange', '/api/relato-crianca/descartar-vencidos', { crianca_id: alvo.id, motivo: 'retenção vencida no fecho' });
+    T('a diretoria NÃO descarta relato (403)', desc.status === 403, `(${desc.status})`);
+    T('descartar sem motivo por extenso é recusado (422)',
+      (await POST('rita', '/api/relato-crianca/descartar-vencidos', { crianca_id: alvo.id, motivo: '.' })).status === 422);
+  } else {
+    T('há criança arquivada para o cenário', false, 'lista vazia');
+  }
+  const ativa = (await GET('rita', '/api/criancas')).corpo.criancas[0];
+  T('descartar relato de quem ainda tem matrícula ativa é recusado (422)',
+    (await POST('rita', '/api/relato-crianca/descartar-vencidos', { crianca_id: ativa.id, motivo: 'retenção vencida no fecho' })).status === 422);
+
+  // O recado da turma: marcar o próximo sábado como feriado tem de mudar o
+  // "próximo encontro" que sai por WhatsApp.
+  const hojeC = (await GET('carolina', '/api/hoje')).corpo;
+  const tid = hojeC.turma.id;
+  const encontros = (await GET('carolina', `/api/hoje`)).corpo;
+  const dataRec = (await GET('rita', '/api/divulgar')).corpo.recados.find(r => r.turma_id === tid)?.data;
+  if (dataRec) {
+    const antes = (await GET('carolina', `/api/recado?turma_id=${tid}&data=${dataRec}`)).corpo;
+    const mProx = /Próximo encontro: (\d{2}\/\d{2}\/\d{4})/.exec(antes.texto);
+    if (mProx) {
+      const [d, m, a] = mProx[1].split('/');
+      const iso = `${a}-${m}-${d}`;
+      const marca = await POST('rita', '/api/calendario', { turma_id: tid, data: iso, tipo: 'sem_encontro', motivo: 'feriado do smoke' });
+      const depois = (await GET('carolina', `/api/recado?turma_id=${tid}&data=${dataRec}`)).corpo;
+      T('o recado não anuncia o feriado como próximo encontro',
+        marca.status === 200 && !depois.texto.includes(`Próximo encontro: ${mProx[1]}`), depois.texto.match(/Próximo encontro: [^\n]+/)?.[0]);
+      await DELETE('rita', '/api/calendario', { turma_id: tid, data: iso });
+    } else {
+      T('o recado traz "Próximo encontro"', false, antes.texto.slice(-80));
+    }
+  } else {
+    T('há recado da turma da psicóloga para o cenário', false);
+  }
+
+  // pediram_ajuda: a folha aceita o "não informado" e devolve null, não 0.
+  const rec = (await GET('rita', '/api/divulgar')).corpo.recados[0];
+  const folha = (await GET('rita', `/api/folha?turma_id=${rec.turma_id}&data=${rec.data}`)).corpo;
+  T('a folha existente devolve pediram_ajuda como inteiro ou null, nunca string',
+    folha.folha == null || folha.folha.pediram_ajuda === null || Number.isInteger(folha.folha.pediram_ajuda));
 }
 
 console.log(`\n\x1b[1m${ok} passaram · ${falhas} falharam\x1b[0m\n`);

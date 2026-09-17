@@ -1,4 +1,4 @@
-// Percurso — sessões de conversa em memória (compartilhado por copilot e Passo).
+// Percurso — sessões de conversa em memória (compartilhado por copilot e Aurora).
 //
 // UMA política para os dois chats: RAM apenas, TTL, chave por usuário+sessão,
 // apagável. Nada persiste — a doutrina "memória só de sessão" mora aqui.

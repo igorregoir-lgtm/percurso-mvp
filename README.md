@@ -5,7 +5,7 @@
 Transforma a observação de minutos do educador em indicador de evolução por trajetória e por
 programa — sem que dado individual de criança saia da organização.
 
-**Versão 2** (22/08/2026): a professora fala 40 segundos e o sistema se alimenta; três scores que
+**Versão 2** (22/08/2026): a professora fala e o sistema se alimenta; três scores que
 não pontuam a criança; pauta de segunda como devolução; e o relatório do ciclo que a diretoria gera,
 revisa e envia a quem financia. O que mudou, feature a feature, está em
 [`docs/O-QUE-VEIO-DA-V2.md`](docs/O-QUE-VEIO-DA-V2.md).
@@ -21,8 +21,8 @@ encontro e **parecer a profissional parceiro** por código, sob consentimento. D
 [`docs/revisao/11-PLANO-POS-VISITA.md`](docs/revisao/11-PLANO-POS-VISITA.md).
 
 **Versão 3** (25/08/2026): a camada de IA local do plano de arquitetura, inteira e desligável —
-RAG com corpus governado por manifest (`#/copilot` cita a fonte), copilot reflexivo num Qwen3 4B
-rodando **na própria máquina** (nada sai dela), SROI exploratório determinístico (`#/impacto`),
+RAG com corpus governado por manifest (`#/pensar` cita a fonte), copilot reflexivo num Qwen3 4B
+rodando **na própria máquina** (nada sai dela), SROI exploratório determinístico (`#/relatorio?aba=impacto`),
 PWA, calibração entre educadoras no painel e a infraestrutura da Fase 4 (LoRA) com os gates
 declarados. Com `AI_ENABLED` desligada — o padrão — o produto é exatamente a v2. Plano auditado e
 execução: [`docs/revisao/04-PLANO-COMPLEMENTACAO-IA.md`](docs/revisao/04-PLANO-COMPLEMENTACAO-IA.md);
@@ -60,6 +60,15 @@ o banco recém-semeado — a bateria grava no banco):
 node scripts/reset.mjs && node scripts/smoke-test.mjs
 ```
 
+Para usar **no celular** (com captura de áudio), o servidor precisa de HTTPS — `getUserMedia` só
+funciona em contexto seguro, e o IP da LAN não conta como seguro:
+
+```bash
+node scripts/gerar-certificado.mjs && PERCURSO_HTTPS=1 node server.js
+```
+
+O aviso de "conexão não privada" na primeira visita é esperado: o certificado é desta máquina.
+
 Para rodar os testes unitários das regras críticas (não precisa de servidor; usa um banco
 temporário e nunca toca `data/percurso.db`):
 
@@ -67,17 +76,38 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **381 asserções de fluxo** e **167 testes unitários** — mais a avaliação do RAG
-(`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização) e a bateria da
+São **517 asserções de fluxo** e **221 testes unitários** — mais a avaliação do RAG
+(`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização), a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
-modelo). As quatro baterias rodam a cada push (`.github/workflows/ci.yml`), sempre com
-`AI_ENABLED=false` — os gates que exigem modelo real são locais (`ai/README.md`).
+modelo) e a da transcrição de áudio com stub (`npm run test:audio`: o ciclo de vida do arquivo, que
+é a garantia que a tela faz no instante do toque — 15 asserções, sem os 465 MB de modelo). As cinco
+baterias rodam a cada push (`.github/workflows/ci.yml`), sempre com `AI_ENABLED=false` — os gates
+que exigem modelo real são locais (`ai/README.md`).
 
 Para usar outra porta:
 
 ```bash
 PORT=8080 node server.js
 ```
+
+### Ligar a transcrição de áudio longo (opcional)
+
+As portas **A′** (narrar sem pressa), **B** (deixar gravando o encontro) e **C** (trazer um áudio
+que já existe) transcrevem no **computador do Instituto**, não no celular:
+
+```bash
+brew install whisper-cpp          # ou o equivalente da distribuição
+ai/scripts/setup-model.sh         # baixa e valida também o whisper-small (465 MB)
+PERCURSO_AUDIO=1 PERCURSO_HTTPS=1 node server.js
+```
+
+Sem `PERCURSO_AUDIO=1` o produto é idêntico ao de antes e a tela **não oferece** as três portas —
+oferecer uma porta que devolve erro seria pior que não ter porta. O áudio chega ao servidor, é
+transcrito e **apagado no mesmo instante**, sempre: `finally`, varredura de órfãos no boot e teto
+de idade. `GET /api/audio/status` diz se a máquina está pronta.
+
+A porta B é a única em que a sala inteira é gravada, com as crianças. Ela nasce **desligada mesmo
+com o recurso ligado** e só liga por escolha explícita, aparelho por aparelho.
 
 ### Ligar a camada de IA local (opcional)
 
@@ -99,8 +129,9 @@ ai/scripts/demo-celular.sh
 
 Sobe modelo + Percurso + túnel HTTPS temporário e imprime a URL `trycloudflare.com` com QR code —
 iPhone e Android abrem, instalam como app e **a voz funciona** (HTTPS ✓). `Ctrl+C` derruba tudo e
-a URL deixa de existir. Ferramenta de demonstração (decisão 25): pública, efêmera, sem senha —
-só com os dados sintéticos. Requisitos na máquina que apresenta: `brew install cloudflared qrencode`.
+a URL deixa de existir. Ferramenta de demonstração (decisão 25): pública e efêmera — e, **desde a
+decisão 51, sem senha nenhuma**, o que significa que qualquer pessoa com a URL entra como qualquer
+perfil, inclusive coordenação. Só com os dados sintéticos, e feche o túnel ao terminar. Requisitos na máquina que apresenta: `brew install cloudflared qrencode`.
 
 Para instalar o Percurso em OUTRO computador (o do Instituto), o passo a passo sem jargão está em
 [`docs/MANUAL-DE-INSTALACAO.md`](docs/MANUAL-DE-INSTALACAO.md) — inclui o início automático no
@@ -114,6 +145,16 @@ worker network-first, com fallback offline do shell). **Pelo IP da rede local**
 (`HOST=0.0.0.0 node server.js` → `http://IP-DO-NOTEBOOK:3000`) a página funciona normal no
 celular, mas **sem instalação nem offline** — service worker exige contexto seguro, e prometer o
 contrário seria falso. Caminho futuro (mkcert/túnel) registrado na decisão técnica nº 24.
+
+**Receber áudio compartilhado de outro aplicativo** (decisão 44). Instalado, o Percurso aparece na
+folha de compartilhamento do sistema: segurar um áudio no WhatsApp, no gravador ou no Arquivos e
+escolher *Percurso* leva o arquivo direto para a tela de registrar. Quem recebe o `POST
+/compartilhar` é o **service worker** — não há página aberta quando o sistema posta o arquivo —, que
+guarda os bytes num cache próprio, redireciona para `#/registrar?compartilhado=1` e a tela **apaga o
+cache depois de ler**. Limites declarados: exige service worker (logo, contexto seguro) e **o iOS
+ainda não implementa share target**; nesses casos o `POST` cai no servidor, que responde `303` para
+a porta de importar, e a pessoa escolhe o arquivo à mão — sem filtro de tipo, de propósito, porque
+um `accept="audio/*"` fazia `.opus` do WhatsApp sumir da lista de Arquivos do iPhone.
 
 ---
 
@@ -153,13 +194,17 @@ equivalentes: **Render é o deploy de operação; Vercel é vitrine.**
 
 ## Quem entra e o que vê
 
-O MVP não guarda senha — o controle de acesso real é uma decisão da coordenação, registrada em
-`docs/DECISOES-TECNICAS.md`. Na tela inicial escolhe-se o perfil:
+**Não há senha** (decisão 51, 07/09/2026): escolher o perfil na tela inicial já entra. O que isso
+custa está dito na própria decisão — **quem alcança o endereço entra como qualquer perfil da lista**,
+e por isso o produto só roda com dado sintético até que a autenticação volte. O que ficou de pé da
+decisão 39 é o **cookie como token opaco**, não o id: sem ele bastaria trocar o número no navegador
+para virar outra pessoa. Continuam controlando o que cada uma vê o papel, o escopo de turma, o
+consentimento e o rastro de acesso. Na tela inicial escolhe-se o perfil:
 
 | Perfil | Papel | Vê |
 |---|---|---|
 | **Maria Silvia** | Professora (a persona) | Hoje, Chamada, Pauta, Turma, Crianças, Refletir* |
-| **Rita Amaral** | Coordenação | Painel, Scores, Safras, Síntese, Consentimentos, Refletir* |
+| **Rita Amaral** | Coordenação | Painel, Scores, Safras, Síntese, Consentimentos, Pessoas (equipe, **turmas**, arquivo), Refletir* |
 | **Cleide Nunes** | Professora | As demais turmas |
 | **Solange Ribeiro** | Diretoria | Relatório do ciclo, Impacto (SROI exploratório) e consulta agregada — **e nada individual** |
 | **Carolina Duarte** | Psicóloga (papel `profissional`) | Hoje, Chamada, Vivência (registro de procedimento + check-in), Relato, Turma (com a régua de 75%), Crianças — **sem agenda de ciclo**: a Vivência fica fora da rubrica (decisão 31) |
@@ -174,7 +219,7 @@ presta contas trabalha sobre a camada agregada, então não precisa de acesso in
 
 ## O que o produto faz — e o que deliberadamente não faz
 
-**Faz.** Registra presença em um toque. Converte 40 segundos de fala em campos de uma folha de
+**Faz.** Registra presença em um toque. Converte a fala em campos de uma folha de
 turma, dentro de listas fechadas, com confirmação humana antes de qualquer gravação. Reconstrói anos
 de histórico a partir das planilhas antigas, deduplicando criança por nome mais nascimento. Calcula
 três scores que medem vínculo, sistema e oferta — nunca a criança. Devolve, toda segunda, três
@@ -203,13 +248,13 @@ canal mediado responder à pergunta 2 do bloco 7.
 
 | # | Funcionalidade | Onde está |
 |---|---|---|
-| F1 | Ficha viva da criança — criança ≠ matrícula, consentimento embutido | `#/criancas`, `#/crianca/:id`, `#/consentimentos` |
+| F1 | Ficha viva da criança — criança ≠ matrícula, consentimento embutido | `#/crianca`, `#/crianca/:id`, `#/consentimentos` |
 | F2 | Presença em um toque | `#/chamada` |
-| F3 | Ciclo de observação — rubrica com âncoras comportamentais | `#/observacao/:id` |
-| F4 | Agenda do ciclo — pendências, bloqueios e janela de convívio | `#/ciclo` |
+| F3 | Ciclo de observação — rubrica com âncoras comportamentais | `#/crianca/:id?ver=observacao` |
+| F4 | Agenda do ciclo — pendências, bloqueios e janela de convívio | `#/hoje?detalhe=ciclo` |
 | F5 | Trajetórias — individual categórica, turma/programa agregada | `#/turma`, ficha da criança, `#/painel` |
-| F6 | Safras, permanência e alerta de ausência | `#/safras`, `#/alertas` |
-| F7 | Fecho do ciclo — síntese em template contido + revisor | `#/sintese` |
+| F6 | Safras, permanência e alerta de ausência | `#/painel?aba=safras`, `#/hoje?detalhe=alertas` |
+| F7 | Fecho do ciclo — síntese em template contido + revisor | `#/painel?aba=sintese` |
 
 ### As quinze da v2 (`percurso-v2-pack`)
 
@@ -218,35 +263,35 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 
 | # | Funcionalidade | Onde está |
 |---|---|---|
-| F2 | Folha do dia — registro **da turma**, sem campo sobre criança | `#/folha` |
-| F3 | Captura por voz — 40 s, áudio descartado no próprio aparelho | `#/voz` |
+| F2 | Folha do dia — registro **da turma**, sem campo sobre criança | `#/registrar?passo=mao` |
+| F3 | Captura por voz — 40 s, áudio descartado no próprio aparelho | `#/registrar` |
 | F4 | Agente extrator — schema fechado, listas fixas, confiança calculada | `src/voz.js` |
 | F5 | Lista de exclusão — devolve encaminhamento humano, não erro | `filtrarPerimetro` + aviso âmbar |
-| F6 | Confirmação humana — nada é gravado antes do toque em confirmar | `#/confirmar` |
-| F7 | Ingestão retroativa — três grafias do mesmo nome viram uma criança | `#/importar` |
-| F8 | Score de risco de evasão — compara a criança com ela mesma | `#/scores`, `#/pauta` |
-| F9 | Score de cobertura do registro — mede o sistema, não a professora | `#/scores`, `#/painel` |
-| F10 | Score de exposição — aspiração declarada × atividade realizada | `#/scores` |
-| F11 | Pauta de segunda — três linhas e uma sugestão, com descarte medido | `#/pauta` |
+| F6 | Confirmação humana — nada é gravado antes do toque em confirmar | `#/registrar?passo=confirmar` |
+| F7 | Ingestão retroativa — três grafias do mesmo nome viram uma criança | `#/pessoas?aba=importar` |
+| F8 | Score de risco de evasão — compara a criança com ela mesma | `#/painel?aba=scores`, `#/hoje?detalhe=semana` |
+| F9 | Score de cobertura do registro — mede o sistema, não a professora | `#/painel?aba=scores`, `#/painel` |
+| F10 | Score de exposição — aspiração declarada × atividade realizada | `#/painel?aba=scores` |
+| F11 | Pauta de segunda — três linhas e uma sugestão, com descarte medido | `#/hoje?detalhe=semana` |
 | F12 | Painel da coordenação com bloco de cobertura | `#/painel` |
 | F13 | Relatório do ciclo — sete blocos, supressão antes da redação | `#/relatorio` |
 | F14 | Carta do trimestre — mesmo pipeline, template curto | `#/relatorio` |
-| F15 | Consulta em linguagem natural sobre a camada agregada | `#/consulta` |
+| F15 | Consulta em linguagem natural sobre a camada agregada | `#/relatorio?aba=consulta` |
 
 ### O que a visita de campo acrescentou (02/09/2026)
 
 | # | Funcionalidade | Onde está |
 |---|---|---|
 | V1 | Papel `profissional` (psicóloga) e a Vivência terapêutica com turma, presença e folha — fora da rubrica, dentro do registro de turma | `#/hoje` da psicóloga, `GET /api/inventario` (`foraDaRubrica`), decisão 31 |
-| V2 | Registro de vivência: procedimento e objetivo em lista fechada + **check-in de grupo** (contagens, nunca quem); o extrator lê as contagens da fala | `#/folha`, `#/voz`, `POST /api/voz/extrair`, `src/voz.js` |
-| V3 | Relato do procedimento no padrão do conselho, gerado dos campos fechados, sem nome, liberado pela profissional | `#/relato`, `GET /api/relato`, `POST /api/relato/liberar`, `src/relato.js` |
+| V2 | Registro de vivência: procedimento e objetivo em lista fechada + **check-in de grupo** (contagens, nunca quem); o extrator lê as contagens da fala | `#/registrar?passo=mao`, `#/registrar`, `POST /api/voz/extrair`, `src/voz.js` |
+| V3 | Relato do procedimento no padrão do conselho, gerado dos campos fechados, sem nome, liberado pela profissional | `#/sai-daqui?aba=relato`, `GET /api/relato`, `POST /api/relato/liberar`, `src/relato.js` |
 | V4 | Filtro de perímetro com contexto: o nome do procedimento não dispara; conteúdo sobre criança continua barrado | `filtrarPerimetro(…, { contexto: 'vivencia' })` |
-| V5 | A tela de voz diz o que grava; nome falado vira código na tela e é contado (`nomes_substituidos`) | `#/voz`, `#/confirmar` |
+| V5 | A tela de voz diz o que grava; nome falado vira código na tela e é contado (`nomes_substituidos`) | `#/registrar`, `#/registrar?passo=confirmar` |
 | V6 | Rubrica com os seis indicadores da planilha do Instituto; resumo da aba Indicadores e exportação da aba Avaliações (CSV, por código) | `#/painel`, `GET /api/planilha/resumo`, `GET /api/exportar/planilha`, `src/planilha.js`, decisão 34 |
 | V7 | Régua de presença do Instituto (75% · atenção até 80%): criança com faixa para quem responde pela turma; só contagens para a diretoria | `#/turma`, `#/painel`, `GET /api/turma/presenca`, `GET /api/regua`, decisão 33 |
-| V8 | Recado da turma para o grupo dos responsáveis — gerado do registro, sem criança nomeada, link wa.me sem número | `#/recado`, `GET /api/recado`, `src/recado.js` |
+| V8 | Recado da turma para o grupo dos responsáveis — gerado do registro, sem criança nomeada, link wa.me sem número | `#/sai-daqui?aba=recado`, `GET /api/recado`, `src/recado.js` |
 | V9 | Devolução por encontro: o check-in de hoje contra as últimas folhas da turma (cala sem base) | `#/hoje`, `POST /api/folha` (`devolucao`) |
-| V10 | Parecer a profissional parceiro — por código, sob consentimento específico, revisado e liberado; registro permanente de que saiu | ficha da criança → `#/parecer/:id`, `GET/POST /api/parecer/*`, `src/parecer.js`, decisão 32 |
+| V10 | Parecer a profissional parceiro — por código, sob consentimento específico, revisado e liberado; registro permanente de que saiu | ficha da criança → `#/crianca?ver=parecer`, `GET/POST /api/parecer/*`, `src/parecer.js`, decisão 32 |
 
 ### Cadastro de pessoas
 
@@ -254,17 +299,30 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 |---|---|---|
 | C1 | Cadastro da equipe — professora, coordenação e diretoria, com apelido derivado do nome e turma opcional (troca de turma exige confirmação) | `#/pessoas`, `POST /api/equipe` |
 | C2 | Cadastro de criança — matrícula ativa no mesmo ato, dedup por nome+nascimento, rubrica socioemocional nascendo **pendente** | `#/pessoas`, `POST /api/criancas` |
-| C3 | **Arquivo — ninguém é apagado.** Quem sai do pipeline sai das listas vivas e continua no sistema; sessão aberta de pessoa arquivada morre no ato. A volta da criança é matrícula **nova**, com consentimento voltando a pendente | `#/arquivo`, `POST /api/equipe/arquivar`, `POST /api/criancas/arquivar`, `.../reativar`, `.../rematricular` |
+| C4 | **Cadastro de turma** — criar, renomear, mudar o turno e passar a turma para outra professora. Turno não é rótulo: é ele que diz em que dias há encontro. Programa de turma **com matrícula** não muda, e coordenação/diretoria não assumem turma | `#/pessoas?aba=turmas`, `POST /api/turmas`, `.../editar` |
+| C5 | **Matrícula depois do cadastro** — trocar a turma de uma matrícula ativa (só dentro do mesmo programa) e matricular quem já está na ativa num programa a mais, pela própria ficha | `#/crianca/:id`, `POST /api/matricula/turma`, `POST /api/matricula` |
+| C6 | **Prova do consentimento em vídeo** — a coordenação grava (ou escolhe) o vídeo do responsável consentindo; arquivo em `data/consentimento/` (0600, fora de `public/`), leitura só de coordenação e **com rastro**, apagar exige motivo | `#/consentimentos`, `POST /api/consentimento/evidencia`, `GET /api/consentimento/video` |
+| C7 | **Boletim da criança para o responsável** — matrícula, presença e evolução em piorou/manteve/evoluiu, com link direto de WhatsApp. Não persiste. **Sem** relato livre, **sem** detalhe de alerta, **sem** nível 1–4 — e a tela diz o que ficou de fora | `#/crianca/:id`, `GET /api/boletim` |
+| C8 | **Canais de divulgação** — os grupos de WhatsApp e o perfil de Instagram ficam cadastrados, com o público declarado. O público é **trava**: carta não vai para grupo de responsáveis, recado não vai para o Instagram, e a recusa é do servidor. Destino é o **link de convite**, nunca telefone | `#/divulgar`, `POST /api/canais` |
+| C9 | **Fila de divulgação** — o texto é montado e copiado **uma vez**, a fila lembra quais grupos já receberam (sobrevive a sair do navegador) e o envio fica registrado. **Não existe botão que poste em todos os grupos**: nenhum site posta em grupo de WhatsApp existente, e a tela diz por quê | `#/divulgar`, `POST /api/disparo` |
+| C10 | **Card do período para o Instagram** — desenhado em `<canvas>` no próprio navegador, do mesmo agregado do relatório, com supressão de célula pequena, revisor de sobre-alegação e a ressalva metodológica **dentro da imagem** | `#/divulgar`, `GET /api/divulgar/card` |
+| C15 | **Retenção detectada, não executada** — o fecho de ciclo olha o relógio e lista, com nome e prazo, a prova em vídeo e os relatos livres cuja retenção venceu; **nada é apagado**. Descartar é gesto de coordenação, com motivo e log, e o servidor recusa se a matrícula está ativa ou o prazo não venceu | `POST /api/ciclo/fechar`, `POST /api/relato-crianca/descartar-vencidos` |
+| C16 | **Régua com a leitura relativa** — ao lado do percentual, "quantas faltas até sair da régua"; e a tela diz quando a faixa de atenção é aritmeticamente impossível para a janela | `#/turma`, `GET /api/turma/presenca` |
+| C14 | **Conferência do telefone antes do boletim** — a forma é validada contra DDD real e prefixo; e o link do boletim só nasce depois que alguém confirmou o número com o responsável, com o **como** registrado. A primeira mensagem é um desafio **sem nome de criança**: dígito errado recebe um cumprimento, não a ficha | `#/crianca/:id`, `POST /api/crianca/contato-conferido` |
+| C13 | **Cadastro de canais** — criar, editar, arquivar e trazer de volta grupos de WhatsApp e o perfil de Instagram, ao lado de Quem entra e Turmas. O **público** do canal é trava: define o que pode ser enviado, e a regra aparece no formulário enquanto se escolhe | `#/pessoas?aba=canais`, `POST /api/canais`, `.../editar`, `.../arquivar` |
+| C11 | **Folha da turma** — QR de cada grupo de WhatsApp e do Instagram, gerado no próprio navegador **sem biblioteca** (`public/qr.js`, verificado com leitor real), para imprimir e colar na parede: o responsável aponta a câmera e entra no grupo | `#/divulgar?folha=1` |
+| C12 | **Passe para o celular** — a fila montada no notebook vira um id de dez minutos, de uso único, que um QR leva ao celular; o texto vai **dentro do link** (`wa.me/?text=`), sem depender de clipboard; o servidor diz quem **já recebeu hoje** e a tela desmarca | `POST /api/divulgar/passe`, `GET /api/divulgar/ja-recebeu` |
+| C3 | **Arquivo — ninguém é apagado.** Quem sai do pipeline sai das listas vivas e continua no sistema; sessão aberta de pessoa arquivada morre no ato. A volta da criança é matrícula **nova**, com consentimento voltando a pendente | `#/pessoas?aba=arquivo`, `POST /api/equipe/arquivar`, `POST /api/criancas/arquivar`, `.../reativar`, `.../rematricular` |
 
 ### A camada de IA da v3 (opcional, `AI_ENABLED=1`)
 
 | Peça | O que faz | Onde está |
 |---|---|---|
 | RAG governado | busca com citação num corpus aprovado por manifest (leis, BNCC, material interno) | `GET /api/rag/search`, `src/rag/`, `docs/GOVERNANCA-FONTES-RAG.md` |
-| Copilot reflexivo (Modo B) | 7 blocos por gramática: perguntas socráticas, hipóteses rotuladas, ≥3 alternativas, contraponto, fontes verificadas, escalonamento | `#/copilot` (“Refletir”), `src/copilot.js` |
+| Copilot reflexivo (Modo B) | 7 blocos por gramática: perguntas socráticas, hipóteses rotuladas, ≥3 alternativas, contraponto, fontes verificadas, escalonamento | `#/pensar` (“Refletir”), `src/copilot.js` |
 | Modo A por modelo (opt-in extra) | extração da fala sob os MESMOS catálogos fechados, fallback lexical em toda falha | `AI_EXTRATOR=1`, `extrairComModelo` |
-| Passo, o assistente-parceiro | guia de navegação presente em todas as telas: tira dúvidas do produto, oferece "Ir para…", fala (opt-in) — responde SÓ sobre o Percurso, com fallback determinístico do guia | botão ❋, `src/assistente.js`, decisão 26 |
-| SROI exploratório | 3 cenários e faixa, motor determinístico, dupla contagem bloqueada, premissas com fonte | `#/impacto` (diretoria), `src/sroi/`, `docs/SROI-METODOLOGIA.md` |
+| Aurora, o assistente-parceiro | guia de navegação presente em todas as telas: tira dúvidas do produto, oferece "Ir para…", fala (opt-in) — responde SÓ sobre o Percurso, com fallback determinístico do guia | botão ❋, `src/assistente.js`, decisão 26 |
+| SROI exploratório | 3 cenários e faixa, motor determinístico, dupla contagem bloqueada, premissas com fonte | `#/relatorio?aba=impacto` (diretoria), `src/sroi/`, `docs/SROI-METODOLOGIA.md` |
 | Calibração entre educadoras | borda 2 da doutrina, determinística — pauta de reunião, nunca ranking | `#/painel` |
 | LoRA (Fase 4) | infraestrutura, funil de doação explícita e gates — **treino não executado por gate** | `ai/training/` |
 
@@ -274,7 +332,7 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 
 ```
 server.js                 servidor HTTP (Node puro, sem framework)
-src/db.js                 esquema do banco (24 tabelas) e helpers de SQL
+src/db.js                 esquema do banco (32 tabelas) e helpers de SQL
 src/domain.js             regras de presença, ciclo, consentimento, safras e síntese
 src/voz.js                catálogos fechados, agente extrator e folha do dia (v2)
 src/scores.js             os três scores, a supressão e a pauta de segunda (v2)
@@ -288,8 +346,8 @@ src/seed.js               geração dos dados sintéticos
 src/api.js                rotas HTTP/JSON
 src/ai-client.js          cliente do modelo local (fetch nativo, json_schema, timeouts) (v3)
 src/copilot.js            copilot reflexivo, recusas, pseudonimização, doação de interação (v3)
-src/assistente.js         Passo, o assistente-parceiro de navegação (guia + modelo, decisão 26)
-src/sessoes.js            sessões de conversa em memória com TTL (copilot e Passo)
+src/assistente.js         Aurora, o assistente-parceiro de navegação (guia + modelo, decisão 26)
+src/sessoes.js            sessões de conversa em memória com TTL (copilot e Aurora)
 src/rag/                  preparação de fontes, ingestão FTS5, busca e anonimizador (v3)
 src/sroi/calculator.js    motor SROI determinístico versionado (v3)
 ai/                       manifest de modelos, scripts do llama.cpp, prompts, treino (v3)
@@ -298,8 +356,8 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    381 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     167 testes unitários das regras críticas (banco temporário)
+scripts/smoke-test.mjs    517 asserções do fluxo principal (contra o servidor no ar)
+scripts/unit-test.mjs     221 testes unitários das regras críticas (banco temporário)
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
 scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)

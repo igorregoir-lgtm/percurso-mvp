@@ -34,6 +34,12 @@ jobs:
       - name: Camada de IA com stub (contrato de 7 blocos, recusas, fila, fallbacks, Modo A)
         run: node scripts/ai-stub-test.mjs
 
+      # O ciclo de vida do arquivo de áudio é a garantia que a tela faz no
+      # instante do toque. Sem gate, ela seria só frase — e o whisper de verdade
+      # (465 MB) não cabe no CI, daí o stub.
+      - name: Transcrição de áudio com stub (o áudio não sobrevive à transcrição)
+        run: node scripts/audio-stub-test.mjs
+
       - name: Subir servidor com dados sintéticos
         run: |
           node server.js &
