@@ -15,7 +15,7 @@ desta pasta roda, nenhuma rota de IA responde, nenhum byte sai da máquina.
 | Cliente | `src/ai-client.js` | fetch nativo em `/v1/chat/completions`, AbortController, health por papel, `json_schema` |
 | Copilot (Modo B) | `src/copilot.js` + `ai/prompts/copilot-reflexivo.md` | sala de reflexão: 7 blocos por gramática, citações verificadas |
 | Modo A opcional | `src/copilot.js` (`extrairComModelo`) + `ai/prompts/copilot-estruturado.md` | extração sob os catálogos fechados de `src/voz.js`, fallback lexical |
-| Passo (assistente) | `src/assistente.js` + `ai/prompts/assistente-passo.md` | parceiro de navegação: responde SÓ pelo GUIA do produto, ação como oferta, fala com scrub — fallback determinístico em toda falha (decisão 26) |
+| Aurora (assistente) | `src/assistente.js` + `ai/prompts/assistente-aurora.md` | parceiro de navegação: responde SÓ pelo GUIA do produto, ação como oferta, fala com scrub — fallback determinístico em toda falha (decisão 26) |
 | RAG | `src/rag/` + `data/rag/` | FTS5 sobre corpus aprovado por manifest |
 | Treino (Fase 4) | `ai/training/` | infraestrutura e gates — treino NÃO executado (leia o README de lá) |
 | Stub de teste | `scripts/ai-stub.mjs` | imita o llama-server para CI (sem GGUF) |
@@ -30,8 +30,8 @@ AI_ENABLED=1 node server.js        # terminal 2 — Percurso com a camada ativa
 
 `GET /api/ia/status` mostra o estado por papel. `AI_EXTRATOR=1` liga também o
 Modo A por modelo (o extrator lexical continua sendo o fallback de toda falha).
-`AI_ASSISTENTE=0` desliga SÓ o modelo do Passo mantendo o copilot — kill switch
-independente; o Passo continua respondendo pelo guia determinístico.
+`AI_ASSISTENTE=0` desliga SÓ o modelo da Aurora mantendo o copilot — kill switch
+independente; a Aurora continua respondendo pelo guia determinístico.
 
 **Em operação real com educadoras, ligar é condicionado ao GO da PoC**
 (`docs/POC-COPILOT.md`, gates absolutos do §6.3 da análise). Até lá, a flag só

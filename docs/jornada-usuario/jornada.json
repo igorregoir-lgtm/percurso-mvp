@@ -23,7 +23,7 @@
   "portas": [
    {
     "n": "A",
-    "titulo": "Falar 40 segundos",
+    "titulo": "Falar como foi",
     "texto": "Durante a atividade ou logo depois. Ela conta como foi, do jeito dela, e não preenche nada.",
     "estado": "já existe"
    },
@@ -88,7 +88,7 @@
     "A prova mais forte da manhã é uma frase dita em voz alta na roda. Se ninguém anotar na hora, ela evapora.",
     "ONDE O PRODUTO ENTRA: nada pode disputar a atenção dela aqui. Ou a captura custa segundos, ou não existe.",
     "ONDE O PRODUTO ENTRA: o celular gravando na mesa é a captura de custo zero — ela não faz nada e a matéria-prima do registro fica guardada.",
-    "SE NADA FOR REGISTRADO: a frase mais forte da roda ainda pode entrar depois. Contar em 40 segundos quando lembrar já basta.",
+    "SE NADA FOR REGISTRADO: a frase mais forte da roda ainda pode entrar depois. Contar quando lembrar já basta.",
     "O QUE NÃO PODE SER PERDIDO: o vídeo curto do celular para o grupo dos pais já funciona e ela chama de fácil. Nisso não se mexe."
    ],
    "citacao": "Agora eu já mando um vídeozinho, tá vendo?\nDo que tá acontecendo aqui.\nE você que fez? Pegou seu celular, gravou e fez.\nIsso, é fácil.\nSe você pudesse fazer tudo isso no celular, seria muito mais fácil.\nDo que você parar aí pro notebook.",
@@ -106,7 +106,7 @@
     "Ela já troca o nome pelas iniciais por conta própria, antes de qualquer sistema pedir.",
     "A leitura socioemocional já está pronta na cabeça dela e no vocabulário dela: resistência, resiliência.",
     "ONDE O PRODUTO ENTRA: check-in em contagens, que ela responde de cabeça — quantas ajudaram sem ninguém pedir, quantas participaram do começo ao fim, quantos conflitos. Sempre com a opção “não observei”.",
-    "ONDE O PRODUTO ENTRA: ou 40 segundos de fala. O nome dito no meio da frase é apagado sem interromper o relato, e nada é liberado sem o ok dela.",
+    "ONDE O PRODUTO ENTRA: ou uma fala curta, sem teto de tempo. O nome dito no meio da frase é apagado sem interromper o relato, e nada é liberado sem o ok dela.",
     "SE NADA FOR REGISTRADO: nada se perde. O encontro fica em aberto e aceita registro depois, sempre na data em que aconteceu."
    ],
    "citacao": "Eu acho que o maior desafio aqui é registrar o que você fez, né?\nEssa é a maior dificuldade, é o registro.",
@@ -220,7 +220,7 @@
    "consequencia": "Não é preferência de usuária que o produto escolheu respeitar: é formato regulado por terceiro. A saída do Percurso precisa nascer nesse padrão (descrição de procedimento, não individualizada, sem nome), senão ela continua escrevendo o relatório à mão e o sistema vira trabalho duplicado. E o repositório perde o argumento mais forte que tinha: a restrição é externa e inegociável, não um capricho de desenho."
   },
   {
-   "oQueORepoDiz": "O coração do MVP é a captura por voz (#/voz): fala de cerca de 40 segundos, transcrição no próprio aparelho, áudio descartado; a governança em src/seed.js registra \"Áudio da captura por voz — Não coletado / Não persiste em nenhum momento\".",
+   "oQueORepoDiz": "O coração do MVP é a captura por voz (#/voz): fala sem teto de tempo, transcrição no próprio aparelho quando ele sabe fazê-la, áudio descartado; a governança em src/seed.js registra \"Áudio da captura por voz — Não coletado / Não persiste em nenhum momento\".",
    "oQueOCampoMostrou": "Gravar é tratado como proibido, e a palavra usada é perigoso, mesmo com o dado ficando na sala: \"Mas mesmo que fique aqui dentro este dado, ela não pode fazer? / É perigoso, né?\" Em paralelo, gravar vídeo da atividade e mandar para o grupo dos pais é rotina tranquila e chamada de fácil.",
    "consequencia": "A fronteira real não é técnica, é sobre quem aparece na gravação: a voz da profissional sobre a turma é aceitável, a captação da criança não. A arquitetura já responde certo e a tela do momento da gravação não diz nada disso. Sem essa frase visível no exato instante do toque, o fluxo principal do MVP esbarra no medo — e a garantia \"o áudio não persiste\" fica escondida num documento que ela nunca vai ler."
   },

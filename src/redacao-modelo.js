@@ -27,7 +27,7 @@ import { conversar, AI_ENABLED } from './ai-client.js';
 import { comVaga } from './fila-modelo.js';
 // O revisor de sobre-alegação chega por INJEÇÃO, não por import: domain.js
 // passou a importar este módulo, e um ciclo de import entre os dois é frágil.
-// Pelo mesmo motivo do orquestrador do Passo, este arquivo não alcança o
+// Pelo mesmo motivo do orquestrador da Aurora, este arquivo não alcança o
 // domínio — ele recebe tudo o que precisa.
 
 // DESLIGADO POR PADRÃO, e a razão é medida, não cautelosa.

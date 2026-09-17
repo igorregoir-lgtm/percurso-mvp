@@ -435,7 +435,7 @@ export function redigirCarta(n) {
 
 // Periodos que a diretoria costuma pedir, calculados sobre o calendario.
 // Morava em src/api.js como funcao privada; passou para ca (exportada) porque o
-// painel do Passo precisa saber quais periodos existem para dizer qual ainda
+// painel da Aurora precisa saber quais periodos existem para dizer qual ainda
 // nao tem relatorio publicado — e api.js nao e' lugar de regra de dominio.
 export function periodosSugeridos(ref = hoje()) {
   const h = ref;

@@ -103,7 +103,7 @@ export function catalogos() {
     objetivos: OBJETIVOS.map(({ codigo, rotulo }) => ({ codigo, rotulo })),
     checkin: CHECKIN.map(({ campo, rotulo }) => ({ campo, rotulo })),
     checkin_max: CHECKIN_MAX,
-    voz_segundos: PARAMS.VOZ_SEGUNDOS,
+    voz_sugestao_segundos: PARAMS.VOZ_SUGESTAO_SEGUNDOS,
     confianca_minima: PARAMS.CONFIANCA_MINIMA,
   };
 }
@@ -123,8 +123,9 @@ export function validarExtracao(obj) {
     if (new Set(o.marcadores_turma).size !== o.marcadores_turma.length) erros.push('marcadores_turma com repetição');
     for (const m of o.marcadores_turma) if (!codigos(MARCADORES).includes(m)) erros.push(`marcador fora da lista: ${m}`);
   }
-  if (!Number.isInteger(o.pediram_ajuda) || o.pediram_ajuda < 0 || o.pediram_ajuda > 30)
-    erros.push('pediram_ajuda deve ser inteiro de 0 a 30');
+  // null = nao informado, e e' valido (OPAR 05/09): zero e' afirmacao.
+  if (o.pediram_ajuda != null && (!Number.isInteger(o.pediram_ajuda) || o.pediram_ajuda < 0 || o.pediram_ajuda > 30))
+    erros.push('pediram_ajuda deve ser inteiro de 0 a 30, ou vazio');
   if (o.faltas_mencionadas != null && !Array.isArray(o.faltas_mencionadas))
     erros.push('faltas_mencionadas deve ser lista');
   if (typeof o.confianca !== 'number' || o.confianca < 0 || o.confianca > 1)
@@ -166,22 +167,53 @@ const NUMEROS = { um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5,
                   sete: 7, oito: 8, nove: 9, dez: 10, onze: 11, doze: 12, treze: 13, quatorze: 14, catorze: 14,
                   quinze: 15, dezesseis: 16, dezessete: 17, dezoito: 18, dezenove: 19, vinte: 20, trinta: 30,
                   nenhum: 0, nenhuma: 0, ninguem: 0 };
-const PALAVRA_NUMERO = '(\\d{1,2}|' + Object.keys(NUMEROS).join('|') + ')';
+// "vinte e um" a "vinte e nove": composicao fechada, nao inferencia. Antes caia
+// em branco (seguro), agora conta — e a alternacao poe o composto ANTES do
+// simples, senao "vinte e tres" casaria so' "vinte".
+for (const [u, n] of Object.entries(NUMEROS)) if (n >= 1 && n <= 9) NUMEROS[`vinte e ${u}`] = 20 + n;
+const PALAVRA_NUMERO = '(\\d{1,2}|' + Object.keys(NUMEROS).sort((a, b) => b.length - a.length).join('|') + ')';
 
 // Contagem do check-in: o numero que vem ANTES do termo, na mesma frase
 // ("duas ajudaram sem ninguem pedir", "seis participaram do comeco ao fim").
-// Termo sem numero conta 1 ("teve um conflito" e' "conflito" com 'um' antes;
-// "resolveu conversando" sem numero e' 1). Ausente = null (nao informado),
-// nunca 0: zero e' afirmacao, e a fala nao afirmou.
+// Ausente = null (nao informado), nunca 0: zero e' afirmacao, e a fala nao
+// afirmou.
+//
+// O DEFAULT 1 SAIU EM 05/09/2026, e o motivo e' um defeito medido. A versao
+// anterior devolvia 1 em tres situacoes de "nao entendi":
+//
+//   · termo sem numeral nenhum — "todas participaram do comeco ao fim" numa
+//     turma de 24 gravava **1**, e o indicador de participacao despencava sem
+//     que ninguem tivesse dito isso;
+//   · numero fora de 0..CHECKIN_MAX — "32 participaram" gravava 1;
+//   · "resolveram conversando" sozinho INVENTAVA um conflito que ninguem contou.
+//
+// Isso contradizia a doutrina escrita quatro linhas acima e em `:295`
+// ("falhar em branco e' melhor que falhar preenchido"). Agora "nao entendi"
+// e' `null` em todos os casos, e a pessoa preenche na conferencia — que e' o
+// gate que sempre existiu.
+//
+// A fronteira: so' vira numero um NUMERAL INEQUIVOCO adjacente ao termo.
+// Quantificador ("todas", "a maioria") nao vira numero porque o extrator NAO
+// CONHECE o tamanho da turma — supor seria inventar. Faixa ("seis ou sete")
+// tambem nao: a fala nao escolheu.
 function contarAntesDe(texto, termo) {
   const re = new RegExp('(?:' + PALAVRA_NUMERO + '\\s+(?:crian[c]as?\\s+)?(?:dela?s?\\s+)?)?' + termo);
   const m = texto.match(re);
   if (!m) return null;
-  if (m[1] == null) return 1;
+  const antes = texto.slice(0, m.index);
+
+  // "seis OU sete participaram": o regex pega o numeral mais proximo (sete) e
+  // transformaria uma faixa em numero firme. A fala nao escolheu; nem o produto.
+  if (m[1] != null && new RegExp(PALAVRA_NUMERO + '\\s+(?:ou|a)\\s*$').test(antes)) return null;
+
+  // Termo sem numeral. "meia duzia" e' fechado e literal, entao conta; qualquer
+  // outra coisa (inclusive quantificador) fica em branco.
+  if (m[1] == null) return /meia\s+duzia\s+(?:de\s+)?(?:crian[c]as?\s+)?$/.test(antes) ? 6 : null;
+
   // PALAVRA_NUMERO captura digito (\d{1,2}) OU palavra; aqui o teste tem de ser
   // regex LITERAL com \d simples — /^\\d+$/ procurava barra-invertida e virava 1.
   const n = /^\d+$/.test(m[1]) ? Number(m[1]) : NUMEROS[m[1]];
-  return Number.isInteger(n) && n >= 0 && n <= CHECKIN_MAX ? n : 1;
+  return Number.isInteger(n) && n >= 0 && n <= CHECKIN_MAX ? n : null;
 }
 
 export function extrairCheckin(textoNormalizado) {
@@ -190,12 +222,22 @@ export function extrairCheckin(textoNormalizado) {
   ck.ajudaram_sem_pedir = contarAntesDe(t, 'ajud(?:ou|aram|ando)\\s+(?:o[s]?\\s+colegas?\\s+)?sem\\s+(?:ninguem\\s+|que\\s+ninguem\\s+|precisar\\s+)?(?:pedir|pedisse|precisar)');
   ck.participaram_inteiro = contarAntesDe(t, 'particip(?:ou|aram|ando)\\s+(?:d[oa]\\s+)?(?:comeco|inicio)\\s+ao\\s+(?:fim|final)')
     ?? contarAntesDe(t, 'ficaram\\s+ate\\s+o\\s+fim') ?? contarAntesDe(t, 'particip(?:ou|aram)\\s+ate\\s+o\\s+fim');
-  if (/(sem|nenhum|nao teve|nao houve|zero)\s+conflito/.test(t)) ck.conflitos = 0;
+  // A negacao vem antes OU depois: "sem conflito" e "conflito nenhum" dizem a
+  // mesma coisa, e so' a primeira era entendida — a segunda gravava 1 conflito,
+  // virando a negacao em afirmacao.
+  if (/(sem|nenhum|nao teve|nao houve|zero)\s+conflito/.test(t)
+   || /conflitos?\s+(nenhum|algum|zero)/.test(t)) ck.conflitos = 0;
   else ck.conflitos = contarAntesDe(t, 'conflitos?');
-  const resolvidos = contarAntesDe(t, 'resolv(?:eu|eram|ido|idos)\\s+(?:na\\s+conversa|conversando|no\\s+dialogo|dialogando)');
+  const TERMO_RESOLVIDOS = 'resolv(?:eu|eram|ido|idos)\\s+(?:na\\s+conversa|conversando|no\\s+dialogo|dialogando)';
+  const resolvidos = contarAntesDe(t, TERMO_RESOLVIDOS);
   if (resolvidos != null) {
     if (ck.conflitos == null) ck.conflitos = resolvidos;
     ck.conflitos_resolvidos_conversando = Math.min(resolvidos, ck.conflitos);
+  } else if (new RegExp(TERMO_RESOLVIDOS).test(t) && ck.conflitos > 0) {
+    // "teve um conflito e resolveram conversando": sem numeral proprio, mas o
+    // total e' conhecido — resolveram OS conflitos. Sem total conhecido, o
+    // "resolveram conversando" sozinho nao inventa conflito nenhum.
+    ck.conflitos_resolvidos_conversando = ck.conflitos;
   } else if (ck.conflitos === 0) ck.conflitos_resolvidos_conversando = 0;
   ck.nao_observados = contarAntesDe(t, 'nao\\s+(?:foi|foram|deu\\s+para|consegui|conseguimos)\\s+observ\\w*')
     ?? contarAntesDe(t, 'nao\\s+observ(?:ei|amos|ad[oa]s?)');
@@ -216,15 +258,25 @@ function acharNaLista(lista, texto) {
 
 function contarPediramAjuda(texto) {
   // "tres pediram ajuda", "4 crianças pediram ajuda", "pediram ajuda: 3"
-  const re = /(\d{1,2}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|quatorze|catorze)\s*(?:crian[cç]as?\s*)?(?:me\s*)?pediram?\s+ajuda/;
+  // FRONTEIRA DE PALAVRA obrigatoria: sem ela, a alternacao casava o SUFIXO —
+  // "deze**sseis** pediram ajuda" gravava 6, "dezessete" 7, "dezenove" 9. E a
+  // lista curta duplicava `NUMEROS` pela metade; agora usa a mesma fonte.
+  // `pediu` entrou porque todo singular do preterito ("uma crianca pediu
+  // ajuda") era perdido e virava o fallback.
+  const re = new RegExp('(?<![a-z0-9])' + PALAVRA_NUMERO
+    + '\\s*(?:crian[c]as?\\s*)?(?:me\\s*)?ped(?:iu|iram|ira|irao)\\s+ajuda');
   const m = texto.match(re);
   if (m) {
     const bruto = m[1];
     const n = /^\d+$/.test(bruto) ? Number(bruto) : NUMEROS[bruto];
     if (Number.isInteger(n) && n >= 0 && n <= 30) return n;
   }
-  if (/pediram?\s+ajuda/.test(texto)) return 1;
-  return 0;
+  // Singular explicito ("uma crianca pediu ajuda" ja' casou acima com 'uma';
+  // "pediu ajuda" sozinho e' um sujeito so') conta 1. Plural sem numeral
+  // ("pediram ajuda") nao diz quantas — e nao inventamos. Sem mencao, nao
+  // informado: null, nunca 0, porque zero e' afirmacao.
+  if (/(?<![a-z])pediu\s+ajuda/.test(texto)) return 1;
+  return null;
 }
 
 /**
@@ -247,7 +299,7 @@ export function extrairDaFala(transcricao, nomesDaTurma = [], { vivencia = false
 
   const vazia = {
     atividade: 'nao_identificada', area_tematica: 'nenhuma', marcadores_turma: [],
-    pediram_ajuda: 0, faltas_mencionadas: [], confianca: 0, conteudo_excluido: perimetro.bloqueado,
+    pediram_ajuda: null, faltas_mencionadas: [], confianca: 0, conteudo_excluido: perimetro.bloqueado,
     procedimento: vivencia ? 'nao_identificado' : null, objetivo: vivencia ? 'nenhum' : null,
     checkin: checkinVazio(),
   };
@@ -263,11 +315,18 @@ export function extrairDaFala(transcricao, nomesDaTurma = [], { vivencia = false
   const temCheckin = Object.values(checkin).some(v => v != null);
 
   // faltas: so quando a educadora DIZ que faltou, e so para nome da turma.
+  //
+  // FRONTEIRA DE PALAVRA, obrigatoria. Era `limpo.includes(primeiro)`, e
+  // "Ana" casava dentro de "semana" — "faltou gente essa semana" marcaria a Ana
+  // como falta. Presenca decide renovacao de matricula (regua de 75%, decisao
+  // 33): uma falta inventada por substring nao e' detalhe.
   const faltas = [];
   if (/(faltou|faltaram|nao veio|nao vieram|nao apareceu)/.test(limpo)) {
     for (const nome of nomesDaTurma) {
       const primeiro = normalizar(nome).split(' ')[0];
-      if (primeiro.length >= 3 && limpo.includes(primeiro)) faltas.push(nome);
+      if (primeiro.length < 3) continue;
+      const fronteira = new RegExp(`(?:^|[^a-z0-9])${primeiro.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|[^a-z0-9])`);
+      if (fronteira.test(limpo)) faltas.push(nome);
     }
   }
 
@@ -326,6 +385,40 @@ export function folhaDaTurma(turmaId, data) {
 }
 
 /**
+ * A ULTIMA folha da turma ANTES desta data — a matriz-prima do "Igual ao
+ * encontro de <data>".
+ *
+ * POR QUE ISTO EXISTE: hoje toda folha nasce neutra (procedimento
+ * `nao_identificado`, objetivo `nenhum`, marcadores vazios) mesmo quando ha'
+ * doze encontros iguais da mesma turma atras. Foi promessa literal na visita
+ * (Grav. 84): *"ele ja' sabe o que voce faz... e' igual a sala do passado"*.
+ *
+ * NAO usa modelo, e nao pre-grava nada: e' sugestao para a tela oferecer com um
+ * toque, e o gate de confirmacao humana continua identico.
+ */
+export function folhaAnteriorDaTurma(turmaId, data) {
+  const enc = get(
+    `SELECT e.id, e.data FROM encontro e JOIN folha f ON f.encontro_id = e.id
+      WHERE e.turma_id = ? AND e.data < ? ORDER BY e.data DESC LIMIT 1`, turmaId, data);
+  if (!enc) return null;
+  const f = folhaDe(enc.id);
+  if (!f) return null;
+  return {
+    data: enc.data,
+    campos: {
+      atividade: f.atividade,
+      area_tematica: f.area_tematica,
+      marcadores_turma: [...f.marcadores],
+      procedimento: f.procedimento ?? null,
+      objetivo: f.objetivo ?? null,
+      // As CONTAGENS nao vem: quantas ajudaram sem pedir e quantos conflitos
+      // houve sao do encontro de hoje, e repeti-las seria inventar observacao.
+      // O que se repete e' o DESENHO da atividade, nao o que aconteceu nela.
+    },
+  };
+}
+
+/**
  * Grava a folha do dia. Chamada SOMENTE depois do toque em "Confirmar e guardar".
  *
  * @param {object} p
@@ -351,7 +444,7 @@ export function salvarFolha({ encontroId, educadorId, campos, origem = 'manual',
     atividade: c.atividade ?? 'nao_identificada',
     area_tematica: c.area_tematica ?? 'nenhuma',
     marcadores_turma: [...new Set(c.marcadores_turma ?? [])],
-    pediram_ajuda: Number.isFinite(Number(c.pediram_ajuda)) ? Number(c.pediram_ajuda) : 0,
+    pediram_ajuda: (c.pediram_ajuda === '' || c.pediram_ajuda == null) ? null : Number(c.pediram_ajuda),
     faltas_mencionadas: [],
     // A confianca e' do AGENTE, nunca do corpo enviado pelo cliente: quem edita
     // a folha a mao nao pode reescrever a metrica que mede o proprio agente.

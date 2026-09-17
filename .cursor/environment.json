@@ -1,0 +1,10 @@
+{
+  "name": "Percurso MVP",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "percurso",
+      "command": "bash .cursor/server.sh"
+    }
+  ]
+}

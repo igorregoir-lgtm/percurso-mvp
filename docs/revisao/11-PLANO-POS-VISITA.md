@@ -1,5 +1,10 @@
 # Plano pós-visita — o que o campo mudou no Percurso
 
+> **Nota de 03/09/2026 — o assistente mudou de nome.** O que este documento chama de
+> **Passo** hoje se chama **Aurora**, com ícone de girassol. O texto abaixo fica como foi
+> escrito: é registro do que se decidiu na época, e reescrevê-lo apagaria a data da decisão.
+> O estado atual está em [`DECISOES-TECNICAS.md`](../DECISOES-TECNICAS.md).
+
 > **O que é.** O plano de ajustes do artefato depois da visita ao Instituto Ebenézer (29/08/2026),
 > escrito a partir da leitura integral das quatro transcrições, do consolidado, da planilha
 > socioemocional, das duas mentorias (26/08 e 28/08), do guia de entrega do Módulo 3 e do dossiê

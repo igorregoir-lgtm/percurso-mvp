@@ -1,5 +1,10 @@
 # 08 — Revisão da implementação do Passo (assistente-parceiro)
 
+> **Nota de 03/09/2026 — o assistente mudou de nome.** O que este documento chama de
+> **Passo** hoje se chama **Aurora**, com ícone de girassol. O texto abaixo fica como foi
+> escrito: é registro do que se decidiu na época, e reescrevê-lo apagaria a data da decisão.
+> O estado atual está em [`DECISOES-TECNICAS.md`](../DECISOES-TECNICAS.md).
+
 **Data:** 25/08/2026 · **Escopo:** ciclo do plano `07-PLANO-ASSISTENTE.md` (rev 2)
 **Método:** o mesmo dos ciclos anteriores — implementação → gates → inspeção visual mobile
 pelo túnel → revisão adversarial multiagente (3 lentes × achado × cético) → correção de TUDO

@@ -173,7 +173,7 @@ HTML = """<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
     <h2>O que observar, passo a passo</h2>
     <p class="cap">Cada linha tem um limiar que reprova. Sem limiar, observação vira impressão.</p>
     <table>
-      <tr><th>Passo</th><th>Medida e o que reprova</th><th>Hipótese</th></tr>
+      <tr><th>Aurora</th><th>Medida e o que reprova</th><th>Hipótese</th></tr>
       %s
     </table>
   </div>

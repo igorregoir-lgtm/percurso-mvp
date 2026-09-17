@@ -12,6 +12,7 @@
     "test:unit": "node scripts/unit-test.mjs",
     "test:rag": "node scripts/rag-test.mjs",
     "test:ia": "node scripts/ai-stub-test.mjs",
+    "test:audio": "node scripts/audio-stub-test.mjs",
     "rag:fontes": "node src/rag/preparar-fontes.mjs",
     "rag:ingest": "node src/rag/ingest.mjs",
     "ia:setup": "ai/scripts/setup-model.sh",

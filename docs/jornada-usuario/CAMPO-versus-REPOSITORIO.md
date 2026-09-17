@@ -41,7 +41,7 @@ este documento mostra onde ele nos contrariou.
 
 ## 4. Gravar é tratado como proibido, e a palavra usada é perigoso, mesmo com o dado ficando n…
 
-**O que o repositório diz.** O coração do MVP é a captura por voz (#/voz): fala de cerca de 40 segundos, transcrição no próprio aparelho, áudio descartado; a governança em src/seed.js registra "Áudio da captura por voz — Não coletado / Não persiste em nenhum momento".
+**O que o repositório diz.** O coração do MVP é a captura por voz (#/voz): fala sem teto de tempo, transcrição no próprio aparelho quando ele sabe fazê-la, áudio descartado; a governança em src/seed.js registra "Áudio da captura por voz — Não coletado / Não persiste em nenhum momento".
 
 **O que o campo mostrou.** Gravar é tratado como proibido, e a palavra usada é perigoso, mesmo com o dado ficando na sala: "Mas mesmo que fique aqui dentro este dado, ela não pode fazer? / É perigoso, né?" Em paralelo, gravar vídeo da atividade e mandar para o grupo dos pais é rotina tranquila e chamada de fácil.
 

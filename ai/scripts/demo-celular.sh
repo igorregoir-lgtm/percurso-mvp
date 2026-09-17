@@ -78,6 +78,15 @@ for i in $(seq 1 30); do
 done
 echo "  app pronto."
 
+# ---- 2b. NAO HA MAIS SENHA A DEFINIR ----------------------------------------
+# A decisao 51 removeu a senha: entrar e' escolher um perfil na lista. Em LAN
+# com dado sintetico e' o custo aceito. NUMA URL PUBLICA NAO E': o passo que
+# antes fechava a janela de primeiro acesso nao existe mais, e nao ha nada a
+# fechar no lugar dele. Quem receber o endereco entra como qualquer perfil —
+# inclusive coordenacao e diretoria. E' por isso que o aviso do fim mudou de
+# tom, e por que este script so' pode rodar com dado sintetico.
+
+
 # ---- 3. túnel HTTPS temporário ----------------------------------------------
 echo "Abrindo o túnel HTTPS (cloudflared quick tunnel)…"
 cloudflared tunnel --url "http://127.0.0.1:$PORTA" --no-autoupdate > "$SCRATCH/tunel.log" 2>&1 &
@@ -110,7 +119,11 @@ echo
 echo "  🎙  A voz funciona no celular (HTTPS ✓). Entre como Maria e toque em"
 echo "     Hoje → Contar como foi. O copilot está em Refletir$( [ "$IA" = "1" ] && echo " (IA ligada)" || echo " (IA DESLIGADA nesta execução)")."
 echo
-echo "  ⚠  URL pública e efêmera, sem senha, dados 100% sintéticos."
+echo "  🔓 NÃO HÁ SENHA (decisão 51). Quem abrir esta URL entra como qualquer"
+echo "     perfil da lista — inclusive coordenação e diretoria."
+echo "     Só use com dado sintético, e feche o túnel ao terminar."
+echo
+echo "  ⚠  URL pública e efêmera, dados 100% sintéticos."
 echo "     Feche com Ctrl+C — o túnel morre e a URL deixa de existir."
 echo
 echo "════════════════════════════════════════════════════════════════"

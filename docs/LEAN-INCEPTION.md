@@ -159,7 +159,9 @@ escreve o relatório com adjetivos, porque não tem substantivos.
                                             texto liberado para o relatório
 ```
 
+
 ### As seis user stories que o MVP demonstra
+
 
 1. Como **pedagoga**, quero registrar minha observação de cada criança em minutos, com âncoras
    claras, para manter processo consistente sem tirar atenção das crianças. *(F3)*
@@ -170,7 +172,7 @@ escreve o relatório com adjetivos, porque não tem substantivos.
    expor nenhuma criança. *(F5, F7)*
 5. Como **coordenação**, quero campos sem consentimento bloqueados por padrão, para que a proteção
    seja regra do sistema. *(F1)*
-6. Como **psicóloga da Vivência**, quero contar em 40 segundos como foi o encontro, para que o
+6. Como **psicóloga da Vivência**, quero contar de viva voz como foi o encontro, para que o
    relatório no padrão do conselho exista sem eu ter que escrever à noite. *(decisão 31)*
 
 > **A sexta chegou depois, e pelo campo.** As cinco de cima saíram da inception, com a pedagoga como
@@ -193,11 +195,12 @@ Ao concluir a **última observação pendente da turma**, a tela inteira muda. N
 sucesso: é uma parada. Maria vê, em sequência:
 
 - **18 de 18** — a turma fechada;
-- **~54 min** — o que aquilo custou a ela no ciclo inteiro, ao lado de **5 dimensões comparáveis**;
-- as barras das cinco dimensões, ciclo 1 contra ciclo 2, aparecendo na frente dela;
-- e a frase, em serifada, entre aspas:
+- **~54 min** — o que aquilo custou a ela no ciclo inteiro, ao lado das **dimensões comparáveis**
+  (hoje são seis — decisão 34; na inception eram cinco);
+- as barras das dimensões, ciclo 1 contra ciclo 2, aparecendo na frente dela;
+- e a frase, em serifada, entre aspas, montada pelo produto a partir das médias reais:
 
-  > *"Entre o primeiro e o segundo ciclo de observação, as médias da turma subiram em 5 de 5
+  > *"Entre o primeiro e o segundo ciclo de observação, as médias da turma subiram em N de M
   > dimensões socioemocionais. 'Expressão emocional' segue como a menor média e orienta o plano do
   > próximo período. As médias descrevem o que a equipe observou, não efeito medido; fatores externos não
   > foram isolados."*
@@ -218,8 +221,8 @@ semana, sentir que "já era", e nunca mais voltar. O produto foi desenhado contr
 | Retomada sem culpa: *"Que bom te ver de volta… Nada se perdeu"* | `#/hoje`, após 5+ dias sem registro |
 | Nenhuma data expira — chamadas atrasadas continuam registráveis | `#/chamada`, seletor com as datas em aberto |
 | Encadeamento de recuperação: ao salvar, o sistema abre a próxima pendência | após salvar a chamada |
-| Rascunho de observação: sai no meio, volta onde parou | `#/observacao/:id` |
-| Barra de progresso que só sobe — sem *streak*, sem penalidade, sem vermelho de falha | `#/hoje`, `#/ciclo` |
+| Rascunho de observação: sai no meio, volta onde parou | `#/crianca/:id?ver=observacao` |
+| Barra de progresso que só sobe — sem *streak*, sem penalidade, sem vermelho de falha | `#/hoje`, `#/hoje?detalhe=ciclo` |
 | Bloqueio explicado, nunca como erro da usuária | crianças bloqueadas na agenda do ciclo |
 
 ---
