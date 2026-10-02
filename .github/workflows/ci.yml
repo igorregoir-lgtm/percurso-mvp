@@ -14,6 +14,7 @@ on:
 
 env:
   AI_ENABLED: "false"
+  PERCURSO_CHAVE_ACESSO: "chave-sintetica-ci"
 
 jobs:
   testes:

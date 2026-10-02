@@ -619,27 +619,27 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
   const { readFileSync } = await import('node:fs');
   const raiz = new URL('../', import.meta.url);
   const ANCORAS = {
-    'public/app.js:542': /rota\(\/\^#\\\/hoje\//,
-    'public/app.js:639': /Revisar e liberar o relato|relato_liberado/,
+    'public/app.js:544': /rota\(\/\^#\\\/hoje\//,
+    'public/app.js:641': /Revisar e liberar o relato|relato_liberado/,
     // Regex ESTREITA de proposito: /recados|#\/recado/ casava em quatro linhas,
     // e a reancorar.mjs nao tinha como decidir qual. Ancora que casa em varios
     // lugares nao ancora nada.
     // O botão do recado. O destino virou `#/sai-daqui?aba=recado` na F2, mas o
     // que a âncora guarda é o mesmo: ele leva a TURMA e a DATA do encontro.
-    'public/app.js:640': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
-    'public/app.js:1473': /coordenacao.*Consentimentos|Registre abaixo/,
+    'public/app.js:642': /data-acao="ir" data-href="#\/sai-daqui\?aba=recado&turma_id=\$\{r\.turma_id\}&data=\$\{r\.data\}"/,
+    'public/app.js:1475': /coordenacao.*Consentimentos|Registre abaixo/,
     // A rota #/scores virou aba do Painel (F2); a âncora segue o conteúdo.
-    'public/app.js:3369': /async function telaScores\(\)/,
-    'public/app.js:3603': /id="pergunta"/,
+    'public/app.js:3371': /async function telaScores\(\)/,
+    'public/app.js:3605': /id="pergunta"/,
     // O passo 05 do task flow: confirmar a folha devolve para #/hoje em vez de
     // abrir o relato. A ancora e' a linha logo depois do POST da folha — o
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:6522': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
-    'src/api.js:388': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:829': /'POST \/api\/consentimento'/,
-    'src/api.js:1351': /periodosSugeridos\(\)/,
+    'public/app.js:6325': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'src/api.js:390': /erro\(422.*rubrica por ciclo/,
+    'src/api.js:831': /'POST \/api\/consentimento'/,
+    'src/api.js:1363': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:113': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
