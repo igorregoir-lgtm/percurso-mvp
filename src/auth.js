@@ -11,14 +11,12 @@
 // com token opaco, quem escolhe um perfil na tela recebe uma sessao que o
 // servidor emitiu; quem edita o cookie na mao nao recebe nada.
 //
-// A revisão do PR #7 acrescenta PERCURSO_CHAVE_ACESSO, exigida antes de
-// emitir qualquer sessão. É compartilhada pela equipe: restringe a entrada,
-// mas não comprova identidade individual de quem escolheu o perfil.
-// Sem configuração, o login fica bloqueado.
+// Entrar volta a ser escolher o perfil, conforme decisão do responsável.
+// O token opaco protege a sessão, mas não comprova identidade individual.
 //
 // SEM DEPENDENCIA NOVA. `randomBytes` vem do `node:crypto`; a decisao tecnica
 // n. 1 (sem npm, sem build) continua de pe'.
-import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 
 // --------------------------------------------------------------------------
 // SESSOES COM TOKEN OPACO. O cookie nao e' o id.
@@ -57,12 +55,4 @@ export function encerrarSessoesDe(educadorId) {
 function limpar() {
   const t0 = Date.now();
   for (const [t, s] of sessoes) if (t0 > s.expiraEm) sessoes.delete(t);
-}
-
-// A chave compartilhada restringe a entrada; não prova identidade individual.
-export function chaveConfigurada() { return !!process.env.PERCURSO_CHAVE_ACESSO; }
-export function validarChave(chave) {
-  if (!chaveConfigurada() || typeof chave !== 'string') return false;
-  const hash = valor => createHash('sha256').update(valor).digest();
-  return timingSafeEqual(hash(chave), hash(process.env.PERCURSO_CHAVE_ACESSO));
 }

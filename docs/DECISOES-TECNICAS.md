@@ -1576,3 +1576,7 @@ ou `primeiro_acesso` chega ao navegador; e as duas rotas de senha respondem 404.
 ### Revisão do PR #7 — chave de acesso da equipe (02/10/2026)
 
 Por autorização do responsável pelo produto, a decisão 51 passa a exigir uma chave compartilhada configurada em `PERCURSO_CHAVE_ACESSO` antes de emitir sessões. Não configurada: 503; ausente ou incorreta: 401. O token opaco e o escopo por turma permanecem. A chave restringe a entrada, mas não autentica individualmente cada operador. A tela oferece campo de chave; o segredo deve ser configurado no ambiente do deploy, nunca no Git.
+
+### Retirada da chave de acesso (02/10/2026)
+
+Por solicitação do responsável, a exigência de chave compartilhada da revisão do PR #7 foi retirada. A entrada volta a ser a escolha do perfil, conforme decisão 51, mantendo o token opaco e as permissões por turma. Quem alcança a tela de entrada pode escolher qualquer perfil.

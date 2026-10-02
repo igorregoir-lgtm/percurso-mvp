@@ -462,8 +462,6 @@ rota(/^#\/entrar/, async () => {
     <p class="sub entra" style="animation-delay:.13s">Transforma a observação de minutos do educador em evidência de evolução — sem que dado de criança saia da organização.</p>
     <div class="cartao entra" style="margin-top:20px; animation-delay:.2s">
       <h2>Quem está registrando hoje?</h2>
-      <label for="chave-acesso">Chave de acesso da equipe</label>
-      <input id="chave-acesso" type="password" autocomplete="current-password">
       <p class="sub">Escolha quem está usando o Percurso. O registro fica assinado com esse nome.</p>
       <div class="pilha" style="margin-top:14px" id="lista-perfis">
         ${usuarios.map((u, i) => `
@@ -6089,12 +6087,12 @@ document.addEventListener('click', comErro(async (ev) => {
   }
 
   if (a === 'entrar') {
-    // A chave compartilhada restringe o acesso antes de emitir a sessão.
+    // Escolher o perfil emite uma sessão com token opaco.
     // O perfil escolhido continua determinando a assinatura do registro.
     alvo.disabled = true;
     let usuario;
     try {
-      ({ usuario } = await post('/api/sessao', { educador_id: Number(alvo.dataset.id), chave_acesso: document.getElementById('chave-acesso').value }));
+      ({ usuario } = await post('/api/sessao', { educador_id: Number(alvo.dataset.id) }));
     } catch (e) {
       toast(e.message, 'ruim');
       return;

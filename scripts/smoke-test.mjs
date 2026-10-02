@@ -26,8 +26,8 @@ async function req(quem, caminho, opts = {}) {
   return { status: r.status, corpo };
 }
 const GET = (quem, c) => req(quem, c);
-const POST = (quem, c, b) => req(quem, c, { method: 'POST', body: JSON.stringify(c === '/api/sessao' ? { chave_acesso: process.env.PERCURSO_CHAVE_ACESSO, ...b } : (b || {})) });
-const DELETE = (quem, c, b) => req(quem, c, { method: 'DELETE', body: JSON.stringify(c === '/api/sessao' ? { chave_acesso: process.env.PERCURSO_CHAVE_ACESSO, ...b } : (b || {})) });
+const POST = (quem, c, b) => req(quem, c, { method: 'POST', body: JSON.stringify(b || {}) });
+const DELETE = (quem, c, b) => req(quem, c, { method: 'DELETE', body: JSON.stringify(b || {}) });
 
 // SESSÃO (decisão 51, que revogou a senha da 39). Entrar é escolher quem está
 // usando: o corpo leva só o id, e a resposta traz o token opaco no cookie. É o
@@ -39,8 +39,6 @@ console.log(`Alvo: ${BASE}\n`);
 
 // -------------------------------------------------------------- 0. sessao
 secao('0 · Sessão e controle de acesso');
-T('login sem chave é recusado', (await POST('sem-chave', '/api/sessao', { educador_id: 1, chave_acesso: '' })).status === 401);
-T('login com chave incorreta é recusado', (await POST('chave-errada', '/api/sessao', { educador_id: 1, chave_acesso: 'incorreta' })).status === 401);
 {
   const anon = await GET('anon', '/api/hoje');
   T('sem sessão, /api/hoje responde 401', anon.status === 401, `(${anon.status})`);

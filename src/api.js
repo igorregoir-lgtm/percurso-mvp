@@ -220,8 +220,6 @@ export const rotas = {
   // O que continua valendo: a pessoa tem de existir e não estar arquivada, e a
   // sessão sai com TOKEN OPACO — o cookie nunca volta a ser o id.
   'POST /api/sessao': (req, body) => {
-    if (!AUTH.chaveConfigurada()) throw D.erro(503, 'A chave de acesso ainda não foi configurada no servidor.');
-    if (!AUTH.validarChave(body.chave_acesso)) throw D.erro(401, 'Chave de acesso inválida.');
     const u = get(`SELECT * FROM educador WHERE id = ?`, num(body.educador_id, 'educador_id'));
     if (!u) throw D.erro(404, 'Usuário não encontrado.');
     if (u.arquivado_em)
