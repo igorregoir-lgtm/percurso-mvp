@@ -441,3 +441,7 @@ rastreada no git.
 ## Atualização
 
 Última sincronização deste repositório: **25 de agosto de 2026**.
+
+### Chave de acesso
+
+Configure `PERCURSO_CHAVE_ACESSO` no ambiente do servidor e informe essa chave na tela de entrada. Sem configuração, novas sessões são bloqueadas (503); chave ausente ou incorreta recebe 401. No Render, configure o valor secreto no painel; não o versione. A chave é compartilhada: restringe a entrada, mas não comprova identidade individual nem impede que um membro da equipe escolha outro perfil.

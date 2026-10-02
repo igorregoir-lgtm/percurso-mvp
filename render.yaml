@@ -8,6 +8,8 @@ services:
     healthCheckPath: /
     autoDeployTrigger: commit
     envVars:
+      - key: PERCURSO_CHAVE_ACESSO
+        sync: false
       - key: PERCURSO_DB
         value: /var/data/percurso.db
     disk:

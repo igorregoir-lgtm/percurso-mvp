@@ -26,8 +26,8 @@ async function req(quem, caminho, opts = {}) {
   return { status: r.status, corpo };
 }
 const GET = (quem, c) => req(quem, c);
-const POST = (quem, c, b) => req(quem, c, { method: 'POST', body: JSON.stringify(b || {}) });
-const DELETE = (quem, c, b) => req(quem, c, { method: 'DELETE', body: JSON.stringify(b || {}) });
+const POST = (quem, c, b) => req(quem, c, { method: 'POST', body: JSON.stringify(c === '/api/sessao' ? { chave_acesso: process.env.PERCURSO_CHAVE_ACESSO, ...b } : (b || {})) });
+const DELETE = (quem, c, b) => req(quem, c, { method: 'DELETE', body: JSON.stringify(c === '/api/sessao' ? { chave_acesso: process.env.PERCURSO_CHAVE_ACESSO, ...b } : (b || {})) });
 
 // SESSÃO (decisão 51, que revogou a senha da 39). Entrar é escolher quem está
 // usando: o corpo leva só o id, e a resposta traz o token opaco no cookie. É o
@@ -39,6 +39,8 @@ console.log(`Alvo: ${BASE}\n`);
 
 // -------------------------------------------------------------- 0. sessao
 secao('0 · Sessão e controle de acesso');
+T('login sem chave é recusado', (await POST('sem-chave', '/api/sessao', { educador_id: 1, chave_acesso: '' })).status === 401);
+T('login com chave incorreta é recusado', (await POST('chave-errada', '/api/sessao', { educador_id: 1, chave_acesso: 'incorreta' })).status === 401);
 {
   const anon = await GET('anon', '/api/hoje');
   T('sem sessão, /api/hoje responde 401', anon.status === 401, `(${anon.status})`);
@@ -1019,6 +1021,15 @@ secao('16 · Relatório do ciclo, carta e supressão (F13/F14)');
   T('a distribuição por turma substitui a lista nominal', Array.isArray(sc.evasao.por_turma) && sc.evasao.por_turma.length > 0);
   T('a distribuição por turma também respeita o mínimo de célula',
     sc.evasao.por_turma.every(t => t.n >= 5), JSON.stringify(sc.evasao.por_turma));
+  T('as áreas e lacunas da diretoria respeitam o mínimo de célula',
+    [...sc.exposicao.areas, ...sc.exposicao.lacunas].every(a => a.criancas >= 5));
+  T('o destaque de exposição vem das lacunas publicáveis',
+    sc.exposicao.maior_lacuna === null || sc.exposicao.lacunas.some(a =>
+      JSON.stringify(a) === JSON.stringify(sc.exposicao.maior_lacuna)));
+  const expCoordenacao = (await GET('rita', '/api/scores')).corpo.exposicao;
+  const pequenas = expCoordenacao.areas.filter(a => a.criancas > 0 && a.criancas < 5);
+  T('o cenário contém áreas pequenas e seus rótulos não chegam à diretoria',
+    pequenas.length > 0 && pequenas.every(a => !JSON.stringify(sc.exposicao).includes(a.rotulo)));
 
   // Rodada 2: a diretoria não escreve nem lê registro individual em rota nenhuma.
   const escrita = await POST('solange', '/api/observacao',

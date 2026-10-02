@@ -220,6 +220,8 @@ export const rotas = {
   // O que continua valendo: a pessoa tem de existir e não estar arquivada, e a
   // sessão sai com TOKEN OPACO — o cookie nunca volta a ser o id.
   'POST /api/sessao': (req, body) => {
+    if (!AUTH.chaveConfigurada()) throw D.erro(503, 'A chave de acesso ainda não foi configurada no servidor.');
+    if (!AUTH.validarChave(body.chave_acesso)) throw D.erro(401, 'Chave de acesso inválida.');
     const u = get(`SELECT * FROM educador WHERE id = ?`, num(body.educador_id, 'educador_id'));
     if (!u) throw D.erro(404, 'Usuário não encontrado.');
     if (u.arquivado_em)
@@ -1294,6 +1296,16 @@ export const rotas = {
   'GET /api/scores': (req) => {
     const u = exigeGestao(req);
     const evasao = S.riscoEvasao({});
+    const exposicao = S.exposicao({});
+    if (u.papel === 'diretoria') {
+      const sup = S.suprimir(exposicao.areas.filter(a => a.criancas > 0), {
+        chave: 'criancas', rotulo: 'Demais áreas', somaveis: ['criancas', 'atividades'],
+      });
+      exposicao.areas = sup.publicaveis;
+      // Lacunas e destaque devem sair do mesmo conjunto publicável.
+      exposicao.lacunas = sup.publicaveis.filter(a => (a.atividades ?? 0) === 0);
+      exposicao.maior_lacuna = [...exposicao.lacunas].sort((a, b) => b.criancas - a.criancas)[0] ?? null;
+    }
     // A coordenacao age sobre a crianca (liga para a familia) e por isso ve o
     // nome. A diretoria trabalha sobre a camada agregada: recebe a contagem e a
     // distribuicao por turma, nunca a lista nominal com score individual.
@@ -1325,7 +1337,7 @@ export const rotas = {
     return {
       evasao: evasaoParaODevido,
       cobertura: S.coberturaRegistro({}),
-      exposicao: S.exposicao({}),
+      exposicao,
       extrator: V.qualidadeDoExtrator({}),
       descarte: S.taxaDeDescarte({}),
       doutrina: 'Nenhum destes scores pontua a criança. Não existe score socioemocional individual, por decisão de desenho.',

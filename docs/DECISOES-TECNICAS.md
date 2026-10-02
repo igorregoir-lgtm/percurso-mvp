@@ -1572,3 +1572,7 @@ por turma, o arquivamento — quem está no arquivo não entra, e a sessão aber
 §0b: entrar sem senha; um cliente antigo que ainda mande `senha` no corpo entra assim mesmo (o campo
 é ignorado, não recusado); cookie forjado e token inventado seguem em 401; nenhuma string de senha
 ou `primeiro_acesso` chega ao navegador; e as duas rotas de senha respondem 404.
+
+### Revisão do PR #7 — chave de acesso da equipe (02/10/2026)
+
+Por autorização do responsável pelo produto, a decisão 51 passa a exigir uma chave compartilhada configurada em `PERCURSO_CHAVE_ACESSO` antes de emitir sessões. Não configurada: 503; ausente ou incorreta: 401. O token opaco e o escopo por turma permanecem. A chave restringe a entrada, mas não autentica individualmente cada operador. A tela oferece campo de chave; o segredo deve ser configurado no ambiente do deploy, nunca no Git.
