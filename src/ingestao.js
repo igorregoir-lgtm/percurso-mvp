@@ -9,7 +9,7 @@
 // o que o pack chamava de "pipeline com LLM" vira regra auditavel, porque uma
 // deduplicacao errada de crianca e' um erro que ninguem consegue rastrear depois.
 import { all, get, run, tx } from './db.js';
-import { hoje, agora, erro, recalcularAlertas } from './domain.js';
+import { hoje, agora, erro, recalcularAlertas, proximoCodigoCrianca } from './domain.js';
 
 // --------------------------------------------------------------------------
 // Parser de CSV — aspas, delimitador `,` ou `;`, BOM e CRLF.
@@ -269,7 +269,6 @@ export function importarPlanilha({ csv, origem = 'planilha.csv', turmaId, execut
     const naTurma = chaveada(all(
       `SELECT c.id, c.nome, c.nascimento FROM crianca c
          JOIN matricula m ON m.crianca_id = c.id AND m.turma_id = ?`, turma.id));
-    const seq = () => get(`SELECT COUNT(*) AS n FROM crianca`).n + 1;
 
     for (const g of grupos) {
       const forte = !!g.nascimento;
@@ -287,7 +286,10 @@ export function importarPlanilha({ csv, origem = 'planilha.csv', turmaId, execut
         // Sem nascimento na planilha, marca a data como desconhecida em vez de
         // inventar: o relatorio lista essas criancas para conferencia humana.
         const nascimento = g.nascimento ?? NASCIMENTO_DESCONHECIDO;
-        const codigo = 'EBZ-' + String(seq()).padStart(4, '0');
+        // COUNT(*)+1 reemitia um codigo ja usado assim que uma crianca saisse
+        // do banco, e `crianca.codigo` e' UNIQUE: a importacao inteira ia ao
+        // chao no INSERT. O gerador unico mora no dominio (MAX do sufixo).
+        const codigo = proximoCodigoCrianca();
         run(`INSERT INTO crianca (codigo, nome, nascimento, responsavel, ativo, criado_em)
              VALUES (?,?,?,?,1,?)`, codigo, g.nome, nascimento, 'Responsável a confirmar', hoje());
         criancaId = get(`SELECT id FROM crianca WHERE codigo = ?`, codigo).id;

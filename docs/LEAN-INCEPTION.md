@@ -62,6 +62,12 @@ que alimenta o relatório ao financiador.
 outro regime de sigilo. Um sistema que capturasse o que a psicóloga sabe é um sistema que não
 deveria existir.
 
+> **Corrigido pelo campo (29/08/2026, decisão 31).** A segunda frase continua verdadeira; a
+> primeira caiu. A psicóloga é usuária **do indicador de programa** — presença, registro de
+> vivência em lista fechada, check-in de grupo — e é quem nomeia o registro como a dor central.
+> O que ela sabe do atendimento continua fora por construção. Ver `JORNADAS.md` §4 e
+> `jornada-usuario/CAMPO-versus-REPOSITORIO.md`.
+
 **Quem nunca é titular operacional — a criança.** Todo o público é menor de idade; nenhum fluxo
 depende de ação da criança e todo consentimento é do responsável.
 
@@ -153,7 +159,9 @@ escreve o relatório com adjetivos, porque não tem substantivos.
                                             texto liberado para o relatório
 ```
 
-### As cinco user stories que o MVP demonstra
+
+### As seis user stories que o MVP demonstra
+
 
 1. Como **pedagoga**, quero registrar minha observação de cada criança em minutos, com âncoras
    claras, para manter processo consistente sem tirar atenção das crianças. *(F3)*
@@ -164,6 +172,16 @@ escreve o relatório com adjetivos, porque não tem substantivos.
    expor nenhuma criança. *(F5, F7)*
 5. Como **coordenação**, quero campos sem consentimento bloqueados por padrão, para que a proteção
    seja regra do sistema. *(F1)*
+6. Como **psicóloga da Vivência**, quero contar de viva voz como foi o encontro, para que o
+   relatório no padrão do conselho exista sem eu ter que escrever à noite. *(decisão 31)*
+
+> **A sexta chegou depois, e pelo campo.** As cinco de cima saíram da inception, com a pedagoga como
+> persona. A visita de 29/08/2026 mostrou que quem tem a dor do registro e quem escreve o relatório
+> é a **psicóloga** — e que a turma dela fica fora da rubrica por decisão de projeto. A US-6 é a
+> história que a inception não tinha como ter: ela nasce de uma pessoa dizendo *"o maior desafio
+> aqui é registrar o que você fez, né?"*. O fluxo dela está desenhado em
+> [`task-flow/README.md`](task-flow/README.md) e é o que a sessão de
+> [`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md) mede.
 
 ---
 
@@ -177,11 +195,12 @@ Ao concluir a **última observação pendente da turma**, a tela inteira muda. N
 sucesso: é uma parada. Maria vê, em sequência:
 
 - **18 de 18** — a turma fechada;
-- **~54 min** — o que aquilo custou a ela no ciclo inteiro, ao lado de **5 dimensões comparáveis**;
-- as barras das cinco dimensões, ciclo 1 contra ciclo 2, aparecendo na frente dela;
-- e a frase, em serifada, entre aspas:
+- **~54 min** — o que aquilo custou a ela no ciclo inteiro, ao lado das **dimensões comparáveis**
+  (hoje são seis — decisão 34; na inception eram cinco);
+- as barras das dimensões, ciclo 1 contra ciclo 2, aparecendo na frente dela;
+- e a frase, em serifada, entre aspas, montada pelo produto a partir das médias reais:
 
-  > *"Entre o primeiro e o segundo ciclo de observação, as médias da turma subiram em 5 de 5
+  > *"Entre o primeiro e o segundo ciclo de observação, as médias da turma subiram em N de M
   > dimensões socioemocionais. 'Expressão emocional' segue como a menor média e orienta o plano do
   > próximo período. As médias descrevem o que a equipe observou, não efeito medido; fatores externos não
   > foram isolados."*
@@ -202,8 +221,8 @@ semana, sentir que "já era", e nunca mais voltar. O produto foi desenhado contr
 | Retomada sem culpa: *"Que bom te ver de volta… Nada se perdeu"* | `#/hoje`, após 5+ dias sem registro |
 | Nenhuma data expira — chamadas atrasadas continuam registráveis | `#/chamada`, seletor com as datas em aberto |
 | Encadeamento de recuperação: ao salvar, o sistema abre a próxima pendência | após salvar a chamada |
-| Rascunho de observação: sai no meio, volta onde parou | `#/observacao/:id` |
-| Barra de progresso que só sobe — sem *streak*, sem penalidade, sem vermelho de falha | `#/hoje`, `#/ciclo` |
+| Rascunho de observação: sai no meio, volta onde parou | `#/crianca/:id?ver=observacao` |
+| Barra de progresso que só sobe — sem *streak*, sem penalidade, sem vermelho de falha | `#/hoje`, `#/hoje?detalhe=ciclo` |
 | Bloqueio explicado, nunca como erro da usuária | crianças bloqueadas na agenda do ciclo |
 
 ---

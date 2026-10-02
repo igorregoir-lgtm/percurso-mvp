@@ -14,19 +14,35 @@ Em outro:
 node scripts/smoke-test.mjs
 ```
 
-Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **242 passaram,
+Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.txt) — **517 passaram,
 0 falharam**.
 
-Há também uma bateria de **55 testes unitários** das regras críticas de domínio (filtro de
+Há também uma bateria de **221 testes unitários** das regras críticas de domínio (filtro de
 perímetro, validação do schema do extrator, determinismo do agente, os três scores, supressão com
 agrupamento, deduplicação da ingestão, revisor de sobre-alegação, consentimento, imutabilidade da
-síntese, fecho de ciclo), que roda sem servidor, contra um banco temporário descartável:
+síntese, fecho de ciclo, cadastro e arquivo de pessoas, base fixa da curva de permanência), que roda sem servidor, contra um banco temporário descartável:
 
 ```bash
 node scripts/unit-test.mjs
 ```
 
-As duas baterias rodam a cada push via [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
+E uma bateria de **19 asserções da transcrição de áudio** (decisão 35), que não precisa dos 465 MB
+do modelo — o `scripts/whisper-stub.mjs` imita a interface do `whisper-cli`, e o que se testa é o
+que importa e não depende do modelo: **o ciclo de vida do arquivo**. *"O áudio é apagado assim que
+vira texto"* é a frase que a tela mostra no instante do toque; sem este gate ela seria só frase.
+Verificado como gate de verdade: removendo o `finally` de `src/transcricao.js`, quatro asserções
+caem.
+
+```bash
+node scripts/audio-stub-test.mjs
+```
+
+Dois gates novos de 04/09/2026 vale nomear, porque cobrem um vão que existia por construção —
+**o despacho de rotas do cliente**, que smoke (HTTP) e unitário (sem DOM) nunca alcançaram:
+nenhuma rota pode ser engolida por outra (foi assim que `#/relatorio` ficou inalcançável desde a
+v2), e a tabela de âncoras não pode encolher em silêncio por número repetido.
+
+As cinco baterias (unitária, RAG, IA com stub, áudio com stub e smoke) rodam a cada push via [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
 Os testes **alteram o banco** (concluem observações, aprovam a síntese, revogam consentimento).
 Para voltar ao estado de demonstração — pode rodar com o servidor no ar, é só recarregar a página:
@@ -46,7 +62,7 @@ node scripts/reset.mjs
 | 2 · Chamada (F2) | 10 | datas em aberto; chamada incompleta recusada (422); status inválido recusado; data futura recusada; salva; sai da lista de pendentes; persiste no banco |
 | 3 · Agenda do ciclo (F4) | 4 | observáveis + bloqueadas = total; bloqueio por consentimento; bloqueio por janela de convívio; cobertura só sobre observáveis |
 | 4 · Observação e proteção (F3) | 12 | 403 sem consentimento; 403 sem convívio; 422 com dimensão faltando; nível fora da escala recusado; rascunho aceito e recuperado; **texto sobre a criança recusado com encaminhamento humano (422)**; sem texto, conclui normalmente; **nenhum texto sobre criança existe no banco** |
-| 5 · Fechar o ciclo (F5) | 7 | conclusão das pendentes; pendências zeram; cobertura 100%; bloqueadas continuam bloqueadas; dois ciclos comparáveis; leitura de forças e atenção |
+| 5 · Fechar o ciclo (F5) | 20 | conclusão das pendentes; pendências zeram; cobertura 100%; bloqueadas continuam bloqueadas; dois ciclos comparáveis; leitura de forças e atenção |
 | 5b · Melhorias da análise Bússola | 13 | custo de tempo medido e persistido; meta = 120s; plano da semana com foco na menor média; atividade do banco fixo; doutrina declarada; ganchos agregados; **invariante de supressão: nenhuma média com n < 5**; reconciliação com 3 fontes; aspiração na ficha e na governança |
 | 6 · Alerta e safras (F6) | 6 | alerta aberto; status inválido recusado; tratativa registrada; curvas por safra; **permanência nunca sobe dentro de uma safra**; evasão por programa |
 | 7 · Síntese (F7) | 9 | gerada como rascunho; revisor aprova; **texto sem verbo causal forte**; ressalva metodológica presente; números do texto batem com o SQL; educadora não aprova (403); coordenação aprova; síntese aprovada não é sobrescrita |
@@ -58,9 +74,21 @@ node scripts/reset.mjs
 | **13 · Pauta de segunda (F11)** | 16 | três cartões; nenhum item nasce de modelo; a semana é uma segunda; nomes só da própria turma; sugestão sai da lacuna; decisão inválida recusada; **descarte registrado e alimentando a métrica de qualidade**; limiar de 30% declarado |
 | **14 · Rótulo do registro** | 3 | toda criança tem rótulo; **o rótulo fala do registro, não do comportamento**; nenhum rótulo classifica a criança |
 | **15 · Ingestão retroativa (F7)** | 19 | educadora não importa (403); **ACEITE F7: três grafias do mesmo nome viram uma criança**; grafias unificadas no relatório; linha sem nome e data ilegível descartadas com motivo; simulação não grava; permanência reconstruída; reimportar reconhece em vez de duplicar; planilha sem coluna de nome recusada com mensagem útil |
-| **16 · Relatório do doador (F13/F14)** | 41 | diretoria entra; **diretoria não abre ficha nem lista crianças (403)**; coordenação não publica (403); sete blocos na ordem do pack; revisor aprova; **nenhum verbo causal forte**; ressalva metodológica presente; crianças únicas e matrículas lado a lado; **supressão aplicada antes da redação e declarada**; programa pequeno agrupado; **nenhum nome de criança no relatório**; dois denominadores de custo juntos; âncora acadêmica declarada como ausente; publicação só pela diretoria; publicado não é sobrescrito; carta pelo mesmo pipeline; período invertido recusado |
-| **17 · Consulta agregada (F15)** | 10 | educadora não usa (403); intenção reconhecida com fonte citada; **pergunta sobre criança individual não é reconhecida**; **quando não sabe, diz que não sabe**; oferece o que sabe responder; doutrina de perímetro declarada; pergunta vazia recusada |
+| **16 · Relatório do doador (F13/F14)** | 42 | diretoria entra; **diretoria não abre ficha nem lista crianças (403)**; coordenação não publica (403); sete blocos na ordem do pack; revisor aprova; **nenhum verbo causal forte**; ressalva metodológica presente; crianças únicas e matrículas lado a lado; **supressão aplicada antes da redação e declarada**; programa pequeno agrupado; **nenhum nome de criança no relatório**; dois denominadores de custo juntos; âncora acadêmica declarada como ausente; publicação só pela diretoria; publicado não é sobrescrito; carta pelo mesmo pipeline; período invertido recusado |
+| **17 · Consulta agregada (F15)** | 18 | educadora não usa (403); intenção reconhecida com fonte citada; **pergunta sobre criança individual não é reconhecida**; **quando não sabe, diz que não sabe**; oferece o que sabe responder; doutrina de perímetro declarada; pergunta vazia recusada |
 | **18 · Fecho de ciclo (achado A-05)** | 5 | educadora não fecha (403); coordenação fecha; abre o próximo; **reporta quantas anotações legadas foram descartadas**; ciclo fechado não fecha de novo |
+| **19 · Escopo de turma (decisão 22)** | 4 | lista escopada da outra educadora; existe criança exclusiva de outra turma; **ficha e observação de criança alheia recusadas (403)** |
+| **20 · Aurora — assistente (decisão 26)** | 9 | 401 sem sessão; 422 vazia; **pergunta reflexiva redireciona ao copilot sem modelo**; redirecionamento sem fala; fora do produto = limite declarado; **diretoria + nome = recusa (decisão 16)**; chips por tela e por papel; sessão apagada |
+| **21 · Cadastro de pessoas (decisão 29)** | 18 | professora não abre o cadastro e diretoria não cadastra criança (403); equipe, papéis, programas e turmas na mesma resposta; apelido derivado do nome; **homônimo no mesmo papel recusado (409)**; a pessoa nova entra pela porta de sempre e aparece na tela de entrada; **turma ocupada exige confirmação — e a troca diz quem saiu**; criança nova entra na lista da turma; **nasce com a rubrica pendente, é bloqueada para observação e aparece na tela que a desbloqueia**; **mesma chave nome+nascimento recusada (409)**; nascimento no futuro recusado (422) |
+| **22 · Arquivo (decisão 30)** | 21 | **não existe `DELETE` de pessoa em rota nenhuma (404)**; coordenação arquiva a professora e **a sessão ABERTA dela morre no ato (401)**; ela some da tela de entrada e não entra de novo (403); **continua existindo, no arquivo**, com a contagem do que registrou; volta e entra outra vez; **ninguém arquiva a si mesma (422)**; criança arquivada sai da lista viva com **matrícula encerrada e data de saída**, e a presença dela fica; educadora não arquiva criança (403); **voltar é matrícula NOVA e a antiga continua encerrada**; o consentimento volta a pendente |
+| **24 · Psicóloga e Vivência (decisão 31)** | 14 | psicóloga entra como `profissional`; os 120/106/14 do dossiê são só dos programas de matrícula e a Vivência é contada à parte (24); Hoje dela abre na Vivência **sem agenda de ciclo**; `GET /api/ciclo/agenda` da Vivência responde 422; escopo de turma (403 para professora de outra turma; coordenação passa); a Vivência não entra no denominador da cobertura; governança declara o registro de vivência e mantém o conteúdo clínico fora |
+| **25 · Planilha socioemocional (decisão 34)** | 10 | seis dimensões na ordem da planilha; resumo com seis indicadores + geral, leitura ou supressão declarada, legenda do mapeamento e ressalva; diretoria lê o resumo, professora não (403); **CSV com BOM, cabeçalho da aba Avaliações, por código e sem nome**; professora e diretoria não exportam (403) |
+| **26 · Registro de vivência e relato (decisão 31)** | 20 | folha se declara vivência e traz os catálogos; **a fala "vivência terapêutica" não é barrada** (procedimento neutralizado) e o extrator devolve procedimento, objetivo e o check-in em contagens; nome falado é contado e substituído; conteúdo sobre criança continua barrado; salvar sem procedimento é 422 apontando o campo; folha gravada com check-in; **devolução por encontro** na resposta e no Hoje; relato em rascunho, sem nome, 403 para outra turma e diretoria; liberar fecha a folha; 409 na segunda liberação; histórico para a coordenação |
+| **27 · Régua de 75% e recado (decisão 33)** | 17 | régua da própria turma com faixa por criança (abaixo e atenção presentes); 403 para outra turma e para a diretoria; régua do Instituto só em contagens (diretoria e coordenação; professora 403); recado gerado do registro, **sem nome**, link wa.me sem número; governança declara o recado (não persiste) |
+| **31 · Passe, duplicidade e o texto no link (decisão 50)** | 15 | a coordenação cria o passe (id aleatório, dez minutos), professora não cria nem consome (403); a diretoria consome **sem a imagem e com a fila inteira**; **uma leitura só** (404 na segunda); passe sem fila é 422; antes do disparo ninguém "já recebeu", depois o servidor diz quem, e outra referência não conta; o recado sai formatado para o WhatsApp (negrito na primeira linha, itálico na assinatura) sem tocar no texto cru; **a professora registra envio ao grupo da própria turma e leva 403 no de outra**, pergunta quem já recebeu e o link do recado já carrega o texto formatado |
+| **30 · Canais de WhatsApp e Instagram (decisões 47–48)** | 18 | coordenação e diretoria abrem a divulgação, professora não (403); a professora vê só os canais das próprias turmas; **carta não vai para grupo de pais e recado não vai para o Instagram — recusa de 422 no servidor, não no botão**; o envio fica registrado com quem mandou; telefone no lugar do link de convite é 422; cadastro só de coordenação (professora 403); arquivar tira da lista viva sem apagar o histórico; **o card do período é montado do agregado, passa pelo revisor de sobre-alegação, não afirma causa e carrega a ressalva de supressão na própria imagem**; período inválido é 422; professora não gera o card (403) |
+| **29 · Turma, matrícula, prova e boletim (decisões 41–44)** | 28 | coordenação cria turma, professora e diretoria não (403), turno inventado é 422; o catálogo de turma inclui a Vivência (fora da medição, dentro do Instituto) e o da matrícula não; a lista diz quantas crianças cada turma tem; editar troca turno e deixa sem professora; **a ficha entrega turmas e programas só à coordenação**; troca de turma de matrícula ativa com o aviso de quem passa a ler a ficha; professora não troca (403); **vídeo do consentimento guardado, a linha sem o nome do arquivo, professora barrada em gravar e em assistir (403), no-store, rastro de leitura, apagar exige motivo**; o painel separa quem tem prova; telefone sem DDD é 422; **boletim com link do responsável, sem clínica, sem detalhe de alerta, sem nível 1–4, dizendo o que ficou de fora**; diretoria não abre boletim (403); ler o boletim deixa rastro; `POST /compartilhar` sem service worker leva à porta de importar |
+| **28 · Parecer a parceiro (decisão 32)** | 14 | ficha do parecer com consentimento e prévia; diretoria e outra turma não chegam (403); **sem consentimento específico, 403 com o motivo**; coordenação registra o consentimento; outra turma não gera; parecer em rascunho **por código, sem nome, sem detalhe de alerta nem clínica**; liberação registrada; diretoria não libera; histórico na ficha; governança exige consentimento |
 
 ---
 
@@ -86,7 +114,7 @@ crianças em risco apareciam com o mesmo número (decisão técnica nº 18).
 | Chamada — alternar P/F | `aria-pressed` alterna corretamente; contador atualiza |
 | Chamada — salvar | Toast de confirmação e **abertura automática da próxima data pendente** |
 | Ciclo de observação | 16 de 18, 89%; duas bloqueadas com motivos distintos e explícitos |
-| Observação — rubrica | 5 dimensões × 4 âncoras; contador "x de 5 dimensões marcadas" |
+| Observação — rubrica | 6 dimensões × 4 âncoras (indicadores da planilha, decisão 34); contador "x de 6 dimensões marcadas" |
 | Observação — rascunho | Reabre preenchido, com *"Você tinha começado — continue de onde parou"* |
 | **Filtro de proteção** | Modal isola só a frase clínica, nomeia a categoria (*saúde mental / diagnóstico*) e oferece "Salvar sem esse trecho" |
 | **Fecho da turma** | Ao concluir a última pendente, a tela de revelação abre com 18 de 18, o tempo investido, as barras dos dois ciclos e a frase para o financiador |
@@ -105,3 +133,24 @@ crianças em risco apareciam com o mesmo número (decisão técnica nº 18).
 - Não há teste de navegador antigo. Verificado em navegador baseado em Chromium atual.
 - A validação com usuário real (a educadora) é a etapa seguinte — o registro dessa validação
   pertence à documentação da semana 5.
+
+---
+
+## Baterias da camada de IA (v3, 25/08/2026)
+
+| Bateria | Comando | O que cobre | Onde roda |
+|---|---|---|---|
+| Avaliação do RAG | `npm run test:rag` | reconstrói o índice do zero e mede **hit@5 ≥ 14/20**, 100% das citações apontando para chunk real, cobertura pt-BR ≥ 90% e pseudonimização da consulta | CI e local |
+| Camada de IA com stub | `npm run test:ia` | contrato dos 7 blocos por schema, verificador de citações (fonte inventada é descartada), perímetro/recusas SEM chamada de modelo, fallbacks (saída inválida, HTTP 500, timeout), fila de 2 com teto → 503, Modo A com pseudonimização reversível e fallback lexical, e a Aurora (schema `assistente_*`, scrub da fala, `fala: null` preservada, ação validada por papel, timeout → guia) — 24 asserções, sem GGUF | CI e local |
+| Modo A com modelo real | bateria manual (`ai/README.md`) | 100% de saída válida contra `validarExtracao` e zero regressão frente ao extrator lexical — executada em 25/08/2026: **6/6, 0 regressões** | só local |
+| Modo B com modelo real | sessão manual | 7 blocos, citações reais do corpus, recusa de diagnóstico/score, encaminhamento de perímetro, pseudonimização (nome nunca aparece na resposta) — validada em 25/08/2026 | só local |
+
+Os testes unitários somam **167** (pós-visita: invariantes da Vivência, rubrica e planilha, catálogos e extração do check-in, perímetro com contexto em pares, relato e liberação, devolução, régua e recado, parecer; antes disso, **115** (os 55 originais + escopo de turma, aviso de corte da lista,
+denominador da cobertura só com programas em escopo, o motor SROI — 3 cenários determinísticos,
+dupla contagem bloqueada, benchmark recusado no cálculo, rastreabilidade das premissas, parâmetro
+fora de 0..1 recusado — e a Aurora: sub-tarefas da chamada, recusa da diretoria, redirecionamento
+reflexivo, `telaSegura`, perímetro parcial com trechos, `limparFala`, catálogo por papel, sessões
+com lookup puro e teto).
+
+O CI (`.github/workflows/ci.yml`) roda tudo com `AI_ENABLED=false` explícito — o produto tem que
+ser exatamente o mesmo sem modelo; os gates que exigem modelo real são gates de máquina local.

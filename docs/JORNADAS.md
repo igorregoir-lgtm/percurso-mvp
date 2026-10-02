@@ -1,0 +1,296 @@
+# Jornadas — atual e futura, por persona
+
+As personas vêm do material produzido em aula
+(`1 - Arquitetura/Material Produzido em Aula/mvp-percurso-persona.html` e
+`visao-produto-ebenezer.html`); a jornada atual vem do dossiê de campo lido pela
+[`LEAN-INCEPTION.md`](LEAN-INCEPTION.md); a futura, das telas que o MVP entrega
+([`README.md`](../README.md)). Este documento formaliza o que o achado D-05 da
+[`revisao/02-RELATORIO-REVISAO.md`](revisao/02-RELATORIO-REVISAO.md) apontou como disperso.
+
+Os ganhos listados são os que o produto entrega por construção. Os custos também estão listados,
+porque jornada futura sem custo é propaganda: **registrar é trabalho novo**, e a única prova de
+que ele cabe na rotina é a validação com usuário real — que ainda não aconteceu
+([`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md)).
+
+---
+
+## 1. A educadora — Maria Silvia
+
+35 anos, pedagoga do reforço escolar (7–11), roda de segunda a sexta. A frase que a define, tirada
+da dinâmica de personas: *"Não consigo transformar em dados os resultados do meu trabalho."*
+Dores declaradas: registrar sem tirar atenção das crianças; ter mais tempo para planejar; agir
+sempre sob demanda, sem controle. Necessidade decisiva: **não expor as crianças** — exigência da
+própria usuária, não borda de conformidade.
+
+O quadro de voluntários do Instituto se concentra no sábado; Maria Silvia é da equipe de semana.
+A jornada abaixo vale para a voluntária de sábado também — o produto não exige frequência diária:
+ciclos de observação são 2–3 vezes por ano e chamada atrasada nunca expira.
+
+### Jornada atual (papel, planilha, memória)
+
+1. Observa a criança durante a atividade. O que viu fica **na cabeça**.
+2. Faz a chamada no papel ou na planilha. Fica registrado quem veio — e só.
+3. Conta o episódio marcante para uma colega no corredor. **A informação morre ali.**
+4. Uma criança some por duas semanas; ela percebe quando percebe, e age sob demanda.
+5. No fim do ano, se perguntada sobre a evolução de alguém, responde de memória — sem data, sem
+   comparação, sem como provar.
+
+**Dores desta jornada:** o trabalho central dela (ver a criança mudar) não deixa rastro; qualquer
+registro que se tentasse por escrito competiria com a atenção às crianças; e ela nunca recebe
+nada de volta pelo que observa.
+
+### Jornada futura (com o Percurso)
+
+1. **`#/hoje`** — abre e vê o que falta hoje, o alerta de ausência (duas faltas seguidas) e, se
+   ficou dias sem entrar, a retomada sem culpa: *"nada se perdeu"*, com atalho para a data em
+   aberto.
+2. **`#/chamada`** — presença em um toque por criança. Sem rede, o registro entra na fila offline
+   e sobe sozinho quando a conexão volta.
+3. **`#/registrar`** (falar → conferir → guardar, na mesma tela) — fala sobre o dia da **turma**, sem teto de tempo; o áudio é
+   transcrito pelo navegador — no aparelho quando ele sabe, no serviço do fornecedor quando não sabe,
+   e a tela diz qual dos dois — e descartado; o extrator pré-preenche a folha em listas
+   fechadas; **nada é gravado antes de ela confirmar**. Se preferir, digita — o caminho manual
+   está sempre visível.
+4. **`#/hoje?detalhe=ciclo`** — vê quem falta observar e quem está bloqueada, com o motivo explícito (janela de
+   convívio, consentimento) — bloqueio é protocolo, nunca erro dela.
+5. **`#/crianca/:id?ver=observacao`** — pela agenda do ciclo **ou pela própria ficha da criança**,
+   que desde 04/09/2026 abre o registro em vez de só mostrar a tabela (decisão 46) — rubrica de 6 dimensões × 4 âncoras comportamentais (os seis indicadores da planilha socioemocional do Instituto — decisão 34), ~3 minutos por
+   criança; rascunho persiste se ela sair no meio. **A rubrica continua sem texto** (decisão 15) —
+   mas desde 04/09/2026 o relato sobre a criança tem **lugar próprio** na ficha dela, com
+   consentimento específico do responsável e descarte no fim do ciclo (decisão 40). São coisas
+   diferentes: base legal, retenção e leitores não são os mesmos, e misturá-los faria o descarte de
+   um levar o outro junto.
+6. **`#/hoje?detalhe=semana`** — toda segunda recebe três linhas acionáveis e uma sugestão de atividade, que
+   aceita ou descarta. É a primeira vez que o registro devolve algo a ela.
+7. **`#/turma`** — vê as médias por dimensão mudarem ciclo a ciclo. Ao fechar a última observação
+   da turma, a tela devolve em números o que ela sabia e não conseguia provar.
+
+**Aurora opcional (v3, se `AI_ENABLED=1`):** na aba **Refletir**, descrever uma situação da
+turma (sem nomear a criança — nomes viram pseudônimo antes do modelo) e receber perguntas
+socráticas, hipóteses rotuladas e alternativas com citação do corpus aprovado. A decisão
+pedagógica continua dela; situação de risco escala para o caminho humano.
+
+### Ganhos e custos, honestos
+
+| Ganha | Custa |
+|---|---|
+| O que ela via passa a existir como dado, com data e comparação | Registrar é trabalho novo: ~3 min por observação e ~40 s por folha do dia — se isso não couber na rotina, o produto falha, e só a sessão de validação mede isso |
+| Devolução concreta: pauta de segunda, trajetória da turma | O extrator lexical entende menos variação de fala que um LLM; ela vai corrigir campos. A taxa de correção está instrumentada e o limite declarado é 40% (decisão 13) |
+| Alerta de ausência tira o "agir sob demanda" | O aviso de conteúdo sensível interrompe a fala dela e devolve encaminhamento humano — certo por proteção, mas é fricção real |
+| Proteção por controle de acesso: escopo de turma, consentimento e rastro (decisões 38–40; a senha por pessoa saiu na 51) | O texto livre sobre criança agora existe no banco: o que impede o vazamento deixou de ser a ausência do campo. Troca consciente, declarada na decisão 40 |
+
+---
+
+## 2. A coordenação — Rita Amaral
+
+Usuária secundária na inception: precisa do agregado, da cobertura, da evasão e da síntese que
+alimenta o relatório ao financiador.
+
+### Jornada atual (papel, planilha, memória)
+
+1. Recebe a planilha de presença de cada turma e consolida à mão.
+2. Sobre a evolução socioemocional — a dimensão que o Instituto considera central — **não recebe
+   nada, porque nada é registrado**. Cobertura zero.
+3. Descobre no braço que 120 matrículas não são 120 crianças (14 estão em dois programas), toda
+   vez que alguém pede o número.
+4. No fim do ano, escreve o relatório anual **com adjetivos, porque não tem substantivos**.
+5. Apresenta ao financiador quantas crianças atendeu e quantas vezes vieram. Sobre o que mudou,
+   não tem como afirmar nada.
+
+**Dores desta jornada:** a lacuna de medição vira lacuna de captação; financiador corporativo que
+entra por incentivo fiscal cobra prestação de contas, e prestação de contas sem dado é passivo.
+
+### Jornada futura (com o Percurso)
+
+1. **`#/painel`** — 106 crianças, 120 matrículas, 14 em dois programas: a reconciliação que ela
+   fazia no braço, pronta. Cobertura do ciclo, presença do mês, alertas abertos.
+2. **`#/painel?aba=scores`** — três scores que medem vínculo, sistema e oferta — **nunca a criança**: risco
+   de evasão, cobertura do registro, exposição (aspiração declarada × atividade realizada).
+3. **`#/painel?aba=safras`** — permanência e evasão por safra e por programa.
+4. **`#/pessoas?aba=turmas`** — abre a turma do ano que vem, corrige o nome de uma, passa a turma
+   para outra professora (decisão 41). Antes de 04/09/2026 isto não existia: as turmas vinham da
+   `seed`, e trocar a turma de quem já estava matriculada exigia arquivar a criança e trazê-la de
+   volta — uma saída que nunca houve, no meio do histórico de presença.
+5. **`#/consentimentos`** — pendências de consentimento; campo sem base legal declarada nasce
+   bloqueado no servidor, não no botão da tela. **Ao registrar, ela pode gravar o vídeo do
+   responsável consentindo** (decisão 42): "a coordenação digitou o nome" é afirmação, o vídeo é
+   prova — e o ônus dela é do controlador (LGPD Art. 8º, §1º). O vídeo é opcional; sem ele o
+   consentimento vale igual, e a tela passa a dizer quais têm prova e quais só têm a palavra.
+6. **`#/divulgar`** — o que sai do Instituto para fora (decisões 47, 48 e 50): escolhe o recado
+   ou o card, marca os grupos (o servidor já desmarcou quem recebeu hoje), e cada botão abre o
+   WhatsApp **com o texto escrito**. No notebook, um QR passa a fila para o celular. A **folha da
+   turma** imprime o QR de cada grupo para a parede — é assim que o responsável entra, não
+   digitando link. O botão único para todos os grupos **não existe**, e a tela diz por quê.
+7. **`#/painel?aba=sintese`** — gera a síntese do ciclo em template fechado (números vêm de SQL, nunca de
+   modelo), passa pelo revisor de sobre-alegação e **aprova ou devolve** — a aprovação é dela.
+8. **Fecho do ciclo** — fecha o ciclo, a retenção declarada é executada e o próximo abre.
+
+**Aurora opcional (v3, se `AI_ENABLED=1`):** a mesma sala **Refletir** para preparar conversas
+de calibração — e, no painel, a leitura de divergência entre educadoras por dimensão (pauta de
+reunião, nunca ranking).
+
+### Ganhos e custos, honestos
+
+| Ganha | Custa |
+|---|---|
+| Pela primeira vez pode afirmar o que mudou, com número auditável por terceiro | Fechar ciclo, decidir pauta de consentimento e aprovar síntese são tarefas novas dela — o sistema não decide sozinho, por desenho |
+| Reconciliação criança ≠ matrícula deixa de ser trabalho manual | A cobertura do registro depende das educadoras registrarem; o score de cobertura mede o sistema, mas quem corre atrás é ela |
+| Síntese com ressalva metodológica obrigatória — ninguém sobre-alega em nome do Instituto | Antes de operar com dado real, autenticação, HTTPS e auditoria de acesso são decisões de operação que caem no colo dela (dívidas declaradas em `DECISOES-TECNICAS.md`) |
+
+---
+
+## 3. A diretoria — Solange Ribeiro
+
+Perfil que entrou com a v2. Existe para uma coisa: prestar contas a quem financia.
+
+### Jornada atual (papel, planilha, memória)
+
+1. Pede material à coordenação quando o financiador cobra; recebe presença consolidada e texto.
+2. Monta a prestação de contas com o que há: número de atendidos, fotos, relato qualitativo.
+3. Sobre impacto, escolhe entre não afirmar nada ou afirmar sem lastro — e afirmar sem lastro,
+   diante de financiador que audita, é risco institucional.
+
+### Jornada futura (com o Percurso)
+
+1. Entra como diretoria e vai a **`#/relatorio`** — gera o relatório do ciclo em sete blocos, com
+   a supressão de célula pequena (n < 5) aplicada **antes** da redação e o revisor de
+   sobre-alegação barrando verbo causal forte. Revisa e publica. A carta do trimestre sai do
+   mesmo pipeline.
+2. **`#/relatorio?aba=consulta`** — pergunta em linguagem natural sobre a camada agregada; quando o sistema não
+   reconhece a pergunta, diz que não sabe.
+3. **Não abre registro individual.** As rotas de ficha e lista de crianças respondem 403 para o
+   perfil dela, por decisão de desenho (decisão 16): quem presta contas trabalha sobre a camada
+   agregada, então não precisa de acesso individual — e por isso não tem.
+
+**Aurora novo (v3):** na aba **Impacto**, montar os três cenários exploratórios de SROI com
+premissas expostas (faixa, nunca número único; revisão humana antes de uso externo) — e, com a
+camada de IA ligada, pedir a explicação das premissas (texto rotulado, fora do export padrão).
+
+### Ganhos e custos, honestos
+
+| Ganha | Custa |
+|---|---|
+| Relatório com números reproduzíveis (SQL + template fechado), defensável diante de auditoria | O texto é contido por construção: ela não pode escrever "o programa gerou X" — o revisor barra, e a ressalva de não-isolamento de fatores é obrigatória. É limite deliberado, não defeito |
+| Nenhum caminho, nem acidental, de exposição de criança na prestação de contas | Perguntas fora da lista fechada da consulta voltam sem resposta — o sistema prefere não saber a inventar |
+
+---
+
+## 4. A psicóloga — Carolina Duarte (papel `profissional`)
+
+> **Persona que o campo trouxe** (visita de 29/08/2026, decisão 31). Até então cinco documentos
+> deste repositório diziam *"a psicóloga não é usuária"*. A visita mostrou o contrário duas
+> vezes: é ela quem nomeia o registro como a dor central (*"o maior desafio aqui é registrar o
+> que você fez, né?"*) e quem produz o único registro escrito que existe — o relatório no padrão
+> do conselho profissional, por procedimento, não individualizado, sem nome. Na demonstração ao
+> vivo foi preciso improvisar um perfil dela, porque o app assumia professora. O nome aqui é
+> sintético; a pessoa real é nomeada pelo papel, a mesma regra que o conselho impõe ao relatório
+> que ela escreve.
+
+Psicóloga voluntária há seis anos, remunerada por parceria só desde este ano e só até dezembro.
+Conduz a **vivência terapêutica** aos sábados (duas turmas: manhã e tarde), faz acolhimentos
+pontuais, atende na própria clínica, trabalha numa segunda organização e cursa uma
+pós-graduação. O tempo dela é o recurso mais escasso da casa — o dossiê já dizia isso, e a visita
+confirmou: *"e aí eu não consigo dar conta"*.
+
+O que ela quer do produto não é atividade nova (*"isso não é uma coisa que eu sinta falta"*): é
+**registrar sem parar o atendimento** e sair com o relatório que o conselho pede.
+
+### Jornada atual (memória, relatório à mão, WhatsApp)
+
+1. Conduz a vivência (ex.: jogo de cartas sobre a rede de apoio da comunidade; roda sobre
+   regulação e sistema nervoso). Observa o grupo — quem ajudou, quem participou do começo ao
+   fim, quem entrou em conflito e como resolveu. **Fica na cabeça.**
+2. Depois, quando dá, escreve o relatório do procedimento no padrão do conselho: o que foi
+   feito, com que objetivo, o que o grupo apresentou — sem nome, não individualizado. Quando
+   precisa citar alguém, usa iniciais. *"Depois tem que sair daqui, preencher o relatório… não
+   dá, não dá."*
+3. A assistente social do projeto parceiro manda mensagem perguntando *"como ele tá"*. Responde
+   **de memória**.
+4. Uma oficina de costura em que uma menina quis desistir e terminou dizendo *"nossa, eu
+   consegui"* trabalhou resiliência e autoestima — e **não deixou rastro** para ninguém, nem para
+   quem financia.
+
+**Dores desta jornada:** o registro compete com o atendimento; o relatório é trabalho de fora de
+hora; o conhecimento de seis anos está só nela (*"ninguém consegue fazer um download do seu
+cérebro"*); o que ela vê não vira evidência.
+
+### Jornada futura (com o Percurso)
+
+1. **`#/hoje`** — entra como psicóloga e vê a turma da Vivência do sábado. **Não há agenda de
+   ciclo**: a turma dela fica fora da rubrica por decisão (o olhar clínico não vira dado).
+2. **`#/chamada`** — presença em um toque, igual às demais turmas. É a mesma régua de 75% que o
+   Instituto já usa.
+3. **`#/registrar`** (falar → conferir, na mesma tela) — fala sobre **o grupo**, sem teto de tempo: o procedimento (lista
+   fechada), o objetivo, como o grupo esteve, e o **check-in estruturado** que ela validou ao
+   vivo — *quantas ajudaram sem ninguém pedir, quantas participaram do começo ao fim, quantos
+   conflitos e quantos resolvidos conversando, quantas não observadas*. Se falar um nome, a tela
+   mostra o nome virando código antes de qualquer gravação. Se falar de um caso, o filtro de
+   perímetro devolve encaminhamento humano — e a frase "vivência terapêutica" não dispara o
+   filtro, porque é o nome do procedimento, não conteúdo sobre criança.
+4. **`#/sai-daqui?aba=recado`** — o recado da turma sai para o **grupo da própria turma**, já
+   cadastrado pela coordenação (decisão 50): um toque abre o WhatsApp com o texto escrito, e a
+   tela marca "já recebeu este recado hoje". Grupo de outra turma não aparece.
+5. **`#/sai-daqui?aba=relato`** — o registro do procedimento nasce pronto, no padrão do conselho, sem nome por
+   construção; ela **revisa e libera** (ou não). O texto é dela; a IA, quando ligada, só organiza.
+6. **`#/turma`** — a devolução por encontro: como o grupo de hoje se compara às últimas
+   vivências, em contagens; e a régua de presença da turma.
+7. **Parecer para profissional parceiro** — quando a assistente social perguntar, ela (ou a
+   coordenação) gera um parecer por **código**, com presença, participação e evolução por
+   indicador — só com consentimento específico do responsável e com a liberação registrada.
+8. **`#/crianca/:id`** — na ficha, dois caminhos que antes não existiam (04/09/2026): o cartão do
+   ciclo **abre o registro do olhar** em vez de só mostrar a tabela (decisão 46), e o **boletim do
+   responsável** monta, num texto só, matrícula, presença e evolução em piorou/manteve/evoluiu,
+   com o link direto do WhatsApp de quem responde pela criança (decisão 43). O relato livre e o
+   detalhe do alerta **não vão** — a tela diz que não vão, e por quê.
+
+### O que a jornada de campo v2 exige e o MVP ainda não tem (02/09/2026)
+
+A jornada de campo (`docs/jornada-usuario/`) foi revista em 02/09/2026 e trouxe uma distinção que
+o passo 3 acima ainda não respeita: **capturar não é registrar**. Capturar é apertar um botão — ou
+já ter um áudio no celular. Registrar é virar relato, contagem e indicador, e isso é trabalho do
+sistema, a qualquer momento. Quem é metódico é o sistema; quem estrutura o dado é o sistema.
+
+Isso **não** quer dizer que o sistema fique quieto. Ele cobra — e cobrar aqui é ajudar. O que muda
+é a hora: o lembrete chega **antes** do encontro, quando ainda dá para apertar "gravar" e o custo é
+zero, em vez de chegar no fim do dia como dívida. Para isso o Instituto precisa de um calendário
+próprio, alimentado pela profissional, pela coordenação ou pela direção.
+
+Na prática, o fluxo `#/registrar` de hoje só existe numa janela: durante ou logo depois do encontro. É
+exatamente a hora em que o campo mostra que ela **não tem mãos livres** — e a hora seguinte é onde
+ela responde *"Não dá, não dá"*. Faltavam, portanto, seis coisas. Em 03/09/2026 **duas foram
+implementadas** (F1) — as duas últimas da tabela; as outras quatro seguem em aberto:
+
+| O que falta | Por quê | O que exige |
+|---|---|---|
+| ~~**Calendário de encontros**~~ **— existe desde 03/09/2026 (decisão 37)** | o calendário é da casa: a coordenação marca feriado e encontro extra, e o produto para de cobrar chamada de dia que não houve | `calendario_excecao`, `temEncontro`/`proximosEncontros`/`marcarNoCalendario` e a tela em `#/turma`. **O que continua fora é só o encontro AGENDADO como entidade** — e é deliberado (OPAR 05/09): linha de encontro sem presença entra em cinco denominadores, um deles o número que sai para o doador |
+| **Aviso antes de cada encontro — por *push*** | o lembrete precisa chegar quando ainda dá para apertar "gravar", não depois | o aviso **in-app** existe (`proximos_encontros` no Hoje); o que falta é push agendado, que o padrão web não dá sem servidor — limite declarado na decisão 37, não pendência de código |
+| ~~**O encontro nunca fecha**~~ **— completo em 05/09/2026 (OPAR)** | registro atrasado precisa entrar com a data do encontro, não a de hoje | O modelo já aceitava data retroativa e já marcava "registrado depois" (`encontro.registrado_em`, decisão 37). Faltava a tela de capturar deixar **escolher** a data — e, sem encontro naquele dia, levar à chamada dele em vez de um beco |
+| **A fala preenche os seis indicadores** | a rubrica é o instrumento da casa e não pode continuar dependendo de digitação | hoje os seis indicadores são respondidos à mão, criança por criança (~3 min cada, `#/crianca/:id?ver=observacao`), e o extrator de `src/voz.js` só preenche a folha do dia e o check-in de grupo — falta extrair a escala 1–4 por indicador, com o mesmo gate de confirmação humana |
+| ~~**Gravar o encontro inteiro**~~ **— existe desde 03/09/2026 (porta B)** | captura de custo zero: ela aperta no começo e larga o celular na mesa | `MediaRecorder` em blocos fechados de 5 min + `whisper.cpp` no computador do Instituto (`src/transcricao.js`, `public/audio.js`). **Nasce desligada**, liga por escolha explícita e por aparelho |
+| ~~**Importar um áudio que ela já tem**~~ **— existe desde 03/09/2026 (porta C)** | o áudio do gravador do celular ou do WhatsApp, de hoje ou de três semanas atrás | o navegador decodifica o arquivo, converte para WAV 16 kHz e manda transcrever; `ai/model-manifest.json` passou a ter whisper-small e whisper-base, com SHA-256 |
+
+**Condição inegociável para as duas últimas, e como ela foi cumprida.** O campo chamou gravar
+criança de *"perigoso"*. As duas só podem existir com três garantias ditas na própria tela, no
+instante do toque — e a **primeira delas mudou de conteúdo** quando a arquitetura ficou honesta
+(F0/F1): o `whisper.cpp` roda num *host*, não no celular, então o áudio **sai** do aparelho. A
+promessa verdadeira, que é a que a tela faz hoje:
+
+1. o áudio vai **só para o computador do Instituto**, pela rede daqui, e não sobe para a internet;
+2. é **apagado assim que vira texto** — e isto é mecanismo, não frase: `finally`, varredura de
+   órfãos no boot e teto de idade, com gate próprio (`npm run test:audio`) que falha se o arquivo
+   sobreviver a uma transcrição interrompida;
+3. nome falado **vira código** antes de qualquer gravação.
+
+A porta B acrescenta a quarta, porque é a única em que a sala inteira é gravada: a tela diz **quem
+está sendo gravado**, ela nasce desligada e só liga por escolha explícita, por aparelho.
+
+
+### Ganhos e custos, honestos
+
+| Ganha | Custa |
+|---|---|
+| O relatório do conselho sai do próprio registro de 40 s, sem hora extra | O tempo dela em sistema é tempo de atendimento (bloco 5): o custo declarado é ~40 s de fala + a confirmação por encontro, e só a operação real mede se cabe |
+| O que o grupo mostrou vira contagem, e a contagem vira série — a costura passa a deixar rastro | Contagem de grupo é pobre por desenho: o que acontece com **uma** criança no grupo continua fora, e isso é a fronteira do bloco 6, não um defeito a corrigir |
+| Anonimização visível no ato de falar — a prática dela (iniciais) virou regra do sistema | Falar de um caso no meio do relato interrompe o fluxo com o aviso de perímetro: proteção certa, fricção real |
+| A pergunta do parceiro tem resposta com lastro, e o envio fica registrado | Sem consentimento específico do responsável, não há parecer — a coordenação precisa correr atrás do consentimento antes |
+| O modelo de relatório do conselho que ela usa **ainda não chegou**: o template do Percurso é provisório até ele chegar (pendência) | |

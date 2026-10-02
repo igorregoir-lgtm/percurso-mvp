@@ -1,0 +1,179 @@
+{
+  "versao": "2026-08-25.1",
+  "origem": "docs/ANALISE-SLM-E-SROI.md §5.6 (tabela de premissas e referências, valores no ano-base publicado, sem atualização inflacionária)",
+  "doutrina": [
+    "Monetização é estimativa de PROGRAMA, não score infantil.",
+    "Sempre faixas e 3 cenários; nunca número único com falsa precisão.",
+    "Texto padrão: associação compatível, não causalidade comprovada.",
+    "O cálculo executa sem LLM; o modelo apenas explica premissas já escolhidas.",
+    "Prevenção de violência/criminalidade é o eixo central da narrativa — decisão registrada do Instituto (§5.2); a decisão define relevância estratégica, NÃO prova causalidade."
+  ],
+  "regra_dupla_contagem": "O envelope total da não conclusão (R$ 372 mil/jovem) JÁ CONTÉM renda, PIB, qualidade de vida e violência. Escolher O TOTAL ou OS COMPONENTES — nunca somar os dois. O motor bloqueia a soma (grupo_exclusivo).",
+  "proxies": [
+    {
+      "id": "nao-conclusao-total",
+      "nome": "Não conclusão da educação básica — envelope total",
+      "valor": 372000,
+      "unidade": "R$/jovem, ao longo da vida",
+      "ano_base": 2020,
+      "fonte": "Insper + Fundação Roberto Marinho",
+      "url": "https://www.insper.edu.br/content/dam/insper-portal/legacy-media/2021/05/Conseque%CC%82ncias-da-Violac%CC%A7a%CC%83o-do-Direito-a%CC%80-Educac%CC%A7a%CC%83o.pdf",
+      "confianca": "média · modelo econômico",
+      "status_ebenezer": "parcial · cenário exploratório",
+      "grupo_exclusivo": "evasao-insper-total",
+      "uso": ["cenario"],
+      "ressalva": "Envelope que já inclui renda, PIB, qualidade de vida e violência; usar apenas com efeito incremental validado; NUNCA somar aos componentes."
+    },
+    {
+      "id": "violencia-evasao",
+      "nome": "Violência dentro do custo da evasão",
+      "valor": 45000,
+      "unidade": "R$/jovem, ao longo da vida",
+      "ano_base": 2020,
+      "fonte": "Insper + Fundação Roberto Marinho",
+      "url": "https://www.insper.edu.br/content/dam/insper-portal/legacy-media/2021/05/Conseque%CC%82ncias-da-Violac%CC%A7a%CC%83o-do-Direito-a%CC%80-Educac%CC%A7a%CC%83o.pdf",
+      "confianca": "média · modelo econômico",
+      "status_ebenezer": "ALTA aderência · decisão do Instituto (eixo da narrativa)",
+      "grupo_exclusivo": "evasao-insper-componentes",
+      "uso": ["cenario", "narrativa"],
+      "ressalva": "Componente do total de R$ 372 mil; usar em narrativa e cenários SEM afirmar que a intervenção pedagógica evitou esse custo."
+    },
+    {
+      "id": "renda-remuneracao",
+      "nome": "Remuneração perdida dentro do custo da evasão",
+      "valor": 159000,
+      "unidade": "R$/jovem, ciclo produtivo até 69 anos",
+      "ano_base": 2020,
+      "fonte": "Insper + Fundação Roberto Marinho",
+      "url": "https://www.insper.edu.br/content/dam/insper-portal/legacy-media/2021/05/Conseque%CC%82ncias-da-Violac%CC%A7a%CC%83o-do-Direito-a%CC%80-Educac%CC%A7a%CC%83o.pdf",
+      "confianca": "média · modelo econômico",
+      "status_ebenezer": "parcial · cenário exploratório",
+      "grupo_exclusivo": "evasao-insper-componentes",
+      "uso": ["cenario"],
+      "ressalva": "Componente do total; depende de ocupação, salário e crescimento; não somar ao envelope."
+    },
+    {
+      "id": "qualidade-vida",
+      "nome": "Qualidade de vida/saúde dentro do custo da evasão",
+      "valor": 114000,
+      "unidade": "R$/jovem, ao longo da vida",
+      "ano_base": 2020,
+      "fonte": "Insper + Fundação Roberto Marinho",
+      "url": "https://www.insper.edu.br/content/dam/insper-portal/legacy-media/2021/05/Conseque%CC%82ncias-da-Violac%CC%A7a%CC%83o-do-Direito-a%CC%80-Educac%CC%A7a%CC%83o.pdf",
+      "confianca": "média · modelo econômico",
+      "status_ebenezer": "parcial · custo social evitado",
+      "grupo_exclusivo": "evasao-insper-componentes",
+      "uso": ["cenario"],
+      "ressalva": "Monetiza 4,4 anos de vida saudável com hipótese baseada em referência da OMS; componente do total."
+    },
+    {
+      "id": "custo-aluno-infantil",
+      "nome": "Investimento público direto por estudante — educação infantil",
+      "valor": 10692.13,
+      "unidade": "R$/aluno/ano",
+      "ano_base": 2021,
+      "fonte": "INEP/MEC",
+      "url": "https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/indicadores-educacionais/indicadores-financeiros-educacionais",
+      "confianca": "alta · oficial",
+      "status_ebenezer": "parcial · referência",
+      "grupo_exclusivo": null,
+      "uso": ["referencia"],
+      "ressalva": "Média nacional de gasto consolidado; não mede benefício nem custo marginal local — serve de régua, não de multiplicador."
+    },
+    {
+      "id": "custo-aluno-basica",
+      "nome": "Investimento público direto por estudante — educação básica",
+      "valor": 9015.88,
+      "unidade": "R$/aluno/ano",
+      "ano_base": 2021,
+      "fonte": "INEP/MEC",
+      "url": "https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/indicadores-educacionais/indicadores-financeiros-educacionais",
+      "confianca": "alta · oficial",
+      "status_ebenezer": "parcial · referência",
+      "grupo_exclusivo": null,
+      "uso": ["referencia"],
+      "ressalva": "Média nacional; mesma régua do item anterior."
+    },
+    {
+      "id": "sroi-pir",
+      "nome": "SROI do Projeto Primeira Infância Ribeirinha (PIR)",
+      "valor": 2.82,
+      "faixa": [1.16, 4.14],
+      "unidade": "R$ de valor social por R$ 1 investido",
+      "ano_base": 2015,
+      "fonte": "IDIS · PIR, Amazonas",
+      "url": "https://idis.org.br/wp-content/uploads/2017/01/relatorio-avaliac%CC%A7a%CC%83o-SROI-PIR.pdf",
+      "confianca": "média · SROI brasileiro",
+      "status_ebenezer": "parcial · benchmark",
+      "grupo_exclusivo": null,
+      "uso": ["benchmark"],
+      "ressalva": "Benchmark de MÉTODO, não multiplicador do Ebenézer: contexto ribeirinho, saúde e visitas domiciliares diferem."
+    },
+    {
+      "id": "sroi-vim",
+      "nome": "SROI do Programa Valorizando uma Infância Melhor (VIM)",
+      "valor": 4.08,
+      "faixa": [2.04, 6.21],
+      "unidade": "R$ de valor social por R$ 1 investido",
+      "ano_base": 2015,
+      "fonte": "IDIS · VIM, Vale do Paraíba",
+      "url": "https://idis.org.br/wp-content/uploads/2016/08/SROI_VIM_single.pdf",
+      "confianca": "média · SROI brasileiro",
+      "status_ebenezer": "parcial · benchmark mais próximo",
+      "grupo_exclusivo": null,
+      "uso": ["benchmark"],
+      "ressalva": "Benchmark, não multiplicador; avaliação não experimental com proxies locais."
+    },
+    {
+      "id": "ipea-homicidios-bem-estar",
+      "nome": "Bem-estar perdido em homicídios ligados ao proibicionismo",
+      "valor": 50000000000,
+      "unidade": "R$/ano, nacional (0,77% do PIB)",
+      "ano_base": 2017,
+      "fonte": "IPEA · Atlas da Violência",
+      "url": "https://www.ipea.gov.br/atlasviolencia/artigo/251/Custo%20de%20bem-estar%20social%20dos%20homic%C3%ADdios%20relacionados%20ao%20proibicionismo%20das%20drogas%20no%20Brasil",
+      "confianca": "média · estudo específico",
+      "status_ebenezer": "ALTA aderência narrativa · decisão do Instituto",
+      "grupo_exclusivo": null,
+      "uso": ["narrativa"],
+      "ressalva": "Proxy NACIONAL de contexto; não representa criminalidade geral nem efeito unitário por criança — nunca entra no cálculo por jovem."
+    },
+    {
+      "id": "fgv-estado-presente",
+      "nome": "Política brasileira de redução de homicídios (Estado Presente/ES)",
+      "valor": 2.36,
+      "unidade": "R$ de bem-estar por R$ 1 investido",
+      "ano_base": 2014,
+      "fonte": "FGV/RBE · controle sintético",
+      "url": "https://periodicos.fgv.br/rbe/article/view/83197",
+      "confianca": "média/alta · controle sintético",
+      "status_ebenezer": "ALTA aderência · benchmark criminalidade",
+      "grupo_exclusivo": null,
+      "uso": ["benchmark", "narrativa"],
+      "ressalva": "Política de segurança pública, não programa pedagógico; comparação narrativa, nunca multiplicador do Ebenézer."
+    }
+  ],
+  "cenarios_padrao": {
+    "nota": "Parâmetros EXPLORATÓRIOS e editáveis — não há coeficiente local validado (ANALISE §5.10). Cada valor é premissa exposta no relatório; a revisão humana antes de uso externo é gate obrigatório.",
+    "conservador": { "efeito_incremental": 0.05, "deadweight": 0.5, "atribuicao": 0.5, "deslocamento": 0.1, "dropoff": 0.3, "desconto": 0.1 },
+    "base": { "efeito_incremental": 0.1, "deadweight": 0.4, "atribuicao": 0.4, "deslocamento": 0.05, "dropoff": 0.2, "desconto": 0.08 },
+    "superior": { "efeito_incremental": 0.15, "deadweight": 0.3, "atribuicao": 0.3, "deslocamento": 0.0, "dropoff": 0.15, "desconto": 0.06 },
+    "definicoes": {
+      "efeito_incremental": "fração das crianças em que o desfecho monetizado seria evitado COM ponte causal ainda pendente — premissa exploratória, não medição",
+      "deadweight": "o que aconteceria sem o Instituto",
+      "atribuicao": "contribuição de escola, família, SUS, SUAS e outros programas",
+      "deslocamento": "benefício que apenas migrou de lugar",
+      "dropoff": "decaimento anual do efeito",
+      "desconto": "taxa de desconto a valor presente"
+    }
+  },
+  "mapeamento_indicadores": {
+    "nota": "Mapeamento DETERMINÍSTICO entre o que o Percurso mede e as categorias da literatura (§3.5 do plano). O modelo apenas explica este mapeamento; nunca o cria nem o altera.",
+    "linhas": [
+      { "indicador": "Permanência por safra e risco de evasão (F6/scores)", "categoria_literatura": "prevenção da não conclusão escolar", "proxies": ["nao-conclusao-total", "violencia-evasao", "renda-remuneracao", "qualidade-vida"], "ponte_causal": "pendente — nenhum coeficiente local validado" },
+      { "indicador": "Rubrica socioemocional agregada por ciclo (F5/F7)", "categoria_literatura": "desenvolvimento socioemocional (agregado, não clínico)", "proxies": [], "ponte_causal": "sem proxy brasileira compatível (ANALISE §5.4) — reportar como indicador, não monetizar" },
+      { "indicador": "Alertas de ausência tratados (F6)", "categoria_literatura": "fator protetivo de vínculo escolar", "proxies": ["violencia-evasao"], "ponte_causal": "exploratória — narrativa de fator protetivo, sem multiplicador próprio" },
+      { "indicador": "Cobertura e engajamento da primeira infância", "categoria_literatura": "primeira infância (benchmark de método)", "proxies": ["sroi-pir", "sroi-vim", "custo-aluno-infantil"], "ponte_causal": "benchmark de método; não aplicar o SROI de outro programa ao Ebenézer" }
+    ]
+  }
+}

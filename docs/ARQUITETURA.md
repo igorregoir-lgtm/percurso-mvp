@@ -64,13 +64,17 @@ Quatro camadas em um processo, um arquivo de banco, interface servida estaticame
 
 ```
 navegador (public/ — HTML+CSS+JS puro, hash routing, sem build)
+                 13 rotas desde 04/09/2026 (eram 28; decisão 36, mais
+                 #/divulgar da decisão 47) — o mapa
+                 FUNDIDAS traduz o endereço antigo, e um gate reprova rota
+                 engolida por outra
     │   SpeechRecognition nativo: o ÁUDIO nunca sai daqui
     │   fila offline em localStorage: falha de rede não perde registro
     │  fetch JSON
     ▼
 server.js        HTTP puro (node:http) — estáticos + despacho de /api/*
     ▼
-src/api.js       43 rotas — sessão por perfil; RBAC educadora / coordenação /
+src/api.js       118 rotas — sessão por perfil; RBAC educadora / coordenação /
     │            diretoria (a diretoria não abre registro individual)
     ▼
     ├── src/domain.js     núcleo: elegibilidade, perímetro, alertas, safras,
@@ -80,15 +84,42 @@ src/api.js       43 rotas — sessão por perfil; RBAC educadora / coordenação
     ├── src/relatorio.js  sete blocos do doador, carta, consulta agregada
     └── src/ingestao.js   ingestão retroativa com deduplicação de criança
     ▼
-src/db.js        esquema (24 tabelas) + helpers — SQLite via node:sqlite
+src/db.js        esquema (32 tabelas) + helpers — SQLite via node:sqlite
     │            migração pela assinatura do próprio DDL (decisão 14)
     ▼
 data/percurso.db local ou /var/data/percurso.db no Render
                    (WAL; disco persistente; backup externo obrigatório)
 
 src/seed.js      dados 100% sintéticos, PRNG com semente fixa (regra 1 do bloco 6)
-scripts/         reset.mjs · smoke-test.mjs (242 asserções) · unit-test.mjs (55)
-.github/ci.yml   as duas baterias a cada push
+public/qr.js     codificador de QR sem biblioteca (decisao 50): ISO 18004,
+                 byte/M, v1–v10, mascara por penalidade; verificado com o
+                 BarcodeDetector do navegador, nao com o proprio codigo
+src/canais.js    grupos de WhatsApp e perfil de Instagram (decisao 47) — o
+                 publico do canal e' TRAVA: decide o que pode ser montado para
+                 ele, e a recusa e' do servidor, nao do botao
+src/evidencia.js prova do consentimento em video (decisao 42) — arquivo em
+                 data/consentimento/ (0600, FORA de public/), linha com ponteiro;
+                 o OPOSTO de transcricao.js: aqui apagar e' apagar a prova
+src/boletim.js   boletim de UMA crianca para quem responde por ela (decisao 43)
+                 — nao persiste; monta do que ja' esta' registrado, como o recado
+src/auth.js      sessao com token OPACO (o que restou da decisao 39 depois da
+                 51) — o cookie nao e' o id; sessoes em memoria, revogaveis.
+                 NAO ha senha: entrar e' escolher quem esta' usando
+src/auditoria.js rastro de leitura de dado individual (decisao 38)
+
+src/transcricao.js  audio longo -> texto pelo whisper.cpp do sistema (decisao 35)
+                    DESLIGADO por padrao (PERCURSO_AUDIO=1); o arquivo nao
+                    sobrevive a funcao — finally + varredura no boot + teto de idade
+data/audio-temp/    unico lugar onde audio toca disco, e sempre de passagem
+                    (fora de public/: nada de audio servido como estatico)
+public/audio.js     conversao para WAV 16 kHz no NAVEGADOR (evita o ffmpeg) e
+                    gravacao em blocos fechados de 5 min (evita 1 GB de Float32)
+
+scripts/         reset.mjs · smoke-test.mjs (517 asserções) · unit-test.mjs (221) · preparar-sessao.mjs
+                 rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
+                 audio-stub-test.mjs (ciclo de vida do áudio, sem modelo) · reancorar.mjs
+                 whisper-stub.mjs · ai-stub.mjs (imitam a interface, não o comportamento)
+.github/workflows/ci.yml   as cinco baterias a cada push (AI_ENABLED=false)
 ```
 
 **Por que o domínio deixou de ser um arquivo só.** A revisão de 22/08 recomendava extrair por área
@@ -116,6 +147,22 @@ Decisões estruturantes já tomadas e documentadas (não se reabre sem fato novo
   declarada "não persiste em nenhum momento", justamente para que a ausência seja auditável.
 
 ---
+
+### 2.1. Adendo pós-visita (02/09/2026)
+
+Quatro módulos novos, todos determinísticos e sem dependência: `src/planilha.js` (a planilha
+socioemocional do Instituto preenchida da rubrica; exportação CSV por código — o servidor ganhou a
+saída `_csv`), `src/relato.js` (relato do procedimento no padrão do conselho, liberado pela
+profissional), `src/recado.js` (recado da turma aos responsáveis) e `src/parecer.js` (parecer a
+profissional parceiro, sob consentimento). `src/voz.js` ganhou os catálogos da vivência
+(procedimento, objetivo), o check-in de grupo e a devolução por encontro; `src/domain.js`, o papel
+`profissional`, `turmaNaRubrica`, a régua de presença (`reguaDaTurma`, `reguaDoInstituto`) e o
+filtro de perímetro com contexto. Rotas novas: `GET /api/planilha/resumo`,
+`GET /api/exportar/planilha`, `GET /api/relato`, `POST /api/relato/liberar`, `GET /api/turma/presenca`,
+`GET /api/regua`, `GET /api/recado`, `GET /api/parecer`, `GET /api/parecer/ver`,
+`POST /api/parecer/gerar`, `POST /api/parecer/liberar`. Em 03/09/2026 entrou
+`GET /api/consulta`, que serve as sugestões da tela antes da primeira pergunta. Uma tabela nova (`parecer`) e colunas novas
+em `folha`; a assinatura do DDL mudou e o banco se recria (decisão 14). Decisões 31–34.
 
 ## 3. Invariantes — o que nenhum horizonte pode mudar
 
@@ -150,7 +197,7 @@ handover, vídeo). O que resta é fechar as duas pendências P1 da revisão arqu
 | # | Item | Por quê | Critério de aceite |
 |---|---|---|---|
 | ~~1.1~~ | ~~**Fecho de ciclo com descarte do campo livre**~~ | **FEITO (22/08)** — o campo livre saiu do produto (decisão 15) e `fecharCiclo` apaga qualquer valor legado | Teste unitário "fecharCiclo: executa a retenção declarada e apaga texto legado" e smoke §18 |
-| 1.2 | **Escopo de turma no RBAC** | Educadora hoje enxerga crianças além das suas turmas; o acesso declarado na governança é "educador da criança + coordenação". A v2 fechou o perfil da diretoria (decisão 16), mas o escopo entre educadoras continua aberto | Rotas de leitura individual filtram por turma do educador logado; smoke test cobre o acesso negado |
+| ~~1.2~~ | ~~**Escopo de turma no RBAC**~~ **FEITO 25/08** (decisão 22) | O acesso declarado na governança é "educador da criança + coordenação"; a v2 fechou a diretoria (decisão 16) e a v3 fechou o escopo entre educadoras | Rotas de leitura individual filtram por turma do educador logado; smoke bloco 12 cobre o acesso negado (403) |
 | 1.6 | **Regravar o vídeo demonstrativo** | O vídeo em `video/` grava a v1: não mostra voz, confirmação, pauta nem relatório do doador. O handover da semana 10 exige vídeo demonstrativo do que está entregue | Vídeo cobrindo os três perfis e o fluxo de voz de ponta a ponta |
 | 1.3 | **Validação com usuário real** | Exigência da semana 5 que permanece pendente e será cobrada na 10 | Registro de quem validou, roteiro usado e aprendizados, anexado em `docs/` |
 | 1.4 | **Insumos de arquitetura para o business case** | O pitch da semana 10 exige custo total (incl. assinaturas) e plano de sustentação | Uma página: custo de licença R$ 0, requisito de máquina, quem opera, tempo estimado/semana — extraída deste documento |
@@ -169,14 +216,14 @@ aceitáveis apenas porque o dado é sintético.
 
 | Ordem | Item | Desenho proposto |
 |---|---|---|
-| 2.1 | Autenticação real | Senha por educador (hash + sal, `node:crypto`), sessão em cookie assinado; sem provedor externo — mantém zero dependência |
+| 2.1 | Autenticação real | **Voltou a ser pendência com a decisão 51**, que removeu a senha. O desenho é o que a decisão 39 já tinha implementado: senha por educador (scrypt do `node:crypto`) sobre o token opaco que ficou de pé. É pré-requisito de dado real e do campo livre de relato (F7) |
 | 2.2 | Transporte cifrado | Operação em rede local do Instituto com TLS (certificado próprio) ou túnel gerenciado; se sair da rede local, HTTPS obrigatório |
 | 2.3 | Trilha de auditoria | Tabela `auditoria` (quem, o quê, quando) alimentada pela camada de API; a tabela `atividade` já é o embrião |
 | 2.4 | Backup automatizado | Cópia diária dos três arquivos WAL para segunda mídia + teste de restauração mensal documentado; hoje o backup é manual por cópia |
 | 2.5 | Consentimento de verdade | Termo impresso por campo (a tabela `consentimento` já modela), assinado pelo responsável, arquivado fisicamente; o registro no sistema aponta para o termo |
 | 2.6 | Encarregado LGPD | Nomeação formal pela coordenação; canal de requisição do titular (acesso, correção, eliminação) — a eliminação já é viável por SQL, precisa virar procedimento |
 | 2.7 | Operação no Render | O Web Service canônico usa disco persistente e uma única instância; backup externo continua obrigatório. Escala horizontal exige migrar do SQLite para banco compartilhado |
-| 2.8 | Troca da seed | Cadastro real substitui a seed **depois** de 2.1–2.6 prontos; `reset.mjs` passa a ser proibido em produção (guarda por variável de ambiente) |
+| 2.8 | Troca da seed | **Porta manual entregue** (`#/pessoas`, `POST /api/equipe`, `POST /api/criancas`): coordenação cadastra equipe e criança uma a uma, com dedup por nome+nascimento e consentimento nascendo pendente. Desligar pessoa e encerrar matrícula também entraram, como **arquivo** e não como exclusão (`#/pessoas?aba=arquivo`, decisão 30). Falta para fechar o item: a troca da seed por dado real — que continua condicionada a 2.1–2.6 prontos; `reset.mjs` passa a ser proibido em produção (guarda por variável de ambiente) |
 
 Critério de saída do horizonte: uma educadora real registra uma chamada real, com consentimento
 real arquivado, num banco que sobreviveria à perda da máquina.
@@ -246,6 +293,34 @@ nomeado na tabela do Horizonte 3. Curto prazo ante qualquer ocorrência: ampliar
 arquitetural, seção 7). Esta pesquisa registra o caminho estrutural pré-aprovado para quando o
 gatilho dispara.
 
+### 6.2. Camada de IA local implementada (v3, 25/08/2026) — e o que ela NÃO substitui
+
+A revisão de 25/08/2026 implementou o plano da pasta de arquitetura
+(`PLANO-IMPLEMENTACAO-RAG-COPILOT-SROI-LORA.md`) como **camada adicional opt-in** — coisa diferente
+da linha "SLM local de verdade" da tabela acima, que segue esperando o gatilho dela:
+
+- **As três bordas continuam determinísticas.** Filtro de perímetro, síntese em template e revisor
+  de sobre-alegação não foram substituídos por modelo — o gatilho (falso-negativo documentado em
+  operação real) não disparou. A **borda 2** (consistência entre observadores) ganhou implementação
+  determinística: a leitura de calibração no painel da coordenação.
+- **O que entrou, atrás de `AI_ENABLED` (padrão: desligada):** RAG com corpus governado
+  (`src/rag/`, `docs/GOVERNANCA-FONTES-RAG.md`), copilot reflexivo Modo B (`#/pensar`,
+  Qwen3 4B local via `llama.cpp` em `127.0.0.1`), Modo A opcional sobre o slot da decisão 13
+  (`AI_EXTRATOR=1`, fallback lexical), SROI exploratório determinístico (`#/relatorio?aba=impacto`,
+  `docs/SROI-METODOLOGIA.md`) e a infraestrutura da Fase 4 (`ai/training/`, treino não executado
+  por gate). Arquitetura em camadas: `celular/navegador → Node → RAG (SQLite/FTS5) →
+  llama.cpp (127.0.0.1) → GGUF local`.
+- **Invariantes preservados:** o escore nunca nasce de modelo; a IA nunca grava; nome de criança
+  nunca chega a modelo (perímetro antes, pseudonimização depois, limite residual declarado);
+  fallback determinístico em 100% das falhas; ligar em operação real depende do go da PoC
+  (`docs/POC-COPILOT.md`). Mapa completo: `ai/README.md`; plano auditado e registro da execução:
+  `docs/revisao/04-PLANO-COMPLEMENTACAO-IA.md`.
+- **Nota sobre a recomendação 6.1:** ela permanece válida para o caso dela (classificador de
+  borda, Gemma 270M + LoRA). O copilot usa modelo maior (4B) porque o uso é outro — diálogo
+  reflexivo, que a análise (`ANALISE-SLM-E-SROI.md` §2.1) mostrou exigir mais escala. A camada
+  atual fala com o `llama-server` por HTTP local SEM dependência npm — o trade-off do
+  `node-llama-cpp` registrado em 6.1 não foi consumido.
+
 #### O que não usar
 
 - **APIs em nuvem** (Sabiá, Maritaca, Gemini) — viola *dado não sai da organização*; o perímetro
@@ -274,10 +349,11 @@ gatilho dispara.
   arquitetura de quatro camadas com o domínio dividido por área, zero dependência, e o perímetro
   ético do bloco 6 imposto por esquema de banco — com os desvios do material de aula (no-code, SLM)
   e do pack (transcrição no navegador, extrator determinístico) assumidos e justificados por escrito.
-- **Até 09/10**: nenhuma feature nova; fechar o escopo de turma no RBAC das rotas herdadas de
-  leitura individual, regravar o vídeo demonstrativo sobre a v2, validar com usuário real e
-  alimentar o business case com os números de sustentação. O descarte do campo livre e a retenção
-  declarada já foram fechados (achado A-05, decisão 15).
+- **Até 09/10**: o escopo de turma no RBAC das rotas herdadas foi fechado em 25/08 (decisão 22),
+  e a v3 acrescentou a camada de IA opt-in (seção 6.2) com o produto intacto quando desligada.
+  Continuam pendentes de gente: regravar o vídeo sobre a versão atual, validar com usuário real e
+  alimentar o business case com os números de sustentação (`docs/PENDENCIAS-DE-ENTREGA.md`).
+  O descarte do campo livre e a retenção declarada já foram fechados (achado A-05, decisão 15).
 - **No piloto real**: as oito medidas do Horizonte 2 deixam de ser dívida aceitável e viram
   pré-requisito; a troca de dado sintético por real é evento de governança com checklist.
 - **Depois**: cada evolução (M2, M4, B4, variantes, SLM) tem gatilho externo nomeado e encaixe
