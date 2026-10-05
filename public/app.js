@@ -5712,7 +5712,7 @@ function pintarConvite() {
   if (!el || document.getElementById('aurora-convite')) return;
   el.insertAdjacentHTML('beforebegin', `
     <div class="aurora-convite" id="aurora-convite">
-      <p><b>Posso ficar mais útil?</b> Se você deixar, eu aurora a reparar no que você toca
+      <p><b>Posso ficar mais útil?</b> Se você deixar, eu passo a reparar no que você toca
       aqui dentro para trazer primeiro o que costuma te servir. Eu conto só o que você faz
       COMIGO — nunca o que você faz no Percurso, nunca o texto das suas perguntas, nunca
       nome de criança, e nem a hora, só o dia.</p>
