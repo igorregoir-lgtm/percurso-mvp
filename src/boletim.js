@@ -69,7 +69,7 @@ export function boletimDaCrianca(criancaId) {
   linhas.push(`Instituto Ebenézer — acompanhamento de ${c.nome}`);
   linhas.push('');
   if (matriculas.length) {
-    linhas.push('Está matriculada em:');
+    linhas.push('Programas e turmas:');
     for (const m of matriculas)
       linhas.push(`· ${m.programa}${m.turma ? ` — ${m.turma}` : ''}, desde ${DATA(m.entrada)}`);
     linhas.push('');

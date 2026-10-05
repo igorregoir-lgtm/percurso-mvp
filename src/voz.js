@@ -93,6 +93,21 @@ export const checkinVazio = () => Object.fromEntries(CHECKIN.map(c => [c.campo, 
 const codigos = (lista) => lista.map(x => x.codigo);
 export const rotuloDe = (lista, codigo) => lista.find(x => x.codigo === codigo)?.rotulo ?? codigo;
 
+// Os marcadores misturam ACAO ("Colaborou") e ESTADO ("Agitado"), e o relato e o
+// recado encaixavam tudo depois de "esteve": saia "O grupo esteve colaborou,
+// participou." (achado na regravacao do video, 05/10/2026). A acao entra como
+// verbo e o estado depois de "esteve": "O grupo colaborou e participou; esteve
+// agitado." Lista vazia devolve '' — quem chama decide o texto do "sem marcador".
+const MARCADORES_ACAO = new Set(['colaborou', 'participou']);
+export function fraseDoGrupo(marcadores) {
+  const lista = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} e ${xs.at(-1)}` : xs[0]);
+  const rotulo = (c) => rotuloDe(MARCADORES, c).toLowerCase();
+  const acoes = marcadores.filter((c) => MARCADORES_ACAO.has(c)).map(rotulo);
+  const estados = marcadores.filter((c) => !MARCADORES_ACAO.has(c)).map(rotulo);
+  const partes = [acoes.length ? lista(acoes) : '', estados.length ? `esteve ${lista(estados)}` : ''].filter(Boolean);
+  return partes.length ? `O grupo ${partes.join('; ')}.` : '';
+}
+
 export function catalogos() {
   return {
     atividades: ATIVIDADES.filter(a => a.codigo !== 'nao_identificada').map(({ codigo, rotulo }) => ({ codigo, rotulo })),

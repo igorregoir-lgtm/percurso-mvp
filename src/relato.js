@@ -17,7 +17,7 @@
 // template que muda — os campos já estão fechados.
 import { all, get, run, tx } from './db.js';
 import { agora, dataBR, erro, encontroDe, chamada, marcarAtividade, turmaNaRubrica, PAPEIS_COM_TURMA, rotuloDoPapel } from './domain.js';
-import { folhaDe, rotuloDe, PROCEDIMENTOS, OBJETIVOS, ATIVIDADES, AREAS, MARCADORES, CHECKIN } from './voz.js';
+import { folhaDe, rotuloDe, fraseDoGrupo, PROCEDIMENTOS, OBJETIVOS, ATIVIDADES, AREAS, CHECKIN } from './voz.js';
 
 export const VERSAO_TEMPLATE = 'relato-v1 (provisório — até o modelo do conselho chegar)';
 
@@ -53,9 +53,7 @@ export function relatoDoProcedimento(turmaId, data) {
   } else {
     linhas.push(`${n++}. Atividade: ${rotuloDe(ATIVIDADES, folha.atividade)}${folha.area_tematica !== 'nenhuma' ? ` · área: ${rotuloDe(AREAS, folha.area_tematica)}` : ''}.`);
   }
-  const grupo = folha.marcadores.length
-    ? `O grupo esteve ${folha.marcadores.map(m => rotuloDe(MARCADORES, m).toLowerCase()).join(', ')}.`
-    : 'Sem marcadores de grupo registrados.';
+  const grupo = fraseDoGrupo(folha.marcadores) || 'Sem marcadores de grupo registrados.';
   const contagens = CHECKIN.filter(c => tem(ck[c.campo])).map(c => `${c.rotulo}: ${ck[c.campo]}`);
   linhas.push(`${n++}. Desenvolvimento (observação de grupo): ${grupo}`
     + (contagens.length ? ` ${contagens.join('. ')}.` : '')

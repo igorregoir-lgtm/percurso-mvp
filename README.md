@@ -5,6 +5,12 @@
 Transforma a observação de minutos do educador em indicador de evolução por trajetória e por
 programa — sem que dado individual de criança saia da organização.
 
+> **Entrega da Semana 10 (09/10/2026) — comece pelo [`docs/HANDOVER.md`](docs/HANDOVER.md).** Ele
+> reúne, num documento só, os cinco itens do guia: vídeo demonstrativo, modelo de dados (diagrama
+> ER gerado do esquema real em [`docs/MODELO-DE-DADOS-ER.md`](docs/MODELO-DE-DADOS-ER.md)),
+> instalação e acesso, evidências de teste ([`docs/EVIDENCIAS-SEMANA-10.md`](docs/EVIDENCIAS-SEMANA-10.md))
+> e decisões técnicas — mais quem opera depois da entrega, com quanto tempo e que competência.
+
 **Versão 2** (22/08/2026): a professora fala e o sistema se alimenta; três scores que
 não pontuam a criança; pauta de segunda como devolução; e o relatório do ciclo que a diretoria gera,
 revisa e envia a quem financia. O que mudou, feature a feature, está em
@@ -76,11 +82,13 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-São **517 asserções de fluxo** e **221 testes unitários** — mais a avaliação do RAG
+Na execução de 05/10/2026 foram **515 asserções de fluxo** e **224 testes unitários** — mais o
+teste de **persistência após reiniciar o servidor** (`npm run test:persistencia`), o de **quebra**
+por entrada inválida (`npm run test:quebra`; os dois sobem servidor e banco próprios), a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização), a bateria da
 camada de IA com stub (`npm run test:ia`: contrato de 7 blocos, recusas, fila e fallbacks, sem
 modelo) e a da transcrição de áudio com stub (`npm run test:audio`: o ciclo de vida do arquivo, que
-é a garantia que a tela faz no instante do toque — 15 asserções, sem os 465 MB de modelo). As cinco
+é a garantia que a tela faz no instante do toque — 19 asserções, sem os 465 MB de modelo). As sete
 baterias rodam a cada push (`.github/workflows/ci.yml`), sempre com `AI_ENABLED=false` — os gates
 que exigem modelo real são locais (`ai/README.md`).
 
@@ -356,8 +364,11 @@ data/sroi/premissas.json  proxies brasileiras com fonte, ano-base e ressalva
 models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh baixa)
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
-scripts/smoke-test.mjs    517 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     221 testes unitários das regras críticas (banco temporário)
+scripts/smoke-test.mjs    515 asserções do fluxo principal (contra o servidor no ar)
+scripts/unit-test.mjs     224 testes unitários das regras críticas (banco temporário)
+scripts/persistencia-test.mjs  grava, derruba o servidor, sobe outro e relê (servidor próprio)
+scripts/quebra-test.mjs   entrada inválida é recusada com 4xx — nunca 500 nem 200 (servidor próprio)
+scripts/gerar-diagrama-er.mjs  regera docs/MODELO-DE-DADOS-ER.md do esquema real
 scripts/rag-test.mjs      avaliação do RAG: hit@5, citações, pt-BR, pseudonimização
 scripts/ai-stub.mjs       stub do llama-server para testar sem modelo
 scripts/ai-stub-test.mjs  bateria da camada de IA com stub (roda no CI)

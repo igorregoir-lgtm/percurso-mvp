@@ -1,11 +1,11 @@
 Percurso — evidência de teste
-Gerado em 2026-09-05 16:02 · F1 a F8, dec. 39 a 50 e a auditoria OPAR de 05/09/2026 (duas rodadas)
-
+Gerado em 2026-10-05 20:20 · entrega da semana 10 · Node v26.7.0 · macOS 26.6.2
+Resumo e tabelas no formato da aula: docs/EVIDENCIAS-SEMANA-10.md
 
 
 
 Percurso — testes do fluxo principal
-Alvo: http://localhost:3100
+Alvo: http://localhost:3000
 
 
 0 · Sessão e controle de acesso
@@ -127,25 +127,20 @@ Alvo: http://localhost:3100
   ✓ sem verbo de falta, ninguém é sugerido
   ✓ a folha gravada continua sem nome nenhum
 
-0b · Autenticação (decisão 39)
+0b · Sessão sem senha (decisão 51)
   ✓ a coordenação cria a pessoa deste teste
-  ✓ sem senha e sem senha definida, a resposta é primeiro acesso (401)
-  ✓ senha curta demais é recusada (422), com o motivo
-  ✓ o primeiro acesso cria a senha e entra
-  ✓ senha errada é 401, e a causa diz que é senha
-  ✓ a senha criada continua valendo na entrada seguinte
+  ✓ escolher o perfil entra, sem senha nenhuma no corpo
+  ✓ e a sessão vale na requisição seguinte
+  ✓ um cliente velho que ainda mande senha entra assim mesmo — o campo é ignorado
+  ✓ id que não existe é 404
   ✓ cookie forjado com o id não abre sessão (401)
   ✓ token inventado também não (401)
-  ✓ o hash da senha NUNCA chega ao navegador
-  ✓ mas a lista diz quem ainda está no primeiro acesso, para a tela saber o que pedir
-  ✓ tentativas seguidas travam a conta por um tempo (429)
-  ✓ educadora NÃO redefine a senha de ninguém (403)
-  ✓ a coordenação devolve alguém ao primeiro acesso
-  ✓ e a pessoa volta a ser pedida a criar senha
-  ✓ o reset derruba a sessão que estava aberta
-  ✓ trocar a senha sem a atual é recusado (401)
-  ✓ com a atual, a troca acontece
-  ✓ e a troca derruba as sessões abertas — inclusive a de quem trocou
+  ✓ nada de senha chega ao navegador — nem hash, nem primeiro acesso
+  ✓ a lista de quem pode entrar continua vindo
+  ✓ POST /api/senha não existe mais (404)
+  ✓ POST /api/senha/redefinir não existe mais (404)
+  ✓ a coordenação arquiva a pessoa deste teste
+  ✓ quem está no arquivo não entra (403)
 
 9a · Rastro de acesso a dado individual (decisão 38)
   ✓ ler a ficha e o olhar deixa rastro, com quem e quando
@@ -313,6 +308,9 @@ Alvo: http://localhost:3100
   ✓ a diretoria NÃO recebe nenhum nome de criança nos scores
   ✓ a distribuição por turma substitui a lista nominal
   ✓ a distribuição por turma também respeita o mínimo de célula
+  ✓ as áreas e lacunas da diretoria respeitam o mínimo de célula
+  ✓ o destaque de exposição vem das lacunas publicáveis
+  ✓ o cenário contém áreas pequenas e seus rótulos não chegam à diretoria
   ✓ a diretoria NÃO grava observação de criança (403)
   ✓ a diretoria NÃO abre agenda do ciclo (403)
   ✓ a diretoria NÃO abre painel da turma (403)
@@ -603,240 +601,7 @@ Alvo: http://localhost:3100
   ✓ o recado não anuncia o feriado como próximo encontro
   ✓ a folha existente devolve pediram_ajuda como inteiro ou null, nunca string
 
-517 passaram · 0 falharam
-
-
-
-✔ inventario: os 120 do dossiê continuam 120/106/14 — a Vivência é contada à parte (0.774625ms)
-✔ filtrarPerimetro: barra frase clínica e preserva o restante (0.786292ms)
-✔ filtrarPerimetro: cobre as quatro categorias do perímetro (0.109625ms)
-✔ filtrarPerimetro: texto benigno passa intacto (0.156375ms)
-✔ filtrarPerimetro: texto vazio ou nulo não quebra (0.675667ms)
-✔ filtrarPerimetro: limite declarado — paráfrase sem termo da lista passa (0.061375ms)
-✔ revisarSobreAlegacao: verbo causal forte reprova (0.4355ms)
-✔ revisarSobreAlegacao: sem a ressalva metodológica reprova (0.590417ms)
-✔ revisarSobreAlegacao: texto contido com ressalva aprova (0.056167ms)
-✔ redigirSintese: o template fechado sempre passa no próprio revisor (0.987042ms)
-✔ elegibilidade: consentimento pendente bloqueia com motivo explícito (0.278208ms)
-✔ elegibilidade: registrar e revogar consentimento abre e fecha o campo (0.4235ms)
-✔ registrarConsentimento: ativar sem nomear o responsável é recusado (422) (0.701292ms)
-✔ salvarObservacao: o olhar não aceita texto sobre a criança (v2) (0.559375ms)
-✔ salvarObservacao: ciclo fechado não aceita observação nova (0.084292ms)
-✔ salvarObservacao: nível fora da escala 1–4 é recusado (0.11325ms)
-✔ agregadoPorCiclo: nenhuma média circula com n abaixo do mínimo (1.046083ms)
-✔ agregadoPorCiclo: célula pequena real é suprimida (não arredondada) (1.419042ms)
-✔ gerarSintese: síntese aprovada não é sobrescrita (2.335875ms)
-✔ aprovarSintese: educadora não aprova (403) (0.063ms)
-✔ utilitários de data: addDias e diasEntre são consistentes (0.05875ms)
-✔ validarExtracao: só aceita o schema fechado (0.371708ms)
-✔ extrairDaFala: mesma fala, mesma saída (determinístico e auditável) (3.754333ms)
-✔ extrairDaFala: a lista de exclusão barra antes de extrair, e o resto sobrevive (1.924834ms)
-✔ extrairDaFala: abaixo do piso de confiança nada é pré-marcado (0.3845ms)
-✔ extrairDaFala: falta só entra com nome da turma e verbo explícito (0.25525ms)
-✔ suprimir: recorte pequeno é agrupado, não apagado em silêncio (0.105917ms)
-✔ suprimir: se nem o agrupado passa do mínimo, ele não é publicado (0.267417ms)
-✔ riscoEvasao: duas faltas seguidas colocam a matrícula na lista (0.337208ms)
-✔ riscoEvasao: o valor discrimina em vez de saturar em 100 (5.155625ms)
-✔ riscoEvasao: compara a criança com a linha de base dela, não com a turma (4.6295ms)
-✔ coberturaRegistro: folha em branco não conta como registro (0.459083ms)
-✔ exposicao: área com interessadas e zero atividades vira lacuna nomeada (0.260791ms)
-✔ segundaDa: qualquer dia da semana resolve para a segunda-feira dela (0.361792ms)
-✔ estadoDoRegistro: o rótulo descreve o registro, nunca a criança (0.272542ms)
-✔ lerCsv: aspas, ponto e vírgula, BOM e CRLF (0.13525ms)
-✔ chaveDeCrianca: três grafias do mesmo nome geram a mesma chave (0.360458ms)
-✔ fila: falha de REDE enfileira e nada se perde (0.141042ms)
-✔ fila: erro de REGRA (4xx) propaga e NÃO entra na fila (0.175667ms)
-✔ fila: ao voltar a rede, drenar envia tudo e esvazia (0.556917ms)
-✔ fila: item recusado por regra na drenagem sai da fila e é reportado (0.093875ms)
-✔ fila: drenar com fila vazia não faz nada (0.029042ms)
-✔ consultar: sobre criança individual, o sistema diz que não sabe (0.284542ms)
-✔ consultar: o assunto vence a fórmula de contagem (10.028792ms)
-✔ consultar: quando dois assuntos dividem a palavra, a frase mais longa vence (9.357ms)
-✔ consultar: perguntar pelo gatilho do alerta é perguntar por evasão (26.032125ms)
-✔ as citações arquivo:linha da documentação apontam para o que prometem (5.899125ms)
-✔ as perguntas da Aurora classificam na intenção que declaram (5.468709ms)
-✔ consultar: a tela e a recusa oferecem a MESMA lista de perguntas (4.28ms)
-✔ consultar: o sistema responde corretamente as perguntas que ele mesmo sugere (11.6485ms)
-✔ relatório: o revisor barra verbo causal e exige a ressalva (0.049417ms)
-✔ revisor: borda de palavra, não substring (achado A-09) (0.044375ms)
-✔ revisor: "contribuiu para" é atribuição causal e reprova (achado E-02) (0.024708ms)
-✔ perímetro: termo acentuado casa (achado SRV-04) (0.084041ms)
-✔ ingestão: sentinela de nascimento desconhecido não entra na chave (achado SRV-02) (0.025583ms)
-✔ coberturaRegistro: turma que parou de registrar continua no painel (achado SRV-05) (0.256875ms)
-✔ perímetro: categoria 5 exige nome da turma E estado interno (rodada 2) (0.171792ms)
-✔ perímetro: "saúde" como ÁREA passa; saúde de criança barra (rodada 2) (0.06625ms)
-✔ ingestão: sem nascimento, grafias incompatíveis NÃO se fundem (rodada 2) (0.523584ms)
-✔ carta: a manchete de vínculo obedece ao mínimo de célula (rodada 2) (0.068792ms)
-✔ a INTERFACE não escreve à mão o que o revisor barra (rodada 2) (0.906875ms)
-✔ transcrição: o áudio NÃO sobrevive a uma transcrição que falha (F1) (4.267834ms)
-✔ transcrição: desligada por padrão, e recusa dizendo o que continua funcionando (0.420084ms)
-✔ a promessa sobre o áudio não pode ser incondicional (F0) (1.944875ms)
-✔ folhaAnteriorDaTurma copia o DESENHO da atividade, nunca as contagens (0.168667ms)
-✔ lapso: o calendário é da TURMA, não do calendário civil (F4) (0.085084ms)
-✔ a semeadura limpa TODAS as tabelas do esquema, na ordem das chaves (0.2875ms)
-✔ o vocabulário das âncoras passa no perímetro — é o que destrava a rubrica por voz (F5) (0.735333ms)
-✔ faltas por voz: fronteira de palavra — "Ana" NÃO casa dentro de "semana" (F6) (0.485833ms)
-✔ campo livre: NUNCA chega ao modelo, NUNCA sai em agregado (decisão 40) (0.729792ms)
-✔ campo livre do GRUPO: nome de criança é barrado, com fronteira de palavra (decisão 40) (0.126ms)
-✔ as medidas de toque do protótipo v3 estão no CSS (contrato do F-1) (0.808583ms)
-✔ toda rota tem como se chegar nela — menu, link ou redirecionamento (1.090834ms)
-✔ todo destino oferecido pelo produto resolve numa rota que existe (1.483667ms)
-✔ nenhuma rota do front é engolida por outra (despacho é o PRIMEIRO que casa) (1.168291ms)
-✔ o botão do recado segue o ENCONTRO da folha, não o dia de hoje (0.546167ms)
-✔ relatório: a supressão roda antes da redação e é declarada (5.237583ms)
-✔ fecharCiclo: executa a retenção declarada e apaga texto legado (0.56725ms)
-✔ numerosDoCiclo: o denominador da cobertura só conta programas no escopo (A-10) (0.59575ms)
-✔ listarCriancas: escopo de educadora restringe às turmas dela e declara o total (A4/A-13) (0.482375ms)
-✔ alertas: escopo de educadora filtra por turma; sem escopo vem tudo (A4) (0.16ms)
-✔ sroi: 3 cenários, faixa presente e nunca número único (0.392875ms)
-✔ sroi: dupla contagem (envelope + componente) é bloqueada (0.042459ms)
-✔ sroi: benchmark e referência não entram no cálculo por criança (0.048833ms)
-✔ sroi: toda proxy usada sai com fonte, ano-base e ressalva (0.046166ms)
-✔ sroi: parâmetro de cenário fora de 0..1 é recusado (0.040625ms)
-✔ aurora: três sub-tarefas da chamada casam respostas DISTINTAS do guia (172.780875ms)
-✔ aurora: diretoria + nome de criança = recusa determinística, sem fala (0.530875ms)
-✔ aurora: pergunta reflexiva abre o modo pensar junto em vez de responder do guia (0.441625ms)
-✔ aurora: fora do produto = limite declarado, SEM empurrar para o pensar junto (0.512959ms)
-✔ aurora: ação fora do catálogo do papel é descartada (0.026125ms)
-✔ aurora: limparFala derruba pseudônimo, nome real e fala longa (0.10925ms)
-✔ aurora: catálogo por papel não vaza tela de outro perfil; chips vêm da tela (0.05725ms)
-✔ aurora: `tela` fora da lista fechada de rotas vira vazio (canal lateral fechado) (0.050416ms)
-✔ aurora: perímetro PARCIAL segue com trechos e aviso — e sem fala (0.485958ms)
-✔ aurora: limparFala não derruba "criança na/já" (regressão da flag i) (0.042417ms)
-✔ aurora: "como chego" não cai mais na tela de voz por causa do rótulo (0.143792ms)
-✔ aurora: telas antes órfãs (registrar, seus passos e alertas) têm guia (2.573541ms)
-✔ sessões: obter() é lookup puro — não cria entrada nem renova TTL (72.378416ms)
-✔ sessões: teto de quantidade despeja a mais antiga em vez de crescer sem fim (0.149958ms)
-✔ roster de proteção inclui criança que SAIU do programa (ativo=0) (0.901209ms)
-✔ aurora: chip "como conto como foi o encontro?" casa a VOZ, não a busca de crianças (0.121291ms)
-✔ aurora: "hoje" na frase não sombreia a tela pedida (0.14ms)
-✔ aurora: intenção específica vence as genéricas ("todos presentes") (0.050333ms)
-✔ aurora/envelope: só escalar e token de enum — identidade é recusada, contagem passa (0.339959ms)
-✔ aurora/envelope: nenhum nome de criança nem de turma em nenhum papel (12.174583ms)
-✔ aurora/envelope: falha vira envelope vazio, nunca exceção na rota (0.07ms)
-✔ aurora/lint: o anti-cobrança MORDE — não basta o catálogo passar (0.418084ms)
-✔ aurora/catálogo: as sete regras de escrita, em todas as entradas (0.623666ms)
-✔ aurora/catálogo: os quatro tipos e o alívio existem nos TRÊS papéis (0.064667ms)
-✔ aurora/ranking: o teto pessoal NÃO atravessa faixas de base (0.084125ms)
-✔ aurora/ranking: a personalização NÃO é inerte — termos distintos dão pontos distintos (0.036708ms)
-✔ aurora/ranking: núcleo tem piso mesmo com vinte dispensas (0.023458ms)
-✔ aurora/ranking: NUNCA mais de uma pendência por painel, nem na exploração (0.135583ms)
-✔ aurora/painel: nenhuma tela de nenhum papel devolve painel vazio (26.610584ms)
-✔ aurora/perfil: nasce DESLIGADO e é no-op enquanto estiver (0.125625ms)
-✔ aurora/perfil: vocabulário FECHADO — nome de criança não vira chave (0.276125ms)
-✔ aurora/perfil: "mostrada" conta uma vez por dia; desligar APAGA (0.591166ms)
-✔ aurora/perfil: silêncio SEMPRE expira; núcleo cala só até o fim do dia (0.149459ms)
-✔ aurora/perfil: com aprender ligado o ranking continua respeitando o piso (2.2445ms)
-✔ aurora: pergunta agregada responde com número do BANCO e nunca fala (13.349958ms)
-✔ aurora/perfil: silenciar() passa pelo MESMO vocabulário — 422 não deixa rastro (0.238417ms)
-✔ aurora/perfil: nada de HORA no arquivo — a política que a tela mostra é verdade (0.210625ms)
-✔ aurora/perfil: dedupe de "mostrada" cobre as TRÊS famílias (0.582416ms)
-✔ aurora/ranking: no dia de exploração o núcleo NÃO perde o topo (0.069291ms)
-✔ aurora/orquestrador: o rótulo do modelo não vira ordem nem número (0.610875ms)
-✔ aurora/orquestrador: entrada imune nunca é reescrita (0.020333ms)
-✔ aurora: o portão agregado não sequestra pergunta de DEFINIÇÃO (2.521917ms)
-✔ aurora/painel: painelDoAurora é TOTAL — nunca lança, seja qual for a entrada (7.250041ms)
-✔ aurora/preferências: resumo_do_dia é HONRADO — e a retomada é a exceção declarada (0.673875ms)
-✔ aurora/preferências: prefere_tipo reserva vaga para o tipo declarado (0.133375ms)
-✔ aurora/preferências: a preferência declarada chega ao painel de verdade (0.3125ms)
-✔ aurora/preferências: valor fora do vocabulário de tipo vira "sem preferência" (0.046958ms)
-✔ aurora/orquestrador: o modelo só COMPRIME rótulo — nunca acrescenta conceito (0.0885ms)
-✔ redação: fidelidade numérica — inventar número reprova o texto INTEIRO (0.309ms)
-✔ redação: o arredondado NÃO é permitido — 13,6 nunca vira 14 (0.033292ms)
-✔ redação: reescrita só pode OMITIR número, nunca acrescentar ou repetir (0.070708ms)
-✔ redação: atribuir dificuldade à CRIANÇA é barrado — o número certo na frase proibida (0.298458ms)
-✔ redação: sem modelo, síntese e relatório são idênticos ao template de sempre (1.333792ms)
-✔ código de criança sai do MAX do sufixo, não do COUNT (0.429542ms)
-✔ criarPessoa: deriva o apelido do nome e devolve a pessoa gravada (0.261375ms)
-✔ criarPessoa: papel inválido e nome vazio são recusados (0.076125ms)
-✔ criarPessoa: homônimo no mesmo papel é 409, não segunda linha (0.239833ms)
-✔ criarPessoa: turma é só de professora (0.048833ms)
-✔ criarPessoa: turma ocupada exige confirmação — e a troca move o escopo (0.188167ms)
-✔ criarCrianca: grava criança, matrícula ativa e os dois consentimentos PENDENTES (0.9455ms)
-✔ criarCrianca: mesma chave forte da ingestão (nome + nascimento) é 409 (0.416208ms)
-✔ criarCrianca: turma de outro programa, data no futuro e idade absurda são recusadas (0.26125ms)
-✔ arquivo: a pessoa sai das listas vivas e NÃO sai do banco (0.593458ms)
-✔ arquivo: o registro da professora arquivada continua de pé e assinado (0.304875ms)
-✔ arquivo: ninguém se arquiva, e a última coordenação na ativa não sai (0.256ms)
-✔ arquivo: turma da professora que sai não fica pendurada em ninguém (0.493667ms)
-✔ arquivo: sucessora não pode ser quem está no arquivo nem quem não é professora (0.259458ms)
-✔ arquivo: cadastrar de novo quem está no arquivo aponta o arquivo, não duplica (0.1705ms)
-✔ arquivo: criança arquivada encerra matrícula com data, fecha alerta e some das listas (0.599875ms)
-✔ arquivo: a criança que saiu continua PROTEGIDA na pseudonimização (0.168125ms)
-✔ arquivo: voltar é matrícula NOVA — a saída não é apagada (0.6ms)
-✔ arquivo: datas incoerentes e duplo arquivamento são recusados (0.63275ms)
-✔ safras: os quatro marcos de uma safra vêm todos da MESMA base (0.356666ms)
-✔ seed: nenhuma matrícula encerrada tem data de saída no futuro (0.0305ms)
-✔ turmaNaRubrica: as turmas da Vivência ficam fora; as demais, dentro (0.06875ms)
-✔ papel profissional: fica responsável por turma, não vira sucessora de nada que não seja turma (0.126125ms)
-✔ rubrica: seis dimensões, na ordem e com os nomes da planilha do Instituto (0.078625ms)
-✔ planilha: o mapeamento 1–4 → 0–2 vive num lugar só e é o declarado (0.057125ms)
-✔ planilha: as linhas saem por CÓDIGO, com 6 indicadores e totais só quando completas (1.829334ms)
-✔ planilha: o resumo replica a aba Indicadores, com supressão de célula pequena e a ressalva (2.04425ms)
-✔ planilha: o CSV abre no Excel (BOM + ";"), tem o cabeçalho da aba Avaliações e nenhum nome (3.654708ms)
-✔ vivência: os catálogos novos são fechados e o check-in é só contagem (0.104833ms)
-✔ vivência: validação recusa procedimento/objetivo fora da lista e contagens impossíveis (0.061167ms)
-✔ vivência: o extrator lê as contagens que a psicóloga respondeu ao vivo (0.683542ms)
-✔ vivência: contagem em algarismo vale igual à contagem por extenso (0.451333ms)
-✔ perímetro com contexto: o nome do procedimento passa; o conteúdo sobre criança continua barrado (0.152958ms)
-✔ vivência: salvar a folha exige o procedimento, e a folha de outra turma ignora procedimento (0.736ms)
-✔ relato: sai dos campos fechados, sem nome de criança, e só vale depois do OK (0.985167ms)
-✔ devolução por encontro: compara com as últimas folhas; sem 3 anteriores, só os números de hoje (0.34775ms)
-✔ régua: as faixas seguem a política da casa (75% / 80%) e exigem base mínima (0.044083ms)
-✔ régua da turma: a Vivência da manhã tem quem está abaixo e quem está em atenção — e soma fecha (1.801833ms)
-✔ régua do Instituto: o cabeçalho respeita o ?desde= e o ?ref= de quem pediu (4.840042ms)
-✔ recado da turma: só agregado, nenhum nome, e um link de WhatsApp sem número (0.687834ms)
-✔ parecer: sem consentimento específico, não é gerado — e o motivo é dito (0.151083ms)
-✔ parecer: com consentimento sai por CÓDIGO, sem nome, sem clínica, aprovado pelo revisor, e só vale liberado (2.047875ms)
-✔ régua: criança sem presença nesta turma aparece como sem_base, não some (0.306167ms)
-✔ turma: o cadastro existe, recusa turno inventado, nome repetido e quem não atende (0.267208ms)
-✔ turma: mudar o PROGRAMA de uma turma com matrícula é recusado (0.205917ms)
-✔ matrícula: trocar de turma dentro do programa passa; para outro programa, não (0.358167ms)
-✔ matrícula: no mesmo programa duas vezes, não (0.080958ms)
-✔ contato do responsável: exige DDD, guarda com 55 e volta legível (0.102917ms)
-✔ boletim: leva matrícula, presença e evolução — nunca relato livre, alerta ou nível 1–4 (1.550458ms)
-✔ boletim: sem telefone não há link — e o texto continua existindo (0.285208ms)
-✔ evidência: guarda o vídeo fora de public/, recusa formato estranho e não devolve o nome do arquivo (1.080083ms)
-✔ a tabela de governança não é renderizada em tela nenhuma (pedido do campo, 04/09/2026) (0.661166ms)
-✔ importar áudio não filtra o que o celular mostra, e o app recebe compartilhamento (0.372625ms)
-✔ canal: o destino é o link de convite do grupo, e o resto é recusado (0.136625ms)
-✔ canal: o público decide o que pode ser montado — e a recusa é do servidor (0.408125ms)
-✔ canal: arquivar não apaga — o registro do que saiu aponta para ele (0.503792ms)
-✔ canal: só quem pode receber aparece — e a lista diz quando cada um recebeu (0.085125ms)
-✔ a câmera do consentimento abre em prévia e deixa virar (pedido do campo) (0.408583ms)
-✔ divulgar: a tela diz por que não existe o botão único, em vez de prometê-lo (0.920291ms)
-✔ [hidden] vence toda regra de display — a classe inteira, não o remendo (0.078584ms)
-✔ QR: escolhe a menor versão que cabe, recusa o que não cabe, e a matriz tem a forma da norma (7.529292ms)
-✔ WhatsApp: a primeira linha vira negrito, a assinatura itálico, e o resto fica como está (0.936875ms)
-✔ passe para o celular: dez minutos, uma leitura, sem a imagem, só com fila de verdade (0.24575ms)
-✔ envio duplicado: o servidor sabe quem já recebeu ESTE conteúdo desde a meia-noite local (0.433708ms)
-✔ a fila não depende mais do clipboard: o texto vai dentro do link, e o QR entra no shell offline (0.6905ms)
-✔ régua: a faixa de atenção existe na seed em QUALQUER data — e a granularidade do denominador é declarada (0.166917ms)
-✔ extrator: quantificador não vira número — o produto não sabe o tamanho da turma (0.543542ms)
-✔ extrator: faixa e número fora da escala ficam em branco, não viram 1 (0.23275ms)
-✔ extrator: negação posposta é negação — e "resolveram" sozinho não inventa conflito (0.518166ms)
-✔ extrator: "dezesseis" deixou de virar 6 — a fronteira de palavra faltava (0.290042ms)
-✔ extrator: o portão de confiança continua sendo a primeira defesa (0.08575ms)
-✔ consentimento: a vigência é congelada — revogar não empurra o relógio (0.492542ms)
-✔ fecho de ciclo: detecta prova vencida, NUNCA apaga, e nunca toca prova viva (0.921667ms)
-✔ evidência: a reconciliação do boot conta os dois desencontros e não apaga nenhum (0.433542ms)
-✔ porta C: a data é escolhida, e sem encontro a tela leva à chamada — não a um beco (0.280416ms)
-✔ régua: quando a faixa de atenção é aritmeticamente impossível, a tela diz (0.153417ms)
-✔ pediram_ajuda: não informado é null, nunca 0 — e a folha aceita o vazio (0.318ms)
-✔ extrator: "vinte e um" a "vinte e nove" contam — composição fechada, não inferência (0.297125ms)
-✔ evidência: apagar exige motivo por extenso — "." e "ok" não são motivo (0.372417ms)
-✔ recado: o "próximo encontro" respeita o calendário da casa, não só o dia da semana (0.312666ms)
-✔ régua: "quantas faltas até sair da régua" — a leitura relativa, sem mudar a política (0.1385ms)
-✔ relato livre: o fecho de ciclo DETECTA a retenção vencida, e o descarte é de coordenação e só do que venceu (0.778917ms)
-✔ fecho de ciclo na tela: o modal de retenção vencida nasce DEPOIS do re-render, senão morre no mesmo tique (0.273292ms)
-ℹ tests 222
-ℹ suites 0
-ℹ pass 222
-ℹ fail 0
-ℹ cancelled 0
-ℹ skipped 0
-ℹ todo 0
-ℹ duration_ms 510.886333
+515 passaram · 0 falharam
 
 
 
@@ -873,7 +638,6 @@ Percurso — avaliação do RAG (hit@5, citações, pt-BR, pseudonimização)
 6 passaram · 0 falharam
 
 
-
 Percurso — camada de IA com stub (CI, sem modelo)
 
   ✓ chat devolve tipo reflexao
@@ -904,7 +668,6 @@ Percurso — camada de IA com stub (CI, sem modelo)
 24 passaram · 0 falharam
 
 
-
 Percurso — transcrição de áudio com stub (CI, sem modelo)
 
   ✓ o WAV do cliente é RIFF/WAVE, mono, 16 bits, 16 kHz
@@ -928,3 +691,296 @@ Percurso — transcrição de áudio com stub (CI, sem modelo)
   ✓ a mediana ignora o outlier de timeout
 
 19 passaram · 0 falharam
+
+
+Percurso — persistência após reiniciar o servidor
+Banco temporário: /var/folders/kc/btkqlvb543g4_sct_nb54d5m0000gn/T/percurso-persist-UJYl2k/percurso.db
+
+  ✓ 1º servidor sobe e cria/semeia o banco sozinho
+  ✓ chamada de 2026-09-29 gravada (20 crianças)
+  ✓ professora nova cadastrada pela coordenação
+  ✓ 1º servidor encerrado
+  ✓ 2º servidor sobe sobre o MESMO arquivo de banco
+  ✓ a chamada continua registrada depois do reinício
+  ✓ cada presença/falta voltou exatamente como foi marcada
+  ✓ a data gravada não volta para a lista de pendentes
+  ✓ a professora cadastrada continua na tela de entrada
+
+9 passaram · 0 falharam
+
+
+  ✓ [422] Coordenação no cadastro de equipe — nome em branco  → "O nome é obrigatório."
+  ✓ [422] Coordenação no cadastro de equipe — nome só com espaços  → "O nome é obrigatório."
+  ✓ [422] Coordenação no cadastro de equipe — papel inexistente ("diretor-geral")  → "Escolha o papel: professora, psicóloga, coordenação ou diretoria."
+  ✓ [422] Coordenação no cadastro de criança — nome da criança em branco  → "O nome da criança é obrigatório."
+  ✓ [422] Coordenação no cadastro de criança — nascimento "ontem à tarde" (data ilegível)  → "A data de nascimento precisa vir no formato dia/mês/ano."
+  ✓ [404] Coordenação no cadastro de criança — turma inexistente (id 999999)  → "Turma não encontrada."
+  ✓ [422] Coordenação no cadastro de criança — turma com id negativo (-3)  → "Parâmetro inválido: turma_id."
+  ✓ [422] Educadora na chamada do dia — turma com id negativo (-1)  → "Parâmetro inválido: turma_id."
+  ✓ [404] Educadora na chamada do dia — turma inexistente (id 999999)  → "Turma não encontrada."
+  ✓ [200] Educadora na chamada do dia — data em branco
+  ✓ [422] Educadora na chamada do dia — data impossível (2026-02-31)  → "A data da chamada não existe no calendário."
+  ✓ [422] Educadora na chamada do dia — criança que não existe na lista  → "Criança 999999 não pertence a esta turma."
+  ✓ [200] Educadora na chamada do dia — tempo de registro negativo (-30 s)
+  ✓ [422] Educadora na chamada do dia — lista de marcações vazia  → "Faltou marcar 20 criança(s). Marque todas antes de salvar."
+  ✓ [400] Qualquer tela que envia dados — JSON malformado  → "JSON inválido no corpo da requisição."
+  ✓ [422] Tela de entrada — educador_id com injeção SQL ("1 OR 1=1")  → "Parâmetro inválido: educador_id."
+  ✓ [422] Lista de crianças — filtro de turma não numérico (?turma_id=abc)  → "Parâmetro inválido: turma_id."
+
+| # | Situação inicial | Entrada inválida | Esperado | Obtido | |
+|---|---|---|---|---|---|
+| 1 | Coordenação no cadastro de equipe | nome em branco | recusa 4xx com mensagem | 422 — "O nome é obrigatório." | ✓ |
+| 2 | Coordenação no cadastro de equipe | nome só com espaços | recusa 4xx com mensagem | 422 — "O nome é obrigatório." | ✓ |
+| 3 | Coordenação no cadastro de equipe | papel inexistente ("diretor-geral") | recusa 4xx com mensagem | 422 — "Escolha o papel: professora, psicóloga, coordenação ou diretoria." | ✓ |
+| 4 | Coordenação no cadastro de criança | nome da criança em branco | recusa 4xx com mensagem | 422 — "O nome da criança é obrigatório." | ✓ |
+| 5 | Coordenação no cadastro de criança | nascimento "ontem à tarde" (data ilegível) | recusa 4xx com mensagem | 422 — "A data de nascimento precisa vir no formato dia/mês/ano." | ✓ |
+| 6 | Coordenação no cadastro de criança | turma inexistente (id 999999) | recusa 4xx com mensagem | 404 — "Turma não encontrada." | ✓ |
+| 7 | Coordenação no cadastro de criança | turma com id negativo (-3) | recusa 4xx com mensagem | 422 — "Parâmetro inválido: turma_id." | ✓ |
+| 8 | Educadora na chamada do dia | turma com id negativo (-1) | recusa 4xx com mensagem | 422 — "Parâmetro inválido: turma_id." | ✓ |
+| 9 | Educadora na chamada do dia | turma inexistente (id 999999) | recusa 4xx com mensagem | 404 — "Turma não encontrada." | ✓ |
+| 10 | Educadora na chamada do dia | data em branco | assume a data de hoje (padrão da rota) | 200 | ✓ |
+| 11 | Educadora na chamada do dia | data impossível (2026-02-31) | recusa 4xx com mensagem | 422 — "A data da chamada não existe no calendário." | ✓ |
+| 12 | Educadora na chamada do dia | criança que não existe na lista | recusa 4xx com mensagem | 422 — "Criança 999999 não pertence a esta turma." | ✓ |
+| 13 | Educadora na chamada do dia | tempo de registro negativo (-30 s) | o -30 não vira medida (recusa, ou salva sem tempo) | 200 | ✓ |
+| 14 | Educadora na chamada do dia | lista de marcações vazia | recusa 4xx com mensagem | 422 — "Faltou marcar 20 criança(s). Marque todas antes de salvar." | ✓ |
+| 15 | Qualquer tela que envia dados | JSON malformado | recusa 4xx com mensagem | 400 — "JSON inválido no corpo da requisição." | ✓ |
+| 16 | Tela de entrada | educador_id com injeção SQL ("1 OR 1=1") | recusa 4xx com mensagem | 422 — "Parâmetro inválido: educador_id." | ✓ |
+| 17 | Lista de crianças | filtro de turma não numérico (?turma_id=abc) | recusa 4xx com mensagem | 422 — "Parâmetro inválido: turma_id." | ✓ |
+
+17 passaram · 0 falharam
+
+
+Percurso — testes unitários das regras de domínio (node:test, banco temporário)
+
+✔ inventario: os 120 do dossiê continuam 120/106/14 — a Vivência é contada à parte (0.797ms)
+✔ filtrarPerimetro: barra frase clínica e preserva o restante (0.916125ms)
+✔ filtrarPerimetro: cobre as quatro categorias do perímetro (0.130584ms)
+✔ filtrarPerimetro: texto benigno passa intacto (0.167833ms)
+✔ filtrarPerimetro: texto vazio ou nulo não quebra (1.03375ms)
+✔ filtrarPerimetro: limite declarado — paráfrase sem termo da lista passa (0.065833ms)
+✔ revisarSobreAlegacao: verbo causal forte reprova (0.480458ms)
+✔ revisarSobreAlegacao: sem a ressalva metodológica reprova (0.667833ms)
+✔ revisarSobreAlegacao: texto contido com ressalva aprova (0.054667ms)
+✔ redigirSintese: o template fechado sempre passa no próprio revisor (1.075416ms)
+✔ elegibilidade: consentimento pendente bloqueia com motivo explícito (0.286417ms)
+✔ elegibilidade: registrar e revogar consentimento abre e fecha o campo (0.486083ms)
+✔ registrarConsentimento: ativar sem nomear o responsável é recusado (422) (0.704667ms)
+✔ salvarObservacao: o olhar não aceita texto sobre a criança (v2) (1.377083ms)
+✔ salvarObservacao: ciclo fechado não aceita observação nova (0.116458ms)
+✔ salvarObservacao: nível fora da escala 1–4 é recusado (0.140084ms)
+✔ agregadoPorCiclo: nenhuma média circula com n abaixo do mínimo (1.214916ms)
+✔ agregadoPorCiclo: célula pequena real é suprimida (não arredondada) (1.963084ms)
+✔ gerarSintese: síntese aprovada não é sobrescrita (2.576333ms)
+✔ aprovarSintese: educadora não aprova (403) (0.068166ms)
+✔ utilitários de data: addDias e diasEntre são consistentes (0.0685ms)
+✔ validarExtracao: só aceita o schema fechado (0.409583ms)
+✔ extrairDaFala: mesma fala, mesma saída (determinístico e auditável) (4.154833ms)
+✔ extrairDaFala: a lista de exclusão barra antes de extrair, e o resto sobrevive (2.094125ms)
+✔ extrairDaFala: abaixo do piso de confiança nada é pré-marcado (0.448791ms)
+✔ extrairDaFala: falta só entra com nome da turma e verbo explícito (0.262583ms)
+✔ suprimir: recorte pequeno é agrupado, não apagado em silêncio (0.105416ms)
+✔ suprimir: se nem o agrupado passa do mínimo, ele não é publicado (0.30275ms)
+✔ riscoEvasao: duas faltas seguidas colocam a matrícula na lista (0.574125ms)
+✔ riscoEvasao: o valor discrimina em vez de saturar em 100 (5.488959ms)
+✔ riscoEvasao: compara a criança com a linha de base dela, não com a turma (5.065ms)
+✔ coberturaRegistro: folha em branco não conta como registro (0.482375ms)
+✔ exposicao: área com interessadas e zero atividades vira lacuna nomeada (0.26325ms)
+✔ segundaDa: qualquer dia da semana resolve para a segunda-feira dela (0.384375ms)
+✔ estadoDoRegistro: o rótulo descreve o registro, nunca a criança (0.307333ms)
+✔ lerCsv: aspas, ponto e vírgula, BOM e CRLF (0.144834ms)
+✔ chaveDeCrianca: três grafias do mesmo nome geram a mesma chave (0.39425ms)
+✔ fila: falha de REDE enfileira e nada se perde (0.158125ms)
+✔ fila: erro de REGRA (4xx) propaga e NÃO entra na fila (0.181666ms)
+✔ fila: ao voltar a rede, drenar envia tudo e esvazia (0.660458ms)
+✔ fila: item recusado por regra na drenagem sai da fila e é reportado (0.087667ms)
+✔ fila: drenar com fila vazia não faz nada (0.031333ms)
+✔ consultar: sobre criança individual, o sistema diz que não sabe (0.324ms)
+✔ consultar: o assunto vence a fórmula de contagem (10.696208ms)
+✔ consultar: quando dois assuntos dividem a palavra, a frase mais longa vence (9.819375ms)
+✔ consultar: perguntar pelo gatilho do alerta é perguntar por evasão (27.693417ms)
+✔ as citações arquivo:linha da documentação apontam para o que prometem (7.355167ms)
+✔ as perguntas da Aurora classificam na intenção que declaram (5.770959ms)
+✔ consultar: a tela e a recusa oferecem a MESMA lista de perguntas (4.729834ms)
+✔ consultar: o sistema responde corretamente as perguntas que ele mesmo sugere (12.324042ms)
+✔ relatório: o revisor barra verbo causal e exige a ressalva (0.05675ms)
+✔ revisor: borda de palavra, não substring (achado A-09) (0.049375ms)
+✔ revisor: "contribuiu para" é atribuição causal e reprova (achado E-02) (0.027166ms)
+✔ perímetro: termo acentuado casa (achado SRV-04) (0.0955ms)
+✔ ingestão: sentinela de nascimento desconhecido não entra na chave (achado SRV-02) (0.027916ms)
+✔ coberturaRegistro: turma que parou de registrar continua no painel (achado SRV-05) (0.277333ms)
+✔ perímetro: categoria 5 exige nome da turma E estado interno (rodada 2) (0.185417ms)
+✔ perímetro: "saúde" como ÁREA passa; saúde de criança barra (rodada 2) (0.071541ms)
+✔ ingestão: sem nascimento, grafias incompatíveis NÃO se fundem (rodada 2) (0.573709ms)
+✔ carta: a manchete de vínculo obedece ao mínimo de célula (rodada 2) (0.075291ms)
+✔ a INTERFACE não escreve à mão o que o revisor barra (rodada 2) (1.5615ms)
+✔ transcrição: o áudio NÃO sobrevive a uma transcrição que falha (F1) (5.26675ms)
+✔ transcrição: desligada por padrão, e recusa dizendo o que continua funcionando (0.441ms)
+✔ a promessa sobre o áudio não pode ser incondicional (F0) (2.640792ms)
+✔ folhaAnteriorDaTurma copia o DESENHO da atividade, nunca as contagens (0.230542ms)
+✔ lapso: o calendário é da TURMA, não do calendário civil (F4) (0.09475ms)
+✔ a semeadura limpa TODAS as tabelas do esquema, na ordem das chaves (0.3195ms)
+✔ o vocabulário das âncoras passa no perímetro — é o que destrava a rubrica por voz (F5) (0.842791ms)
+✔ faltas por voz: fronteira de palavra — "Ana" NÃO casa dentro de "semana" (F6) (0.526ms)
+✔ campo livre: NUNCA chega ao modelo, NUNCA sai em agregado (decisão 40) (1.278167ms)
+✔ campo livre do GRUPO: nome de criança é barrado, com fronteira de palavra (decisão 40) (0.152792ms)
+✔ as medidas de toque do protótipo v3 estão no CSS (contrato do F-1) (0.864167ms)
+✔ toda rota tem como se chegar nela — menu, link ou redirecionamento (1.24225ms)
+✔ todo destino oferecido pelo produto resolve numa rota que existe (1.534625ms)
+✔ nenhuma rota do front é engolida por outra (despacho é o PRIMEIRO que casa) (1.259292ms)
+✔ o botão do recado segue o ENCONTRO da folha, não o dia de hoje (0.571958ms)
+✔ relatório: a supressão roda antes da redação e é declarada (6.263875ms)
+✔ fecharCiclo: executa a retenção declarada e apaga texto legado (0.638375ms)
+✔ numerosDoCiclo: o denominador da cobertura só conta programas no escopo (A-10) (0.639208ms)
+✔ listarCriancas: escopo de educadora restringe às turmas dela e declara o total (A4/A-13) (0.531333ms)
+✔ alertas: escopo de educadora filtra por turma; sem escopo vem tudo (A4) (0.1585ms)
+✔ sroi: 3 cenários, faixa presente e nunca número único (0.441292ms)
+✔ sroi: dupla contagem (envelope + componente) é bloqueada (0.04275ms)
+✔ sroi: benchmark e referência não entram no cálculo por criança (0.052375ms)
+✔ sroi: toda proxy usada sai com fonte, ano-base e ressalva (0.045708ms)
+✔ sroi: parâmetro de cenário fora de 0..1 é recusado (0.040625ms)
+✔ aurora: três sub-tarefas da chamada casam respostas DISTINTAS do guia (184.911667ms)
+✔ aurora: diretoria + nome de criança = recusa determinística, sem fala (0.562084ms)
+✔ aurora: pergunta reflexiva abre o modo pensar junto em vez de responder do guia (0.446542ms)
+✔ aurora: fora do produto = limite declarado, SEM empurrar para o pensar junto (0.541ms)
+✔ aurora: ação fora do catálogo do papel é descartada (0.025458ms)
+✔ aurora: limparFala derruba pseudônimo, nome real e fala longa (0.107459ms)
+✔ aurora: catálogo por papel não vaza tela de outro perfil; chips vêm da tela (0.060125ms)
+✔ aurora: `tela` fora da lista fechada de rotas vira vazio (canal lateral fechado) (0.055ms)
+✔ aurora: perímetro PARCIAL segue com trechos e aviso — e sem fala (1.014459ms)
+✔ aurora: limparFala não derruba "criança na/já" (regressão da flag i) (0.068708ms)
+✔ aurora: "como chego" não cai mais na tela de voz por causa do rótulo (0.173292ms)
+✔ aurora: telas antes órfãs (registrar, seus passos e alertas) têm guia (2.578875ms)
+✔ sessões: obter() é lookup puro — não cria entrada nem renova TTL (71.395167ms)
+✔ sessões: teto de quantidade despeja a mais antiga em vez de crescer sem fim (0.136792ms)
+✔ roster de proteção inclui criança que SAIU do programa (ativo=0) (0.768667ms)
+✔ aurora: chip "como conto como foi o encontro?" casa a VOZ, não a busca de crianças (0.083834ms)
+✔ aurora: "hoje" na frase não sombreia a tela pedida (0.109375ms)
+✔ aurora: intenção específica vence as genéricas ("todos presentes") (0.039042ms)
+✔ aurora/envelope: só escalar e token de enum — identidade é recusada, contagem passa (0.270334ms)
+✔ aurora/envelope: nenhum nome de criança nem de turma em nenhum papel (10.141208ms)
+✔ aurora/envelope: falha vira envelope vazio, nunca exceção na rota (0.074375ms)
+✔ aurora/lint: o anti-cobrança MORDE — não basta o catálogo passar (0.35475ms)
+✔ aurora/catálogo: as sete regras de escrita, em todas as entradas (0.548042ms)
+✔ aurora/catálogo: os quatro tipos e o alívio existem nos TRÊS papéis (0.058375ms)
+✔ aurora/ranking: o teto pessoal NÃO atravessa faixas de base (0.075167ms)
+✔ aurora/ranking: a personalização NÃO é inerte — termos distintos dão pontos distintos (0.030083ms)
+✔ aurora/ranking: núcleo tem piso mesmo com vinte dispensas (0.019875ms)
+✔ aurora/ranking: NUNCA mais de uma pendência por painel, nem na exploração (0.122125ms)
+✔ aurora/painel: nenhuma tela de nenhum papel devolve painel vazio (24.937584ms)
+✔ aurora/perfil: nasce DESLIGADO e é no-op enquanto estiver (0.16925ms)
+✔ aurora/perfil: vocabulário FECHADO — nome de criança não vira chave (0.271292ms)
+✔ aurora/perfil: "mostrada" conta uma vez por dia; desligar APAGA (0.557667ms)
+✔ aurora/perfil: silêncio SEMPRE expira; núcleo cala só até o fim do dia (0.14125ms)
+✔ aurora/perfil: com aprender ligado o ranking continua respeitando o piso (3.280291ms)
+✔ aurora: pergunta agregada responde com número do BANCO e nunca fala (13.863167ms)
+✔ aurora/perfil: silenciar() passa pelo MESMO vocabulário — 422 não deixa rastro (0.287959ms)
+✔ aurora/perfil: nada de HORA no arquivo — a política que a tela mostra é verdade (0.318375ms)
+✔ aurora/perfil: dedupe de "mostrada" cobre as TRÊS famílias (0.598958ms)
+✔ aurora/ranking: no dia de exploração o núcleo NÃO perde o topo (0.079083ms)
+✔ aurora/orquestrador: o rótulo do modelo não vira ordem nem número (0.639833ms)
+✔ aurora/orquestrador: entrada imune nunca é reescrita (0.021917ms)
+✔ aurora: o portão agregado não sequestra pergunta de DEFINIÇÃO (2.829ms)
+✔ aurora/painel: painelDoAurora é TOTAL — nunca lança, seja qual for a entrada (7.606542ms)
+✔ aurora/preferências: resumo_do_dia é HONRADO — e a retomada é a exceção declarada (0.537208ms)
+✔ aurora/preferências: prefere_tipo reserva vaga para o tipo declarado (0.138333ms)
+✔ aurora/preferências: a preferência declarada chega ao painel de verdade (0.329709ms)
+✔ aurora/preferências: valor fora do vocabulário de tipo vira "sem preferência" (0.055875ms)
+✔ aurora/orquestrador: o modelo só COMPRIME rótulo — nunca acrescenta conceito (0.111041ms)
+✔ redação: fidelidade numérica — inventar número reprova o texto INTEIRO (0.29375ms)
+✔ redação: o arredondado NÃO é permitido — 13,6 nunca vira 14 (0.031292ms)
+✔ redação: reescrita só pode OMITIR número, nunca acrescentar ou repetir (0.074709ms)
+✔ redação: atribuir dificuldade à CRIANÇA é barrado — o número certo na frase proibida (0.314375ms)
+✔ redação: sem modelo, síntese e relatório são idênticos ao template de sempre (1.435542ms)
+✔ código de criança sai do MAX do sufixo, não do COUNT (0.528458ms)
+✔ criarPessoa: deriva o apelido do nome e devolve a pessoa gravada (0.220416ms)
+✔ criarPessoa: papel inválido e nome vazio são recusados (0.06325ms)
+✔ criarPessoa: homônimo no mesmo papel é 409, não segunda linha (0.212ms)
+✔ criarPessoa: turma é só de professora (0.046666ms)
+✔ criarPessoa: turma ocupada exige confirmação — e a troca move o escopo (0.19275ms)
+✔ criarCrianca: grava criança, matrícula ativa e os dois consentimentos PENDENTES (0.998083ms)
+✔ criarCrianca: mesma chave forte da ingestão (nome + nascimento) é 409 (0.484208ms)
+✔ criarCrianca: turma de outro programa, data no futuro e idade absurda são recusadas (0.238125ms)
+✔ arquivo: a pessoa sai das listas vivas e NÃO sai do banco (0.634834ms)
+✔ arquivo: o registro da professora arquivada continua de pé e assinado (0.36825ms)
+✔ arquivo: ninguém se arquiva, e a última coordenação na ativa não sai (0.27775ms)
+✔ arquivo: turma da professora que sai não fica pendurada em ninguém (0.535375ms)
+✔ arquivo: sucessora não pode ser quem está no arquivo nem quem não é professora (1.274959ms)
+✔ arquivo: cadastrar de novo quem está no arquivo aponta o arquivo, não duplica (0.216792ms)
+✔ arquivo: criança arquivada encerra matrícula com data, fecha alerta e some das listas (0.662917ms)
+✔ arquivo: a criança que saiu continua PROTEGIDA na pseudonimização (0.165708ms)
+✔ arquivo: voltar é matrícula NOVA — a saída não é apagada (0.653792ms)
+✔ arquivo: datas incoerentes e duplo arquivamento são recusados (0.674625ms)
+✔ safras: os quatro marcos de uma safra vêm todos da MESMA base (0.376666ms)
+✔ seed: nenhuma matrícula encerrada tem data de saída no futuro (0.030209ms)
+✔ turmaNaRubrica: as turmas da Vivência ficam fora; as demais, dentro (0.071917ms)
+✔ papel profissional: fica responsável por turma, não vira sucessora de nada que não seja turma (0.128958ms)
+✔ rubrica: seis dimensões, na ordem e com os nomes da planilha do Instituto (0.095125ms)
+✔ planilha: o mapeamento 1–4 → 0–2 vive num lugar só e é o declarado (0.074ms)
+✔ planilha: as linhas saem por CÓDIGO, com 6 indicadores e totais só quando completas (1.876625ms)
+✔ planilha: o resumo replica a aba Indicadores, com supressão de célula pequena e a ressalva (2.2755ms)
+✔ planilha: o CSV abre no Excel (BOM + ";"), tem o cabeçalho da aba Avaliações e nenhum nome (3.223667ms)
+✔ vivência: os catálogos novos são fechados e o check-in é só contagem (0.12575ms)
+✔ vivência: validação recusa procedimento/objetivo fora da lista e contagens impossíveis (0.068958ms)
+✔ vivência: o extrator lê as contagens que a psicóloga respondeu ao vivo (1.46475ms)
+✔ vivência: contagem em algarismo vale igual à contagem por extenso (0.448334ms)
+✔ perímetro com contexto: o nome do procedimento passa; o conteúdo sobre criança continua barrado (0.14975ms)
+✔ vivência: salvar a folha exige o procedimento, e a folha de outra turma ignora procedimento (0.896125ms)
+✔ relato: sai dos campos fechados, sem nome de criança, e só vale depois do OK (1.113375ms)
+✔ devolução por encontro: compara com as últimas folhas; sem 3 anteriores, só os números de hoje (0.375333ms)
+✔ régua: as faixas seguem a política da casa (75% / 80%) e exigem base mínima (0.042458ms)
+✔ régua da turma: a Vivência da manhã tem quem está abaixo e quem está em atenção — e soma fecha (1.991834ms)
+✔ régua do Instituto: o cabeçalho respeita o ?desde= e o ?ref= de quem pediu (5.186375ms)
+✔ recado da turma: só agregado, nenhum nome, e um link de WhatsApp sem número (0.909959ms)
+✔ parecer: sem consentimento específico, não é gerado — e o motivo é dito (0.150792ms)
+✔ parecer: com consentimento sai por CÓDIGO, sem nome, sem clínica, aprovado pelo revisor, e só vale liberado (2.107042ms)
+✔ régua: criança sem presença nesta turma aparece como sem_base, não some (0.277375ms)
+✔ turma: o cadastro existe, recusa turno inventado, nome repetido e quem não atende (0.273791ms)
+✔ turma: mudar o PROGRAMA de uma turma com matrícula é recusado (0.196459ms)
+✔ matrícula: trocar de turma dentro do programa passa; para outro programa, não (0.330583ms)
+✔ matrícula: no mesmo programa duas vezes, não (0.08075ms)
+✔ contato do responsável: exige DDD, guarda com 55 e volta legível (0.112959ms)
+✔ boletim: leva matrícula, presença e evolução — nunca relato livre, alerta ou nível 1–4 (1.705084ms)
+✔ boletim: sem telefone não há link — e o texto continua existindo (0.329458ms)
+✔ evidência: guarda o vídeo fora de public/, recusa formato estranho e não devolve o nome do arquivo (1.177958ms)
+✔ a tabela de governança não é renderizada em tela nenhuma (pedido do campo, 04/09/2026) (0.758792ms)
+✔ importar áudio não filtra o que o celular mostra, e o app recebe compartilhamento (0.444416ms)
+✔ canal: o destino é o link de convite do grupo, e o resto é recusado (0.147583ms)
+✔ canal: o público decide o que pode ser montado — e a recusa é do servidor (0.470875ms)
+✔ canal: arquivar não apaga — o registro do que saiu aponta para ele (0.542375ms)
+✔ canal: só quem pode receber aparece — e a lista diz quando cada um recebeu (0.091875ms)
+✔ a câmera do consentimento abre em prévia e deixa virar (pedido do campo) (0.533875ms)
+✔ divulgar: a tela diz por que não existe o botão único, em vez de prometê-lo (1.100459ms)
+✔ [hidden] vence toda regra de display — a classe inteira, não o remendo (0.072ms)
+✔ QR: escolhe a menor versão que cabe, recusa o que não cabe, e a matriz tem a forma da norma (6.919625ms)
+✔ WhatsApp: a primeira linha vira negrito, a assinatura itálico, e o resto fica como está (0.939875ms)
+✔ passe para o celular: dez minutos, uma leitura, sem a imagem, só com fila de verdade (0.247291ms)
+✔ envio duplicado: o servidor sabe quem já recebeu ESTE conteúdo desde a meia-noite local (0.608792ms)
+✔ a fila não depende mais do clipboard: o texto vai dentro do link, e o QR entra no shell offline (0.706458ms)
+✔ régua: a faixa de atenção existe na seed em QUALQUER data — e a granularidade do denominador é declarada (0.204667ms)
+✔ extrator: quantificador não vira número — o produto não sabe o tamanho da turma (1.246ms)
+✔ extrator: faixa e número fora da escala ficam em branco, não viram 1 (0.272ms)
+✔ extrator: negação posposta é negação — e "resolveram" sozinho não inventa conflito (0.578375ms)
+✔ extrator: "dezesseis" deixou de virar 6 — a fronteira de palavra faltava (0.313208ms)
+✔ extrator: o portão de confiança continua sendo a primeira defesa (0.076709ms)
+✔ consentimento: a vigência é congelada — revogar não empurra o relógio (0.730417ms)
+✔ fecho de ciclo: detecta prova vencida, NUNCA apaga, e nunca toca prova viva (1.114041ms)
+✔ evidência: a reconciliação do boot conta os dois desencontros e não apaga nenhum (0.868333ms)
+✔ porta C: a data é escolhida, e sem encontro a tela leva à chamada — não a um beco (0.350084ms)
+✔ régua: quando a faixa de atenção é aritmeticamente impossível, a tela diz (0.176375ms)
+✔ pediram_ajuda: não informado é null, nunca 0 — e a folha aceita o vazio (0.325ms)
+✔ extrator: "vinte e um" a "vinte e nove" contam — composição fechada, não inferência (0.305459ms)
+✔ evidência: apagar exige motivo por extenso — "." e "ok" não são motivo (0.419916ms)
+✔ recado: o "próximo encontro" respeita o calendário da casa, não só o dia da semana (0.327875ms)
+✔ régua: "quantas faltas até sair da régua" — a leitura relativa, sem mudar a política (0.153833ms)
+✔ relato livre: o fecho de ciclo DETECTA a retenção vencida, e o descarte é de coordenação e só do que venceu (0.857042ms)
+✔ fecho de ciclo na tela: o modal de retenção vencida nasce DEPOIS do re-render, senão morre no mesmo tique (0.275416ms)
+✔ salvarChamada: tempo fora de (0, 1h] é descartado, não "consertado" — e a chamada salva igual (3.885416ms)
+✔ fraseDoGrupo: ação entra como verbo, estado depois de "esteve" — nunca "esteve colaborou" (0.123209ms)
+ℹ tests 224
+ℹ suites 0
+ℹ pass 224
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 546.856166

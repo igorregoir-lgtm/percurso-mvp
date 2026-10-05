@@ -638,13 +638,13 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
     'public/app.js:6323': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
     'src/api.js:388': /erro\(422.*rubrica por ciclo/,
-    'src/api.js:829': /'POST \/api\/consentimento'/,
-    'src/api.js:1361': /periodosSugeridos\(\)/,
+    'src/api.js:831': /'POST \/api\/consentimento'/,
+    'src/api.js:1363': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:113': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
     'src/domain.js:163': /a folha e' do ENCONTRO|A folha e' do ENCONTRO/i,
-    'src/domain.js:1114': /export function estadoDeRetomada/,
+    'src/domain.js:1123': /export function estadoDeRetomada/,
     'src/relatorio.js:440': /export function periodosSugeridos/,
     'src/relatorio.js:584': /const INTENCOES/,
     'src/seed.js:74': /rubrica_socioemocional/,
@@ -3429,4 +3429,35 @@ test('fecho de ciclo na tela: o modal de retenção vencida nasce DEPOIS do re-r
   assert.ok(iNavegar > -1 && iModal > -1);
   assert.ok(iNavegar < iModal, 'navegar() voltou para depois do modal — ele vai sumir no mesmo tique');
   assert.equal((bloco.match(/navegar\(\);/g) || []).length, 1, 'há um segundo navegar() que derruba o modal');
+});
+
+test('salvarChamada: tempo fora de (0, 1h] é descartado, não "consertado" — e a chamada salva igual', () => {
+  // Achado do teste de quebra de 05/10/2026: o clamp antigo gravava -30 s como
+  // 1 s e um app esquecido aberto como 3600 s, e os dois entravam na métrica de
+  // custo de tempo do painel como medidas plausíveis. Telemetria inválida vira
+  // null; a presença, que é o dado, é gravada do mesmo jeito.
+  const turma = 1;
+  const datas = D.chamadasEmAberto(turma);
+  assert.ok(datas.length >= 4, `preciso de 4 datas em aberto, há ${datas.length}`);
+  const todas = D.criancasDaTurma(turma).map((c) => ({ crianca_id: c.id, status: 'P' }));
+  const casos = [[-30, null], [5000, null], ['abc', null], [47, 47]];
+  casos.forEach(([enviado, esperado], i) => {
+    D.salvarChamada(turma, datas[i], 1, todas, enviado);
+    const enc = get(`SELECT id, duracao_segundos AS d FROM encontro WHERE turma_id = ? AND data = ?`, turma, datas[i]);
+    assert.ok(enc, `a chamada de ${datas[i]} (tempo ${enviado}) não foi salva`);
+    assert.equal(enc.d, esperado, `tempo ${enviado} gravou ${enc.d}`);
+    assert.equal(get(`SELECT COUNT(*) AS n FROM presenca WHERE encontro_id = ?`, enc.id).n, todas.length);
+  });
+});
+
+test('fraseDoGrupo: ação entra como verbo, estado depois de "esteve" — nunca "esteve colaborou"', () => {
+  // Achado da regravação do vídeo (05/10/2026): relato e recado saíam com
+  // "O grupo esteve colaborou, participou." porque todo marcador ia depois de "esteve".
+  assert.equal(V.fraseDoGrupo(['colaborou', 'participou']), 'O grupo colaborou e participou.');
+  assert.equal(V.fraseDoGrupo(['agitado']), 'O grupo esteve agitado.');
+  assert.equal(V.fraseDoGrupo(['colaborou', 'agitado', 'alegre']), 'O grupo colaborou; esteve agitado e alegre.');
+  assert.equal(V.fraseDoGrupo([]), '');
+  for (const m of V.MARCADORES) {
+    assert.doesNotMatch(V.fraseDoGrupo([m.codigo]), /esteve (colaborou|participou)/, m.codigo);
+  }
 });

@@ -3,9 +3,10 @@
 Entregável exigido na semana 10. Duração alvo: **até 7 minutos** (o orçamento abaixo soma **7m00**).
 Cada cena traz **[tempo · tela]**, a ação na tela e a fala.
 
-> **Estado deste roteiro.** O vídeo em `video/percurso-demonstracao.mp4` (**6m14s**) foi gravado
-> sobre a **v1**. **Regravar seguindo este roteiro é pendência humana** — §5 de
-> [`PENDENCIAS-DE-ENTREGA.md`](PENDENCIAS-DE-ENTREGA.md).
+> **Estado deste roteiro.** O vídeo em `video/percurso-demonstracao.mp4` foi **regravado sobre este
+> roteiro em 05/10/2026** — 7m19s, 18 cenas, 40 legendas, gerado por `video/gravar.mjs` sem gravação
+> de tela. Onde a tela não permitia gravar exatamente o que está escrito, a adaptação está declarada
+> na nota do fim deste arquivo.
 
 ## O que mudou da v2 para a v3
 
@@ -295,3 +296,26 @@ bloco 5: *a solução precisa sobreviver à semana 10* — e é por isso que ela
 
 O bloco da psicóloga é o maior do vídeo, e é deliberado: é o que a visita de campo mostrou ser o
 centro do problema, e é a parte do produto que nenhuma versão anterior do vídeo mostrou.
+
+---
+
+## Nota da gravação de 05/10/2026 — onde a tela não permitia gravar como escrito
+
+O vídeo foi regravado automaticamente sobre este roteiro em 05/10/2026 (`video/gravar.mjs`, 7m19s,
+40 legendas). Cinco pontos não podiam ser gravados como estão escritos acima; a adaptação foi esta:
+
+| Cena | O roteiro pede | O app faz hoje | O que foi gravado |
+|---|---|---|---|
+| 2 | Ao salvar, o sistema **abre sozinho** a próxima data pendente | Desde a F3, salvar **volta ao Hoje e oferece** a próxima data ("Retomar por …" + aviso de datas em aberto); não navega por ela (`public/app.js`, `salvar-chamada`) | O Hoje logo após salvar, com a oferta da próxima data |
+| 6 | A navegação **muda** (sem Ciclo nem Pauta; com Vivência e Relato) | O menu da psicóloga é o mesmo da educadora (`NAV_PROFISSIONAL = NAV_EDUCADOR`: Hoje · Registrar · Crianças); o que muda é o **conteúdo** do Hoje | O Hoje dela (registro da vivência, relato, dois recados, sem ciclo); a legenda fala da rubrica, não do menu |
+| 7 | Falar no microfone | O Chrome headless da gravação não tem microfone | A fala do roteiro entra pelo **mesmo caminho** do reconhecimento do navegador (`SpeechRecognition.onresult`); a legenda diz "transcrição simulada para o vídeo". O resto é o fluxo real: o filtro isola a frase da terapia, o check-in sai 2 · 6 · 1 · 1, o objetivo sai em branco e é marcado, e só "Confirmar e guardar" grava |
+| 16 | Mostrar as **cinco regras do cálculo** e os **três cenários**; a tela diz que a faixa ainda não pode ser calculada | A tela não lista as regras (a `doutrina` de `data/sroi/premissas.json` não é pintada) e os três cenários só aparecem depois de **Calcular**, que exige o investimento anual | O kicker, o "o que esta tela é / não é", as proxies e o campo de investimento **vazio**; a legenda diz que a faixa depende de números que só o Instituto tem. Calcular exigiria inventar o investimento — o que este roteiro proíbe |
+| 18 | Terminal com `smoke 517` e `unit 221` | Os totais mudaram | Moldura de terminal com os totais da execução final de 05/10/2026 (unit 224, smoke 515, persistência 9, quebra 17, ia 24, áudio 19, rag 6) |
+
+Também: a cena 15 ganhou a terceira pergunta (sobre uma criança nomeada), que a fala já pedia.
+
+**Duas gravações no mesmo dia.** A primeira (cena 17 em desktop) expôs defeitos do app que
+apareciam no vídeo — "O grupo esteve colaborou" no relato e no recado, "Próximo aurora seguro" no
+copilot, as fontes do copilot vazando para fora da tela no celular, "Boa tarde" fixo no relatório e
+o rótulo "EVASAO". Eles foram corrigidos no código (`docs/EVIDENCIAS-SEMANA-10.md` §3.2) e o vídeo
+foi regravado: a cena 17 voltou ao **celular**, com a página medida em 430 px, sem vazamento.

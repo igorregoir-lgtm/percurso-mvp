@@ -201,11 +201,20 @@ export function salvarChamada(turmaId, data, educadorId, marcacoes, duracaoSegun
   if (limpas.length !== elegiveis.size) {
     throw erro(422, `Faltou marcar ${elegiveis.size - limpas.length} criança(s). Marque todas antes de salvar.`);
   }
+  // A checagem de futuro abaixo compara TEXTO: sem esta, "2026-02-31" passava
+  // (e' menor que hoje) e virava um encontro num dia que nao existe. Achado do
+  // teste de quebra de 05/10/2026 (scripts/quebra-test.mjs).
+  data = dataObrigatoria(data, 'A data da chamada');
   if (data > hoje()) throw erro(422, 'Não dá para registrar chamada de uma data futura.');
 
-  // Duracao do registro: clampada a 1h; medida no cliente, tratada como telemetria.
-  const dur = Number.isFinite(Number(duracaoSegundos))
-    ? Math.max(1, Math.min(3600, Math.round(Number(duracaoSegundos)))) : null;
+  // Duracao do registro: medida no cliente, tratada como TELEMETRIA sobre o dado.
+  // Fora de (0, 1h] ela e' descartada (null), nunca "consertada": o clamp antigo
+  // transformava -30 em 1 s e um app esquecido aberto em 1 h, e os dois entravam
+  // na metrica de custo de tempo do painel (meta 120 s) como medidas plausiveis.
+  // A chamada salva do mesmo jeito — medicao que falha nao derruba o registro
+  // (decisao do gestor, 05/10/2026; achado de scripts/quebra-test.mjs).
+  const n = Number(duracaoSegundos);
+  const dur = (Number.isFinite(n) && n > 0 && n <= 3600) ? Math.round(n) : null;
 
   return tx(() => {
     let enc = encontroDe(turmaId, data);
