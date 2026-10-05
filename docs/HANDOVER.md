@@ -228,8 +228,11 @@ formulários). O Percurso usa código próprio — a justificativa está na deci
 
 ## 8. Vídeo demonstrativo
 
-`video/percurso-demonstracao.mp4` — gerado sem gravação de tela: um Chrome headless isolado é
-pilotado pelo roteiro em `video/gravar.mjs`, e a narração aparece como legenda. Para regerar
+`video/percurso-demonstracao.mp4` — **7m19s, 18 cenas, os quatro papéis**, gravado em 05/10/2026
+sobre o roteiro v3 ([`ROTEIRO-DO-VIDEO.md`](ROTEIRO-DO-VIDEO.md)): educadora, psicóloga (com a
+captura por voz, o filtro de perímetro, o relato e o recado), coordenação, diretoria e a camada de
+IA local, terminando nos números dos testes. Gerado sem gravação de tela: um Chrome headless
+isolado é pilotado pelo roteiro em `video/gravar.mjs`, e a narração aparece como legenda. Para regerar
 depois de qualquer mudança de tela: [`video/README.md`](../video/README.md).
 
 ---

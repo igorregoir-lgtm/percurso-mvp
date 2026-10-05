@@ -195,15 +195,18 @@ resultados fica **em branco** até a sessão acontecer — validação não se f
 
 ## 5. Regravação do vídeo (GAP-12)
 
-O vídeo atual (`video/percurso-demonstracao.mp4`, 6m14s) foi gravado sobre a **v1** e não mostra
-captura por voz, copilot, calibração, SROI nem relatório do doador. O roteiro v3 completo está em
-[`ROTEIRO-DO-VIDEO.md`](ROTEIRO-DO-VIDEO.md), dimensionado para até 7 minutos.
+> **Estado: fechado em 05/10/2026.** O vídeo foi regravado automaticamente sobre o roteiro v3.
 
-- [ ] Regravar o vídeo seguindo o **roteiro v3** ([`ROTEIRO-DO-VIDEO.md`](ROTEIRO-DO-VIDEO.md)),
-      reescrito em 03/09/2026 com o bloco da psicóloga — cinco cenas novas (chamada da vivência,
-      captura por voz com filtro de perímetro, relato do conselho, recado com a régua de 75% e
-      parecer bloqueado) e uma da consulta em linguagem natural. Continua em 7m00: o que foi
-      cortado para caber está declarado na tabela do topo do roteiro. **Pendente — humano.**
+O vídeo antigo (6m14s) mostrava a **v1**, sem captura por voz, copilot, calibração, SROI nem
+relatório do doador. O roteiro v3 está em [`ROTEIRO-DO-VIDEO.md`](ROTEIRO-DO-VIDEO.md).
+
+- [x] Regravar o vídeo seguindo o **roteiro v3** — *feito em 05/10/2026*:
+      `video/percurso-demonstracao.mp4`, 7m19s, 18 cenas e 40 legendas, gerado por
+      `video/gravar.mjs` sem gravação de tela (Chrome headless isolado, legenda no lugar da
+      locução). As adaptações em relação ao roteiro estão declaradas na nota do fim dele. A
+      primeira gravação do dia expôs defeitos de texto do app; foram corrigidos e o vídeo regravado
+      (`EVIDENCIAS-SEMANA-10.md` §3.2).
+- [ ] Locução por cima das legendas, se o grupo quiser voz no vídeo. **Opcional — humano.**
 
 ---
 

@@ -92,6 +92,7 @@ legenda. Esse olhar pegou o que nenhuma asserção cobria, porque nenhuma lia a 
 |---|---|---|
 | relato do conselho e recado aos responsáveis | "O grupo esteve **colaborou**, participou." — todo marcador ia depois de "esteve" | `fraseDoGrupo()` em `src/voz.js`: ação como verbo, estado depois de "esteve" — "O grupo colaborou e participou; esteve agitado." Teste unitário novo trava a regra |
 | copilot (`#/pensar`) | bloco "Próximo **aurora** seguro" | "Próximo passo seguro" |
+| convite da Aurora | "eu **aurora** a reparar no que você toca" — achado ao procurar o padrão da linha acima | "eu passo a reparar" |
 | copilot no celular | as fontes citadas não quebravam linha e a página passava de 430 px | os rótulos das fontes quebram linha |
 | relatório da diretoria | "Boa tarde" fixo, a qualquer hora | saudação pela hora, como na tela Hoje |
 | consulta em linguagem natural | rótulo "EVASAO" (o código da intenção) | "evasão", "presença", "exposição" |

@@ -42,7 +42,10 @@ roteiro.forEach((cena, i) => {
   const dur = duracao(cena.legenda, cena.quadros.length);
   total += dur;
 
-  const k = cena.quadros.length, passo = 0.42;
+  // `passo` = segundos de cada quadro intermediario. O padrao (0,42 s) da a
+  // impressao de movimento; uma cena "antes/depois" pede mais (gravar.mjs
+  // declara `passo` quando o primeiro quadro precisa ser lido, nao so' visto).
+  const k = cena.quadros.length, passo = cena.passo ?? 0.42;
   const linhas = cena.quadros.map((q, j) => {
     const d = j < k - 1 ? passo : Math.max(0.9, dur - passo * (k - 1));
     return `file '${join(TMP, 'quadros', q)}'\nduration ${d.toFixed(2)}`;
