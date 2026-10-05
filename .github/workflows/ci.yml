@@ -40,6 +40,14 @@ jobs:
       - name: Transcrição de áudio com stub (o áudio não sobrevive à transcrição)
         run: node scripts/audio-stub-test.mjs
 
+      # Os dois sobem servidor e banco PRÓPRIOS (portas 3917/3918, arquivo
+      # temporário): rodam antes do servidor do smoke e não disputam a 3000.
+      - name: Persistência após reiniciar o servidor (grava, derruba, sobe outro, relê)
+        run: node scripts/persistencia-test.mjs
+
+      - name: Testes de quebra (entrada inválida é recusada com 4xx, nunca 500 nem 200)
+        run: node scripts/quebra-test.mjs
+
       - name: Subir servidor com dados sintéticos
         run: |
           node server.js &

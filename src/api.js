@@ -464,8 +464,10 @@ export const rotas = {
     const u = exigeEducadorOuCoordenacao(req);
     return D.listarCriancas({
       q: q.get('q') || '',
-      turmaId: q.get('turma_id') ? Number(q.get('turma_id')) : null,
-      programaId: q.get('programa_id') ? Number(q.get('programa_id')) : null,
+      // `Number('abc')` e' NaN e o filtro sumia em silencio: a coordenacao pedia
+      // uma turma e recebia todas. Filtro presente e invalido e' 422, como no resto.
+      turmaId: q.get('turma_id') ? num(q.get('turma_id'), 'turma_id') : null,
+      programaId: q.get('programa_id') ? num(q.get('programa_id'), 'programa_id') : null,
       educadorId: escopoDe(u),
     });
   },
