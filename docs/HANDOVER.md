@@ -245,7 +245,7 @@ papéis, nenhum técnico. **Os tempos são estimativa do grupo, a medir no pilot
 | Papel | Quem (proposta) | O que faz | Tempo estimado | Competência |
 |---|---|---|---|---|
 | Responsável pela máquina | alguém da coordenação ou do administrativo | liga o computador (o Percurso sobe sozinho — manual §5); copia o backup | ~5 min/semana | copiar um arquivo para pen drive |
-| Coordenação | Rita (perfil) | consentimentos, cadastro de pessoas e turmas, aprovação da síntese | dentro da rotina atual | usar navegador |
+| Coordenação | a coordenação do Instituto, dona do Percurso | consentimentos, cadastro de pessoas e turmas, aprovação da síntese | dentro da rotina atual | usar navegador |
 | Educadoras e psicóloga | equipe e voluntários | chamada, folha do dia, observação no ciclo | ~2 min por encontro (chamada) | usar celular |
 
 **Rotina de backup** (o único cuidado recorrente): o banco inteiro é `data/percurso.db`. Com o
