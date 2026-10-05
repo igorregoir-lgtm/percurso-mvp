@@ -3449,3 +3449,15 @@ test('salvarChamada: tempo fora de (0, 1h] é descartado, não "consertado" — 
     assert.equal(get(`SELECT COUNT(*) AS n FROM presenca WHERE encontro_id = ?`, enc.id).n, todas.length);
   });
 });
+
+test('fraseDoGrupo: ação entra como verbo, estado depois de "esteve" — nunca "esteve colaborou"', () => {
+  // Achado da regravação do vídeo (05/10/2026): relato e recado saíam com
+  // "O grupo esteve colaborou, participou." porque todo marcador ia depois de "esteve".
+  assert.equal(V.fraseDoGrupo(['colaborou', 'participou']), 'O grupo colaborou e participou.');
+  assert.equal(V.fraseDoGrupo(['agitado']), 'O grupo esteve agitado.');
+  assert.equal(V.fraseDoGrupo(['colaborou', 'agitado', 'alegre']), 'O grupo colaborou; esteve agitado e alegre.');
+  assert.equal(V.fraseDoGrupo([]), '');
+  for (const m of V.MARCADORES) {
+    assert.doesNotMatch(V.fraseDoGrupo([m.codigo]), /esteve (colaborou|participou)/, m.codigo);
+  }
+});

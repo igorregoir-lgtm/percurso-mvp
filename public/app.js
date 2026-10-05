@@ -3482,7 +3482,7 @@ async function telaRelatorioDoCiclo() {
   const r = d.relatorio, n = d.previa;
 
   app.innerHTML = cabecalhoRelatorio('ciclo') + `
-    <h1 style="margin-top:12px">Boa tarde, ${esc(sessao.apelido.split(' ')[0])}.</h1>
+    <h1 style="margin-top:12px">${(h => h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite')(new Date().getHours())}, ${esc(sessao.apelido.split(' ')[0])}.</h1>
     <p class="sub">O doador não entra no sistema. Ele recebe este artefato, gerado e revisado aqui.</p>
 
     <button class="btn largo secundario" data-acao="ir" data-href="#/divulgar" style="margin-top:14px">
@@ -4985,11 +4985,11 @@ function pintarTroca(t, i) {
       ${bloco('Alternativas', (r.alternativas || []).map(a =>
         `<div style="margin:0 0 8px"><b>→ ${esc(a.acao)}</b><p class="sub" style="margin:2px 0 0">limites: ${esc(a.limites)}</p></div>`).join(''))}
       ${bloco('Contraponto', `<p style="margin:0">${esc(r.contraponto || '')}</p>`)}
-      ${bloco('Próximo aurora seguro', `<p style="margin:0">${esc(r.proximo_passo || '')}</p>`)}
+      ${bloco('Próximo passo seguro', `<p style="margin:0">${esc(r.proximo_passo || '')}</p>`)}
       ${r.escalonamento ? `<div style="margin-top:12px;border-left:4px solid var(--red,#b3402a);padding-left:10px"><b>Escalonamento humano</b><p class="sub" style="margin:2px 0 0">${esc(r.escalonamento)}</p></div>` : ''}
       ${bloco('Fontes do corpus aprovado', r.sem_fonte_no_corpus
         ? '<p class="sub" style="margin:0">Nenhum trecho do corpus sustentou esta resposta — leia como opinião do modelo, não como material documentado.</p>'
-        : (r.fontes || []).map(f => `<span class="sintetico" title="${esc(f.secao)}">[fonte:${esc(f.id)}] ${esc(f.titulo)}</span> `).join(''))}
+        : (r.fontes || []).map(f => `<span class="sintetico" style="white-space:normal;display:inline-block;max-width:100%" title="${esc(f.secao)}">[fonte:${esc(f.id)}] ${esc(f.titulo)}</span> `).join(''))}
       ${t.decisao ? `<p class="sub" style="margin-top:12px"><b>${t.decisao === 'aceita' ? '✓ Você marcou: vai testar uma das alternativas' : '✕ Você rejeitou esta reflexão'}</b> — registro só desta tela; nada foi gravado.</p>` : ''}
       <div class="linha" style="margin-top:14px">
         <button class="btn pequeno secundario cresce" data-acao="copilot-outra" data-i="${i}">Outra perspectiva</button>
@@ -6851,7 +6851,7 @@ document.addEventListener('click', comErro(async (ev) => {
       const alvoEl = document.getElementById('resposta');
       alvoEl.innerHTML = `
         <div class="cartao">
-          <div class="lbl">${r.reconhecida ? esc(r.intencao) : 'não reconhecida'}</div>
+          <div class="lbl">${r.reconhecida ? esc({ presenca: 'presença', evasao: 'evasão', exposicao: 'exposição' }[r.intencao] ?? r.intencao) : 'não reconhecida'}</div>
           <p style="font-size:14.5px;line-height:1.55">${esc(r.resposta)}</p>
           ${r.fonte ? `<p class="sub" style="margin-top:8px">Fonte: ${esc(r.fonte)}.</p>` : ''}
           ${r.sugestoes ? `<div style="margin-top:10px">${r.sugestoes.map(x =>

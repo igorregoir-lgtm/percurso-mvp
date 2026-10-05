@@ -9,7 +9,7 @@
 // de presença é para dentro, nunca para o grupo.
 import { get } from './db.js';
 import { chamada, encontroDe, erro, dataBR, diaLetivo, temEncontro, addDias, hoje, turmaNaRubrica } from './domain.js';
-import { folhaDe, rotuloDe, ATIVIDADES, AREAS, MARCADORES, PROCEDIMENTOS, OBJETIVOS } from './voz.js';
+import { folhaDe, rotuloDe, fraseDoGrupo, ATIVIDADES, AREAS, PROCEDIMENTOS, OBJETIVOS } from './voz.js';
 
 const porExtenso = (iso) => new Date(iso + 'T12:00:00Z')
   .toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
@@ -68,8 +68,7 @@ export function recadoDaTurma(turmaId, data) {
       ? `${rotuloDe(PROCEDIMENTOS, folha.procedimento ?? 'nao_identificado')}${folha.objetivo && folha.objetivo !== 'nenhum' ? ` (objetivo: ${rotuloDe(OBJETIVOS, folha.objetivo).toLowerCase()})` : ''}`
       : `${rotuloDe(ATIVIDADES, folha.atividade)}${folha.area_tematica !== 'nenhuma' ? ` (${rotuloDe(AREAS, folha.area_tematica).toLowerCase()})` : ''}`;
     linhas.push(`${doDia ? 'Hoje' : `No encontro de ${porExtenso(data)}`}: ${fez}.`);
-    if (folha.marcadores.length)
-      linhas.push(`O grupo esteve ${folha.marcadores.map(x => rotuloDe(MARCADORES, x).toLowerCase()).join(', ')}.`);
+    if (folha.marcadores.length) linhas.push(fraseDoGrupo(folha.marcadores));
   } else {
     linhas.push(`${doDia ? 'Hoje o encontro aconteceu' : `O encontro de ${porExtenso(data)} aconteceu`}; o registro da atividade ainda vai ser feito.`);
   }

@@ -9,7 +9,7 @@ da bateria de fluxo cobre: [`TESTES.md`](TESTES.md).
 | Bateria | Comando | Passaram | Servidor | O que prova |
 |---|---|---|---|---|
 | Fluxo principal | `node scripts/reset.mjs && npm test` | **515 / 515** | o do usuário, no ar | os fluxos dos quatro papéis, ponta a ponta, pela API |
-| Regras de domínio | `npm run test:unit` | **223 / 223** | nenhum (banco temporário) | regras críticas isoladas da HTTP |
+| Regras de domínio | `npm run test:unit` | **224 / 224** | nenhum (banco temporário) | regras críticas isoladas da HTTP |
 | Persistência | `npm run test:persistencia` | **9 / 9** | próprio, derrubado e religado | o dado está no disco, não na memória do processo |
 | Quebra | `npm run test:quebra` | **17 / 17** | próprio | entrada inválida é recusada com mensagem — nunca 500, nunca lixo gravado |
 | Camada de IA | `npm run test:ia` | **24 / 24** | stub do modelo | coleiras do copilot e fallback quando o modelo cai |
@@ -83,6 +83,20 @@ para isso que ele existe. O que foi feito com cada um:
 O caso 13 ganhou também um teste unitário que cobre os dois extremos e o texto (`-30`, `5000`,
 `'abc'` → vazio; `47` → 47), conferindo que a presença é gravada em todos.
 
+### 3.2 O que a gravação do vídeo encontrou — teste por inspeção de tela
+
+O vídeo demonstrativo é gerado pilotando o app de verdade, e cada quadro foi conferido contra a
+legenda. Esse olhar pegou o que nenhuma asserção cobria, porque nenhuma lia a **frase** final:
+
+| Onde | O que aparecia | Correção |
+|---|---|---|
+| relato do conselho e recado aos responsáveis | "O grupo esteve **colaborou**, participou." — todo marcador ia depois de "esteve" | `fraseDoGrupo()` em `src/voz.js`: ação como verbo, estado depois de "esteve" — "O grupo colaborou e participou; esteve agitado." Teste unitário novo trava a regra |
+| copilot (`#/pensar`) | bloco "Próximo **aurora** seguro" | "Próximo passo seguro" |
+| copilot no celular | as fontes citadas não quebravam linha e a página passava de 430 px | os rótulos das fontes quebram linha |
+| relatório da diretoria | "Boa tarde" fixo, a qualquer hora | saudação pela hora, como na tela Hoje |
+| consulta em linguagem natural | rótulo "EVASAO" (o código da intenção) | "evasão", "presença", "exposição" |
+| boletim ao responsável | "Está matriculad**a** em" também para menino | "Programas e turmas:" |
+
 ## 4. Recorte sem voz
 
 A aula de 30/09 pediu ao grupo testes de funcionalidades **que não dependem da camada de
@@ -98,3 +112,7 @@ nunca o microfone. Todo fluxo que tem voz tem também o caminho por botões.
 - **O microfone de verdade.** Reconhecimento de fala em sala com ruído não é testável em CI.
 - **Carga.** Não há teste de carga; a operação é de ~120 matrículas e uma dezena de operadores.
 - **Navegadores antigos.** Verificado em navegador baseado em Chromium atual.
+- **Isolamento completo dos testes.** Mesmo com banco temporário, a prova em vídeo do
+  consentimento é gravada na pasta fixa `data/consentimento/` (`src/evidencia.js`), e a bateria
+  de áudio limpa `data/audio-temp/` do repositório. Os arquivos são minúsculos e ignorados pelo git,
+  mas um teste não deveria escrever fora do diretório temporário — dívida registrada.

@@ -174,7 +174,7 @@ em [`TESTES.md`](TESTES.md).
 | Bateria | Comando | Resultado | O que prova |
 |---|---|---|---|
 | Fluxo principal (API) | `node scripts/reset.mjs && npm test` | **515 / 515** | os fluxos dos quatro papéis, ponta a ponta, contra o servidor no ar |
-| Regras de domínio | `npm run test:unit` | **223 / 223** | regras críticas sem servidor, em banco temporário |
+| Regras de domínio | `npm run test:unit` | **224 / 224** | regras críticas sem servidor, em banco temporário |
 | Persistência após reiniciar | `npm run test:persistencia` | **9 / 9** | grava, derruba o servidor, sobe outro e relê — o dado está no disco |
 | Quebra (entrada inválida) | `npm run test:quebra` | **17 / 17** | campo em branco, número negativo, item inexistente, injeção, JSON quebrado |
 | Camada de IA sem modelo | `npm run test:ia` | **24 / 24** | as coleiras do copilot e o fallback quando o modelo cai |
