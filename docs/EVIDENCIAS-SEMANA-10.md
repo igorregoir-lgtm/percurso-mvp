@@ -9,7 +9,7 @@ da bateria de fluxo cobre: [`TESTES.md`](TESTES.md).
 | Bateria | Comando | Passaram | Servidor | O que prova |
 |---|---|---|---|---|
 | Fluxo principal | `node scripts/reset.mjs && npm test` | **515 / 515** | o do usuário, no ar | os fluxos dos quatro papéis, ponta a ponta, pela API |
-| Regras de domínio | `npm run test:unit` | **224 / 224** | nenhum (banco temporário) | regras críticas isoladas da HTTP |
+| Regras de domínio | `npm run test:unit` | **226 / 226** | nenhum (banco temporário) | regras críticas isoladas da HTTP |
 | Persistência | `npm run test:persistencia` | **9 / 9** | próprio, derrubado e religado | o dado está no disco, não na memória do processo |
 | Quebra | `npm run test:quebra` | **17 / 17** | próprio | entrada inválida é recusada com mensagem — nunca 500, nunca lixo gravado |
 | Camada de IA | `npm run test:ia` | **24 / 24** | stub do modelo | coleiras do copilot e fallback quando o modelo cai |
