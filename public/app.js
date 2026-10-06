@@ -4761,100 +4761,183 @@ async function telaOQueVeioDeAntes() {
 }
 
 // ======================================================================
-// IMPACTO — SROI exploratorio (Fase 3). Motor deterministico; o modelo so'
-// explica premissas (rotulado e fora do relatorio exportado por padrao).
-// Eixo central da narrativa: prevencao de violencia/criminalidade — decisao
-// registrada do Instituto; relevancia estrategica, NAO prova de causalidade.
+// IMPACTO POTENCIAL — eixo: MENOS VIOLÊNCIA (decisão registrada do Instituto,
+// ANALISE §5.2; relevância estratégica, NÃO prova de causalidade).
+// A tela abre já respondendo, numa corrente de três passos que a diretoria
+// explica em voz alta: o Instituto mantém a criança perto da escola → jovem na
+// escola corre menos risco de violência (IPEA) → quanto isso pode valer
+// (jovens × R$ 45 mil, Insper/FRM). A conta por R$ 1 investido (SROI) e as
+// premissas técnicas ficam em "Ver as contas completas", para quem avalia.
+// Todo número vem do motor determinístico; o modelo só explica premissas.
 // ======================================================================
 const sroi = { resultado: null, explicacao: null };
 const brl = (v) => 'R$ ' + Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+const milBR = (v) => (v >= 1000 ? `R$ ${Math.round(v / 1000).toLocaleString('pt-BR')} mil` : brl(v));
+const virgula = (x, casas = 1) => Number(x).toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
+const pct = (x) => `${Math.round(x * 100)}%`;
+const maiuscula = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const NOME_CENARIO = { conservador: 'Pior caso', base: 'Esperado', superior: 'Melhor caso' };
 
 async function telaImpactoPotencial() {
   const [prem, inv] = await Promise.all([api('/api/sroi/premissas'), api('/api/inventario')]);
+  const n = sroi.n ?? inv.criancasUnicas;
+  // Recalculada a cada visita: é barata, determinística e não pede investimento.
+  const v = await post('/api/sroi/violencia', { criancas: n });
+  const palavras = prem.cenarios_padrao.em_palavras;
+  const esperado = v.cenarios.find(c => c.cenario === 'base');
+  const p = esperado.parametros;
+  // A corrente "106 → … → 3,6" é a fórmula do motor desmontada em passos,
+  // para mostrar de onde sai o número; o resultado final é o do motor.
+  const corrente = [
+    [`${maiuscula(palavras.efeito_incremental)} (${pct(p.efeito_incremental)})`, n * p.efeito_incremental],
+    [`Menos ${palavras.deadweight} (${pct(p.deadweight)})`, n * p.efeito_incremental * (1 - p.deadweight)],
+    [`Menos ${palavras.atribuicao} (${pct(p.atribuicao)})`, n * p.efeito_incremental * (1 - p.deadweight) * (1 - p.atribuicao)],
+    [`Menos ${palavras.deslocamento} (${pct(p.deslocamento)})`, esperado.jovens],
+  ];
   const r = sroi.resultado;
+
   app.innerHTML = cabecalhoRelatorio('impacto') + `
-    <h1 style="margin-top:12px">Impacto potencial</h1>
-    <p class="sub">Cenários exploratórios · associação compatível, não causalidade comprovada.</p>
-    <div class="cartao" style="margin-top:12px">
-      <p class="sub" style="margin:0"><b>O que esta tela é:</b> uma faixa exploratória de valor social
-        potencial, com todas as premissas expostas, para conversa de captação.
-        <b>O que ela não é:</b> prova de impacto — a ponte causal é pendência declarada, e uso externo
-        exige revisão humana. O eixo da narrativa é a <b>prevenção de violência</b>, decisão do Instituto.</p>
+    <h1 style="margin-top:12px">Impacto potencial: menos violência</h1>
+    <p class="sub">O Instituto atua no Jardim Ângela, bairro marcado pela violência. Esta tela estima quanta
+      violência pode ser evitada quando a criança continua estudando — para conversar com quem doa.
+      Mostra o que pode acontecer, não prova o que aconteceu.</p>
+
+    <div class="cartao area-impressao" style="margin-top:14px">
+      <div class="lbl">A resposta curta</div>
+      <div class="big">${esc(maiuscula(v.faixa_jovens_texto))}</div>
+      <p class="sub" style="margin-top:4px">das ${n} crianças acompanhadas, que o apoio do Instituto pode manter na escola.</p>
+      <div class="big" style="margin-top:16px">${milBR(v.faixa_valor.minimo)} a ${milBR(v.faixa_valor.maximo)}</div>
+      <p class="sub" style="margin-top:4px">em custos de violência evitáveis ao longo da vida desses jovens.</p>
     </div>
 
-    <div class="cartao" style="margin-top:12px">
-      <h2 style="margin-top:0">Montar cenário</h2>
-      <div class="grade d3" style="margin-top:10px">
-        <label><span class="lbl" style="display:block">Crianças únicas</span>
-          <input type="number" id="sroi-n" value="${sroi.n ?? inv.criancasUnicas}" min="1"></label>
-        <label><span class="lbl" style="display:block">Investimento anual (R$)</span>
-          <input type="number" id="sroi-inv" value="${sroi.inv ?? ''}" placeholder="ex.: 180000" min="1"></label>
-        <label><span class="lbl" style="display:block">Horizonte (anos)</span>
+    <div class="cartao area-impressao" style="margin-top:14px">
+      <h2 style="margin-top:0">Como a conta funciona, em três passos</h2>
+      <div class="bloco-relatorio">
+        <div class="numero">Passo 1</div>
+        <h3>O Instituto mantém a criança perto da escola</h3>
+        <p>O Percurso registra a presença e avisa quando uma criança começa a faltar, para a equipe ir atrás
+          antes que ela saia. Hoje são ${n} crianças acompanhadas.</p>
+      </div>
+      <div class="bloco-relatorio">
+        <div class="numero">Passo 2</div>
+        <h3>Jovem na escola corre menos risco de violência</h3>
+        <p>Nos municípios estudados pelo IPEA, <b>cada 1% a mais de jovens de 15 a 17 anos na escola veio junto
+          com 2% menos homicídios</b>.</p>
+        <p class="sub" style="margin-top:6px">Fonte: <a href="${esc(v.ponte_escola_violencia.url)}" target="_blank" rel="noopener">${esc(v.ponte_escola_violencia.fonte)}</a>, ${v.ponte_escola_violencia.ano_base}.
+          É uma relação entre municípios, não o efeito medido de um programa — por isso não entra na conta.</p>
+      </div>
+      <div class="bloco-relatorio">
+        <div class="numero">Passo 3</div>
+        <h3>Quanto isso pode valer</h3>
+        <p>Cada jovem que não termina a escola custa à sociedade cerca de <b>${milBR(v.custo_por_jovem.valor)} só em
+          violência</b>, ao longo da vida. A conta é: jovens que ficam na escola × ${milBR(v.custo_por_jovem.valor)}.</p>
+        <div class="rolagem" style="margin-top:10px"><table style="min-width:0">
+          <thead><tr><th></th>${v.cenarios.map(c => `<th>${NOME_CENARIO[c.cenario]}</th>`).join('')}</tr></thead>
+          <tbody>
+            <tr><td>Jovens que ficam na escola</td>${v.cenarios.map(c => `<td>${virgula(c.jovens)}</td>`).join('')}</tr>
+            <tr><td>× ${milBR(v.custo_por_jovem.valor)} = violência evitável</td>${v.cenarios.map(c => `<td><b>${milBR(c.valor_vida)}</b></td>`).join('')}</tr>
+          </tbody>
+        </table></div>
+        <p class="sub" style="margin-top:6px">Fonte: <a href="${esc(v.custo_por_jovem.url)}" target="_blank" rel="noopener">${esc(v.custo_por_jovem.fonte)}</a>, valores de ${v.custo_por_jovem.ano_base}.
+          Os números têm vírgula porque são médias esperadas.</p>
+      </div>
+    </div>
+
+    <div class="cartao area-impressao" style="margin-top:14px">
+      <h2 style="margin-top:0">Por que ${esc(v.faixa_jovens_texto)}, e não ${n}?</h2>
+      <p class="sub">Porque a conta tira tudo o que não é mérito do Instituto. No caso esperado:</p>
+      <div class="dado" style="margin-top:8px"><span class="k">Crianças acompanhadas</span><b>${n}</b></div>
+      ${corrente.map(([rot, val], i) => `<div class="dado"><span class="k">${esc(rot)}</span><b>${virgula(val)}${i === corrente.length - 1 ? ' jovens' : ''}</b></div>`).join('')}
+      <p class="sub" style="margin-top:10px">Esses percentuais são suposições tiradas de estudos, não medições da casa.
+        O teste do Percurso mede presença e permanência justamente para conferi-los.</p>
+    </div>
+
+    <div class="aviso calmo area-impressao" style="margin-top:14px">
+      <h3>A frase para usar com quem doa</h3>
+      <p id="impacto-frase">${esc(v.leitura_obrigatoria)}</p>
+      <div class="linha no-print">
+        <button class="btn pequeno secundario" data-acao="copiar-impacto">Copiar a frase</button>
+        <button class="btn pequeno fantasma" data-acao="imprimir">Imprimir</button>
+      </div>
+    </div>
+
+    <div class="cartao area-impressao" style="margin-top:14px">
+      <h2 style="margin-top:0">O que esta conta não diz</h2>
+      <ul style="padding-left:18px;margin-top:8px">
+        <li class="sub">Não prova que o Instituto evitou violência: mostra o que pode acontecer se as suposições se confirmarem.</li>
+        <li class="sub">Não conta renda nem saúde, só violência — é o eixo que o Instituto escolheu.</li>
+        <li class="sub">Antes de sair do Instituto, a diretoria revisa o texto.</li>
+      </ul>
+    </div>
+
+    <details class="cartao comparar ${r ? 'area-impressao' : ''}" style="margin-top:14px" ${r ? 'open' : ''}>
+      <summary>Ver as contas completas (para quem avalia)</summary>
+      <p class="sub" style="margin-top:8px">A mesma conta, em "quanto volta para a sociedade a cada R$ 1 investido"
+        (o SROI), em dinheiro de hoje e com o efeito diminuindo a cada ano.</p>
+      <div class="grade d3 no-print" style="margin-top:10px">
+        <label><span class="lbl" style="display:block">Crianças acompanhadas</span>
+          <input type="number" id="sroi-n" value="${n}" min="1"></label>
+        <label><span class="lbl" style="display:block">Quanto o Instituto gasta por ano (R$)</span>
+          <input type="number" id="sroi-inv" value="${sroi.inv ?? ''}" placeholder="ex.: 150000" min="1"></label>
+        <label><span class="lbl" style="display:block">Em quantos anos</span>
           <input type="number" id="sroi-anos" value="${sroi.anos ?? 5}" min="1" max="30"></label>
       </div>
-      <p style="margin:16px 0 2px;font-weight:600">Proxy monetária <span class="sub" style="font-weight:400">(dupla contagem é bloqueada pelo motor)</span></p>
-      <label class="opcao"><input type="radio" name="sroi-proxy" value="violencia" checked>
+      <p class="no-print" style="margin:16px 0 2px;font-weight:600">O que entra na conta</p>
+      ${[
+        ['violencia', `Só violência — ${milBR(45000)} por jovem`, 'o eixo do Instituto; é a conta de cima'],
+        ['envelope', `Tudo o que a evasão custa — ${milBR(372000)} por jovem`, 'renda, saúde e violência num número só'],
+        ['componentes', 'Renda, saúde e violência, somadas uma a uma', `${milBR(159000)} + ${milBR(114000)} + ${milBR(45000)}`],
+      ].map(([val, rot, sub]) => `<label class="opcao no-print"><input type="radio" name="sroi-proxy" value="${val}"
+          ${(sroi.proxy ?? 'violencia') === val ? 'checked' : ''}>
         <span class="marca-radio" aria-hidden="true"></span>
-        <span><b>Violência dentro do custo da evasão</b> — ${brl(45000)}/jovem<br>
-          <span class="sub">eixo da narrativa, decisão do Instituto</span></span></label>
-      <label class="opcao"><input type="radio" name="sroi-proxy" value="envelope">
-        <span class="marca-radio" aria-hidden="true"></span>
-        <span><b>Envelope total da não conclusão</b> — ${brl(372000)}/jovem<br>
-          <span class="sub">JÁ contém a violência e os demais componentes</span></span></label>
-      <label class="opcao"><input type="radio" name="sroi-proxy" value="componentes">
-        <span class="marca-radio" aria-hidden="true"></span>
-        <span><b>Componentes somados</b><br>
-          <span class="sub">renda ${brl(159000)} + qualidade de vida ${brl(114000)} + violência ${brl(45000)}</span></span></label>
-      <button class="btn largo" data-acao="sroi-calcular" style="margin-top:12px">Calcular os 3 cenários</button>
-    </div>
-
-    ${r ? pintarSROI(r) : ''}
-    ${r ? `
-    <div class="cartao no-print" style="margin-top:12px">
-      <div class="linha">
-        <button class="btn secundario" data-acao="imprimir">Imprimir / exportar relatório</button>
-        <button class="btn fantasma" data-acao="sroi-explicar">Explicar premissas</button>
-      </div>
+        <span><b>${rot}</b><br><span class="sub">${sub}</span></span></label>`).join('')}
+      <button class="btn largo secundario no-print" data-acao="sroi-calcular" style="margin-top:12px">Calcular por R$ 1 investido</button>
+      ${r ? pintarSROI(r, prem.cenarios_padrao) : ''}
+      ${r ? `<div class="linha no-print" style="margin-top:12px">
+        <button class="btn fantasma" data-acao="sroi-explicar">Explicar as suposições</button></div>` : ''}
       ${sroi.explicacao ? `
-        <div style="margin-top:12px;border-left:4px solid var(--ok,#4a7c59);padding-left:12px">
+        <div class="no-print" style="margin-top:12px;border-left:4px solid var(--ok,#4a7c59);padding-left:12px">
           ${sroi.explicacao.rotulo ? `<p class="sintetico" style="margin:0 0 8px">${esc(sroi.explicacao.rotulo)}</p>` : ''}
           ${sroi.explicacao.texto.split('\n\n').map(p => `<p class="sub" style="margin:0 0 8px">${esc(p)}</p>`).join('')}
         </div>` : ''}
-    </div>` : ''}`;
+    </details>`;
 }
 
-function pintarSROI(r) {
+function pintarSROI(r, padrao) {
+  const palavras = padrao.em_palavras;
+  const so_violencia = r.proxies_usadas.length === 1 && r.proxies_usadas[0].id === 'violencia-evasao';
   return `
-    <div class="cartao area-impressao" style="margin-top:12px">
-      <h2 style="margin-top:0">${esc(r.leitura_obrigatoria)}</h2>
-      <div class="linha" style="gap:10px;flex-wrap:wrap">
+    <div style="margin-top:14px">
+      <p style="font-weight:600">${esc(r.leitura_obrigatoria)}</p>
+      ${so_violencia && r.faixa_sroi.maximo < 1 ? `<p class="sub" style="margin-top:6px">Contando só a violência,
+        o valor fica abaixo de R$ 1 por R$ 1 investido: a violência é uma parte do que a escola evita. A opção
+        "Tudo o que a evasão custa" mostra o quadro inteiro.</p>` : ''}
+      <div class="linha" style="gap:10px;flex-wrap:wrap;margin-top:10px">
         ${r.cenarios.map(c => `
-          <div class="cartao area-impressao cresce" style="min-width:180px;margin:0">
-            <p class="kicker" style="margin:0">${esc(c.cenario)}</p>
-            <div style="font-size:28px;font-weight:600;letter-spacing:-.02em">R$ ${String(c.sroi.toFixed(2)).replace('.', ',')}</div>
-            <p class="sub" style="margin:2px 0 8px">por R$ 1 investido</p>
-            <p class="sub" style="margin:0">benefício presente: ${brl(c.beneficio_presente_total)}<br>
-              investimento: ${brl(c.investimento_total)}</p>
-            <p class="sub" style="margin:8px 0 0">efeito ${Math.round(c.parametros.efeito_incremental * 100)}% ·
-              deadweight ${Math.round(c.parametros.deadweight * 100)}% ·
-              atribuição ${Math.round(c.parametros.atribuicao * 100)}% ·
-              desconto ${Math.round(c.parametros.desconto * 100)}%</p>
+          <div class="cartao area-impressao cresce" style="min-width:160px;margin:0">
+            <p class="kicker" style="margin:0">${NOME_CENARIO[c.cenario]}</p>
+            <div class="big">R$ ${virgula(c.sroi, 2)}</div>
+            <p class="sub" style="margin:2px 0 8px">para cada R$ 1 investido</p>
+            <p class="sub" style="margin:0">volta para a sociedade: ${brl(c.beneficio_presente_total)}<br>
+              investido no período: ${brl(c.investimento_total)}</p>
           </div>`).join('')}
       </div>
-      <h2>Premissas usadas (cada uma com fonte e ressalva)</h2>
+      <h3 style="margin-top:16px">As suposições de cada caso</h3>
+      <div class="rolagem" style="margin-top:8px"><table style="min-width:0">
+        <thead><tr><th></th>${r.cenarios.map(c => `<th>${NOME_CENARIO[c.cenario]}</th>`).join('')}</tr></thead>
+        <tbody>${Object.keys(r.cenarios[0].parametros).map(k => `<tr>
+          <td>${esc(maiuscula(palavras[k] ?? k))}<br><span class="sub" style="overflow-wrap:anywhere">${esc(k)}</span></td>
+          ${r.cenarios.map(c => `<td>${pct(c.parametros[k])}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table></div>
+      <h3 style="margin-top:16px">De onde vêm os valores</h3>
       ${r.proxies_usadas.map(p => `
-        <div style="margin-bottom:10px">
-          <b>${esc(p.nome)}</b> — ${brl(p.valor)} (${esc(p.unidade)}, ano-base ${p.ano_base})<br>
-          <span class="sub">Fonte: <a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.fonte)}</a> ·
-          confiança: ${esc(p.confianca)} · ${esc(p.status_ebenezer)}</span><br>
-          <span class="sub">${esc(p.ressalva)}</span>
-        </div>`).join('')}
-      <h2>Benchmarks brasileiros (método, nunca multiplicador)</h2>
+        <p class="sub" style="margin:6px 0 0"><b>${esc(p.nome)}</b> — ${brl(p.valor)} (${esc(p.unidade)}, valores de ${p.ano_base}).
+          Fonte: <a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.fonte)}</a>. ${esc(p.ressalva)}</p>`).join('')}
+      <h3 style="margin-top:16px">Outros estudos, só para comparar (nunca entram na conta)</h3>
       ${r.benchmarks.map(b => `
-        <p class="sub" style="margin:0 0 6px"><b>${esc(b.nome)}</b>: R$ ${String(b.valor).replace('.', ',')}/R$ 1
-          ${b.faixa ? `(sensibilidade R$ ${String(b.faixa[0]).replace('.', ',')}–${String(b.faixa[1]).replace('.', ',')})` : ''}
-          — ${esc(b.fonte)}. ${esc(b.ressalva)}</p>`).join('')}
-      <h2>Ressalvas metodológicas</h2>
+        <p class="sub" style="margin:6px 0 0"><b>${esc(b.nome)}</b>: R$ ${virgula(b.valor, 2)} por R$ 1
+          ${b.faixa ? `(de R$ ${virgula(b.faixa[0], 2)} a R$ ${virgula(b.faixa[1], 2)})` : ''} — ${esc(b.fonte)}. ${esc(b.ressalva)}</p>`).join('')}
+      <h3 style="margin-top:16px">Cuidados</h3>
       <ul style="padding-left:18px">${r.ressalvas.map(x => `<li class="sub">${esc(x)}</li>`).join('')}</ul>
       <p class="sub">Motor v${esc(r.versao_motor)} · premissas ${esc(r.versao_premissas)} — cálculo determinístico, sem modelo de linguagem.</p>
     </div>`;
@@ -4875,8 +4958,14 @@ document.addEventListener('click', comErro(async (ev) => {
     sroi.resultado = await post('/api/sroi/calcular', {
       criancas: sroi.n, investimento_anual: sroi.inv, horizonte_anos: sroi.anos, proxy_ids,
     });
+    sroi.proxy = proxy;
     sroi.proxy_ids = proxy_ids;
     navegar();
+  }
+  if (alvo.dataset.acao === 'copiar-impacto') {
+    const t = document.getElementById('impacto-frase')?.textContent ?? '';
+    try { await navigator.clipboard.writeText(t); toast('Frase copiada.', 'bom'); }
+    catch { toast('Não deu para copiar automaticamente — selecione a frase e copie.'); }
   }
   if (alvo.dataset.acao === 'sroi-explicar') {
     alvo.disabled = true;

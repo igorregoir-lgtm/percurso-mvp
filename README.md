@@ -82,7 +82,7 @@ temporário e nunca toca `data/percurso.db`):
 node scripts/unit-test.mjs
 ```
 
-Na execução de 05/10/2026 foram **515 asserções de fluxo** e **224 testes unitários** — mais o
+Na execução de 05/10/2026 foram **515 asserções de fluxo** e **226 testes unitários** — mais o
 teste de **persistência após reiniciar o servidor** (`npm run test:persistencia`), o de **quebra**
 por entrada inválida (`npm run test:quebra`; os dois sobem servidor e banco próprios), a avaliação do RAG
 (`npm run test:rag`: reconstrói o índice e mede hit@5, citações e pseudonimização), a bateria da
@@ -365,7 +365,7 @@ models/                   GGUFs locais (fora do git; ai/scripts/setup-model.sh b
 public/                   interface (HTML + CSS + JS, sem build; fila offline; manifest + sw.js)
 scripts/reset.mjs         recria o banco do zero
 scripts/smoke-test.mjs    515 asserções do fluxo principal (contra o servidor no ar)
-scripts/unit-test.mjs     224 testes unitários das regras críticas (banco temporário)
+scripts/unit-test.mjs     226 testes unitários das regras críticas (banco temporário)
 scripts/persistencia-test.mjs  grava, derruba o servidor, sobe outro e relê (servidor próprio)
 scripts/quebra-test.mjs   entrada inválida é recusada com 4xx — nunca 500 nem 200 (servidor próprio)
 scripts/gerar-diagrama-er.mjs  regera docs/MODELO-DE-DADOS-ER.md do esquema real

@@ -1,5 +1,5 @@
 {
-  "versao": "2026-08-25.1",
+  "versao": "2026-10-05.1",
   "origem": "docs/ANALISE-SLM-E-SROI.md §5.6 (tabela de premissas e referências, valores no ano-base publicado, sem atualização inflacionária)",
   "doutrina": [
     "Monetização é estimativa de PROGRAMA, não score infantil.",
@@ -151,6 +151,20 @@
       "grupo_exclusivo": null,
       "uso": ["benchmark", "narrativa"],
       "ressalva": "Política de segurança pública, não programa pedagógico; comparação narrativa, nunca multiplicador do Ebenézer."
+    },
+    {
+      "id": "ipea-escola-homicidios",
+      "nome": "Jovens na escola e homicídios nos municípios",
+      "valor": 2,
+      "unidade": "% a menos de homicídios para cada 1% a mais de jovens de 15 a 17 anos na escola",
+      "ano_base": 2016,
+      "fonte": "IPEA · Nota Técnica nº 18 (Diest), Cerqueira et al.",
+      "url": "https://repositorio.ipea.gov.br/entities/publication/781d92be-c98a-47f8-9e14-4f916e00353d",
+      "confianca": "média · associação entre municípios",
+      "status_ebenezer": "ALTA aderência narrativa · a ponte entre escola e violência",
+      "grupo_exclusivo": null,
+      "uso": ["narrativa"],
+      "ressalva": "Relação observada entre os 81 municípios do Pacto Nacional pela Redução de Homicídios, com jovens de 15 a 17 anos. Não é efeito medido de um programa nem vale por criança — nunca entra no cálculo."
     }
   ],
   "cenarios_padrao": {
@@ -165,6 +179,15 @@
       "deslocamento": "benefício que apenas migrou de lugar",
       "dropoff": "decaimento anual do efeito",
       "desconto": "taxa de desconto a valor presente"
+    },
+    "em_palavras": {
+      "nota": "Os mesmos parâmetros, ditos como a diretoria explica em voz alta. A tela de Impacto potencial usa estes rótulos; a definição técnica fica em 'definicoes'.",
+      "efeito_incremental": "crianças que sairiam da escola e ficam com o apoio",
+      "deadweight": "a parte que aconteceria mesmo sem o Instituto",
+      "atribuicao": "o mérito da escola, da família e de outros serviços",
+      "deslocamento": "a parte que só mudaria de lugar",
+      "dropoff": "quanto o efeito diminui a cada ano",
+      "desconto": "a correção para dinheiro de hoje"
     }
   },
   "mapeamento_indicadores": {

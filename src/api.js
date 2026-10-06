@@ -1042,6 +1042,14 @@ export const rotas = {
     });
   },
 
+  // A leitura simples da tela Impacto potencial, no eixo da violencia: jovens
+  // creditaveis ao Instituto e custo de violencia evitavel. Nao pede
+  // investimento — a tela abre ja respondendo. Mesmo motor, mesma guarda.
+  'POST /api/sroi/violencia': (req, body) => {
+    exigeGestao(req);
+    return SROI.violenciaEvitavel({ criancas: body.criancas, cenarios: body.cenarios ?? null });
+  },
+
   // Papel do SLM no SROI (§3.5): EXPLICAR premissas e limites — nunca escolher
   // coeficiente nem gerar numero. Endpoint proprio, prompt fechado, SEM sessao
   // de chat e SEM RAG de casos — e' o canal da diretoria (que continua 403 no

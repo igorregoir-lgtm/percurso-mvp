@@ -15,7 +15,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { erro } from '../domain.js';
 
-export const VERSAO_MOTOR = '1.0.0';
+export const VERSAO_MOTOR = '1.1.0';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 let cachePremissas = null;
@@ -78,15 +78,7 @@ export function calcular({ criancas, investimento_anual, proxy_ids, horizonte_an
   }
   validarDuplaContagem(proxy_ids);
 
-  const padrao = premissas().cenarios_padrao;
-  const conjuntos = ['conservador', 'base', 'superior'].map(nome => {
-    const c = { ...padrao[nome], ...(cenarios?.[nome] || {}) };
-    for (const [k, v] of Object.entries(c)) {
-      if (!Number.isFinite(v) || v < 0 || v > 1)
-        throw erro(422, `Parâmetro inválido no cenário ${nome}: ${k}=${v} (esperado 0..1).`);
-    }
-    return { nome, parametros: c };
-  });
+  const conjuntos = conjuntosDeCenario(cenarios);
 
   const investimento_total = inv * T;
   const resultados = conjuntos.map(({ nome, parametros: c }) => {
@@ -132,6 +124,82 @@ export function calcular({ criancas, investimento_anual, proxy_ids, horizonte_an
       id: p.id, nome: p.nome, valor: p.valor, faixa: p.faixa ?? null, fonte: p.fonte, ressalva: p.ressalva,
     })),
   };
+}
+
+/** Os 3 cenários padrão, com override opcional; todo parâmetro tem de estar em 0..1. */
+function conjuntosDeCenario(cenarios) {
+  const padrao = premissas().cenarios_padrao;
+  return ['conservador', 'base', 'superior'].map(nome => {
+    const c = { ...padrao[nome], ...(cenarios?.[nome] || {}) };
+    for (const [k, v] of Object.entries(c)) {
+      if (!Number.isFinite(v) || v < 0 || v > 1)
+        throw erro(422, `Parâmetro inválido no cenário ${nome}: ${k}=${v} (esperado 0..1).`);
+    }
+    return { nome, parametros: c };
+  });
+}
+
+/**
+ * A leitura que a diretoria explica de cabeça, no eixo da violência (decisão
+ * do Instituto, ANALISE §5.2): quantos jovens a conta credita ao Instituto e
+ * quanto custo de violência isso evita ao longo da vida deles.
+ *
+ *   jovens = N × efeito × (1−deadweight) × (1−atribuição) × (1−deslocamento)
+ *   valor  = jovens × R$ 45 mil (violência dentro do custo da evasão, Insper/FRM)
+ *
+ * Mesmos parâmetros de calcular(), sem investimento e sem desconto no tempo: é
+ * uma multiplicação, para caber numa frase. A conta por R$ 1 continua em
+ * calcular(). O IPEA entra só como a ponte escola → violência, nunca no número.
+ */
+export function violenciaEvitavel({ criancas, cenarios = null }) {
+  const N = Number(criancas);
+  if (!Number.isFinite(N) || N <= 0) throw erro(422, 'Informe o número de crianças únicas (N > 0).');
+  const custo = proxyPorId('violencia-evasao');
+  const ponte = proxyPorId('ipea-escola-homicidios');
+
+  const resultados = conjuntosDeCenario(cenarios).map(({ nome, parametros: c }) => {
+    const jovens = N * c.efeito_incremental * (1 - c.deadweight) * (1 - c.atribuicao) * (1 - c.deslocamento);
+    // O valor sai do número sem arredondar; arredondar antes multiplicaria o erro por R$ 45 mil.
+    return { cenario: nome, parametros: c, jovens: arred(jovens, 1), valor_vida: arred(jovens * custo.valor), bruto: jovens };
+  });
+  // O texto sai do número bruto: arredondar 1,47 para 1,5 e depois para 2 diria "até 2 jovens".
+  const brutos = resultados.map(r => r.bruto);
+  for (const r of resultados) delete r.bruto;
+
+  const js = resultados.map(r => r.jovens), vs = resultados.map(r => r.valor_vida);
+  const faixa_jovens = { minimo: Math.min(...js), maximo: Math.max(...js) };
+  const faixa_valor = { minimo: Math.min(...vs), maximo: Math.max(...vs) };
+  const mil = (v) => (v >= 1000 ? `R$ ${Math.round(v / 1000).toLocaleString('pt-BR')} mil` : `R$ ${Math.round(v)}`);
+  const rastro = (p) => ({ id: p.id, nome: p.nome, valor: p.valor, unidade: p.unidade, ano_base: p.ano_base,
+    fonte: p.fonte, url: p.url, confianca: p.confianca, ressalva: p.ressalva });
+  const faixa_jovens_texto = textoJovens({ minimo: Math.min(...brutos), maximo: Math.max(...brutos) });
+
+  return {
+    versao_motor: VERSAO_MOTOR,
+    versao_premissas: premissas().versao,
+    entradas: { criancas: N },
+    custo_por_jovem: rastro(custo),
+    ponte_escola_violencia: rastro(ponte),
+    cenarios: resultados,
+    faixa_jovens,
+    faixa_jovens_texto,
+    faixa_valor,
+    // Esta é a frase que sai do Instituto: passa no revisor de sobre-alegação
+    // (sem verbo causal forte e com a ressalva dos fatores externos) — o teste
+    // unitário garante isso.
+    leitura_obrigatoria: `Se as suposições se confirmarem, o apoio do Instituto pode manter na escola ${faixa_jovens_texto} — de ${mil(faixa_valor.minimo)} a ${mil(faixa_valor.maximo)} em custos de violência evitáveis ao longo da vida deles. Associação compatível, não causalidade comprovada: fatores externos não foram isolados.`,
+    ressalvas: RESSALVAS_FIXAS,
+  };
+}
+
+/** "de 1 a 8 jovens", "até 1 jovem", "menos de 1 jovem" — nunca "de 0 a 0 jovens". */
+function textoJovens({ minimo, maximo }) {
+  const j = (k) => (k === 1 ? '1 jovem' : `${k} jovens`);
+  const a = Math.round(minimo), b = Math.round(maximo);
+  if (maximo < 1) return 'menos de 1 jovem';
+  if (minimo < 1) return `até ${j(b)}`;
+  if (a === b) return `cerca de ${j(b)}`;
+  return `de ${a} a ${j(b)}`;
 }
 
 const arred = (v, casas = 0) => {

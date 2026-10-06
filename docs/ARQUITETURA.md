@@ -115,7 +115,7 @@ data/audio-temp/    unico lugar onde audio toca disco, e sempre de passagem
 public/audio.js     conversao para WAV 16 kHz no NAVEGADOR (evita o ffmpeg) e
                     gravacao em blocos fechados de 5 min (evita 1 GB de Float32)
 
-scripts/         reset.mjs · smoke-test.mjs (515 asserções) · unit-test.mjs (224) · preparar-sessao.mjs
+scripts/         reset.mjs · smoke-test.mjs (515 asserções) · unit-test.mjs (226) · preparar-sessao.mjs
                  persistencia-test.mjs · quebra-test.mjs (servidor e banco próprios) · gerar-diagrama-er.mjs
                  rag-test.mjs (gate do RAG) · ai-stub-test.mjs (camada de IA sem modelo)
                  audio-stub-test.mjs (ciclo de vida do áudio, sem modelo) · reancorar.mjs

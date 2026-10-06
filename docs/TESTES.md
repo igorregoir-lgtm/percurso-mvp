@@ -19,7 +19,7 @@ Saída da última execução: [`EVIDENCIAS-DE-TESTE.txt`](EVIDENCIAS-DE-TESTE.tx
 persistência após reinício e de quebra no formato situação inicial → esperado → obtido, está em
 [`EVIDENCIAS-SEMANA-10.md`](EVIDENCIAS-SEMANA-10.md).
 
-Há também uma bateria de **224 testes unitários** das regras críticas de domínio (filtro de
+Há também uma bateria de **226 testes unitários** das regras críticas de domínio (filtro de
 perímetro, validação do schema do extrator, determinismo do agente, os três scores, supressão com
 agrupamento, deduplicação da ingestão, revisor de sobre-alegação, consentimento, imutabilidade da
 síntese, fecho de ciclo, cadastro e arquivo de pessoas, base fixa da curva de permanência), que roda sem servidor, contra um banco temporário descartável:

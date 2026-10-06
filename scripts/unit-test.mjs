@@ -636,10 +636,10 @@ test('as citações arquivo:linha da documentação apontam para o que prometem'
     // proprio defeito que a F8 corrige, fixado aqui para nao sumir sem aviso.
     // Exige o CÓDIGO e o comentário que o nomeia: a linha sozinha aparece três
     // vezes no arquivo, e âncora que casa em três lugares não ancora nada.
-    'public/app.js:6323': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
+    'public/app.js:6412': /location\.hash = vaiParaORelato \? `#\/sai-daqui\?aba=relato/,
     'src/api.js:388': /erro\(422.*rubrica por ciclo/,
     'src/api.js:831': /'POST \/api\/consentimento'/,
-    'src/api.js:1363': /periodosSugeridos\(\)/,
+    'src/api.js:1371': /periodosSugeridos\(\)/,
     'src/assistente.js:13': /DOIS CANAIS, DUAS PERMISS/,
     'src/assistente.js:113': /export const GUIA/,
     'src/db.js:22': /export function getDb/,
@@ -1460,7 +1460,7 @@ test('sroi: dupla contagem (envelope + componente) é bloqueada', () => {
 });
 
 test('sroi: benchmark e referência não entram no cálculo por criança', () => {
-  for (const id of ['sroi-vim', 'custo-aluno-infantil', 'ipea-homicidios-bem-estar']) {
+  for (const id of ['sroi-vim', 'custo-aluno-infantil', 'ipea-homicidios-bem-estar', 'ipea-escola-homicidios']) {
     assert.throws(() => SROI.calcular({ criancas: 100, investimento_anual: 180000, proxy_ids: [id] }),
       (e) => e.status === 422);
   }
@@ -1481,6 +1481,38 @@ test('sroi: parâmetro de cenário fora de 0..1 é recusado', () => {
     criancas: 10, investimento_anual: 1000, proxy_ids: ['violencia-evasao'],
     cenarios: { base: { deadweight: 1.5 } },
   }), (e) => e.status === 422);
+});
+
+// A leitura da tela Impacto potencial: jovens creditáveis ao Instituto e custo
+// de violência evitável. Os números abaixo foram feitos à mão (106 crianças,
+// cenários padrão): mudar a fórmula ou um parâmetro sem querer derruba o teste.
+test('sroi: leitura de violência — jovens × R$ 45 mil, com a ponte do IPEA só como fonte', () => {
+  const r = SROI.violenciaEvitavel({ criancas: 106 });
+  assert.deepEqual(r.cenarios.map(c => c.jovens), [1.2, 3.6, 7.8]);
+  assert.deepEqual(r.cenarios.map(c => c.valor_vida), [53663, 163134, 350595]);
+  // valor = jovens SEM arredondar × proxy: o caso esperado é 106 × 10% × 60% × 60% × 95% × 45.000
+  assert.equal(r.cenarios[1].valor_vida, Math.round(106 * 0.1 * 0.6 * 0.6 * 0.95 * 45000));
+  assert.deepEqual(r.faixa_jovens, { minimo: 1.2, maximo: 7.8 });
+  assert.match(r.leitura_obrigatoria, /de 1 a 8 jovens/);
+  assert.match(r.leitura_obrigatoria, /R\$ 54 mil a R\$ 351 mil em custos de violência/);
+  assert.match(r.leitura_obrigatoria, /Associação compatível, não causalidade comprovada/);
+  // a frase sai do Instituto ("Copiar a frase"): tem de passar no mesmo revisor do relatório do doador
+  assert.deepEqual(D.revisarSobreAlegacao(r.leitura_obrigatoria), { status: 'aprovado', notas: [] });
+  for (const p of [r.custo_por_jovem, r.ponte_escola_violencia])
+    assert.ok(p.fonte && p.url && p.ano_base && p.ressalva, `${p.id} sem rastreabilidade completa`);
+  assert.equal(r.ponte_escola_violencia.id, 'ipea-escola-homicidios');
+});
+
+test('sroi: leitura de violência recusa crianças inválidas e parâmetro fora de 0..1', () => {
+  for (const criancas of [0, -5, 'abc', null])
+    assert.throws(() => SROI.violenciaEvitavel({ criancas }), (e) => e.status === 422, `criancas=${criancas}`);
+  assert.throws(() => SROI.violenciaEvitavel({ criancas: 10, cenarios: { superior: { atribuicao: 2 } } }),
+    (e) => e.status === 422 && /superior/.test(e.message));
+  // poucas crianças: a frase diz "menos de 1 jovem", nunca "de 0 a 0 jovens"
+  const poucas = SROI.violenciaEvitavel({ criancas: 5 });
+  assert.equal(poucas.faixa_jovens_texto, 'menos de 1 jovem');
+  assert.doesNotMatch(poucas.leitura_obrigatoria, /\b0 jove|menos de 1 a/);
+  assert.equal(SROI.violenciaEvitavel({ criancas: 20 }).faixa_jovens_texto, 'até 1 jovem');
 });
 
 // ---------------------------------------------------------------------------
