@@ -1,6 +1,6 @@
 # Vídeo demonstrativo
 
-**`percurso-demonstracao.mp4`** — 7m19s · 1920×1080 · 30 fps · **sem áudio** · gravado em 05/10/2026.
+**`percurso-demonstracao.mp4`** — 7m19s · 1920×1080 · 30 fps · **legendado e narrado** · gravado em 05/10/2026, narrado em 13/10/2026.
 
 Percorre o **roteiro v3** de [`../docs/ROTEIRO-DO-VIDEO.md`](../docs/ROTEIRO-DO-VIDEO.md) — as 18 cenas
 em 5 blocos, em 40 legendas:
@@ -17,8 +17,14 @@ em 5 blocos, em 40 legendas:
 5. **Camada opcional e fecho**: copilot local no celular da educadora, com fontes e recusa
    determinística → fecho técnico (desktop) com os totais das baterias.
 
-A narração do roteiro está **como legenda na tela**, não como locução. Se quiser voz, grave por cima
-— o ritmo das cenas já foi calculado sobre o tempo de leitura de cada legenda.
+A narração do roteiro está **como legenda na tela e como locução**. O texto falado de cada cena fica
+em `narracao.json`: é a legenda reescrita para o ouvido (sem símbolos, com as frases inteiras). O
+ritmo das cenas continua sendo o do tempo de leitura da legenda; a fala é que se ajusta a ele.
+
+**A locução é voz sintética** (ElevenLabs, voz "Matheus", modelo `eleven_v4`), gerada a partir do
+texto de `narracao.json`, que é público. Nenhum áudio do produto, nem de pessoa do Instituto, foi
+enviado ou usado: o que vale para o Percurso (o áudio não sai do computador do Instituto) não foi
+tocado pela narração do vídeo.
 
 **Duas coisas que a gravação simula, e as legendas dizem:** o Chrome headless não tem microfone, então
 a fala da cena 7 entra pelo mesmo caminho do reconhecimento do navegador (`SpeechRecognition.onresult`)
@@ -43,6 +49,11 @@ node video/legendas.mjs                            # molduras com as legendas �
 node video/montar.mjs                              # compõe e encoda          → percurso-demonstracao.mp4
 ```
 
+Para narrar: gere a locução de `narracao.json` em cinco blocos (um por bloco do roteiro, com uma
+pausa longa entre as falas), salve como `bloco0.mp3` … `bloco4.mp3` e rode
+`node video/cortar-narracao.mjs <pasta dos blocos>`. Ele grava uma fala por cena em `video/narracao/`,
+e o `montar.mjs` passa a encaixá-las sozinho. Sem essa pasta, o vídeo sai mudo, como antes.
+
 - `AI_ENABLED=1` só para a cena 17 (copilot), com o `llama-server` local no ar (`127.0.0.1:8081`).
   O `gravar.mjs` espera o modelo ficar ocioso antes de perguntar e tenta duas vezes; se ainda assim
   não houver resposta, grava a tela de fallback e a legenda diz isso.
@@ -60,8 +71,10 @@ nenhuma dependência.**
 | `cdp.mjs` | Cliente CDP mínimo, sobre o WebSocket nativo do Node — sem dependência |
 | `gravar.mjs` | O roteiro: ações no app, captura dos quadros e o vigia de tela de erro / toast de erro / "Carregando…" |
 | `legendas.mjs` | Gera as molduras (fundo + legenda) renderizando HTML no Chrome |
-| `montar.mjs` | Compõe moldura + quadro e encoda com ffmpeg |
-| `quadros/`, `molduras/` | Intermediários — podem ser apagados; o `.mp4` basta |
+| `montar.mjs` | Compõe moldura + quadro, encaixa a fala de cada cena e encoda com ffmpeg |
+| `narracao.json` | O texto falado, uma entrada por cena (vazia = cena sem fala) |
+| `cortar-narracao.mjs` | Corta a locução em uma fala por cena, pelas pausas longas |
+| `quadros/`, `molduras/`, `narracao/` | Intermediários — podem ser apagados; o `.mp4` basta |
 
 ## Para editar o roteiro
 
