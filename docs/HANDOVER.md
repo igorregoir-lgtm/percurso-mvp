@@ -255,7 +255,9 @@ organização. As quatro perguntas da aula, respondidas para o Percurso:
 sobre o roteiro v3 ([`ROTEIRO-DO-VIDEO.md`](ROTEIRO-DO-VIDEO.md)): educadora, psicóloga (com a
 captura por voz, o filtro de perímetro, o relato e o recado), coordenação, diretoria e a camada de
 IA local, terminando nos números dos testes. Gerado sem gravação de tela: um Chrome headless
-isolado é pilotado pelo roteiro em `video/gravar.mjs`, e a narração aparece como legenda. Para regerar
+isolado é pilotado pelo roteiro em `video/gravar.mjs`, e a narração aparece como legenda. Desde
+13/10/2026 o vídeo também é falado: a locução é voz sintética, feita a partir do texto de
+`video/narracao.json`, e nenhum áudio do produto entra nela. Para regerar
 depois de qualquer mudança de tela: [`video/README.md`](../video/README.md).
 
 ---

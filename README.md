@@ -21,7 +21,7 @@ As dez capturas, numeradas e com legenda, estão em [`docs/capturas/`](docs/capt
 | **Demonstração no ar** | https://percurso-ebenezer.vercel.app — vitrine com dados sintéticos; o banco volta ao estado inicial a cada reinício |
 | **Dossiê da Semana 10** | https://percurso-ebenezer.vercel.app/dossie-semana-10.html — a entrega de Tecnologia e o histórico do desenvolvimento, numa página |
 | **Handover** | [`docs/HANDOVER.md`](docs/HANDOVER.md) — a porta de entrada da documentação |
-| **Vídeo demonstrativo** | [`video/percurso-demonstracao.mp4`](video/percurso-demonstracao.mp4) — 7m19s, os quatro papéis |
+| **Vídeo demonstrativo** | [`video/percurso-demonstracao.mp4`](video/percurso-demonstracao.mp4) — 7m19s, os quatro papéis, legendado e narrado |
 | **Protótipo Figma** | https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv |
 
 > **Entrega da Semana 10 (09/10/2026) — comece pelo [`docs/HANDOVER.md`](docs/HANDOVER.md).** Ele
@@ -502,7 +502,7 @@ nos notebooks doados ao Instituto.
 - [`docs/MANUAL-DE-INSTALACAO.md`](docs/MANUAL-DE-INSTALACAO.md) — instalar em qualquer computador, sem jargão, com início automático
 - [`docs/EVIDENCIAS-DE-TESTE.txt`](docs/EVIDENCIAS-DE-TESTE.txt) — saída da última execução
 - [`docs/ROTEIRO-DO-VIDEO.md`](docs/ROTEIRO-DO-VIDEO.md) — o roteiro do vídeo
-- [`video/percurso-demonstracao.mp4`](video/percurso-demonstracao.mp4) — vídeo demonstrativo, 7m19s, 18 cenas, os quatro papéis, legendado e sem áudio, regravado em 05/10/2026 sobre o roteiro v3 ([como foi gerado](video/README.md))
+- [`video/percurso-demonstracao.mp4`](video/percurso-demonstracao.mp4) — vídeo demonstrativo, 7m19s, 18 cenas, os quatro papéis, legendado e narrado (voz sintética), gravado em 05/10/2026 sobre o roteiro v3 e narrado em 13/10 ([como foi gerado](video/README.md))
 - [`docs/revisao/`](docs/revisao/) — revisão arquitetural completa (22/08/2026): baseline de requisitos, matriz de rastreabilidade arquitetura → implementação → teste, relatório de achados priorizados e a [auditoria adversarial da v2](docs/revisao/03-AUDITORIA-V2.md) (28 achados levantados, 19 confirmados após refutação, 19 corrigidos com teste); da v3 (25/08/2026): o [plano de complementação auditado](docs/revisao/04-PLANO-COMPLEMENTACAO-IA.md) (painel de 4 lentes, 29 achados incorporados antes da execução) e a [revisão adversarial da implementação](docs/revisao/05-REVISAO-IMPLEMENTACAO-IA.md) (35 achados confirmados, 35 tratados)
 
 ---
