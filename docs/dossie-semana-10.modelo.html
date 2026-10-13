@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Percurso · Dossiê de Entrega da Semana 10 — Trilha de Tecnologia (Trilha B)</title>
+  <meta name="description" content="Entrega da Semana 10 da Trilha de Tecnologia: MVP funcional do Percurso, handover, cronograma de implantação, contingência e histórico do desenvolvimento.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+/*CSS_BASE*/
+  </style>
+  <style>
+    .nav-brand, .nav-cta { flex-shrink: 0; }
+    .nav-links { min-width: 0; }
+    .btn { white-space: nowrap; }
+    .sit { display: inline-block; padding: 3px 10px; border-radius: 9999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+    .sit-ok { background: var(--accent-green-bg); color: var(--accent-green); border: 1px solid rgba(46, 107, 71, 0.3); }
+    .sit-pend { background: var(--accent-amber-bg); color: var(--accent-amber); border: 1px solid rgba(138, 100, 20, 0.3); }
+    .sit-plan { background: var(--accent-blue-bg); color: var(--accent-blue); border: 1px solid rgba(35, 82, 124, 0.3); }
+    h3.sub { font-family: var(--font-serif); font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 40px 0 12px; color: var(--ink); }
+    .prose ul, .prose ol { margin: 0 0 18px 22px; }
+    .prose li { margin-bottom: 8px; font-size: 15.5px; line-height: 1.62; color: #2D2A26; }
+    code { font-family: var(--font-mono), ui-monospace, Menlo, monospace; font-size: 0.86em; background: var(--card-alt); padding: 1px 6px; border-radius: 5px; }
+    pre { background: #1F1D1A; color: #F4EFE6; padding: 18px 20px; border-radius: var(--radius-md); overflow-x: auto; font-size: 13px; line-height: 1.55; margin: 18px 0; }
+    pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+    a { color: var(--accent-blue); }
+    .galeria { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; margin: 24px 0; }
+    .galeria.larga { grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); }
+    .captura { background: white; border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); margin: 0; display: flex; flex-direction: column; }
+    .captura img { width: 100%; height: auto; display: block; border-bottom: 1px solid var(--line); background: #f0ebe1; }
+    .captura figcaption { padding: 14px 16px; font-size: 13px; line-height: 1.5; color: #2D2A26; }
+    .captura figcaption b { display: block; font-family: var(--font-mono), monospace; font-size: 11px; color: var(--accent-red); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .arq-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 24px 0 12px; }
+    .arq-caixa { background: white; border: 1.5px solid var(--line-dark); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm); }
+    .arq-caixa h4 { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-red); margin-bottom: 4px; }
+    .arq-caixa .onde { font-family: var(--font-mono), monospace; font-size: 12px; color: var(--ink-muted); margin-bottom: 10px; }
+    .arq-caixa ul { margin: 0 0 0 16px; }
+    .arq-caixa li { font-size: 13px; line-height: 1.5; margin-bottom: 6px; }
+    .arq-fluxo { text-align: center; font-family: var(--font-mono), monospace; font-size: 12.5px; color: var(--ink-muted); margin: 6px 0 20px; }
+    .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .linha-tempo { border-left: 3px solid var(--line-dark); margin: 26px 0 8px 10px; padding-left: 26px; }
+    .marco { position: relative; margin-bottom: 26px; }
+    .marco::before { content: ""; position: absolute; left: -36px; top: 5px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent-red); border: 3px solid var(--card); box-shadow: 0 0 0 1px var(--line-dark); }
+    .marco-data { font-family: var(--font-mono), monospace; font-size: 12px; font-weight: 700; color: var(--accent-red); letter-spacing: 0.03em; }
+    .marco h4 { font-size: 16.5px; font-weight: 700; margin: 2px 0 6px; }
+    .marco p { font-size: 14.5px; line-height: 1.6; color: #2D2A26; }
+    .barras { display: flex; align-items: flex-end; gap: 10px; height: 160px; margin: 34px 0 6px; border-bottom: 2px solid var(--line-dark); }
+    .barra { flex: 1; background: var(--accent-red); border-radius: 6px 6px 0 0; position: relative; min-height: 3px; }
+    .barra span { position: absolute; top: -22px; left: 0; right: 0; text-align: center; font-size: 12px; font-weight: 700; font-family: var(--font-mono), monospace; color: var(--ink); }
+    .barras-eixo { display: flex; gap: 10px; font-size: 11.5px; color: var(--ink-muted); text-align: center; line-height: 1.35; }
+    .barras-eixo div { flex: 1; }
+    table.data-table td.num { font-family: var(--font-mono), monospace; font-weight: 700; white-space: nowrap; }
+    @media (max-width: 900px) { .arq-grid, .duas { grid-template-columns: 1fr; } .galeria.larga { grid-template-columns: 1fr; } }
+    @media print { .nav-bar { position: static; } .section-block, .hero-banner { box-shadow: none; } .captura, .marco, tr { break-inside: avoid; } }
+  </style>
+</head>
+<body>
+
+<header class="nav-bar">
+  <a class="nav-brand" href="#inicio">
+    <div class="brand-badge">P</div>
+    <div>
+      <div class="brand-title">Percurso · Trilha B</div>
+      <div class="brand-sub">Módulo 3 · Semana 10 · Tecnologia</div>
+    </div>
+  </a>
+  <nav class="nav-links">
+    <a class="nav-link" href="#entrega">O que o guia pede</a>
+    <a class="nav-link" href="#mvp">MVP rodando</a>
+    <a class="nav-link" href="#arquitetura">Arquitetura</a>
+    <a class="nav-link" href="#dados">Dados</a>
+    <a class="nav-link" href="#testes">Testes</a>
+    <a class="nav-link" href="#decisoes">Decisões</a>
+    <a class="nav-link" href="#handover">Handover</a>
+    <a class="nav-link" href="#cronograma">Cronograma</a>
+    <a class="nav-link" href="#contingencia">Contingência</a>
+    <a class="nav-link" href="#historico">Histórico</a>
+    <a class="nav-link" href="#fechamento">O que falta</a>
+    <a class="nav-link" href="#links">Links</a>
+  </nav>
+  <div class="nav-cta">
+    <a class="btn btn-demo" href="https://percurso-ebenezer.vercel.app" target="_blank" rel="noopener">Ver MVP online</a>
+    <a class="btn btn-primary" href="https://github.com/igorregoir-lgtm/percurso-mvp" target="_blank" rel="noopener">Repositório</a>
+  </div>
+</header>
+
+<main class="container" id="inicio">
+
+  <div class="hero-banner">
+    <div class="hero-meta">
+      <span class="badge-pill badge-inteli">Inteli MBA em IA &amp; Dados · Módulo 3</span>
+      <span class="badge-pill badge-trilha">Trilha B: Monitoramento de Impacto</span>
+      <span class="badge-pill badge-status">Entrega Semana 10 · Tecnologia</span>
+    </div>
+    <h1 class="hero-title">Percurso: do protótipo validado ao MVP funcional, com handover</h1>
+    <p class="hero-lead">
+      Esta é a entrega do Grupo 06 na Trilha de Tecnologia: a aplicação que executa o fluxo principal do Desafio B,
+      o modelo de dados, os testes e a documentação para o Instituto Ebenézer operar sem os autores. Depois vêm o
+      cronograma das quatro primeiras semanas, a tabela de contingência e o histórico de como o produto foi construído,
+      de agosto a outubro de 2026.
+    </p>
+    <div class="hero-stats-grid">
+      <div class="hero-stat-box">
+        <div class="stat-num">516 / 516</div>
+        <div class="stat-label">Fluxo principal testado</div>
+        <div class="stat-sub">Asserções de ponta a ponta nos quatro papéis. Sete baterias, nenhuma falha em 13/10/2026.</div>
+      </div>
+      <div class="hero-stat-box">
+        <div class="stat-num">32 tabelas</div>
+        <div class="stat-label">Modelo de dados implementado</div>
+        <div class="stat-sub">49 chaves estrangeiras. O diagrama é gerado do esquema real, não desenhado à mão.</div>
+      </div>
+      <div class="hero-stat-box">
+        <div class="stat-num">51 decisões</div>
+        <div class="stat-label">Registradas, com alternativas</div>
+        <div class="stat-sub">Cada escolha tem contexto, o que foi considerado e o que ela custa.</div>
+      </div>
+      <div class="hero-stat-box">
+        <div class="stat-num">R$ 0</div>
+        <div class="stat-label">De licença e de API</div>
+        <div class="stat-sub">Node.js e SQLite, sem dependência externa. Um comando sobe o sistema: <code>node server.js</code>.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <div class="callout-icon">📍</div>
+    <div class="callout-content">
+      <h4>Acesso direto</h4>
+      <p>
+        <a href="https://percurso-ebenezer.vercel.app" target="_blank" rel="noopener"><strong>MVP no ar</strong></a> ·
+        <a href="https://github.com/igorregoir-lgtm/percurso-mvp" target="_blank" rel="noopener"><strong>Repositório</strong></a> ·
+        <a href="https://github.com/igorregoir-lgtm/percurso-mvp/blob/main/docs/HANDOVER.md" target="_blank" rel="noopener"><strong>Handover</strong></a> ·
+        <a href="https://github.com/igorregoir-lgtm/percurso-mvp/blob/main/video/percurso-demonstracao.mp4" target="_blank" rel="noopener"><strong>Vídeo demonstrativo</strong></a> ·
+        <a href="https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv" target="_blank" rel="noopener"><strong>Protótipo Figma</strong></a> ·
+        <a href="https://drive.google.com/drive/folders/1Mcdw5VcHrXQ1m_ybDlo4YnIanCHF0oc_?usp=sharing" target="_blank" rel="noopener"><strong>Pasta da entrega no Drive</strong></a>
+      </p>
+      <p>
+        O Percurso foi feito para rodar num computador dentro do Instituto. O endereço na Vercel existe para a
+        avaliação: é uma vitrine com dados sintéticos, sem senha, e o banco volta ao estado inicial a cada reinício
+        do serviço. Para entrar, escolha um dos cinco perfis na tela inicial.
+      </p>
+    </div>
+  </div>
+
+  <!-- ============================================================ 1 -->
+  <section class="section-block" id="entrega">
+    <div class="section-header">
+      <div class="section-eyebrow">Guia do Aluno · Semana 10 · Tecnologia</div>
+      <h2 class="section-title">O que o guia pede e onde está cada item</h2>
+      <p class="section-desc">
+        O guia pede um MVP funcional entregue por repositório, com documentação de handover. A aula de handover
+        acrescentou capturas de tela, teste final de usabilidade e plano de fechamento. A tabela diz onde cada item
+        está e o que ainda não foi feito.
+      </p>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>O que foi pedido</th><th>Onde está</th><th>Situação</th></tr></thead>
+        <tbody>
+          <tr><td>Aplicação funcional que executa o fluxo principal</td><td><a href="https://percurso-ebenezer.vercel.app" target="_blank" rel="noopener">MVP no ar</a> e <code>node server.js</code> no repositório</td><td><span class="sit sit-ok">pronto</span></td></tr>
+          <tr><td>Modelo de dados implementado</td><td><code>src/db.js</code>: 32 tabelas, 49 chaves estrangeiras · <a href="https://github.com/igorregoir-lgtm/percurso-mvp/blob/main/docs/MODELO-DE-DADOS-ER.md" target="_blank" rel="noopener">diagrama ER</a></td><td><span class="sit sit-ok">pronto</span></td></tr>
+          <tr><td>Populado com dados sintéticos representativos</td><td><code>src/seed.js</code>, com semente fixa: 132 crianças e 170 matrículas no histórico, 106 crianças ativas em 120 matrículas no painel</td><td><span class="sit sit-ok">pronto</span></td></tr>
+          <tr><td>Fase de testes que valida o fluxo principal</td><td>Sete baterias · <a href="https://github.com/igorregoir-lgtm/percurso-mvp/blob/main/docs/EVIDENCIAS-SEMANA-10.md" target="_blank" rel="noopener">evidências</a></td><td><span class="sit sit-ok">pronto</span></td></tr>
+          <tr><td>Opera de forma estável</td><td>Persistência após reiniciar (9 de 9), entrada inválida recusada (17 de 17), testes a cada push. Medido em teste, ainda não em uso real.</td><td><span class="sit sit-ok">pronto</span></td></tr>
+          <tr><td>Entrega via repositório</td><td><a href="https://github.com/igorregoir-lgtm/percurso-mvp" target="_blank" rel="noopener">github.com/igorregoir-lgtm/percurso-mvp</a>, público, versão <code>v1.0.0</code></td><td><span class="sit sit-ok">pronto</span></td></tr>
+          <tr><td>Handover: vídeo demonstrativo</td><td><code>video/percurso-demonstracao.mp4</code>, 7m19s, os quatro papéis</td><td><span class="sit sit-ok">pronto</span></td></tr>
+          <tr><td>Handover: registro do modelo de dados</td><td><code>docs/MODELO-DE-DADOS-ER.md</code> e <code>docs/MODELO-DE-DADOS.md</code></td><td><span class="sit sit-ok">pronto</span></td></tr>
+          <tr><td>Handover: instruções de instalação e acesso</td><td><code>docs/MANUAL-DE-INSTALACAO.md</code> e <code>docs/HANDOVER.md</code> §2</td><td><span class="sit sit-ok">pronto</span></td></tr>
+          <tr><td>Handover: evidências dos testes</td><td><code>docs/EVIDENCIAS-SEMANA-10.md</code> e <code>docs/TESTES.md</code></td><td><span class="sit sit-ok">pronto</span></td></tr>
+          <tr><td>Handover: principais decisões técnicas</td><td><code>docs/DECISOES-TECNICAS.md</code> (51 decisões) e <code>docs/HANDOVER.md</code> §7</td><td><span class="sit sit-ok">pronto</span></td></tr>
+          <tr><td>Capturas de tela numeradas, com legenda</td><td><code>docs/capturas/</code>, dez telas, geradas em 13/10/2026</td><td><span class="sit sit-ok">pronto</span></td></tr>
+          <tr><td>Cronograma de implantação e contingência</td><td><code>docs/CRONOGRAMA-E-CONTINGENCIA.md</code> e as seções <a href="#cronograma">Cronograma</a> e <a href="#contingencia">Contingência</a> deste dossiê</td><td><span class="sit sit-ok">pronto</span></td></tr>
+          <tr><td>Teste final de usabilidade, com três tarefas</td><td><code>docs/HANDOVER.md</code> §10.1: o registro está montado e em branco</td><td><span class="sit sit-pend">pendente</span></td></tr>
+          <tr><td>Revisão cruzada: outra pessoa instala seguindo só o manual</td><td>Feita pelo CI numa máquina limpa a cada push; falta repetir com alguém do Instituto</td><td><span class="sit sit-pend">pendente</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2 -->
+  <section class="section-block" id="mvp">
+    <div class="section-header">
+      <div class="section-eyebrow">A aplicação · dados sintéticos</div>
+      <h2 class="section-title">O MVP rodando</h2>
+      <p class="section-desc">
+        Dez capturas, na ordem que a aula de handover pede: tela inicial, fluxo principal passo a passo, dado salvo
+        e listado, e o que aparece quando algo dá errado. O próprio repositório gera as imagens
+        (<code>video/capturas.mjs</code>) sobre um banco recém-semeado.
+      </p>
+    </div>
+
+    <h3 class="sub">No celular: quem atende</h3>
+    <div class="galeria">
+      <figure class="captura"><img src="capturas:01-entrar.png" alt="Tela inicial do Percurso, com a lista de perfis"><figcaption><b>01 · Tela inicial</b>Entrar é escolher quem está usando. A psicóloga vem primeiro, como pedido na visita de campo.</figcaption></figure>
+      <figure class="captura"><img src="capturas:02-hoje-educadora.png" alt="Tela Hoje da educadora"><figcaption><b>02 · Hoje, da educadora</b>A retomada sem culpa: cinco datas de chamada em aberto e nenhuma expira.</figcaption></figure>
+      <figure class="captura"><img src="capturas:03-chamada.png" alt="Tela de chamada com uma falta marcada"><figcaption><b>03 · Fluxo principal, passo 1</b>A chamada: "Todos presentes" e uma falta marcada, com o cronômetro contra a meta de 2 minutos.</figcaption></figure>
+      <figure class="captura"><img src="capturas:04-chamada-salva.png" alt="Tela Hoje depois de salvar a chamada"><figcaption><b>04 · Dado salvo</b>A data sai das pendentes e a próxima em aberto já é oferecida.</figcaption></figure>
+      <figure class="captura"><img src="capturas:05-observacao.png" alt="Tela de observação com as seis dimensões"><figcaption><b>05 · Fluxo principal, passo 2</b>A observação: seis dimensões da planilha do Instituto, com âncoras de comportamento.</figcaption></figure>
+      <figure class="captura"><img src="capturas:06-hoje-psicologa.png" alt="Tela Hoje da psicóloga"><figcaption><b>06 · Hoje, da psicóloga</b>As duas turmas da Vivência, o registro por fala, áudio ou texto, o relato liberado e o recado de cada turma.</figcaption></figure>
+    </div>
+
+    <h3 class="sub">No computador: quem gere e quem presta contas</h3>
+    <div class="galeria larga">
+      <figure class="captura"><img src="capturas:07-painel-coordenacao.png" alt="Painel da coordenação"><figcaption><b>07 · Dado salvo e listado</b>O painel da coordenação: 106 crianças únicas em 120 matrículas, cobertura do ciclo, presença do mês e alertas de ausência.</figcaption></figure>
+      <figure class="captura"><img src="capturas:08-consentimentos.png" alt="Tela de consentimentos"><figcaption><b>08 · Consentimentos</b>O campo nasce bloqueado: 102 ativos e 4 pendentes. Toda leitura de dado individual deixa rastro.</figcaption></figure>
+      <figure class="captura"><img src="capturas:09-relatorio-do-ciclo.png" alt="Tela do relatório do ciclo"><figcaption><b>09 · Relatório do ciclo</b>A diretoria escolhe o tipo e o período, vê a prévia e gera o documento que vai a quem financia, sem nome de criança.</figcaption></figure>
+      <figure class="captura"><img src="capturas:10-acesso-negado.png" alt="Tela de acesso negado para a diretoria"><figcaption><b>10 · Quando algo dá errado</b>A diretoria tenta abrir a ficha de uma criança: a API responde 403 e a tela diz por quê.</figcaption></figure>
+    </div>
+
+    <h3 class="sub">O fluxo principal em cinco minutos</h3>
+    <div class="prose">
+      <p>Nenhum passo depende de voz. Abra o <a href="https://percurso-ebenezer.vercel.app" target="_blank" rel="noopener">MVP no ar</a> e siga:</p>
+      <ol>
+        <li><strong>Maria Silvia → Hoje.</strong> O aviso de retomada e as datas de chamada em aberto. Registrar atrasado não tem penalidade.</li>
+        <li><strong>Chamada.</strong> "Todos presentes", desmarcar duas faltas, salvar. A data sai das pendentes e a próxima abre sozinha.</li>
+        <li><strong>Observação.</strong> Abrir uma criança da agenda do ciclo e marcar as seis dimensões, de 1 a 4. Ao escrever um diagnóstico no campo, o filtro de perímetro isola o trecho e oferece salvar sem ele.</li>
+        <li><strong>Rita Amaral → Painel.</strong> Crianças únicas e matrículas, presença, cobertura e alertas. Em Consentimentos, registrar um responsável libera a criança para observação.</li>
+        <li><strong>Solange Ribeiro → Relatório.</strong> Gerar o relatório do ciclo: sete blocos, nenhum nome, ressalva metodológica e supressão declaradas. Só publica depois do revisor.</li>
+      </ol>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Perfil de demonstração</th><th>Papel</th><th>O que vê</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Carolina Duarte</strong></td><td>Psicóloga (Vivência terapêutica)</td><td>Hoje, chamada, registro de vivência, relato no padrão do conselho, recado da turma</td></tr>
+          <tr><td><strong>Maria Silvia</strong> e <strong>Cleide Nunes</strong></td><td>Educadoras</td><td>Hoje, chamada, folha do dia, observação pela rubrica, turma</td></tr>
+          <tr><td><strong>Rita Amaral</strong></td><td>Coordenação</td><td>Painel, scores, safras, síntese do ciclo, consentimentos, cadastro</td></tr>
+          <tr><td><strong>Solange Ribeiro</strong></td><td>Diretoria</td><td>Relatório do ciclo e impacto potencial, sempre agregados; nenhuma ficha individual</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:13px; color:var(--ink-muted)">Todos os nomes são personagens da base sintética. Nenhum dado real de criança foi usado em nenhuma etapa.</p>
+
+    <h3 class="sub">O que acontece com o dado quando alguém toca na tela</h3>
+    <div class="prose"><p>Na demonstração de produto da orientação, o grupo explicou cada tela pelo dado que ela cria, lê, atualiza ou apaga. As interações do fluxo principal:</p></div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Interação</th><th>Requisição</th><th>O que acontece no banco</th></tr></thead>
+        <tbody>
+          <tr><td>Abrir a chamada do dia</td><td><code>GET /api/chamada</code></td><td><strong>Lê</strong> a turma, as matrículas ativas e as presenças já registradas naquela data. Nada muda.</td></tr>
+          <tr><td>Salvar a chamada</td><td><code>POST /api/chamada</code></td><td><strong>Cria</strong> o <code>encontro</code> da turma naquela data e uma linha de <code>presenca</code> por criança, ligada ao encontro. Data que não existe no calendário é recusada com 422.</td></tr>
+          <tr><td>Salvar uma observação</td><td><code>POST /api/observacao</code></td><td><strong>Cria</strong> uma <code>observacao</code> (criança, educadora, ciclo) e um <code>observacao_item</code> por dimensão. Sem <code>consentimento</code> a gravação é impossível: é chave estrangeira.</td></tr>
+          <tr><td>Registrar um consentimento</td><td><code>POST /api/consentimento</code></td><td><strong>Cria</strong> o <code>consentimento</code>, ligado a <code>governanca_campo</code>. A criança sai da lista de bloqueadas.</td></tr>
+          <tr><td>Gerar e publicar o relatório</td><td><code>GET /api/relatorio</code> e <code>POST /api/relatorio/publicar</code></td><td><strong>Lê</strong> só agregados, com supressão de grupo com menos de 5 crianças. Publicar <strong>atualiza</strong> o estado do <code>relatorio</code>, depois do revisor.</td></tr>
+          <tr><td>Desligar uma pessoa ou encerrar uma matrícula</td><td>rotas de cadastro da coordenação</td><td><strong>Nada é apagado.</strong> Quem sai vai para o arquivo, e o histórico de presença fica (decisão 30).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ 3 -->
+  <section class="section-block" id="arquitetura">
+    <div class="section-header">
+      <div class="section-eyebrow">UC2 · Encontro 01 · Arquitetura web</div>
+      <h2 class="section-title">Arquitetura: quatro partes, um processo, um arquivo</h2>
+      <p class="section-desc">
+        O exercício da aula pedia identificar as partes do sistema, o que cada uma faz, como se comunicam, e separar
+        o que existe do que está planejado.
+      </p>
+    </div>
+
+    <div class="arq-grid">
+      <div class="arq-caixa">
+        <h4>Front-end</h4>
+        <div class="onde">public/</div>
+        <ul>
+          <li>HTML, CSS e JavaScript puros, sem build</li>
+          <li>Roteamento por hash; instalável no celular</li>
+          <li>Fila no aparelho quando a rede cai</li>
+          <li>Fala reconhecida pelo navegador</li>
+        </ul>
+        <p style="margin-top:10px"><span class="sit sit-ok">existe</span></p>
+      </div>
+      <div class="arq-caixa">
+        <h4>Back-end</h4>
+        <div class="onde">server.js · src/</div>
+        <ul>
+          <li>Um processo Node.js, sem dependência externa</li>
+          <li>Mais de 120 rotas em <code>src/api.js</code></li>
+          <li>Sessão, papéis e escopo de turma</li>
+          <li>Regras de negócio em <code>src/domain.js</code></li>
+        </ul>
+        <p style="margin-top:10px"><span class="sit sit-ok">existe</span></p>
+      </div>
+      <div class="arq-caixa">
+        <h4>Armazenamento</h4>
+        <div class="onde">data/</div>
+        <ul>
+          <li><code>percurso.db</code>: SQLite, 32 tabelas</li>
+          <li>Índice de busca separado, reconstruível</li>
+          <li>Prova em vídeo do consentimento, fora de <code>public/</code></li>
+          <li>Backup é copiar o arquivo</li>
+        </ul>
+        <p style="margin-top:10px"><span class="sit sit-ok">existe</span></p>
+      </div>
+      <div class="arq-caixa">
+        <h4>Serviços externos</h4>
+        <div class="onde">todos opcionais</div>
+        <ul>
+          <li>IA local na própria máquina</li>
+          <li>Transcrição local de áudio longo</li>
+          <li>WhatsApp por link, sem API paga</li>
+          <li>Desligados por padrão: o produto funciona igual sem eles</li>
+        </ul>
+        <p style="margin-top:10px"><span class="sit sit-ok">existe</span></p>
+      </div>
+    </div>
+    <div class="arq-fluxo">tela ⇄ servidor: requisições JSON · <strong>GET</strong> lê, <strong>POST</strong> grava · servidor ⇄ banco: SQL</div>
+
+    <div class="callout callout-info">
+      <div class="callout-icon">🧭</div>
+      <div class="callout-content">
+        <h4>Planejado, e só antes de dado real de criança</h4>
+        <p>Senha por pessoa, conexão cifrada na rede do Instituto, trilha de auditoria, backup automatizado com teste
+        de restauração, termo de consentimento arquivado e migração de esquema que não recrie o banco. É o Horizonte 2
+        do plano de arquitetura; nenhum item é opcional quando o Instituto decidir operar com crianças reais.
+        <span class="sit sit-plan">planejado</span></p>
+      </div>
+    </div>
+
+    <h3 class="sub">Por que código próprio, e não no-code</h3>
+    <div class="prose">
+      <p>O slide de arquitetura previa uma plataforma no-code. O grupo se desviou disso de propósito, e a decisão 1
+      explica: o dossiê do caso trata mensalidade de plataforma como risco e diz que o Instituto não tem equipe de
+      tecnologia. Uma plataforma resolveria a semana 10 e criaria dois problemas na semana 11: licença recorrente e
+      dado de criança em nuvem de terceiro. Node.js com SQLite em arquivo é uma coisa só instalada, sem nada que
+      quebre com atualização de fornecedor.</p>
+    </div>
+
+    <h3 class="sub">Onde o Percurso roda</h3>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Ambiente</th><th>Para quê</th><th>O dado persiste?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Computador do Instituto</strong></td><td>A operação desenhada no handover e no cronograma: a equipe usa pelo celular, na rede da casa</td><td>Sim, em <code>data/percurso.db</code></td></tr>
+          <tr><td><strong>Render</strong> (<code>render.yaml</code>)</td><td>O deploy de operação em nuvem, se o Instituto preferir não depender de uma máquina</td><td>Sim, com disco persistente e uma única instância</td></tr>
+          <tr><td><strong>Vercel</strong> (<code>vercel.json</code>)</td><td>Vitrine para avaliação: abrir num link e clicar</td><td>Não. O banco volta ao estado inicial a cada reinício</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">Estrutura de pastas</h3>
+<pre><code>percurso-mvp/
+├── README.md            porta de entrada: o que é, como rodar, próximos passos
+├── server.js            servidor HTTP: entrega as telas e atende /api
+├── src/                 back-end: rotas, regras de negócio, banco, dados sintéticos
+├── public/              front-end: as telas, sem build
+├── data/                o banco (fora do git)
+├── scripts/             testes, semente, diagrama ER
+├── docs/                handover, arquitetura, decisões, testes, capturas
+├── video/               vídeo demonstrativo e o roteiro que o gera
+└── ai/                  camada de IA local, opcional</code></pre>
+  </section>
+
+  <!-- ============================================================ 4 -->
+  <section class="section-block" id="dados">
+    <div class="section-header">
+      <div class="section-eyebrow">UC2 · Encontro 02 · Banco de dados</div>
+      <h2 class="section-title">Modelo de dados: do contador da aula ao banco do Instituto</h2>
+      <p class="section-desc">
+        A aula subiu um degrau por vez: variável, armazenamento do navegador, arquivo, JSON, banco relacional.
+        O Percurso usa cada degrau onde ele serve.
+      </p>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Degrau da aula</th><th>No Percurso</th><th>Por quê</th></tr></thead>
+        <tbody>
+          <tr><td>Variável no JavaScript</td><td>A chamada enquanto está sendo marcada na tela</td><td>Some ao recarregar, e tudo bem: ainda não foi salva</td></tr>
+          <tr><td>Armazenamento do navegador</td><td>A fila do aparelho, só quando a rede falha (decisão 17)</td><td>O registro não se perde se o Wi-Fi cair no meio do encontro; é enviado quando o servidor volta</td></tr>
+          <tr><td>Arquivo JSON</td><td>Não guarda dado de criança</td><td>Sem relação entre os dados, não dá para ligar presença, turma e ciclo nem conferir consentimento</td></tr>
+          <tr><td>Banco relacional</td><td>SQLite, pelo <code>node:sqlite</code> do próprio Node: o mesmo do exercício da aula</td><td>Tabelas ligadas por chaves, colunas com tipo, consulta só do que precisa</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">Três decisões de modelagem que sustentam o produto</h3>
+    <div class="prose">
+      <ol>
+        <li><strong>Criança não é matrícula.</strong> A soma do dossiê, 60 + 40 + 20 = 120, mistura as duas coisas: uma criança pode estar em dois programas. O indicador conta crianças únicas; a operação conta matrículas. No painel sintético são 106 e 120.</li>
+        <li><strong>Campo sem governança não existe.</strong> Todo dado pessoal passa por <code>governanca_campo</code>, com base legal, titular, acesso e retenção. O <code>consentimento</code> aponta para ela por chave estrangeira: sem as quatro respostas o campo é impossível de gravar, não só proibido.</li>
+        <li><strong>A folha do dia pertence ao encontro, não à criança.</strong> Não existe coluna em <code>folha</code> que aponte para <code>crianca</code>. "O que cada criança fez não entra aqui" virou esquema.</li>
+      </ol>
+    </div>
+
+    <div class="duas">
+      <div class="callout callout-success">
+        <div class="callout-icon">🗂️</div>
+        <div class="callout-content">
+          <h4>O núcleo: quinze tabelas do fluxo principal</h4>
+          <p>Quem atende e onde: <code>educador</code>, <code>programa</code>, <code>turma</code>, <code>crianca</code>, <code>matricula</code>.</p>
+          <p>A chamada: <code>encontro</code> e <code>presenca</code>. A folha do dia: <code>folha</code>.</p>
+          <p>A observação: <code>ciclo</code>, <code>dimensao</code>, <code>ancora</code>, <code>observacao</code>, <code>observacao_item</code>.</p>
+          <p>A proteção: <code>governanca_campo</code> e <code>consentimento</code>.</p>
+        </div>
+      </div>
+      <div class="callout callout-warning">
+        <div class="callout-icon">🧪</div>
+        <div class="callout-content">
+          <h4>Dados sintéticos, sempre os mesmos</h4>
+          <p>A semente é fixa: quatro programas, sete turmas, cinco pessoas na equipe, dois ciclos de observação, cerca de 4 mil presenças e mil itens de observação.</p>
+          <p>Trocar por dado real é um evento de governança, com consentimento dos responsáveis. Não é um deploy.</p>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:14px">O diagrama entidade-relacionamento completo é reescrito por <code>npm run docs:er</code> a partir do esquema real:
+      <a href="https://github.com/igorregoir-lgtm/percurso-mvp/blob/main/docs/MODELO-DE-DADOS-ER.md" target="_blank" rel="noopener">MODELO-DE-DADOS-ER.md</a>.</p>
+  </section>
+
+  <!-- ============================================================ 5 -->
+  <section class="section-block" id="testes">
+    <div class="section-header">
+      <div class="section-eyebrow">UC2 · Encontro 03 · Testes de software</div>
+      <h2 class="section-title">Testes: sete baterias, nenhuma falha</h2>
+      <p class="section-desc">
+        Rodadas de novo no fechamento, em 13/10/2026. A aula de 30/09 pediu testes que não dependessem de voz:
+        persistência e quebra são inteiramente sem voz, e todo fluxo com voz tem o caminho por botões.
+      </p>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Bateria</th><th>Comando</th><th>Resultado</th><th>O que prova</th></tr></thead>
+        <tbody>
+          <tr><td>Fluxo principal</td><td><code>npm test</code></td><td class="num">516 / 516</td><td>Os fluxos dos quatro papéis, de ponta a ponta, contra o servidor no ar</td></tr>
+          <tr><td>Regras de domínio</td><td><code>npm run test:unit</code></td><td class="num">226 / 226</td><td>As regras críticas sem servidor, em banco temporário</td></tr>
+          <tr><td>Persistência após reiniciar</td><td><code>npm run test:persistencia</code></td><td class="num">9 / 9</td><td>Grava, derruba o servidor, sobe outro e relê: o dado está no disco</td></tr>
+          <tr><td>Quebra</td><td><code>npm run test:quebra</code></td><td class="num">17 / 17</td><td>Campo em branco, número negativo, item inexistente, injeção, JSON quebrado</td></tr>
+          <tr><td>Camada de IA sem modelo</td><td><code>npm run test:ia</code></td><td class="num">24 / 24</td><td>Os limites do assistente e o que acontece quando o modelo cai</td></tr>
+          <tr><td>Áudio sem modelo</td><td><code>npm run test:audio</code></td><td class="num">19 / 19</td><td>O áudio não sobrevive à transcrição, nem quando ela falha</td></tr>
+          <tr><td>Busca nas fontes</td><td><code>npm run test:rag</code></td><td class="num">6 / 6</td><td>Citações existentes, cobertura em português, consulta sem nome de criança</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:13.5px; color:var(--ink-muted)">O vídeo e o pitch registram a execução de 05/10, com 515 asserções no fluxo principal. A de número 516 entrou em 13/10: fixa a ordem da tela de entrada, que tinha se perdido num merge sem que nenhum teste visse.</p>
+
+    <h3 class="sub">O teste de quebra achou defeitos, e eles foram corrigidos</h3>
+    <div class="prose"><p>Escrito no formato da aula (situação inicial, entrada, esperado, obtido), achou quatro comportamentos errados na primeira execução:</p></div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Entrada</th><th>Antes</th><th>Depois</th></tr></thead>
+        <tbody>
+          <tr><td>Chamada com data impossível (31 de fevereiro)</td><td>Gravava um encontro num dia que não existe</td><td>Recusa com 422: "A data da chamada não existe no calendário."</td></tr>
+          <tr><td>Lista de crianças com filtro de turma inválido</td><td>O filtro sumia em silêncio e voltavam todas as turmas</td><td>Recusa com 422: "Parâmetro inválido: turma_id."</td></tr>
+          <tr><td>Chamada com tempo de registro negativo</td><td>Virava "1 segundo" na métrica de tempo</td><td>A chamada salva e o tempo inválido é descartado</td></tr>
+          <tr><td>Chamada com data em branco</td><td>Assume hoje</td><td>Mantido: é o padrão da rota, não defeito</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>O teste de persistência também foi provado sensível: rodado com o banco em memória, que morre com o processo, as quatro asserções de releitura falham. Um teste que nunca falha não prova nada.</p>
+    </div>
+
+    <h3 class="sub">O que estes testes não provam</h3>
+    <div class="prose">
+      <ul>
+        <li><strong>Uso por gente real.</strong> Nenhuma bateria substitui a sessão com a psicóloga, que não aconteceu.</li>
+        <li><strong>O microfone de verdade.</strong> Reconhecimento de fala em sala com ruído não é testável de forma automática.</li>
+        <li><strong>Carga.</strong> Não há teste de carga. A operação é de cerca de 120 matrículas e uma dezena de pessoas.</li>
+        <li><strong>Navegadores antigos.</strong> Verificado em navegador atual baseado em Chromium.</li>
+      </ul>
+    </div>
+
+    <h3 class="sub">Teste final de usabilidade: o registro está em branco</h3>
+    <div class="callout callout-warning">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-content">
+        <h4>O que houve e o que não houve</h4>
+        <p>Em 29/08/2026 o grupo fez uma demonstração guiada com a psicóloga e com a liderança do Instituto, registrada em 97 minutos de gravação. Ela mudou o produto (veja o <a href="#historico">histórico</a>), mas o aparelho ficou na mão do autor: isso não é teste de usabilidade.</p>
+        <p>A sessão com tarefas, sem ajuda e com observação em silêncio ainda não foi feita. O protocolo está pronto (<code>docs/VALIDACAO-USUARIO.md</code>) e o ensaio da psicóloga é a quinta-feira da semana 1 do cronograma.</p>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Tarefa</th><th>Concluiu?</th><th>Onde hesitou</th><th>Ajuste necessário</th></tr></thead>
+        <tbody>
+          <tr><td>Fazer a chamada do sábado que ficou em aberto, com duas faltas</td><td><span class="sit sit-pend">pendente</span></td><td></td><td></td></tr>
+          <tr><td>Registrar o encontro que acabou de terminar, do jeito mais rápido</td><td><span class="sit sit-pend">pendente</span></td><td></td><td></td></tr>
+          <tr><td>Conferir e liberar o relato no padrão do conselho</td><td><span class="sit sit-pend">pendente</span></td><td></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ 6 -->
+  <section class="section-block" id="decisoes">
+    <div class="section-header">
+      <div class="section-eyebrow">UC2 · Encontro 04 · Decisões e justificativas</div>
+      <h2 class="section-title">Decisões técnicas, cada uma com a razão de negócio</h2>
+      <p class="section-desc">
+        São 51 decisões registradas, com contexto, alternativas e consequência. Aqui estão as quatro perguntas que a
+        aula de handover fez, as dez decisões que definem o produto e o destino das cinco que ficaram abertas na
+        Semana 5.
+      </p>
+    </div>
+
+    <h3 class="sub">As quatro perguntas da aula</h3>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Escolha</th><th>Razão técnica</th><th>O que o Instituto ganha, ou perderia sem ela</th><th>Alternativa considerada</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Guardar os dados em um banco</strong></td>
+            <td>Busca só o que precisa, colunas com tipo e 49 chaves estrangeiras que o próprio banco confere. O consentimento é uma delas.</td>
+            <td>Sem banco, a presença volta a ser planilha solta. Não dá para separar criança de matrícula nem seguir a mesma criança de um ciclo para o outro, que é a prova que quem financia pede.</td>
+            <td>Arquivo JSON: perde a relação entre os dados. Banco em nuvem: exige conta e mensalidade.</td>
+          </tr>
+          <tr>
+            <td><strong>Separar a tela do servidor</strong></td>
+            <td>A tela só desenha; quem decide é o servidor. Papel, escopo de turma e supressão de grupo pequeno são aplicados lá.</td>
+            <td>A proteção da criança não depende de a tela esconder um botão: a diretoria recebe 403 na ficha mesmo digitando o endereço. Quem mantiver troca a tela sem tocar na regra.</td>
+            <td>Tudo no navegador: o dado fica preso num aparelho, sem controle de acesso.</td>
+          </tr>
+          <tr>
+            <td><strong>Validar antes de salvar</strong></td>
+            <td>Toda rota confere tipo e domínio e responde 422, com a mensagem em português. Dezessete testes de quebra.</td>
+            <td>Evita o erro que custa caro numa ONG pequena: chamada num dia que não existe, filtro que some em silêncio. Um número errado no relatório de quem financia custa credibilidade.</td>
+            <td>Validar só na tela: uma requisição direta gravaria o dado errado.</td>
+          </tr>
+          <tr>
+            <td><strong>Versionar num repositório</strong></td>
+            <td>O histórico inteiro está no GitHub, e os testes rodam a cada push. A entrega está marcada como <code>v1.0.0</code>.</td>
+            <td>O Instituto não depende dos autores: qualquer pessoa baixa, roda e lê por que cada coisa é como é. Perder o notebook não é perder o produto.</td>
+            <td>Pasta compactada no Drive: sem histórico e sem saber qual cópia é a última.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">As dez decisões que definem o produto</h3>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Decisão</th><th>Em uma linha</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>Node.js puro e SQLite, zero dependência</td><td>Uma coisa instalada; nada quebra com atualização de terceiro</td></tr>
+          <tr><td class="num">4</td><td>O número nunca nasce de modelo de IA</td><td>Vem da rubrica e da fórmula; a IA só filtra, redige em modelo fechado ou revisa</td></tr>
+          <tr><td class="num">5</td><td>Filtro de perímetro determinístico</td><td>Conteúdo clínico é recusado antes de qualquer gravação, com encaminhamento humano</td></tr>
+          <tr><td class="num">6</td><td>Consentimento é chave estrangeira</td><td>Sem consentimento, a observação é impossível no banco, não só na tela</td></tr>
+          <tr><td class="num">16</td><td>A diretoria não abre registro individual</td><td>Ela vê agregado; nome de criança nunca chega ao relatório</td></tr>
+          <tr><td class="num">17</td><td>Fila no aparelho</td><td>Falha de rede vira fila, nunca perda de registro</td></tr>
+          <tr><td class="num">19</td><td>IA local, opcional e com alternativa em tudo</td><td>Desligada, o produto inteiro funciona igual</td></tr>
+          <tr><td class="num">30</td><td>Ninguém é apagado</td><td>Quem sai vai para o arquivo; histórico e presença ficam</td></tr>
+          <tr><td class="num">34</td><td>A rubrica fala a língua da planilha do Instituto</td><td>Seis indicadores da planilha socioemocional que a casa já usa</td></tr>
+          <tr><td class="num">51</td><td>Sem senha na demonstração, com token opaco</td><td>Entrar é escolher quem usa; a senha por pessoa volta antes de qualquer dado real</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">As cinco decisões abertas na Semana 5, e como fecharam</h3>
+    <div class="prose"><p>O dossiê da Semana 5 terminava com cinco pontos em aberto. Cinco semanas depois:</p></div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Em aberto na Semana 5</th><th>Como fechou</th><th>Situação</th></tr></thead>
+        <tbody>
+          <tr><td><strong>IA local ou em nuvem</strong></td><td>Local, opcional e desligada por padrão (decisão 19). O núcleo é determinístico. O modelo pequeno não passou no teste de redigir a síntese (decisão 28), então a redação continua em modelo fechado.</td><td><span class="sit sit-ok">fechada</span></td></tr>
+          <tr><td><strong>Servidor no Instituto ou nuvem</strong></td><td>O piloto roda num computador do Instituto, sem custo. Se a casa preferir nuvem, o deploy de operação é o Render, com disco persistente (decisão 12). A Vercel ficou como vitrine.</td><td><span class="sit sit-ok">fechada</span></td></tr>
+          <tr><td><strong>SQLite ou PostgreSQL</strong></td><td>SQLite, com a persistência provada em teste. Trocar de banco só faz sentido se houver mais de uma instância do servidor, o que o tamanho do Instituto não pede.</td><td><span class="sit sit-ok">fechada</span></td></tr>
+          <tr><td><strong>Voz pelo navegador ou transcrição local</strong></td><td>As duas. A fala curta usa o navegador; o áudio longo ou importado é transcrito no computador do Instituto e apagado ao virar texto (decisões 35 e 44).</td><td><span class="sit sit-ok">fechada</span></td></tr>
+          <tr><td><strong>Seletor de perfil ou login seguro</strong></td><td>A senha por pessoa foi implementada (decisão 39) e retirada para a demonstração (decisão 51). Ficou o token opaco. A senha volta antes do primeiro dado real.</td><td><span class="sit sit-pend">pré-requisito do piloto real</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ 7 -->
+  <section class="section-block" id="handover">
+    <div class="section-header">
+      <div class="section-eyebrow">UC2 · Encontro 04 · Validação e handover</div>
+      <h2 class="section-title">Handover: o Instituto opera sem os autores</h2>
+      <p class="section-desc">
+        Entregar o código não é entregar o projeto. A documentação tem dois públicos e quatro partes, como na aula.
+      </p>
+    </div>
+
+    <div class="duas">
+      <div class="callout callout-success">
+        <div class="callout-icon">🏫</div>
+        <div class="callout-content">
+          <h4>Quem vai instalar e usar</h4>
+          <p>A coordenação do Instituto. Pergunta: como eu instalo e uso?</p>
+          <p>Resposta em <code>MANUAL-DE-INSTALACAO.md</code>, <code>HANDOVER.md</code> §2, §3 e §9, e <code>CRONOGRAMA-E-CONTINGENCIA.md</code>.</p>
+        </div>
+      </div>
+      <div class="callout callout-info">
+        <div class="callout-icon">🛠️</div>
+        <div class="callout-content">
+          <h4>Quem vai dar continuidade técnica</h4>
+          <p>Um mantenedor voluntário ou um futuro grupo. Pergunta: como funciona hoje e o que falta?</p>
+          <p>Resposta em <code>ARQUITETURA.md</code>, <code>MODELO-DE-DADOS.md</code>, <code>DECISOES-TECNICAS.md</code> e <code>TESTES.md</code>.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="sub">As quatro partes da documentação</h3>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Parte</th><th>O que a aula pede</th><th>No Percurso</th></tr></thead>
+        <tbody>
+          <tr><td><strong>1 · Instalação</strong></td><td>Requisitos e versões, passo a passo com os comandos, como verificar que funcionou</td><td>Requisito único: Node.js 22.13 ou mais novo. Três comandos. Funcionou quando o terminal mostra "Percurso rodando" e <code>localhost:3000</code> abre a tela de perfis, com o banco já semeado.</td></tr>
+          <tr><td><strong>2 · Arquitetura</strong></td><td>Diagrama de tela, servidor e banco; estrutura de pastas; entidades e relações</td><td>As seções <a href="#arquitetura">Arquitetura</a> e <a href="#dados">Modelo de dados</a> deste dossiê; <code>HANDOVER.md</code> §4 e §5</td></tr>
+          <tr><td><strong>3 · Próximos passos</strong></td><td>O que falta para começar a usar, melhorias por prioridade, riscos e limites</td><td><code>HANDOVER.md</code> §10, <code>ARQUITETURA.md</code> §5 a §7 e a seção <a href="#fechamento">O que falta</a> deste dossiê</td></tr>
+          <tr><td><strong>4 · Decisões</strong></td><td>Principais escolhas, razão técnica e de negócio, alternativas</td><td>A seção <a href="#decisoes">Decisões</a> deste dossiê; <code>DECISOES-TECNICAS.md</code>, com 51 decisões</td></tr>
+        </tbody>
+      </table>
+    </div>
+<pre><code>git clone https://github.com/igorregoir-lgtm/percurso-mvp.git
+cd percurso-mvp
+node server.js            # sem npm install, sem build, sem conta em plataforma</code></pre>
+
+    <h3 class="sub">Quando o projeto está finalizado?</h3>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Critério da aula</th><th>Situação</th><th>Evidência</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Funciona</strong>: o fluxo principal executa do início ao fim</td><td><span class="sit sit-ok">sim</span></td><td>516 asserções de ponta a ponta; MVP no ar; vídeo</td></tr>
+          <tr><td><strong>Foi testado</strong>: testes técnicos e teste final de usabilidade</td><td><span class="sit sit-pend">em parte</span></td><td>Os testes técnicos estão feitos. O teste de usabilidade com usuário não foi feito.</td></tr>
+          <tr><td><strong>Está documentado</strong>: as partes completas e revisadas</td><td><span class="sit sit-ok">sim</span></td><td>As quatro partes, mais capturas, vídeo, cronograma e contingência</td></tr>
+          <tr><td><strong>Pode ser entregue</strong>: repositório acessível, sem senhas nem dados reais</td><td><span class="sit sit-ok">sim</span></td><td>Repositório público; nenhuma chave no código; só dados sintéticos</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">Quem opera depois da entrega</h3>
+    <div class="prose"><p>O dossiê do caso diz que não há profissional de tecnologia. A operação foi desenhada para três papéis, nenhum deles técnico. Os tempos são estimativa do grupo, a medir no piloto.</p></div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Papel</th><th>Quem (proposta)</th><th>O que faz</th><th>Tempo estimado</th><th>Competência</th></tr></thead>
+        <tbody>
+          <tr><td>Responsável pela máquina</td><td>Alguém da coordenação ou do administrativo</td><td>Liga o computador (o Percurso sobe sozinho) e copia o backup</td><td>Cerca de 5 min por semana</td><td>Copiar um arquivo para um pen drive</td></tr>
+          <tr><td>Coordenação</td><td>A coordenação do Instituto, dona do Percurso</td><td>Consentimentos, cadastro de pessoas e turmas, aprovação da síntese</td><td>Dentro da rotina atual</td><td>Usar um navegador</td></tr>
+          <tr><td>Educadoras e psicóloga</td><td>Equipe e voluntários</td><td>Chamada, folha do dia, observação no ciclo</td><td>Cerca de 2 min por encontro, na chamada</td><td>Usar o celular</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-danger">
+      <div class="callout-icon">💾</div>
+      <div class="callout-content">
+        <h4>O único cuidado recorrente: o backup</h4>
+        <p>O banco inteiro é o arquivo <code>data/percurso.db</code>. Com o servidor parado, copie o arquivo. Com ele ligado, copie junto <code>percurso.db-wal</code> e <code>percurso.db-shm</code>.</p>
+        <p>Para restaurar, apague antes os arquivos <code>-wal</code> e <code>-shm</code> antigos. Copiar o backup por cima de um <code>-wal</code> velho mistura dois estados do banco.</p>
+      </div>
+    </div>
+
+    <h3 class="sub">O vídeo demonstrativo</h3>
+    <div class="prose">
+      <p>Tem 7m19s e 18 cenas, regravado em 05/10/2026. É mais longo que os dois minutos e meio sugeridos na aula porque cobre os quatro papéis, mas traz os quatro blocos do roteiro sugerido:</p>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Bloco da aula</th><th>No vídeo</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Contexto</strong>: que problema resolve e para quem</td><td>Abertura e entrada da educadora, com a frase que originou o produto</td></tr>
+          <tr><td><strong>Fluxo principal</strong>: a tarefa central, do início ao fim</td><td>Chamada, agenda do ciclo e observação; depois a psicóloga, do registro por voz ao relato e ao recado; coordenação e diretoria</td></tr>
+          <tr><td><strong>Quando algo dá errado</strong></td><td>O filtro de perímetro isola uma frase sobre terapia e não a grava; a diretoria tenta abrir a ficha de uma criança e recebe 403</td></tr>
+          <tr><td><strong>Próximos passos</strong></td><td>O fecho técnico: sem instalação de pacotes, sem mensalidade, backup por cópia, IA desligada por padrão</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:13.5px; color:var(--ink-muted)">O vídeo é gerado pelo próprio repositório: um navegador isolado é pilotado pelo roteiro, com dados sintéticos, e a narração aparece como legenda. Dá para regerar depois de qualquer mudança de tela.</p>
+  </section>
+
+  <!-- ============================================================ 8 -->
+  <section class="section-block" id="cronograma">
+    <div class="section-header">
+      <div class="section-eyebrow">Implantação · quatro semanas</div>
+      <h2 class="section-title">Cronograma de implantação</h2>
+      <p class="section-desc">
+        Quatro semanas, quatro sábados, uma pessoa e um fluxo: a psicóloga, com a chamada e o registro de vivência,
+        na turma sintética e em paralelo ao registro que ela já faz hoje. A semana 1 conta a partir do dia em que a
+        coordenação aprova o início. Dado real de criança continua dependendo dos pré-requisitos do handover.
+      </p>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Semana</th><th>Segunda a sexta</th><th>Sábado</th><th>Marco</th><th>Para passar à seguinte</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1 · Preparar e começar</strong></td>
+            <td><strong>Seg:</strong> reunião com a coordenação: quem liga a máquina no sábado, quem do grupo dá apoio, canal de dúvidas. <strong>Ter e qua:</strong> no Instituto, o Percurso instalado na máquina que vai operar, início automático ligado, certificado aceito em cada celular, rede testada dentro da sala do encontro, backup automatizado antecipado. <strong>Qui:</strong> ensaio da psicóloga no próprio celular.</td>
+            <td>Primeira chamada no encontro real, <strong>com o apoio do grupo presente</strong></td>
+            <td>Ambiente aprovado; primeira chamada registrada</td>
+            <td>Segunda chamada salva sem ajuda; a cópia do sábado existe e abre</td>
+          </tr>
+          <tr>
+            <td><strong>2 · Registro de vivência</strong></td>
+            <td><strong>Seg:</strong> primeira revisão de 15 minutos: números do painel contra os limiares, chamada em todos os sábados, backup com menos de 24 horas. Correção dos pontos onde a psicóloga travou. Voz ligada só se todos os celulares aceitaram o certificado.</td>
+            <td>Chamada e registro de vivência, <strong>sem apoio na sala</strong></td>
+            <td>O fluxo do sábado inteiro feito só pela psicóloga</td>
+            <td>Tempo de chamada e taxa de correção dentro dos limiares</td>
+          </tr>
+          <tr>
+            <td><strong>3 · A coordenação entra</strong></td>
+            <td><strong>Seg:</strong> revisão conduzida pela coordenação, no painel. <strong>Qua:</strong> ensaio de falha: registrar com a rede desligada e conferir a sincronização; restaurar uma cópia do backup numa pasta de teste.</td>
+            <td>Terceiro sábado, sem apoio na sala</td>
+            <td>A coordenação conduz a revisão sozinha</td>
+            <td>Fila do aparelho e restauração provadas no Instituto</td>
+          </tr>
+          <tr>
+            <td><strong>4 · Medir e decidir</strong></td>
+            <td><strong>Seg:</strong> revisão. <strong>Nenhuma mudança no produto</strong>: a semana mede, não corrige.</td>
+            <td>Quarto sábado, sem apoio na sala</td>
+            <td>Números das quatro semanas fechados</td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">Na segunda-feira seguinte, a coordenação decide</h3>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>O que os números mostram</th><th>Decisão</th></tr></thead>
+        <tbody>
+          <tr><td>Limiares atingidos</td><td><strong>Ampliar</strong> para as educadoras do Reforço e iniciar a preparação para dado real</td></tr>
+          <tr><td>Um limiar abaixo, com causa conhecida</td><td><strong>Corrigir e repetir</strong> por mais duas semanas, com uma única correção</td></tr>
+          <tr><td>Critério de falha observado: a psicóloga voltou ao papel ou à planilha</td><td><strong>Parar</strong> e voltar à sessão moderada do protocolo de validação</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-info">
+      <div class="callout-icon">📏</div>
+      <div class="callout-content">
+        <h4>Os limiares, e de onde vêm</h4>
+        <p>Tempo de chamada abaixo de 2 minutos e registro em pelo menos 80% das sessões: critério de sucesso do experimento de referência da aula de discovery. Taxa de correção depois da extração de até 40%: decisão técnica 13. Falha declarada: a profissional volta ao papel por conta própria.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 9 -->
+  <section class="section-block" id="contingencia">
+    <div class="section-header">
+      <div class="section-eyebrow">Implantação · quando algo falha</div>
+      <h2 class="section-title">Contingência: dezesseis situações, com responsável</h2>
+      <p class="section-desc">
+        Regra geral: se um número cair ou um sábado falhar, alguém do grupo vai até o Instituto antes de escrever
+        mais código. O que se vê na sala raramente se corrige pelo repositório.
+      </p>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Problema</th><th>Como aparece</th><th>Fazer na hora</th><th>Responsável</th><th>Se repetir</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>Máquina desligada no sábado</td><td>O celular não abre o Percurso no início do encontro</td><td>A psicóloga faz a chamada no papel, como antes, e registra no Percurso depois. Nada expira.</td><td>Psicóloga</td><td>Trocar a pessoa que liga a máquina, ou deixá-la ligada da sexta ao sábado</td></tr>
+          <tr><td class="num">2</td><td>Servidor caiu no meio do encontro</td><td>As telas param de responder com a máquina ligada</td><td>Seguir registrando: a fila do aparelho guarda e envia quando o servidor volta. No macOS, o início automático religa o processo.</td><td>Psicóloga</td><td>Ler o registro do serviço; no Windows, religar à mão e avaliar a máquina da coordenação</td></tr>
+          <tr><td class="num">3</td><td>A rede não chega à sala</td><td>Celular sem conexão com a máquina</td><td>Registrar assim mesmo; sincroniza ao voltar à rede</td><td>Psicóloga</td><td>Mudar a máquina de lugar ou o encontro de sala; repetir o ensaio da semana 3</td></tr>
+          <tr><td class="num">4</td><td>O celular recusa o certificado</td><td>Aviso de conexão não privada que não passa</td><td>Usar o Percurso por botões; só a voz fica de fora</td><td>Psicóloga</td><td>O apoio refaz o aceite naquele aparelho; persistindo, a voz fica desligada no piloto</td></tr>
+          <tr><td class="num">5</td><td>A voz erra demais</td><td>Taxa de correção acima do limiar no painel</td><td>Desligar a voz; o fluxo inteiro funciona por botões</td><td>Coordenação</td><td>Registrar como achado; a decisão 13 manda rever a captura por voz</td></tr>
+          <tr><td class="num">6</td><td>Chamada lenta</td><td>Tempo médio acima do limiar na revisão</td><td>Acompanhar um sábado para ver onde o tempo vai</td><td>Apoio do grupo</td><td>Uma correção, na semana seguinte, só sobre o passo que travou</td></tr>
+          <tr><td class="num">7</td><td>Um sábado sem registro</td><td>O painel mostra o encontro em aberto</td><td>Registrar atrasado na segunda, com a psicóloga</td><td>Coordenação</td><td>Perguntar o motivo antes de cobrar; dois sábados seguidos sem registro é sinal do critério de falha</td></tr>
+          <tr><td class="num">8</td><td>A psicóloga travou em uma tela</td><td>Relato no canal ou na revisão</td><td>O apoio responde no canal; se não resolver, vai ao Instituto</td><td>Apoio do grupo</td><td>Corrigir só aquele ponto, na semana seguinte</td></tr>
+          <tr><td class="num">9</td><td>A psicóloga voltou ao papel ou à planilha</td><td>Ela mesma diz, ou os registros param</td><td>Não insistir: é o critério de falha</td><td>Coordenação</td><td><strong>Parar</strong> o piloto e voltar à sessão moderada</td></tr>
+          <tr><td class="num">10</td><td>O backup não foi feito</td><td>Última cópia com mais de 24 horas</td><td>Copiar <code>data/percurso.db</code> à mão, como no manual</td><td>Responsável pela máquina</td><td>O apoio corrige o agendamento antes do sábado seguinte</td></tr>
+          <tr><td class="num">11</td><td>Banco perdido ou corrompido</td><td>O Percurso abre vazio ou com erro</td><td>Parar de registrar; restaurar a última cópia, apagando antes os arquivos <code>-wal</code> e <code>-shm</code> antigos</td><td>Apoio do grupo</td><td>Rever onde as cópias ficam; a segunda mídia não pode ser a mesma máquina</td></tr>
+          <tr><td class="num">12</td><td>Atualização de código durante o piloto</td><td>Alguém quer subir uma correção</td><td>Só depois de um backup, e nunca se o esquema mudou: hoje a mudança de esquema recria o banco</td><td>Apoio do grupo</td><td>As correções esperam a semana seguinte; na semana 4, nenhuma</td></tr>
+          <tr><td class="num">13</td><td>Dado de criança no canal de dúvidas</td><td>Nome, foto ou imagem de tela no WhatsApp</td><td>Apagar a mensagem e lembrar a regra: só a dúvida, nunca a criança</td><td>Coordenação</td><td>Trocar o canal por conversa presencial na revisão de segunda</td></tr>
+          <tr><td class="num">14</td><td>Conteúdo clínico digitado no registro</td><td>O filtro de perímetro recusa o trecho</td><td>Salvar sem o trecho, como o produto oferece; o conteúdo segue pelo regime da psicóloga</td><td>Psicóloga</td><td>Levar à revisão: se o filtro barra demais, é ajuste de termos, não de regra</td></tr>
+          <tr><td class="num">15</td><td>Apoio do grupo indisponível</td><td>Ninguém responde no canal</td><td>A coordenação decide sozinha pelas linhas desta tabela</td><td>Coordenação</td><td>Nomear um segundo integrante do grupo como reserva</td></tr>
+          <tr><td class="num">16</td><td>Máquina perdida, roubada ou formatada</td><td>O Percurso não existe mais na máquina</td><td>Instalar em outra máquina e restaurar a última cópia</td><td>Apoio do grupo</td><td>É o risco permanente da arquitetura; a cópia fora da máquina é o que o mitiga</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ 10 -->
+  <section class="section-block" id="historico">
+    <div class="section-header">
+      <div class="section-eyebrow">Agosto a outubro de 2026</div>
+      <h2 class="section-title">Histórico do desenvolvimento</h2>
+      <p class="section-desc">
+        Do diagnóstico da organização ao fechamento do handover. A primeira metade está detalhada, com as imagens do
+        Figma, no <a href="https://percurso-ebenezer.vercel.app/dossie.html" target="_blank" rel="noopener">dossiê da Semana 5</a>;
+        aqui ela aparece resumida, seguida do que aconteceu depois.
+      </p>
+    </div>
+
+    <h3 class="sub">Commits no repositório, por semana</h3>
+    <div class="barras" aria-hidden="true">
+      <div class="barra" style="height:13%"><span>13</span></div>
+      <div class="barra" style="height:43%"><span>42</span></div>
+      <div class="barra" style="height:100%"><span>97</span></div>
+      <div class="barra" style="height:12%"><span>12</span></div>
+      <div class="barra" style="height:5%"><span>5</span></div>
+      <div class="barra" style="height:0%"><span>0</span></div>
+      <div class="barra" style="height:4%"><span>4</span></div>
+      <div class="barra" style="height:11%"><span>11</span></div>
+    </div>
+    <div class="barras-eixo">
+      <div>17 a 23/08<br>primeiro MVP</div>
+      <div>24 a 30/08<br>v2, v3 e a visita</div>
+      <div>31/08 a 06/09<br>pós-visita e Semana 5</div>
+      <div>07 a 13/09<br>dossiê S5</div>
+      <div>14 a 20/09<br>revisão</div>
+      <div>21 a 27/09</div>
+      <div>28/09 a 04/10<br>integração</div>
+      <div>05 a 11/10<br>Semana 10</div>
+    </div>
+    <p style="font-size:13.5px; color:var(--ink-muted); margin-top:10px">184 commits até 11/10/2026, sem contar o fechamento de 13/10. O pico é a semana depois da visita de campo: foi ela que mudou o produto.</p>
+
+    <div class="linha-tempo">
+      <div class="marco">
+        <div class="marco-data">AGOSTO · UC1</div>
+        <h4>Descoberta: organização, personas, jornada e fluxo de tarefa</h4>
+        <p>Nos encontros de design de experiência, o grupo montou o canvas de descoberta do Instituto, as personas, o storyboard da tarde da educadora, a jornada atual e futura e o fluxo de tarefa do registro. Os quadros estão no Figma:
+          <a href="https://www.figma.com/board/Zg3dZaENAUq3I3WpOY3a5H" target="_blank" rel="noopener">descoberta</a>,
+          <a href="https://www.figma.com/design/PnLTlp1UR1o3m1fdnWDUlz" target="_blank" rel="noopener">personas</a>,
+          <a href="https://www.figma.com/design/FpSSqLEKxdcVnSicN2nlyB" target="_blank" rel="noopener">storyboard</a>,
+          <a href="https://www.figma.com/board/QSzxKH22Hnevnhw7HluW6m" target="_blank" rel="noopener">jornada</a> e
+          <a href="https://www.figma.com/board/4q6n3WBQmtpgWDvO0YAofa" target="_blank" rel="noopener">fluxo de tarefa</a>.</p>
+      </div>
+      <div class="marco">
+        <div class="marco-data">18 A 22/08</div>
+        <h4>O primeiro MVP funcional e o plano de arquitetura</h4>
+        <p>O repositório nasce em 18/08 já com servidor, banco e a demonstração na Vercel. Em 22/08 entram a revisão arquitetural, o plano de arquitetura em três horizontes e o protótipo no Figma, pensado primeiro para o celular.</p>
+      </div>
+      <div class="marco">
+        <div class="marco-data">24 E 25/08</div>
+        <h4>Versão 2 e versão 3</h4>
+        <p>A v2 traz a fala que alimenta a folha do dia, três scores que não pontuam a criança, a pauta de segunda como devolução e o relatório do ciclo. A v3 acrescenta a camada de IA local, inteira e desligável: com ela desligada, o produto é exatamente a v2.</p>
+      </div>
+      <div class="marco">
+        <div class="marco-data">29/08 · VISITA DE CAMPO</div>
+        <h4>A visita ao Instituto muda a persona</h4>
+        <p>Demonstração guiada com a psicóloga e com a liderança, em quatro gravações que somam 97 minutos. Quem tem a dor do registro é a psicóloga: "o maior desafio aqui é registrar o que você fez". A casa já usava uma planilha com seis indicadores socioemocionais e uma régua de 75% de presença.</p>
+      </div>
+      <div class="marco">
+        <div class="marco-data">31/08 A 04/09 · SEMANA 5</div>
+        <h4>O pós-visita: 97 commits em uma semana</h4>
+        <p>A psicóloga entra no produto, com a Vivência fora da rubrica e dentro do registro de turma. A rubrica passa a usar os seis indicadores da planilha do Instituto. A régua de 75% e o recado da turma são absorvidos. O consentimento ganha prova. Vinte e oito telas viram doze, fundindo e não escondendo. São as decisões 31 a 50. Em 04/09 sai a entrega da Semana 5: protótipo navegável e documentação de suporte.</p>
+      </div>
+      <div class="marco">
+        <div class="marco-data">07 A 09/09</div>
+        <h4>Sem senha na demonstração, psicóloga em primeiro lugar</h4>
+        <p>A decisão 51 retira a senha para a demonstração e mantém o token opaco. A psicóloga passa a ser a primeira opção na tela de entrada. O assistente ganha o nome Aurora e o girassol fotografado na visita. Sai o dossiê consolidado da Semana 5.</p>
+      </div>
+      <div class="marco">
+        <div class="marco-data">16/09 A 02/10 · UC2</div>
+        <h4>Revisão de erros e lacunas, e a integração dos ramos</h4>
+        <p>Com as aulas de arquitetura, banco de dados e testes em andamento, o grupo revisa o repositório atrás de erros e lacunas e integra os ramos de trabalho. Uma chave de acesso compartilhada pela equipe entra e é retirada no mesmo dia, 02/10: a seleção de perfil volta.</p>
+      </div>
+      <div class="marco">
+        <div class="marco-data">05/10 · SEMANA 10</div>
+        <h4>A entrega: handover único, diagrama do esquema real, persistência e quebra</h4>
+        <p>O handover passa a reunir os cinco itens do guia num documento só. O diagrama entidade-relacionamento passa a ser gerado do esquema. Entram os testes de persistência e de quebra, que acham quatro defeitos. O vídeo é regravado sobre o roteiro novo. A tela de impacto potencial é reduzida a três passos.</p>
+      </div>
+      <div class="marco">
+        <div class="marco-data">13/10 · FECHAMENTO</div>
+        <h4>Capturas, cronograma, contingência e a versão 1.0.0</h4>
+        <p>Seguindo a aula de handover: dez capturas numeradas, o cronograma de implantação e a contingência dentro do repositório, o README no modelo sugerido e o registro do teste de usabilidade. A ordem da tela de entrada, que tinha se perdido num merge, volta com um teste que a fixa. O escopo ficou congelado: nenhuma funcionalidade nova.</p>
+      </div>
+    </div>
+
+    <h3 class="sub">Como o grupo trabalhou</h3>
+    <div class="prose">
+      <ul>
+        <li><strong>Desenho antes de código.</strong> As telas nasceram no Figma. O código foi escrito com apoio de IA lendo o próprio arquivo de design, para a tela implementada espelhar a que foi aprovada.</li>
+        <li><strong>O campo manda.</strong> A visita de 29/08 derrubou a persona original e o número de telas. O repositório guarda o confronto entre o que se ouviu em campo e o que o código fazia.</li>
+        <li><strong>Defeito vira teste.</strong> Cada erro achado, do filtro que sumia em silêncio à ordem da tela de entrada, entrou numa bateria para não voltar.</li>
+        <li><strong>O que não está pronto fica escrito.</strong> O handover tem uma seção só para isso, e este dossiê repete.</li>
+      </ul>
+    </div>
+
+    <h3 class="sub">O plano de quatro semanas da UC2, e o que saiu de cada uma</h3>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Tema do encontro</th><th>O que a aula pediu</th><th>O que o Percurso tem</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Arquitetura e APIs</strong></td><td>Identificar as partes, o que cada uma faz e como se comunicam; separar o que existe do que é planejado</td><td><a href="#arquitetura">Arquitetura</a>: quatro partes, um processo, e o Horizonte 2 como planejado</td></tr>
+          <tr><td><strong>Banco de dados</strong></td><td>Entidades, colunas e chaves; diagrama da estrutura</td><td><a href="#dados">Modelo de dados</a>: 32 tabelas, 49 chaves, diagrama gerado do esquema</td></tr>
+          <tr><td><strong>Integração e testes</strong></td><td>Testes de funcionalidades que não dependem de voz</td><td><a href="#testes">Testes</a>: persistência e quebra sem voz; sete baterias</td></tr>
+          <tr><td><strong>Handover</strong></td><td>Quatro partes da documentação, capturas, vídeo, teste de usabilidade, pacote final</td><td><a href="#handover">Handover</a>, <a href="#cronograma">Cronograma</a> e <a href="#contingencia">Contingência</a>; o teste de usabilidade fica pendente</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ 11 -->
+  <section class="section-block" id="fechamento">
+    <div class="section-header">
+      <div class="section-eyebrow">Plano de fechamento · limites declarados</div>
+      <h2 class="section-title">O que falta, de quem depende e quando</h2>
+      <p class="section-desc">
+        O exercício final da aula pedia marcar o que está pronto, o que falta, um responsável e um prazo. Os prazos
+        seguem o cronograma de implantação: contam a partir do dia em que a coordenação aprova o início.
+      </p>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>Item</th><th>Situação</th><th>Depende de</th><th>Quando</th></tr></thead>
+        <tbody>
+          <tr><td>Documentação nas quatro partes</td><td><span class="sit sit-ok">pronto</span></td><td>—</td><td>05/10 e 13/10</td></tr>
+          <tr><td>Capturas de tela e vídeo demonstrativo</td><td><span class="sit sit-ok">pronto</span></td><td>—</td><td>05/10 e 13/10</td></tr>
+          <tr><td>Repositório organizado e versão marcada</td><td><span class="sit sit-ok">pronto</span></td><td>—</td><td>13/10</td></tr>
+          <tr><td>Instalação na máquina do Instituto, por alguém de lá seguindo o manual</td><td><span class="sit sit-pend">falta</span></td><td>Coordenação e apoio do grupo</td><td>Semana 1, terça e quarta</td></tr>
+          <tr><td>Teste final de usabilidade com a psicóloga</td><td><span class="sit sit-pend">falta</span></td><td>Psicóloga e grupo</td><td>Semana 1, quinta</td></tr>
+          <tr><td>Modelo de relato do conselho, prometido na visita</td><td><span class="sit sit-pend">falta</span></td><td>Psicóloga</td><td>Antes da semana 2</td></tr>
+          <tr><td>Senha por pessoa, consentimento arquivado, backup automatizado, migração de esquema</td><td><span class="sit sit-plan">planejado</span></td><td>Decisão do Instituto de operar com dado real</td><td>Antes do primeiro dado real</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">Limites que o grupo declara</h3>
+    <div class="prose">
+      <ul>
+        <li><strong>Não há autenticação.</strong> Quem alcança o endereço entra como qualquer perfil. Por isso o produto só roda com dado sintético.</li>
+        <li><strong>A demonstração na Vercel não guarda nada.</strong> Os dados somem a cada reinício do serviço. Serve para avaliar, não para operar.</li>
+        <li><strong>Mudança de esquema recria o banco.</strong> Aceitável com dado sintético; inaceitável com dado real. Está na lista do que vem antes do piloto real.</li>
+        <li><strong>A camada de IA não foi avaliada nos notebooks do Instituto.</strong> Ela é opcional e vem desligada; se ninguém ligar, nada quebra.</li>
+        <li><strong>Os tempos de operação são estimativa.</strong> O piloto de quatro semanas existe para medi-los.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================================================ 12 -->
+  <section class="section-block" id="links">
+    <div class="section-header">
+      <div class="section-eyebrow">Tudo em um lugar</div>
+      <h2 class="section-title">Links da entrega</h2>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead><tr><th>O quê</th><th>Onde</th></tr></thead>
+        <tbody>
+          <tr><td><strong>MVP no ar</strong> (vitrine, dados sintéticos)</td><td><a href="https://percurso-ebenezer.vercel.app" target="_blank" rel="noopener">https://percurso-ebenezer.vercel.app</a></td></tr>
+          <tr><td><strong>Este dossiê</strong>, na web</td><td><a href="https://percurso-ebenezer.vercel.app/dossie-semana-10.html" target="_blank" rel="noopener">https://percurso-ebenezer.vercel.app/dossie-semana-10.html</a></td></tr>
+          <tr><td><strong>Repositório</strong></td><td><a href="https://github.com/igorregoir-lgtm/percurso-mvp" target="_blank" rel="noopener">https://github.com/igorregoir-lgtm/percurso-mvp</a></td></tr>
+          <tr><td>Handover</td><td><a href="https://github.com/igorregoir-lgtm/percurso-mvp/blob/main/docs/HANDOVER.md" target="_blank" rel="noopener">docs/HANDOVER.md</a></td></tr>
+          <tr><td>Manual de instalação</td><td><a href="https://github.com/igorregoir-lgtm/percurso-mvp/blob/main/docs/MANUAL-DE-INSTALACAO.md" target="_blank" rel="noopener">docs/MANUAL-DE-INSTALACAO.md</a></td></tr>
+          <tr><td>Cronograma e contingência</td><td><a href="https://github.com/igorregoir-lgtm/percurso-mvp/blob/main/docs/CRONOGRAMA-E-CONTINGENCIA.md" target="_blank" rel="noopener">docs/CRONOGRAMA-E-CONTINGENCIA.md</a></td></tr>
+          <tr><td>Modelo de dados (diagrama)</td><td><a href="https://github.com/igorregoir-lgtm/percurso-mvp/blob/main/docs/MODELO-DE-DADOS-ER.md" target="_blank" rel="noopener">docs/MODELO-DE-DADOS-ER.md</a></td></tr>
+          <tr><td>Evidências de teste</td><td><a href="https://github.com/igorregoir-lgtm/percurso-mvp/blob/main/docs/EVIDENCIAS-SEMANA-10.md" target="_blank" rel="noopener">docs/EVIDENCIAS-SEMANA-10.md</a></td></tr>
+          <tr><td>Decisões técnicas</td><td><a href="https://github.com/igorregoir-lgtm/percurso-mvp/blob/main/docs/DECISOES-TECNICAS.md" target="_blank" rel="noopener">docs/DECISOES-TECNICAS.md</a></td></tr>
+          <tr><td>Capturas de tela</td><td><a href="https://github.com/igorregoir-lgtm/percurso-mvp/tree/main/docs/capturas" target="_blank" rel="noopener">docs/capturas/</a></td></tr>
+          <tr><td>Vídeo demonstrativo</td><td><a href="https://github.com/igorregoir-lgtm/percurso-mvp/blob/main/video/percurso-demonstracao.mp4" target="_blank" rel="noopener">video/percurso-demonstracao.mp4</a></td></tr>
+          <tr><td>Protótipo no Figma</td><td><a href="https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv" target="_blank" rel="noopener">https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv</a></td></tr>
+          <tr><td>Dossiê da Semana 5</td><td><a href="https://percurso-ebenezer.vercel.app/dossie.html" target="_blank" rel="noopener">https://percurso-ebenezer.vercel.app/dossie.html</a></td></tr>
+          <tr><td>Pasta da entrega de Tecnologia no Drive</td><td><a href="https://drive.google.com/drive/folders/1Mcdw5VcHrXQ1m_ybDlo4YnIanCHF0oc_?usp=sharing" target="_blank" rel="noopener">drive.google.com/drive/folders/1Mcdw5VcHrXQ1m_ybDlo4YnIanCHF0oc_</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p><strong>Percurso</strong> · monitoramento de impacto socioemocional para o Instituto Ebenézer · Desafio B</p>
+    <p>MBA em IA e Dados para Negócios · Inteli · Módulo 3 · Grupo 06 · Trilha de Tecnologia com a Profª. Bruna Mayer</p>
+    <p>Entrega da Semana 10 · fechado em 13 de outubro de 2026 · todos os dados são sintéticos</p>
+  </footer>
+
+</main>
+</body>
+</html>

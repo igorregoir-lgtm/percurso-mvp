@@ -54,6 +54,14 @@ secao('0 · Sessão e controle de acesso');
 
   const inexistente = await ENTRAR('x', 999);
   T('login com usuário inexistente responde 404', inexistente.status === 404);
+
+  // A ordem da tela de entrada é do produto (decisão 31): psicóloga, quem
+  // atende, quem gere. Ela já se perdeu uma vez num merge, sem teste que visse.
+  const papeis = ((await GET('anon', '/api/sessao')).corpo?.usuarios || []).map(u => u.papel);
+  const peso = (p) => ({ profissional: 0, educador: 1 })[p] ?? 2;
+  T('na entrada a psicóloga vem primeiro, depois quem atende, depois quem gere',
+    papeis[0] === 'profissional' && papeis.every((p, i) => i === 0 || peso(papeis[i - 1]) <= peso(p)),
+    `(${papeis.join(', ')})`);
 }
 
 // ------------------------------------------------------- 1. modelo de dados

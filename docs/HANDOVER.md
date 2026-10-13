@@ -11,8 +11,11 @@ Instituto Ebenézer · Desafio B (monitoramento de impacto) · Grupo 06
 
 | | |
 |---|---|
-| **Repositório** | https://github.com/igorregoir-lgtm/percurso-mvp (público) |
+| **Repositório** | https://github.com/igorregoir-lgtm/percurso-mvp (público) · versão `v1.0.0` |
+| **Demonstração no ar** | https://percurso-ebenezer.vercel.app — vitrine: dados sintéticos, que voltam ao estado inicial a cada reinício |
+| **Dossiê da Semana 10** | https://percurso-ebenezer.vercel.app/dossie-semana-10.html — esta entrega e o histórico do desenvolvimento, numa página |
 | **Vídeo demonstrativo** | `video/percurso-demonstracao.mp4` — §8 |
+| **Capturas de tela** | [`capturas/`](capturas/README.md) — dez telas numeradas, com legenda |
 | **Protótipo Figma (canônico)** | https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv |
 | **Dados** | 100% sintéticos — nenhum dado real de criança foi usado em nenhuma etapa |
 | **Custo de operação** | R$ 0 de licença, R$ 0 de API, sem mensalidade, sem conta em plataforma |
@@ -91,7 +94,9 @@ Nenhum passo abaixo depende de voz (o pedido da aula de 30/09 foi exatamente ess
    metodológica e supressão declaradas; publicar só depois do revisor.
 
 O roteiro completo de validação com usuário, com tarefas cronometradas, está em
-[`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md).
+[`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md). As telas deste fluxo, uma a uma, estão em
+[`capturas/`](capturas/README.md): tela inicial, chamada, dado salvo, observação, painel,
+consentimentos, relatório e o que aparece quando algo dá errado.
 
 ---
 
@@ -173,7 +178,7 @@ em [`TESTES.md`](TESTES.md).
 
 | Bateria | Comando | Resultado | O que prova |
 |---|---|---|---|
-| Fluxo principal (API) | `node scripts/reset.mjs && npm test` | **515 / 515** | os fluxos dos quatro papéis, ponta a ponta, contra o servidor no ar |
+| Fluxo principal (API) | `node scripts/reset.mjs && npm test` | **516 / 516** | os fluxos dos quatro papéis, ponta a ponta, contra o servidor no ar |
 | Regras de domínio | `npm run test:unit` | **226 / 226** | regras críticas sem servidor, em banco temporário |
 | Persistência após reiniciar | `npm run test:persistencia` | **9 / 9** | grava, derruba o servidor, sobe outro e relê — o dado está no disco |
 | Quebra (entrada inválida) | `npm run test:quebra` | **17 / 17** | campo em branco, número negativo, item inexistente, injeção, JSON quebrado |
@@ -183,6 +188,12 @@ em [`TESTES.md`](TESTES.md).
 
 Todas, exceto o fluxo principal, sobem servidor e banco próprios e **nunca tocam
 `data/percurso.db`**. O CI (`.github/workflows/ci.yml`) roda as baterias a cada push.
+
+**O que mudou em 13/10/2026.** As sete baterias foram rodadas de novo no fechamento do handover. O
+fluxo principal passou de 515 para 516: entrou a asserção que fixa a ordem da tela de entrada
+(psicóloga, quem atende, quem gere — decisão 31). Essa ordem tinha se perdido num merge de
+outubro sem que nenhum teste visse; o vídeo e o `EVIDENCIAS-SEMANA-10.md` registram a execução de
+05/10, com 515. As outras seis baterias não mudaram de tamanho.
 
 ### 6.1 O teste de quebra encontrou defeitos — e eles foram corrigidos
 
@@ -224,6 +235,18 @@ São 51 decisões registradas, cada uma com contexto, alternativas e consequênc
 formulários). O Percurso usa código próprio — a justificativa está na decisão 1 e em
 [`ARQUITETURA.md`](ARQUITETURA.md) §1.
 
+### 7.1 Quatro escolhas, com a razão técnica e a razão de negócio
+
+A aula de handover pede que cada escolha técnica seja explicada também pelo valor que gera para a
+organização. As quatro perguntas da aula, respondidas para o Percurso:
+
+| Escolha | Razão técnica | O que o Instituto ganha — ou perderia sem ela | Alternativa considerada |
+|---|---|---|---|
+| **Guardar os dados em um banco** (SQLite, um arquivo) | Busca só o que precisa, colunas com tipo e 49 chaves estrangeiras que o próprio banco confere. O consentimento é uma delas: sem ele a observação não grava. | Sem banco, a presença volta a ser planilha solta. Não dá para separar criança de matrícula (106 e 120 no painel) nem seguir a mesma criança de um ciclo para o outro, que é a prova que quem financia pede. | Arquivo JSON: perde a relação entre os dados. Banco gerenciado em nuvem: exige conta e mensalidade, contra o bloco 5 do dossiê. |
+| **Separar a tela do servidor** (`public/` e `src/`) | A tela só desenha; quem decide é o servidor. Papel, escopo de turma e supressão de grupo pequeno são aplicados lá: a diretoria recebe 403 na ficha de uma criança mesmo digitando o endereço. | A proteção da criança não depende de a tela esconder um botão. Quem mantiver o produto troca a tela sem tocar na regra, e o mesmo servidor atende celular e computador. | Tudo no navegador, com `localStorage` (o protótipo Bússola): o dado fica preso num aparelho e não há controle de acesso. |
+| **Validar antes de salvar** | Toda rota confere tipo e domínio e responde 422 com a mensagem em português. Dezessete testes de quebra cobrem campo em branco, número negativo, data impossível e JSON quebrado. | Evita o erro que custa caro numa ONG pequena: chamada gravada num dia que não existe, filtro que some em silêncio e mostra todas as turmas. Um número errado no relatório de quem financia custa credibilidade. | Validar só na tela: uma requisição direta ou um aparelho com versão antiga gravaria o dado errado. |
+| **Versionar num repositório** (Git, GitHub público) | O histórico inteiro está no GitHub, e o CI roda as sete baterias a cada push. A entrega está marcada como `v1.0.0`. | O Instituto não depende dos autores: qualquer pessoa clona, roda e lê por que cada coisa é como é (51 decisões registradas). Perder o notebook não é perder o produto. | Pasta compactada no Drive: sem histórico e sem saber qual cópia é a última. |
+
 ---
 
 ## 8. Vídeo demonstrativo
@@ -248,6 +271,13 @@ papéis, nenhum técnico. **Os tempos são estimativa do grupo, a medir no pilot
 | Coordenação | a coordenação do Instituto, dona do Percurso | consentimentos, cadastro de pessoas e turmas, aprovação da síntese | dentro da rotina atual | usar navegador |
 | Educadoras e psicóloga | equipe e voluntários | chamada, folha do dia, observação no ciclo | ~2 min por encontro (chamada) | usar celular |
 
+**As quatro primeiras semanas.** O passo a passo da implantação está em
+[`CRONOGRAMA-E-CONTINGENCIA.md`](CRONOGRAMA-E-CONTINGENCIA.md): quatro sábados, uma pessoa (a
+psicóloga) e um fluxo (chamada e registro de vivência), com dado sintético e em paralelo ao
+registro que ela já faz. O documento traz o que fazer de segunda a sexta, o critério para passar à
+semana seguinte, a decisão da coordenação ao final (ampliar, corrigir e repetir, ou parar) e a
+tabela de contingência, com dezesseis situações e o responsável por cada uma.
+
 **Rotina de backup** (o único cuidado recorrente): o banco inteiro é `data/percurso.db`. Com o
 servidor parado, copie o arquivo; ligado, copie junto `percurso.db-wal` e `percurso.db-shm`.
 Restaurar é copiar de volta **apagando antes `-wal` e `-shm` antigos** — copiar o backup por cima
@@ -267,7 +297,12 @@ avaliados. Se ninguém ligar o modelo, nada quebra.
 ## 10. O que não está pronto — dito com todas as letras
 
 - **Validação com usuário real do Instituto.** O protocolo está pronto
-  ([`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md)); a sessão com a psicóloga não aconteceu.
+  ([`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md)); a sessão com a psicóloga não aconteceu. O
+  registro do teste final de usabilidade está em §10.1, em branco.
+- **Revisão cruzada.** Ninguém de fora do grupo instalou o Percurso seguindo só o manual. O que
+  existe é a instalação do zero feita pelo CI a cada push, numa máquina Linux limpa (baixa o
+  repositório, sobe o servidor e roda o fluxo principal). Falta repetir na máquina do Instituto,
+  com alguém de lá seguindo o manual: é a terça e a quarta da semana 1 do cronograma.
 - **Dado real.** O produto opera só com dado sintético. Trocar exige, antes: **senha por pessoa**
   (a decisão 51 tirou a senha para a demonstração; o desenho da 39 volta), consentimento dos
   responsáveis com termo arquivado, backup automatizado e **migração incremental do esquema** (hoje
@@ -275,10 +310,25 @@ avaliados. Se ninguém ligar o modelo, nada quebra.
   completa é o Horizonte 2 de [`ARQUITETURA.md`](ARQUITETURA.md) §5.
 - **Modelo de relatório do conselho.** O template do relato é provisório até a psicóloga enviar o
   modelo prometido na visita.
-- **Números financeiros do Instituto.** O business case (trilha de Negócios) depende de receita,
-  orçamento 2026 e base de doadores que ainda não foram enviados.
+- **Orçamento de 2026 do Instituto.** O business case (trilha de Negócios) foi fechado sobre a
+  demonstração de 2025. O orçamento oficial de 2026, a evasão por programa e os tempos atuais de
+  registro ainda não foram enviados; o modelo usa uma projeção que o número oficial substitui.
 
 A lista viva, com o que depende de quem: [`PENDENCIAS-DE-ENTREGA.md`](PENDENCIAS-DE-ENTREGA.md).
+
+### 10.1 Teste final de usabilidade — registro
+
+A aula de handover pede três tarefas do fluxo principal, feitas por alguém do perfil real, sem
+explicação prévia e com o grupo observando em silêncio. As três tarefas são a 2, a 3 e a 4 de
+[`VALIDACAO-USUARIO.md`](VALIDACAO-USUARIO.md) §3.1. **Nenhuma linha foi preenchida:** o que houve
+em 29/08/2026 foi uma demonstração guiada, com o aparelho na mão do autor, e isso não é teste de
+usabilidade. O ensaio da psicóloga está marcado para a quinta-feira da semana 1 do cronograma.
+
+| Tarefa | Concluiu? | Onde hesitou | Ajuste necessário |
+|---|---|---|---|
+| Fazer a chamada do sábado que ficou em aberto, com duas faltas | pendente | | |
+| Registrar o encontro que acabou de terminar, do jeito mais rápido | pendente | | |
+| Conferir e liberar o relato no padrão do conselho | pendente | | |
 
 ---
 
@@ -287,6 +337,9 @@ A lista viva, com o que depende de quem: [`PENDENCIAS-DE-ENTREGA.md`](PENDENCIAS
 | Quero… | Documento |
 |---|---|
 | instalar e operar | [`MANUAL-DE-INSTALACAO.md`](MANUAL-DE-INSTALACAO.md) |
+| implantar nas quatro primeiras semanas | [`CRONOGRAMA-E-CONTINGENCIA.md`](CRONOGRAMA-E-CONTINGENCIA.md) §1 |
+| saber o que fazer quando algo falha | [`CRONOGRAMA-E-CONTINGENCIA.md`](CRONOGRAMA-E-CONTINGENCIA.md) §2 |
+| ver as telas sem instalar nada | [`capturas/`](capturas/README.md) |
 | entender a arquitetura | [`ARQUITETURA.md`](ARQUITETURA.md) |
 | ver o modelo de dados | [`MODELO-DE-DADOS-ER.md`](MODELO-DE-DADOS-ER.md) · [`MODELO-DE-DADOS.md`](MODELO-DE-DADOS.md) |
 | ver as evidências de teste | [`EVIDENCIAS-SEMANA-10.md`](EVIDENCIAS-SEMANA-10.md) · [`TESTES.md`](TESTES.md) |

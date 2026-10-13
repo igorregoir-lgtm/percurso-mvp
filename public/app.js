@@ -475,29 +475,47 @@ rota(/^#\/entrar/, async () => {
     </div>
     <div class="cartao entra" style="margin-top:16px; border: 1.5px solid var(--laranja, #D97706); background: rgba(217, 119, 6, 0.05); animation-delay:.22s">
       <div class="linha" style="align-items:center">
-        <h2 style="margin:0; font-size:15px; color:var(--tinta)">📁 Artefatos de Entrega · Semana 5 (Trilha B)</h2>
+        <h2 style="margin:0; font-size:15px; color:var(--tinta)">📁 Artefatos de Entrega · Semana 10 (Trilha B)</h2>
         <span class="selo ok" style="font-size:10px">Oficial</span>
       </div>
-      <p class="sub" style="margin-top:6px">Acesse diretamente os artefatos de entrega do Grupo 06 no Vercel:</p>
+      <p class="sub" style="margin-top:6px">A entrega do Grupo 06, a partir deste endereço:</p>
       <div class="pilha" style="margin-top:10px">
-        <a class="item" href="/dossie.html" target="_blank" style="text-decoration:none">
-          <div><div class="nome">📖 Dossiê Executivo Consolidado</div>
-            <div class="meta">Visão completa, Diretoria Solange Ribeiro, SROI, Redução da Violência</div></div>
+        <a class="item" href="/dossie-semana-10.html" target="_blank" style="text-decoration:none">
+          <div><div class="nome">📖 Dossiê da Semana 10 · Tecnologia</div>
+            <div class="meta">Handover, arquitetura, modelo de dados, testes, cronograma de implantação e contingência</div></div>
           <span class="seta" aria-hidden="true">↗</span>
         </a>
-        <a class="item" href="/Artefato_Negocios_Semana5_TrilhaB.html" target="_blank" style="text-decoration:none">
-          <div><div class="nome">💼 Artefato de Negócios (Trilha B)</div>
-            <div class="meta">Alinhamento estratégico, personas, modelo de impacto e sustentabilidade</div></div>
+        <a class="item" href="https://github.com/igorregoir-lgtm/percurso-mvp/blob/main/docs/HANDOVER.md" target="_blank" rel="noopener" style="text-decoration:none">
+          <div><div class="nome">📦 Repositório e Handover</div>
+            <div class="meta">Código, instalação, decisões técnicas e evidências de teste, no GitHub</div></div>
           <span class="seta" aria-hidden="true">↗</span>
         </a>
-        <a class="item" href="/Artefato_Tecnologia_UX_UI_Semana5_TrilhaB.html" target="_blank" style="text-decoration:none">
-          <div><div class="nome">💻 Artefato de Tecnologia & UX/UI</div>
-            <div class="meta">Arquitetura, LGPD Art. 14, vídeo consentimento, IA determinística</div></div>
+        <a class="item" href="https://github.com/igorregoir-lgtm/percurso-mvp/blob/main/video/percurso-demonstracao.mp4" target="_blank" rel="noopener" style="text-decoration:none">
+          <div><div class="nome">🎬 Vídeo demonstrativo</div>
+            <div class="meta">7m19s, os quatro papéis, com dados sintéticos</div></div>
           <span class="seta" aria-hidden="true">↗</span>
         </a>
         <a class="item" href="/Link_Prototipo_Figma_Navegavel.html" target="_blank" style="text-decoration:none">
           <div><div class="nome">🎨 Protótipo Figma Navegável</div>
             <div class="meta">Links e telas navegáveis do protótipo v3 no Figma</div></div>
+          <span class="seta" aria-hidden="true">↗</span>
+        </a>
+      </div>
+      <p class="sub" style="margin-top:14px">Semana 5, como foi entregue:</p>
+      <div class="pilha" style="margin-top:8px">
+        <a class="item" href="/dossie.html" target="_blank" style="text-decoration:none">
+          <div><div class="nome">📖 Dossiê da Semana 5</div>
+            <div class="meta">Discovery, personas, jornadas, protótipo e visita de campo</div></div>
+          <span class="seta" aria-hidden="true">↗</span>
+        </a>
+        <a class="item" href="/Artefato_Negocios_Semana5_TrilhaB.html" target="_blank" style="text-decoration:none">
+          <div><div class="nome">💼 Artefato de Negócios · Semana 5</div>
+            <div class="meta">Lean Canvas, Product Vision Board e escopo do MVP</div></div>
+          <span class="seta" aria-hidden="true">↗</span>
+        </a>
+        <a class="item" href="/Artefato_Tecnologia_UX_UI_Semana5_TrilhaB.html" target="_blank" style="text-decoration:none">
+          <div><div class="nome">💻 Artefato de Tecnologia & UX/UI · Semana 5</div>
+            <div class="meta">Personas, jornadas, User Stories e fluxo de navegação</div></div>
           <span class="seta" aria-hidden="true">↗</span>
         </a>
       </div>
