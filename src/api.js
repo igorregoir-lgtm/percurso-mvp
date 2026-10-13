@@ -211,9 +211,14 @@ export const rotas = {
     usuario: usuarioDa(req),
     // A lista é a tela de entrada inteira: escolher quem está usando É entrar
     // (decisão 51). Não há mais `primeiro_acesso` — não há senha a criar.
+    // A ORDEM é do produto, não do banco: a psicóloga vem primeiro (decisão 31 —
+    // na visita de 29/08 a dor do registro é dela), depois quem atende, depois
+    // quem gere. Um merge de outubro devolveu `ORDER BY id` em silêncio; a seção 0
+    // do smoke-test passou a fixar a ordem.
     usuarios: all(
       `SELECT id, nome, apelido, papel
-         FROM educador WHERE arquivado_em IS NULL ORDER BY id`),
+         FROM educador WHERE arquivado_em IS NULL
+        ORDER BY CASE papel WHEN 'profissional' THEN 0 WHEN 'educador' THEN 1 ELSE 2 END, id`),
   }),
 
   // Entrar é escolher quem está usando (decisão 51, que revoga a senha da 39).

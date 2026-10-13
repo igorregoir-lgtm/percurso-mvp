@@ -2,14 +2,41 @@
 
 **Instituto Ebenézer · Desafio B (Monitoramento de Impacto) · Módulo 3 — MBA IA e Dados para Negócios**
 
-Transforma a observação de minutos do educador em indicador de evolução por trajetória e por
-programa — sem que dado individual de criança saia da organização.
+O Percurso é um aplicativo web para a equipe do Instituto Ebenézer registrar presença e evolução
+socioemocional das crianças nos minutos que já tem: a educadora faz a chamada em um toque, a
+psicóloga conta o encontro em cerca de 40 segundos de fala, e a coordenação e a diretoria recebem
+painel, alertas de ausência e o relatório do ciclo para quem financia. Nenhum dado individual de
+criança sai da organização, e todos os dados deste repositório são sintéticos.
+
+<p align="center">
+  <img src="docs/capturas/01-entrar.png" alt="Tela inicial: escolher quem está usando o Percurso" width="230">
+  <img src="docs/capturas/03-chamada.png" alt="Chamada em um toque, com o cronômetro de registro" width="230">
+  <img src="docs/capturas/05-observacao.png" alt="Observação pela rubrica de seis dimensões" width="230">
+</p>
+
+As dez capturas, numeradas e com legenda, estão em [`docs/capturas/`](docs/capturas/README.md).
+
+| | |
+|---|---|
+| **Demonstração no ar** | https://percurso-ebenezer.vercel.app — vitrine com dados sintéticos; o banco volta ao estado inicial a cada reinício |
+| **Dossiê da Semana 10** | https://percurso-ebenezer.vercel.app/dossie-semana-10.html — a entrega de Tecnologia e o histórico do desenvolvimento, numa página |
+| **Handover** | [`docs/HANDOVER.md`](docs/HANDOVER.md) — a porta de entrada da documentação |
+| **Vídeo demonstrativo** | [`video/percurso-demonstracao.mp4`](video/percurso-demonstracao.mp4) — 7m19s, os quatro papéis |
+| **Protótipo Figma** | https://www.figma.com/design/h6AnLVYLfpeVl2N4ie0Qzv |
 
 > **Entrega da Semana 10 (09/10/2026) — comece pelo [`docs/HANDOVER.md`](docs/HANDOVER.md).** Ele
 > reúne, num documento só, os cinco itens do guia: vídeo demonstrativo, modelo de dados (diagrama
 > ER gerado do esquema real em [`docs/MODELO-DE-DADOS-ER.md`](docs/MODELO-DE-DADOS-ER.md)),
 > instalação e acesso, evidências de teste ([`docs/EVIDENCIAS-SEMANA-10.md`](docs/EVIDENCIAS-SEMANA-10.md))
 > e decisões técnicas — mais quem opera depois da entrega, com quanto tempo e que competência.
+
+## Autoria
+
+Grupo 06 do MBA em IA e Dados para Negócios (Inteli), Módulo 3 — Desenvolvimento de Produtos e
+Novos Modelos de Negócio com IA. Trilha de Tecnologia com a Profª. Bruna Mayer. Organização
+parceira: Instituto de Cultura e Lazer Ebenézer, Jardim Ângela, São Paulo.
+
+## Como o produto chegou aqui
 
 **Versão 2** (22/08/2026): a professora fala e o sistema se alimenta; três scores que
 não pontuam a criança; pauta de segunda como devolução; e o relatório do ciclo que a diretoria gera,
@@ -39,7 +66,7 @@ mapa da camada: [`ai/README.md`](ai/README.md).
 
 ---
 
-## Como rodar
+## Como instalar e rodar
 
 Requisito único: **Node.js 22.13 ou superior** — recomendado o **24 LTS**, fixado no `.nvmrc`
 ([nodejs.org](https://nodejs.org) — instalador padrão). Entre 22.5 e 22.12 o `node:sqlite` exigia
@@ -211,11 +238,14 @@ consentimento e o rastro de acesso. Na tela inicial escolhe-se o perfil:
 
 | Perfil | Papel | Vê |
 |---|---|---|
-| **Maria Silvia** | Professora (a persona) | Hoje, Chamada, Pauta, Turma, Crianças, Refletir* |
-| **Rita Amaral** | Coordenação | Painel, Scores, Safras, Síntese, Consentimentos, Pessoas (equipe, **turmas**, arquivo), Refletir* |
-| **Cleide Nunes** | Professora | As demais turmas |
-| **Solange Ribeiro** | Diretoria | Relatório do ciclo, Impacto (SROI exploratório) e consulta agregada — **e nada individual** |
 | **Carolina Duarte** | Psicóloga (papel `profissional`) | Hoje, Chamada, Vivência (registro de procedimento + check-in), Relato, Turma (com a régua de 75%), Crianças — **sem agenda de ciclo**: a Vivência fica fora da rubrica (decisão 31) |
+| **Maria Silvia** | Professora (a persona) | Hoje, Chamada, Pauta, Turma, Crianças, Refletir* |
+| **Cleide Nunes** | Professora | As demais turmas |
+| **Rita Amaral** | Coordenação | Painel, Scores, Safras, Síntese, Consentimentos, Pessoas (equipe, **turmas**, arquivo), Refletir* |
+| **Solange Ribeiro** | Diretoria | Relatório do ciclo, Impacto (SROI exploratório) e consulta agregada — **e nada individual** |
+
+A lista sai nesta ordem na tela: a psicóloga primeiro, depois quem atende, depois quem gere
+(decisão 31, pedido da visita de campo; o `smoke-test` fixa a ordem).
 
 \* Refletir é a sala de reflexão do copilot local — só responde com `AI_ENABLED=1` (camada opcional).
 
@@ -336,6 +366,22 @@ Todas implementadas, cada uma com o critério de aceite do pack demonstrado por 
 
 ---
 
+## Visão geral da arquitetura
+
+Quatro partes, um único processo e um arquivo de banco. Nenhum serviço externo é obrigatório.
+
+| Parte | Onde está | O que faz |
+|---|---|---|
+| **Front-end** | `public/` — HTML, CSS e JavaScript puros, sem build | As telas, no celular ou no computador; guarda uma fila no aparelho quando a rede cai |
+| **Back-end** | `server.js` e `src/` — Node.js, sem dependência externa | Recebe as requisições (`GET` lê, `POST` grava), aplica as regras e os papéis |
+| **Armazenamento** | `data/percurso.db` — SQLite, 32 tabelas | Guarda tudo num arquivo só; backup é copiar o arquivo |
+| **Serviços externos** | IA local, transcrição local e link do WhatsApp | Todos opcionais e desligados por padrão; o produto funciona igual sem eles |
+
+O diagrama, as decisões por trás dele e o que está planejado para depois da entrega estão em
+[`docs/HANDOVER.md`](docs/HANDOVER.md) §4 e em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
+
+---
+
 ## Estrutura do repositório
 
 ```
@@ -406,8 +452,31 @@ cd prototipo-figma && python3 -m http.server 8765
 
 ---
 
-## Documentação de handover
+## Próximos passos
 
+O que falta para o Instituto começar a usar, em ordem. A lista completa, com dono e gatilho, está
+em [`docs/HANDOVER.md`](docs/HANDOVER.md) §10 e em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) §5.
+
+1. **Teste de usabilidade com a psicóloga**, no protocolo de
+   [`docs/VALIDACAO-USUARIO.md`](docs/VALIDACAO-USUARIO.md). A demonstração de 29/08 foi guiada; a
+   sessão cronometrada, com o aparelho na mão dela, ainda não aconteceu.
+2. **Implantação assistida de quatro semanas**, com dado sintético e em paralelo ao registro atual:
+   [`docs/CRONOGRAMA-E-CONTINGENCIA.md`](docs/CRONOGRAMA-E-CONTINGENCIA.md) traz o cronograma, o
+   critério para passar de semana e o que fazer quando algo falha.
+3. **Antes de qualquer dado real de criança:** senha por pessoa, consentimento dos responsáveis
+   arquivado, backup automatizado e migração de esquema que não recrie o banco.
+
+**Limites conhecidos.** O MVP não tem autenticação e por isso só roda com dado sintético. A
+demonstração na Vercel perde os dados a cada reinício. A camada de IA é opcional e não foi avaliada
+nos notebooks doados ao Instituto.
+
+---
+
+## Documentação completa
+
+- [`docs/HANDOVER.md`](docs/HANDOVER.md) — **porta de entrada**: os cinco itens do guia e quem opera depois da entrega
+- [`docs/CRONOGRAMA-E-CONTINGENCIA.md`](docs/CRONOGRAMA-E-CONTINGENCIA.md) — implantação em quatro semanas e o que fazer quando algo falha
+- [`docs/capturas/`](docs/capturas/README.md) — dez capturas de tela numeradas, com legenda
 - [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) — **plano de arquitetura**: restrições do dossiê → respostas de desenho, arquitetura atual, invariantes e os três horizontes de evolução (entrega 09/10 → piloto real → módulos condicionados)
 - [`docs/LEAN-INCEPTION.md`](docs/LEAN-INCEPTION.md) — a análise que originou o escopo
 - [`docs/ARTEFATO-SEMANA-5.md`](docs/ARTEFATO-SEMANA-5.md) — **documentação de suporte do artefato de tecnologia da semana 5**: persona, jornadas atual e futura, as 6 User Stories com a tela e o teste que prova cada uma, fluxo de navegação por papel — e o registro da validação, que fica em branco até a sessão acontecer
@@ -433,7 +502,7 @@ cd prototipo-figma && python3 -m http.server 8765
 - [`docs/MANUAL-DE-INSTALACAO.md`](docs/MANUAL-DE-INSTALACAO.md) — instalar em qualquer computador, sem jargão, com início automático
 - [`docs/EVIDENCIAS-DE-TESTE.txt`](docs/EVIDENCIAS-DE-TESTE.txt) — saída da última execução
 - [`docs/ROTEIRO-DO-VIDEO.md`](docs/ROTEIRO-DO-VIDEO.md) — o roteiro do vídeo
-- [`video/percurso-demonstracao.mp4`](video/percurso-demonstracao.mp4) — vídeo demonstrativo, 6m14s, 1080p, legendado e sem áudio ([como foi gerado](video/README.md)). **Atenção: grava a v1** — não mostra voz, pauta nem relatório do doador. Regravar é item aberto da entrega.
+- [`video/percurso-demonstracao.mp4`](video/percurso-demonstracao.mp4) — vídeo demonstrativo, 7m19s, 18 cenas, os quatro papéis, legendado e sem áudio, regravado em 05/10/2026 sobre o roteiro v3 ([como foi gerado](video/README.md))
 - [`docs/revisao/`](docs/revisao/) — revisão arquitetural completa (22/08/2026): baseline de requisitos, matriz de rastreabilidade arquitetura → implementação → teste, relatório de achados priorizados e a [auditoria adversarial da v2](docs/revisao/03-AUDITORIA-V2.md) (28 achados levantados, 19 confirmados após refutação, 19 corrigidos com teste); da v3 (25/08/2026): o [plano de complementação auditado](docs/revisao/04-PLANO-COMPLEMENTACAO-IA.md) (painel de 4 lentes, 29 achados incorporados antes da execução) e a [revisão adversarial da implementação](docs/revisao/05-REVISAO-IMPLEMENTACAO-IA.md) (35 achados confirmados, 35 tratados)
 
 ---
@@ -451,4 +520,5 @@ rastreada no git.
 
 ## Atualização
 
-Última sincronização deste repositório: **25 de agosto de 2026**.
+Versão **1.0.0**, a da entrega da Semana 10. Última atualização deste repositório: **13 de outubro
+de 2026** (fechamento do handover: capturas de tela, cronograma de implantação e contingência).
