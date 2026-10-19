@@ -1,5 +1,5 @@
 ---
-name: percurso-mvp-conventions
+name: allla-percurso-mvp-conventions
 description: Development conventions and patterns for percurso-mvp. TypeScript project with freeform commits.
 ---
 
